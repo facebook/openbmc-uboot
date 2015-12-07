@@ -1322,6 +1322,12 @@ static int aspeednic_recv(struct eth_device* dev)
 			 * to the adapter.
 			 */
 			rx_ring[rx_new].status &= cpu_to_le32(0x7FFFFFFF);
+
+			/*
+			 * Ask the hardware for any other packets now that we
+			 * have a known spare slot
+			 */
+			OUTL(dev, POLL_DEMAND, RXPD_REG);
 			//      rx_ring[rx_new].status = cpu_to_le32(RXPKT_RDY);
 		}
 
@@ -1329,6 +1335,12 @@ static int aspeednic_recv(struct eth_device* dev)
 		*/
 		rx_new = (rx_new + 1) % rxRingSize;
 	}
+
+	/*
+	 * Ask the hardware for more packets so that they'll be DMAed by the
+	 * time we return to this loop
+	 */
+	OUTL(dev, POLL_DEMAND, RXPD_REG);
 
 	return length;
 }

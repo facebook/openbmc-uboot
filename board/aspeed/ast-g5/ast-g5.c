@@ -39,6 +39,8 @@
 #include <asm/arch/ast-sdmc.h>
 #include <asm/io.h>
 
+#include <../common/watchdog.h>
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #if defined(CONFIG_SHOW_BOOT_PROGRESS)
@@ -59,6 +61,7 @@ int board_init (void)
 
 int misc_init_r (void)
 {
+	watchdog_init();	
 	return 0;
 
 }

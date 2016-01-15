@@ -11,7 +11,7 @@ void reset_cpu(ulong addr)
 {
 	__raw_writel(0x10 , AST_WDT_BASE+0x04);
 	__raw_writel(0x4755, AST_WDT_BASE+0x08);
-	__raw_writel(0x3, AST_WDT_BASE+0x0c);
+	__raw_writel(0x23, AST_WDT_BASE+0x0c); /* reset the full chip */
 
 	while (1)
 	/*nothing*/;

@@ -1817,6 +1817,9 @@ ast_scu_get_vga_display(void)
 extern u32
 ast_scu_get_vga_memsize(void)
 {
+#ifdef CONFIG_ASPEED_NO_VIDEO
+    return 0;
+#else
 	u32 size=0;
 
 	switch(SCU_HW_STRAP_VGA_SIZE_GET(ast_scu_read(AST_SCU_HW_STRAP1))) {
@@ -1837,6 +1840,7 @@ ast_scu_get_vga_memsize(void)
 			break;
 	}
 	return size;
+#endif
 }
 
 

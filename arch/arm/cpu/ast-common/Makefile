@@ -14,7 +14,7 @@ include $(TOPDIR)/config.mk
 
 LIB	= $(obj)libcpuast-common.o
 
-COBJS-y	+= timer.o reset.o cpuinfo.o ast-scu.o ast-ahbc.o ast-sdmc.o
+COBJS-y	+= timer.o reset.o cpuinfo.o ast-scu.o ast-ahbc.o ast-sdmc.o watchdog.o
 COBJS-$(CONFIG_ARCH_AST1070)	+= ast1070-scu.o
 COBJS-$(CONFIG_PCI)		+= pcie.o ast-p2x.o
 COBJS-$(CONFIG_AST_SPI_NOR)	+= flash.o

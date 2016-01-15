@@ -18,6 +18,16 @@
 #include <asm/dma-mapping.h>
 #include <linux/mii.h>
 
+#include <i2c.h>
+
+#include <asm/arch/ast_scu.h>
+#include <asm/arch/aspeed.h>
+
+#if defined(CONFIG_MII) || defined(CONFIG_CMD_MII)
+#include <miiphy.h>
+#endif
+
+
 #include "ftgmac100.h"
 
 #define ETH_ZLEN	60

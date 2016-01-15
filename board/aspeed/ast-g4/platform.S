@@ -336,8 +336,47 @@ set_MPLL:
     and r1, r2, r1
     str r1, [r0]
 
+/* Yosemite Platform specific Initialization */
+#ifdef CONFIG_YOSEMITE
+/*
+ * Disable WDT2 before the 2nd SPI flash is tried
+ * TODO: Need to detect booting from 2nd flash and recover
+ */
+    ldr r0, =0x1e78502c
+    mov r1, #0x0
+    str r1, [r0]
+
+/* Use GPIOE2/GPIOE3 to select BMC Output on debug console */
+    ldr r1, =0x0C
+    ldr r0, =0x1e780024
+    str r1, [r0]
+
+    ldr r0, =0x1e780020
+    str r1, [r0]
+
+    ldr r1, = 0x80
+    ldr r0, =0x1e780084
+    str r1, [r0]
+
+
+    ldr r1, = 0x80
+    ldr r0, =0x1e780080
+    str r1, [r0]
+
+    ldr r1, = 0x0
+    ldr r0, =0x1e780080
+    str r1, [r0]
+#endif
+
 /* Debug - UART console message */
-    ldr r0, =0x1e78400c
+// Enable UART3/4 only for non-yosemite platform
+#ifndef CONFIG_YOSEMITE
+    ldr r0, =0x1e6e2080
+    ldr r1, =0xFFFF0000                          @ enable UART3 and UART4
+    str r1, [r0]
+#endif
+
+    ldr r0, =CONFIG_ASPEED_COM_LCR
     mov r1, #0x83
     str r1, [r0]
 
@@ -345,28 +384,38 @@ set_MPLL:
     ldr r2, [r0]
     mov r2, r2, lsr #12
     tst r2, #0x01
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
+#if CONFIG_BAUDRATE == 115200
     moveq r1, #0x0D                              @ Baudrate 115200
     movne r1, #0x01                              @ Baudrate 115200, div13
-#if defined(CONFIG_DRAM_UART_38400)
+#endif
+#if CONFIG_BAUDRATE == 57600
+    moveq r1, #0x1A                              @ Baudrate 57600
+    movne r1, #0x02                              @ Baudrate 57600, div13
+#endif
+#if CONFIG_BAUDRATE == 38400
     moveq r1, #0x27                              @ Baudrate 38400
     movne r1, #0x03                              @ Baudrate 38400 , div13
 #endif
+#if CONFIG_BAUDRATE == 9600
+    moveq r1, #0x9c                              @ Baudrate 9600
+    movne r1, #0x0C                              @ Baudrate 9600 , div13
+#endif
     str r1, [r0]
 
-    ldr r0, =0x1e784004
+    ldr r0, =CONFIG_ASPEED_COM_IER
     mov r1, #0x00
     str r1, [r0]
 
-    ldr r0, =0x1e78400c
+    ldr r0, =CONFIG_ASPEED_COM_LCR
     mov r1, #0x03
     str r1, [r0]
 
-    ldr r0, =0x1e784008
+    ldr r0, =CONFIG_ASPEED_COM_IIR
     mov r1, #0x07
     str r1, [r0]
 
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x0D                                @ '\r'
     str r1, [r0]
     mov r1, #0x0A                                @ '\n'
@@ -578,7 +627,7 @@ delay_2:
  ******************************************************************************/
 ddr3_init:
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x33                                @ '3'
     str r1, [r0]
     mov r1, #0x0D                                @ '\r'
@@ -628,6 +677,9 @@ ddr3_init:
     ldr r1, =0x00002312                          @ 408 MHz
 #if defined(CONFIG_DRAM_336)
     ldr r1, =0x00002312
+#endif
+#if defined(CONFIG_YOSEMITE)
+    ldr r1, =0x00002310                          @ Crossing Voltage Criterion
 #endif
     tst r2, #0x01
     moveq r1, r1, lsr #8
@@ -767,7 +819,7 @@ delay3_4:
  ******************************************************************************/
 ddr2_init:
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x32                                @ '2'
     str r1, [r0]
     mov r1, #0x0D                                @ '\r'
@@ -813,6 +865,9 @@ ddr2_init:
     ldr r1, =0x00002312                          @ 408 MHz
 #if defined(CONFIG_DRAM_336)
     ldr r1, =0x00002312
+#endif
+#if defined(CONFIG_YOSEMITE)
+    ldr r1, =0x00002310                          @ Crossing Voltage Criterion
 #endif
     tst r2, #0x01
     moveq r1, r1, lsr #8
@@ -1419,7 +1474,7 @@ init_sram_start3:
  *****************************************************************************/
 CBR0_START:
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x43                                @ 'C'
     str r1, [r0]
     mov r1, #0x42                                @ 'B'
@@ -1457,7 +1512,7 @@ cbr0_next_dqidly:
     bgt   CBR0_END
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     and   r1, r8, #0x07
     add   r1, r1, #0x30                          @ '0-7'
     str   r1, [r0]
@@ -1779,7 +1834,7 @@ delay_5:
  *****************************************************************************/
 CBR1_START:
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x0D                                @ '\r'
     str r1, [r0]
     mov r1, #0x0A                                @ '\n'
@@ -2060,7 +2115,7 @@ cbr1_set_result_end:
 
 CBR3_START:
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x33                                @ '3'
     str r1, [r0]
 /* Debug - UART console message */
@@ -2279,7 +2334,7 @@ CBR3_END:
  *****************************************************************************/
 CBR4_START:
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x34                                @ '4'
     str r1, [r0]
 /* Debug - UART console message */
@@ -2559,7 +2614,7 @@ set_scratch:
     str r1, [r0]
 
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x44                                @ 'D'
     str r1, [r0]
     mov r1, #0x6F                                @ 'o'
@@ -2677,6 +2732,18 @@ platform_exit2:
 .LTORG
 
 platform_exit:
+/*
+ * Fix for enabling BMC reset without hang using external reset pulse
+ * Need to disable WDT2 without which the reset will hang
+ */
+#ifdef CONFIG_YOSEMITE
+    ldr r0, =0x1e78502c
+    ldr r1, [r0]
+    ldr r2, =0xFFFFFFFE
+    and r1, r1, r2
+    str r1, [r0]
+#endif
+
 #ifdef      CONFIG_DRAM_ECC
     ldr r0, =0x1e6e0004
     ldr r1, [r0]
@@ -2727,11 +2794,13 @@ ECC_Init_Flag:
     orr r1, r1, #0x08
     str r1, [r0]
 
+#ifndef CONFIG_ASPEED_ENABLE_JTAG
     ldr r0, =0x1e6e2004
     ldr r1, [r0]
     ldr r2, =0xFFBFFFFF                          @ Enable JTAG Master, solve ARM stucked by JTAG issue
     and r1, r1, r2
     str r1, [r0]
+#endif
 
     ldr r0, =0x1e6e2048                          @ Set MAC interface delay timing
     ldr r1, =0x2255

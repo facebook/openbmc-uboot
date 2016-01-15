@@ -2,13 +2,15 @@
 # (C) Copyright 2006
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
 #
-# SPDX-License-Identifier:	GPL-2.0+
+# See file CREDITS for list of people who contributed to this
+# project.
 #
 
 obj-$(CONFIG_PPC4xx_EMAC) += 4xx_enet.o
 obj-$(CONFIG_ALTERA_TSE) += altera_tse.o
 obj-$(CONFIG_AG7XXX) += ag7xxx.o
 obj-$(CONFIG_ARMADA100_FEC) += armada100_fec.o
+obj-$(CONFIG_ASPEEDNIC) += aspeednic.o
 obj-$(CONFIG_DRIVER_AT91EMAC) += at91_emac.o
 obj-$(CONFIG_DRIVER_AX88180) += ax88180.o
 obj-$(CONFIG_BCM_SF2_ETH) += bcm-sf2-eth.o

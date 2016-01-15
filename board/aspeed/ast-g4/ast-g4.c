@@ -24,6 +24,7 @@
 #include <common.h>
 #include <netdev.h>
 #include <asm/arch/ast_scu.h>
+#include <asm/arch/watchdog.h>
 #include <asm/gpio.h>
 
 #ifdef CONFIG_GENERIC_MMC
@@ -278,6 +279,9 @@ enable this bit 0x1e6e2040 D[0]*/
 
 	printf("Coldfire V1 : UART3 \n");
 #endif
+
+	watchdog_init();
+
 	return 0;
 
 }
@@ -299,7 +303,7 @@ int dram_init (void)
 #ifdef CONFIG_CMD_NET
 int board_eth_init(bd_t *bd)
 {
-	return ftgmac100_initialize(bd);
+	return aspeednic_initialize(bd);
 }
 #endif
 
@@ -328,4 +332,3 @@ int board_mmc_init(bd_t *bis)
 	return 0;
 }
 #endif
-

@@ -86,6 +86,9 @@ obj-$(CONFIG_USB_KEYBOARD) += usb_kbd.o
 
 endif # !CONFIG_SPL_BUILD
 
+#AST MAC test command
+COBJS-$(CONFIG_CMD_NETTEST) += cmd_nettest.o
+
 ifdef CONFIG_SPL_BUILD
 obj-$(CONFIG_SPL_HASH_SUPPORT) += hash.o
 obj-$(CONFIG_ENV_IS_IN_FLASH) += env_flash.o

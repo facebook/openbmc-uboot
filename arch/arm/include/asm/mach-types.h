@@ -14188,6 +14188,18 @@ extern unsigned int __machine_arch_type;
 # define machine_is_apalis_t30()	(0)
 #endif
 
+
+#ifdef CONFIG_MACH_ASPEED
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type __machine_arch_type
+# else
+#  define machine_arch_type MACH_TYPE_ASPEED
+# endif
+# define machine_is_aspeed()	(machine_arch_type == MACH_TYPE_ASPEED)
+#else
+# define machine_is_aspeed()	(0)
+#endif
 /*
  * These have not yet been registered
  */

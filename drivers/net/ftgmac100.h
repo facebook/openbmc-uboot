@@ -31,26 +31,28 @@ struct ftgmac100 {
 	unsigned int	aptc;		/* 0x34 */
 	unsigned int	dblac;		/* 0x38 */
 	unsigned int	dmafifos;	/* 0x3c */
-	unsigned int	revr;		/* 0x40 */
-	unsigned int	fear;		/* 0x44 */
+	unsigned int	fear0;		/* 0x40 */
+	unsigned int	fear1;		/* 0x44 */
 	unsigned int	tpafcr;		/* 0x48 */
 	unsigned int	rbsr;		/* 0x4c */
 	unsigned int	maccr;		/* 0x50 */
 	unsigned int	macsr;		/* 0x54 */
 	unsigned int	tm;		/* 0x58 */
-	unsigned int	resv1;		/* 0x5c */ /* not defined in spec */
+	unsigned int	physts;		/* 0x5c */ /* not defined in spec */
 	unsigned int	phycr;		/* 0x60 */
 	unsigned int	phydata;	/* 0x64 */
 	unsigned int	fcr;		/* 0x68 */
 	unsigned int	bpr;		/* 0x6c */
 	unsigned int	wolcr;		/* 0x70 */
 	unsigned int	wolsr;		/* 0x74 */
-	unsigned int	wfcrc;		/* 0x78 */
-	unsigned int	resv2;		/* 0x7c */ /* not defined in spec */
-	unsigned int	wfbm1;		/* 0x80 */
-	unsigned int	wfbm2;		/* 0x84 */
-	unsigned int	wfbm3;		/* 0x88 */
-	unsigned int	wfbm4;		/* 0x8c */
+//	unsigned int	wfcrc;		/* 0x78 */
+//	unsigned int	resv2;		/* 0x7c */ /* not defined in spec */
+	unsigned int	wfbm1m;		/* 0x78 */
+	unsigned int	wfbm1l;		/* 0x7c */	
+	unsigned int	wfbm2m;		/* 0x80 */
+	unsigned int	wfbm2l;		/* 0x84 */	
+	unsigned int	wfbm3m;		/* 0x88 */
+	unsigned int	wfbm3l;		/* 0x8c */	
 	unsigned int	nptxr_ptr;	/* 0x90 */
 	unsigned int	hptxr_ptr;	/* 0x94 */
 	unsigned int	rxr_ptr;	/* 0x98 */
@@ -82,6 +84,11 @@ struct ftgmac100 {
 #define FTGMAC100_INT_AHB_ERR		(1 << 8)
 #define FTGMAC100_INT_PHYSTS_CHG	(1 << 9)
 #define FTGMAC100_INT_NO_HPTXBUF	(1 << 10)
+////
+#define FTGMAC100_INT_PHY_CHG		(1 << 28)
+#define FTGMAC100_INT_PHY_TIMEOUT	(1 << 29)
+#define FTGMAC100_INT_FLAG_ACK		(1 << 30)
+#define FTGMAC100_INT_FLAG_REQ		(1 << 31)
 
 /*
  * Interrupt timer control register
@@ -144,11 +151,12 @@ struct ftgmac100 {
 #define FTGMAC100_MACCR_RXMAC_EN	(1 << 3)
 #define FTGMAC100_MACCR_RM_VLAN		(1 << 4)
 #define FTGMAC100_MACCR_HPTXR_EN	(1 << 5)
-#define FTGMAC100_MACCR_LOOP_EN		(1 << 6)
+//#define FTGMAC100_MACCR_LOOP_EN		(1 << 6)
 #define FTGMAC100_MACCR_ENRX_IN_HALFTX	(1 << 7)
 #define FTGMAC100_MACCR_FULLDUP		(1 << 8)
 #define FTGMAC100_MACCR_GIGA_MODE	(1 << 9)
 #define FTGMAC100_MACCR_CRC_APD		(1 << 10)
+#define FTGMAC100_MACCR_LOW_SEN		(1 << 11) //new
 #define FTGMAC100_MACCR_RX_RUNT		(1 << 12)
 #define FTGMAC100_MACCR_JUMBO_LF	(1 << 13)
 #define FTGMAC100_MACCR_RX_ALL		(1 << 14)
@@ -158,6 +166,19 @@ struct ftgmac100 {
 #define FTGMAC100_MACCR_DISCARD_CRCERR	(1 << 18)
 #define FTGMAC100_MACCR_FAST_MODE	(1 << 19)
 #define FTGMAC100_MACCR_SW_RST		(1 << 31)
+
+/* */
+#define FTGMAC100_PHY_LINK_UP		(1 << 0)
+#define FTGMAC100_PHY_100M_MODE		(1 << 2)
+#define FTGMAC100_PHY_FULL_DUPLEX	(1 << 1)
+#define FTGMAC100_PHY_1G_MODE		(1 << 3)
+
+#define FTGMAC100_PHY_STS_UNVALID	(1 << 16)
+
+#define FTGMAC100_PHY_POLL			(1 << 28)
+#define FTGMAC100_PHY_LINK			(1 << 29)
+#define FTGMAC100_PHY_ACK_EN		(1 << 30)
+#define FTGMAC100_PHY_REQ_EN		(1 << 31)
 
 /*
  * PHY control register
@@ -169,11 +190,21 @@ struct ftgmac100 {
 #define FTGMAC100_PHYCR_MIIRD		(1 << 26)
 #define FTGMAC100_PHYCR_MIIWR		(1 << 27)
 
+//New MDC/MDIO 
+#define FTGMAC100_PHYCR_NEW_FIRE		(1 << 15)
+#define FTGMAC100_PHYCR_ST_22			(1 << 12)
+#define FTGMAC100_PHYCR_NEW_WRITE		(1 << 10)
+#define FTGMAC100_PHYCR_NEW_READ		(2 << 10)
+#define FTGMAC100_PHYCR_NEW_PHYAD(x)	(((x) & 0x1f) << 5)
+#define FTGMAC100_PHYCR_NEW_REGAD(x)	((x) & 0x1f)
+
 /*
  * PHY data register
  */
 #define FTGMAC100_PHYDATA_MIIWDATA(x)		((x) & 0xffff)
 #define FTGMAC100_PHYDATA_MIIRDATA(phydata)	(((phydata) >> 16) & 0xffff)
+
+#define FTGMAC100_PHYDATA_NEW_MIIWDATA(x)		((x) & 0xffff)
 
 /*
  * Transmit descriptor, aligned to 16 bytes
@@ -186,17 +217,18 @@ struct ftgmac100_txdes {
 } __attribute__ ((aligned(16)));
 
 #define FTGMAC100_TXDES0_TXBUF_SIZE(x)	((x) & 0x3fff)
-#define FTGMAC100_TXDES0_EDOTR		(1 << 15)
+//#define FTGMAC100_TXDES0_EDOTR		(1 << 15)
 #define FTGMAC100_TXDES0_CRC_ERR	(1 << 19)
 #define FTGMAC100_TXDES0_LTS		(1 << 28)
 #define FTGMAC100_TXDES0_FTS		(1 << 29)
+#define FTGMAC100_TXDES0_EDOTR		(1 << 30) //org is 15 ->30
 #define FTGMAC100_TXDES0_TXDMA_OWN	(1 << 31)
 
 #define FTGMAC100_TXDES1_VLANTAG_CI(x)	((x) & 0xffff)
 #define FTGMAC100_TXDES1_INS_VLANTAG	(1 << 16)
-#define FTGMAC100_TXDES1_TCP_CHKSUM	(1 << 17)
-#define FTGMAC100_TXDES1_UDP_CHKSUM	(1 << 18)
-#define FTGMAC100_TXDES1_IP_CHKSUM	(1 << 19)
+//#define FTGMAC100_TXDES1_TCP_CHKSUM	(1 << 17)
+//#define FTGMAC100_TXDES1_UDP_CHKSUM	(1 << 18)
+//#define FTGMAC100_TXDES1_IP_CHKSUM	(1 << 19)
 #define FTGMAC100_TXDES1_LLC		(1 << 22)
 #define FTGMAC100_TXDES1_TX2FIC		(1 << 30)
 #define FTGMAC100_TXDES1_TXIC		(1 << 31)
@@ -212,7 +244,7 @@ struct ftgmac100_rxdes {
 } __attribute__ ((aligned(16)));
 
 #define FTGMAC100_RXDES0_VDBC(x)	((x) & 0x3fff)
-#define FTGMAC100_RXDES0_EDORR		(1 << 15)
+//#define FTGMAC100_RXDES0_EDORR		(1 << 15)
 #define FTGMAC100_RXDES0_MULTICAST	(1 << 16)
 #define FTGMAC100_RXDES0_BROADCAST	(1 << 17)
 #define FTGMAC100_RXDES0_RX_ERR		(1 << 18)
@@ -225,6 +257,7 @@ struct ftgmac100_rxdes {
 #define FTGMAC100_RXDES0_PAUSE_FRAME	(1 << 25)
 #define FTGMAC100_RXDES0_LRS		(1 << 28)
 #define FTGMAC100_RXDES0_FRS		(1 << 29)
+#define FTGMAC100_RXDES0_EDORR		(1 << 30)	//org 15->30
 #define FTGMAC100_RXDES0_RXPKT_RDY	(1 << 31)
 
 #define FTGMAC100_RXDES1_VLANTAG_CI	0xffff

@@ -181,7 +181,7 @@ check_pll_ld:
     beq platform_exit
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e78400c
+    ldr   r0, =CONFIG_ASPEED_COM_LCR
     mov   r1, #0x83
     str   r1, [r0]
 
@@ -189,7 +189,7 @@ check_pll_ld:
     ldr   r2, [r0]
     mov   r2, r2, lsr #12
     tst   r2, #0x01
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     moveq r1, #0x0D                              @ Baudrate 115200
     movne r1, #0x01                              @ Baudrate 115200, div13
 #if defined(CONFIG_DRAM_UART_38400)
@@ -198,19 +198,19 @@ check_pll_ld:
 #endif
     str   r1, [r0]
 
-    ldr   r0, =0x1e784004
+    ldr   r0, =CONFIG_ASPEED_COM_IER
     mov   r1, #0x00
     str   r1, [r0]
 
-    ldr   r0, =0x1e78400c
+    ldr   r0, =CONFIG_ASPEED_COM_LCR
     mov   r1, #0x03
     str   r1, [r0]
 
-    ldr   r0, =0x1e784008
+    ldr   r0, =CONFIG_ASPEED_COM_IIR
     mov   r1, #0x07
     str   r1, [r0]
 
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x0D                              @ '\r'
     str   r1, [r0]
     mov   r1, #0x0A                              @ '\n'
@@ -260,7 +260,7 @@ delay_0:
 /**************************************************************************************************/
 /**************************************************************************************************/
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x33                              @ '3'
     str   r1, [r0]
     mov   r1, #0x2D                              @ '-'
@@ -394,7 +394,7 @@ delay_1:
  CBR Start
  *****************************************************************************/
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x43                                @ 'C'
     str r1, [r0]
     mov r1, #0x42                                @ 'B'
@@ -405,7 +405,7 @@ delay_1:
 
 CBR_START:
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x23                                @ '#'
     str r1, [r0]
 /* Debug - UART console message */
@@ -783,7 +783,7 @@ dram_ecc_init:
  Calibration Code End
  ******************************************************************************/
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x44                              @ 'D'
     str   r1, [r0]
     mov   r1, #0x6F                              @ 'o'

@@ -49,7 +49,8 @@
 #define MAC1_CLOCK_ENABLE        (1 << 20)
 #define MAC2_CLOCK_ENABLE        (1 << 21)
 #define MAC_AHB_CLOCK_DIVIDER    (0x07 << 16)
-#if defined(CONFIG_AST2300_FPGA_2) || defined(CONFIG_AST2300) || defined(CONFIG_AST3100) || defined(CONFIG_ARCH_AST2400)
+#if defined(CONFIG_AST2300_FPGA_2) || defined(CONFIG_AST2300) || defined(CONFIG_AST3100) \
+  || defined(CONFIG_ARCH_AST2400) || defined(CONFIG_ARCH_AST2500)
 #define MAC1_MDIO                (1 << 31)
 #define MAC1_MDC                 (1 << 30)
 #define MAC1_PHY_LINK            (1 << 0)
@@ -470,7 +471,8 @@ int aspeednic_initialize(bd_t *bis)
   unsigned int    iobase, SCURegister;
   struct eth_device*  dev;
 
-#if defined(CONFIG_AST2300_FPGA_2) || defined(CONFIG_AST2300) || defined(CONFIG_AST3100) || defined(CONFIG_ARCH_AST2400)
+#if defined(CONFIG_AST2300_FPGA_2) || defined(CONFIG_AST2300) || defined(CONFIG_AST3100) \
+  || defined(CONFIG_ARCH_AST2400) || defined(CONFIG_ARCH_AST2500)
 //MAC1 CLOCK/RESET/PHY_LINK/MDC_MDIO in SCU
 #ifdef CONFIG_MAC1_ENABLE
   SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL));

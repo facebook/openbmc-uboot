@@ -1075,10 +1075,10 @@ int boot_get_ramdisk(int argc, char * const argv[], bootm_headers_t *images,
 		 * We need to copy the ramdisk to SRAM to let Linux boot
 		 */
 		if (rd_data) {
-			memmove ((void *)rd_load, (uchar *)rd_data, rd_len);
+			memmove_wd((void *)rd_load, (void *)rd_data, rd_len, CHUNKSZ);
 			rd_data = rd_load;
 		}
-#endif /* CONFIG_ASPEED */
+#endif
 
 	} else if (images->legacy_hdr_valid &&
 			image_check_type(&images->legacy_hdr_os_copy,

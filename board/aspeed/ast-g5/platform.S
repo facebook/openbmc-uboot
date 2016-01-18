@@ -346,7 +346,7 @@ wait_hpll_pd:
     str   r1, [r0]
     ldr   r0, =0x1e6e200c                        @ enable UART clock
     ldr   r1, [r0]
-    ldr   r2, =0xF9FE7FFF
+    ldr   r2, =0xF9FC7FFF
     and   r1, r1, r2
     str   r1, [r0]
 
@@ -550,8 +550,18 @@ set_MPLL:
     ldr   r0, =0x1e6e2020                        @ M-PLL (DDR SDRAM) Frequency
     str   r2, [r0]
 
+    ldr   r0, =0x1e6e2084                        @ SCU84: Multi-function Pin Control 2
+    ldr   r1, [r0]
+    ldr   r2, =0xffff0000
+    orr   r1, r1, r2                             @ Enable UART1 and UART2
+    str   r1, [r0]
+
+    ldr   r0, =0x1e789098                        @ HICR9
+    mov   r1, #0x400                             @ UART5->IO6, UART1-4 controlled by BMC
+    str   r1, [r0]
+
 /* Debug - UART console message */
-    ldr   r0, =0x1e78400c
+    ldr   r0, =CONFIG_ASPEED_COM_LCR
     mov   r1, #0x83
     str   r1, [r0]
 
@@ -559,28 +569,38 @@ set_MPLL:
     ldr   r2, [r0]
     mov   r2, r2, lsr #12
     tst   r2, #0x01
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
+#if CONFIG_BAUDRATE == 115200
     moveq r1, #0x0D                              @ Baudrate 115200
     movne r1, #0x01                              @ Baudrate 115200, div13
-#ifdef CONFIG_DRAM_UART_38400
+#endif
+#if CONFIG_BAUDRATE == 57600
+    moveq r1, #0x1A                              @ Baudrate 57600
+    movne r1, #0x02                              @ Baudrate 57600, div13
+#endif
+#if CONFIG_BAUDRATE == 38400
     moveq r1, #0x27                              @ Baudrate 38400
     movne r1, #0x03                              @ Baudrate 38400 , div13
 #endif
+#if CONFIG_BAUDRATE == 9600
+    moveq r1, #0x9c                              @ Baudrate 9600
+    movne r1, #0x0C                              @ Baudrate 9600 , div13
+#endif
     str   r1, [r0]
 
-    ldr   r0, =0x1e784004
+    ldr   r0, =CONFIG_ASPEED_COM_IER
     mov   r1, #0x00
     str   r1, [r0]
 
-    ldr   r0, =0x1e78400c
+    ldr   r0, =CONFIG_ASPEED_COM_LCR
     mov   r1, #0x03
     str   r1, [r0]
 
-    ldr   r0, =0x1e784008
+    ldr   r0, =CONFIG_ASPEED_COM_IIR
     mov   r1, #0x07
     str   r1, [r0]
 
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x0D                              @ '\r'
     str   r1, [r0]
     mov   r1, #0x0A                              @ '\n'
@@ -614,12 +634,12 @@ set_MPLL:
     print_hex_char
     mov   r1, #0x2D                              @ '-'
     str   r1, [r0]
-    ldr   r0, =0x1e784014
+    ldr   r0, =0x1e783014
 wait_print:
     ldr   r1, [r0]
     tst   r1, #0x40
     beq   wait_print
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x44                              @ 'D'
     str   r1, [r0]
     mov   r1, #0x44                              @ 'D'
@@ -720,7 +740,7 @@ wait_mpll_init:
  ******************************************************************************/
 ddr3_init:
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x33                              @ '3'
     str   r1, [r0]
     mov   r1, #0x0D                              @ '\r'
@@ -845,7 +865,7 @@ ddr3_init:
     str   r1, [r0]
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x30                              @ '0'
     str   r1, [r0]
 /* Debug - UART console message */
@@ -858,7 +878,7 @@ ddr3_init:
 ddr3_phyinit_done:
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x31                              @ '1'
     str   r1, [r0]
 /* Debug - UART console message */
@@ -934,7 +954,7 @@ ddr3_check_dllrdy:
  ******************************************************************************/
 ddr4_init:
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x34                              @ '4'
     str   r1, [r0]
     mov   r1, #0x0D                              @ '\r'
@@ -1054,7 +1074,7 @@ ddr4_init:
     str   r1, [r0]
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x30                              @ '0'
     str   r1, [r0]
 /* Debug - UART console message */
@@ -1087,7 +1107,7 @@ ddr4_vref_phy_cal_start:
     str   r1, [r0]
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x61                              @ 'a'
     str   r1, [r0]
 /* Debug - UART console message */
@@ -1174,7 +1194,7 @@ ddr4_vref_ddr_cal_start:
     str   r1, [r0]
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x62                              @ 'b'
     str   r1, [r0]
 /* Debug - UART console message */
@@ -1233,7 +1253,7 @@ ddr4_vref_ddr_loop_end:
     str   r1, [r0]
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x63                              @ 'c'
     str   r1, [r0]
 /* Debug - UART console message */
@@ -1250,7 +1270,7 @@ ddr4_vref_ddr_loop_end:
 ddr4_phyinit_done:
     /*******************************************/
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x31                              @ '1'
     str   r1, [r0]
 /* Debug - UART console message */
@@ -1305,7 +1325,7 @@ ddr_phy_init_timeout:
     str   r1, [r0]
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x2E                              @ '.'
     str   r1, [r0]
 /* Debug - UART console message */
@@ -1504,7 +1524,7 @@ check_dram_size_end:
     str   r1, [r0]
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x2D                              @ '-'
     str   r1, [r0]
     str   r3, [r0]
@@ -1585,7 +1605,7 @@ ddr_wait_engine_idle_1:
 
 ddr_test_fail:
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x46                              @ 'F'
     str   r1, [r0]
     mov   r1, #0x61                              @ 'a'
@@ -1598,7 +1618,7 @@ ddr_test_fail:
     str   r1, [r0]
     mov   r1, #0x0A                              @ '\n'
     str   r1, [r0]
-    ldr   r0, =0x1e784014
+    ldr   r0, =0x1e783014
 wait_print_0:
     ldr   r1, [r0]
     tst   r1, #0x40
@@ -1614,7 +1634,7 @@ set_scratch:
     str   r1, [r0]
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x44                              @ 'D'
     str   r1, [r0]
     mov   r1, #0x6F                              @ 'o'
@@ -1637,13 +1657,13 @@ set_scratch:
 
 /* Debug - UART console message */
    /* Print PHY timing information */
-    ldr   r0, =0x1e784014
+    ldr   r0, =0x1e783014
 wait_print_1:
     ldr   r1, [r0]
     tst   r1, #0x40
     beq   wait_print_1
 
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x52                              @ 'R'
     str   r1, [r0]
     mov   r1, #0x65                              @ 'e'
@@ -1675,7 +1695,7 @@ wait_print_1:
     mov   r1, #0x3A                              @ ':'
     str   r1, [r0]
 
-    ldr   r0, =0x1e784014
+    ldr   r0, =0x1e783014
 wait_print_2:
     ldr   r1, [r0]
     tst   r1, #0x40
@@ -1687,7 +1707,7 @@ print_DQL_eye_margin:
     ldr   r0, =0x1e6e03d0
     ldr   r2, [r0]
     and   r2, r2, #0xFF
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x30                              @ '0'
     str   r1, [r0]
     mov   r1, #0x2E                              @ '.'
@@ -1729,7 +1749,7 @@ print_DQH_eye_margin:
     mov   r1, #0x3A                              @ ':'
     str   r1, [r0]
 
-    ldr   r0, =0x1e784014
+    ldr   r0, =0x1e783014
 wait_print_3:
     ldr   r1, [r0]
     tst   r1, #0x40
@@ -1739,7 +1759,7 @@ wait_print_3:
     ldr   r2, [r0]
     mov   r2, r2, lsr #8
     and   r2, r2, #0xFF
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x30                              @ '0'
     str   r1, [r0]
     mov   r1, #0x2E                              @ '.'
@@ -1779,13 +1799,13 @@ print_DQ_eye_margin_last:
     mov   r1, #0x4B                              @ 'K'
     str   r1, [r0]
 
-    ldr   r0, =0x1e784014
+    ldr   r0, =0x1e783014
 wait_print_4:
     ldr   r1, [r0]
     tst   r1, #0x40
     beq   wait_print_4
 
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x20                              @ ' '
     str   r1, [r0]
     mov   r1, #0x28                              @ '('
@@ -1963,10 +1983,12 @@ spi_cbr_end:
     and   r1, r1, r2
     str   r1, [r0]
 
+#ifndef CONFIG_ASPEED_ENABLE_JTAG
     ldr r0, =0x1e6e2004                          @ Enable JTAG Master, solve ARM stucked by JTAG issue
     ldr r1, [r0]
     bic r1, r1, #0x00400000
     str r1, [r0]
+#endif
 
 /******************************************************************************
  Configure MAC timing
@@ -2060,4 +2082,3 @@ set_D2PLL:
 
     /* back to arch calling code */
     mov   pc, lr
-

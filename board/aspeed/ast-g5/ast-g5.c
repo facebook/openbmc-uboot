@@ -60,7 +60,7 @@ int board_init (void)
 
 int misc_init_r (void)
 {
-	watchdog_init();	
+	watchdog_init();
 	return 0;
 
 }
@@ -83,7 +83,12 @@ int dram_init (void)
 #ifdef CONFIG_CMD_NET
 int board_eth_init(bd_t *bd)
 {
+#if defined(CONFIG_FTGMAC100)
         return ftgmac100_initialize(bd);
+#elif defined(CONFIG_ASPEEDNIC)
+        return aspeednic_initialize(bd);
+#else
+#error "No NIC driver is defined!"
+#endif
 }
 #endif
-

@@ -128,7 +128,7 @@ flash_info_t flash_info[CONFIG_SYS_MAX_FLASH_BANKS];		/* FLASH chips info */
 static u32 ast_spi_calculate_divisor(u32 max_speed_hz)
 {
 	// [0] ->15 : HCLK , HCLK/16
-	u8 SPI_DIV[16] = {16, 7, 14, 6, 13, 5, 12, 4, 11, 3, 10, 2, 9, 1, 8, 0};
+	u32 SPI_DIV[16] = {16, 7, 14, 6, 13, 5, 12, 4, 11, 3, 10, 2, 9, 1, 8, 0};
 	u32 i, hclk, spi_cdvr=0;
 
 	hclk = ast_get_ahbclk();

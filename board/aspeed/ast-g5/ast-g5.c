@@ -37,9 +37,8 @@
 #include <netdev.h>
 #include <asm/arch/ast_scu.h>
 #include <asm/arch/ast-sdmc.h>
+#include <asm/arch/watchdog.h>
 #include <asm/io.h>
-
-#include <../common/watchdog.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 

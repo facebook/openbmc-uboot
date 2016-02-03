@@ -40,9 +40,10 @@
 #include <asm/arch/aspeed.h>
 
 // Command line editor
-#define CONFIG_CMDLINE_EDITING      1   /* command line history */
-#define CONFIG_SYS_LONGHELP             /* undef to save memory */
-#define CONFIG_SYS_HUSH_PARSER      1   /* Use the HUSH parser */
+#define CONFIG_CMDLINE_EDITING
+#define CONFIG_AUTO_COMPLETE
+#define CONFIG_SYS_LONGHELP
+#define CONFIG_SYS_HUSH_PARSER  /* Use the HUSH parser */
 #define CONFIG_SYS_PROMPT           "boot# " /* Monitor Command Prompt */
 #define CONFIG_SYS_CBSIZE           256 /* Console I/O Buffer Size */
 #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE+sizeof(CONFIG_SYS_PROMPT)+16) /* Print Buffer Size */
@@ -134,7 +135,7 @@
 #define CONFIG_INITRD_TAG        1
 #define CONFIG_BOOTARGS          "debug console=ttyS1,9600n8 root=/dev/ram rw"
 #define CONFIG_UPDATE            "tftp 80800000 ast2500.scr; so 80800000'"
-#define CONFIG_BOOTCOMMAND       "bootm 20080000 20300000"
+#define CONFIG_BOOTCOMMAND       "bootm 20080000 20480000"
 #define CONFIG_BOOTFILE          "flash-wedge"
 #define CONFIG_ENV_IS_IN_FLASH   1
 #define CONFIG_ENV_OFFSET        0x60000 /* environment starts here  */
@@ -143,7 +144,6 @@
 #define CONFIG_EXTRA_ENV_SETTINGS                       \
     "verify=yes\0"                                      \
     "spi_dma=yes\0"                                     \
-    "update=tftp 80800000 ast2500.scr; so 80800000\0"   \
     ""
 #define CONFIG_ASPEED_WRITE_DEFAULT_ENV
 #define CONFIG_ENV_OVERWRITE     /* allow overwrite */

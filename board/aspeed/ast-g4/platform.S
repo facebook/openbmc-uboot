@@ -166,6 +166,164 @@ PATTERN_TABLE:
     ldr r2, =0x00000800
     .endm
 
+#ifdef CONFIG_YOSEMITE
+/* Use GPIOE[0-3] to select debug console */
+.macro console_bmc
+ldr r0, =0x1e780024
+ldr r1, [r0]
+orr r1, r1, #0xF
+str r1, [r0]
+
+ldr r0, =0x1e780020
+ldr r1, [r0]
+and r1, r1, #0xFFFFFFF0
+orr r1, r1, #0xC
+str r1, [r0]
+.endm
+
+.macro console_slot1
+ldr r0, =0x1e780024
+ldr r1, [r0]
+orr r1, r1, #0xF
+str r1, [r0]
+
+ldr r0, =0x1e780020
+ldr r1, [r0]
+and r1, r1, #0xFFFFFFF0
+orr r1, r1, #0x1
+str r1, [r0]
+.endm
+
+.macro console_slot2
+ldr r0, =0x1e780024
+ldr r1, [r0]
+orr r1, r1, #0xF
+str r1, [r0]
+
+ldr r0, =0x1e780020
+ldr r1, [r0]
+and r1, r1, #0xFFFFFFF0
+orr r1, r1, #0x0
+str r1, [r0]
+.endm
+
+.macro console_slot3
+ldr r0, =0x1e780024
+ldr r1, [r0]
+orr r1, r1, #0xF
+str r1, [r0]
+
+ldr r0, =0x1e780020
+ldr r1, [r0]
+and r1, r1, #0xFFFFFFF0
+orr r1, r1, #0x3
+str r1, [r0]
+.endm
+
+.macro console_slot4
+ldr r0, =0x1e780024
+ldr r1, [r0]
+orr r1, r1, #0xF
+str r1, [r0]
+
+ldr r0, =0x1e780020
+ldr r1, [r0]
+and r1, r1, #0xFFFFFFF0
+orr r1, r1, #0x2
+str r1, [r0]
+.endm
+
+.macro console_sel
+
+  // Disable SoL UARTs[1-4]
+  ldr r0, =0x1e6e2080
+  ldr r1, [r0]
+  ldr r2, =0xBFBFFFFF
+  and r1, r1, r2
+  str r1, [r0]
+
+  ldr r0, =0x1e6e2084
+  ldr r1, [r0]
+  and r1, r1, r2
+  str r1, [r0]
+
+  // Read key position
+  ldr r2, =0x1e780080
+  ldr r0, [r2]
+  bic r0, r0, #0xFFFFC3FF
+  //Test for position#1
+  ldr r1, =0x0000
+  cmp r0, r1
+  bne case_pos2\@
+  console_slot1
+  b case_end\@
+case_pos2\@:
+  //Test for position#2
+  ldr r1, =0x0400
+  cmp r0, r1
+  bne case_pos3\@
+  console_slot2
+  b case_end\@
+case_pos3\@:
+  //Test for position#3
+  ldr r1, =0x0800
+  cmp r0, r1
+  bne case_pos4\@
+  console_slot3
+  b case_end\@
+case_pos4\@:
+  //Test for position#4
+  ldr r1, =0x0c00
+  cmp r0, r1
+  bne case_pos5\@
+  console_slot4
+  b case_end\@
+case_pos5\@:
+  //Test for position#5
+  ldr r1, =0x1000
+  cmp r0, r1
+  bne case_pos6\@
+  console_bmc
+  b case_end\@
+case_pos6\@:
+  //Test for position#6
+  ldr r1, =0x1400
+  cmp r0, r1
+  bne case_pos7\@
+  console_slot1
+  b case_end\@
+case_pos7\@:
+  //Test for position#7
+  ldr r1, =0x1800
+  cmp r0, r1
+  bne case_pos8\@
+  console_slot2
+  b case_end\@
+case_pos8\@:
+  //Test for position#8
+  ldr r1, =0x1c00
+  cmp r0, r1
+  bne case_pos9\@
+  console_slot3
+  b case_end\@
+case_pos9\@:
+  //Test for position#9
+  ldr r1, =0x2000
+  cmp r0, r1
+  bne case_pos10\@
+  console_slot4
+  b case_end\@
+case_pos10\@:
+  //Test for position#10
+  ldr r1, =0x2400
+  cmp r0, r1
+  bne case_end\@
+  console_bmc
+  b case_end\@
+case_end\@:
+.endm
+#endif
+
 /******************************************************************************
  Calibration Macro End
  ******************************************************************************/
@@ -343,29 +501,12 @@ set_MPLL:
  * TODO: Need to detect booting from 2nd flash and recover
  */
     ldr r0, =0x1e78502c
-    mov r1, #0x0
+    ldr r1, [r0]
+    ldr r2, =0xFFFFFFFE
+    and r1, r1, r2
     str r1, [r0]
 
-/* Use GPIOE2/GPIOE3 to select BMC Output on debug console */
-    ldr r1, =0x0C
-    ldr r0, =0x1e780024
-    str r1, [r0]
-
-    ldr r0, =0x1e780020
-    str r1, [r0]
-
-    ldr r1, = 0x80
-    ldr r0, =0x1e780084
-    str r1, [r0]
-
-
-    ldr r1, = 0x80
-    ldr r0, =0x1e780080
-    str r1, [r0]
-
-    ldr r1, = 0x0
-    ldr r0, =0x1e780080
-    str r1, [r0]
+    console_sel
 #endif
 
 /* Debug - UART console message */
@@ -2742,6 +2883,8 @@ platform_exit:
     ldr r2, =0xFFFFFFFE
     and r1, r1, r2
     str r1, [r0]
+
+    console_sel
 #endif
 
 #ifdef      CONFIG_DRAM_ECC

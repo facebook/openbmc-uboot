@@ -190,6 +190,8 @@ COBJS-$(CONFIG_CMD_ZIP) += cmd_zip.o
 COBJS-$(CONFIG_CMD_ZFS) += cmd_zfs.o
 
 # others
+OBJS-$(CONFIG_CMD_NETTEST) += cmd_nettest.o
+COBJS-$(CONFIG_CMD_SLT) += cmd_slt.o
 COBJS-$(CONFIG_BOOTSTAGE) += bootstage.o
 COBJS-$(CONFIG_CONSOLE_MUX) += iomux.o
 COBJS-y += flash.o

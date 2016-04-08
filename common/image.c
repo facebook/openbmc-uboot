@@ -902,6 +902,11 @@ int boot_get_ramdisk(int argc, char * const argv[], bootm_headers_t *images,
 			rd_data = image_get_data(rd_hdr);
 			rd_len = image_get_data_size(rd_hdr);
 			rd_load = image_get_load(rd_hdr);
+#ifdef CONFIG_ASPEED
+			/* Need to copy the initrd into RAM */
+			memmove_wd((void *)rd_load, (void *)rd_data, rd_len, CHUNKSZ);
+			rd_data = rd_load;
+#endif
 			break;
 #if defined(CONFIG_FIT)
 		case IMAGE_FORMAT_FIT:

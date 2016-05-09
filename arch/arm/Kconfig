@@ -856,6 +856,8 @@ config TARGET_THUNDERX_88XX
 
 endchoice
 
+source "board/aspeed/ast2400/Kconfig"
+
 source "arch/arm/mach-at91/Kconfig"
 
 source "arch/arm/mach-bcm283x/Kconfig"

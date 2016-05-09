@@ -174,8 +174,18 @@ extern unsigned int __machine_arch_type;
 #define MACH_TYPE_PALMTX               885
 #define MACH_TYPE_S3C2413              887
 #define MACH_TYPE_WG302V2              890
-#define MACH_TYPE_OMAP_2430SDP         900
+#define MACH_TYPE_AST2000              900
 #define MACH_TYPE_DAVINCI_EVM          901
+#define MACH_TYPE_AST2300_FPGA_1       901
+#define MACH_TYPE_AST2300_FPGA_2       901
+#define MACH_TYPE_AST2300              901
+#define MACH_TYPE_AST3100              901
+#define MACH_TYPE_AST2100              902
+#define MACH_TYPE_AST1100              903
+#define MACH_TYPE_AST2150              907
+#define MACH_TYPE_AST2200              906
+#define MACH_TYPE_ASPEED               8888
+#define MACH_TYPE_OMAP_2430SDP         900
 #define MACH_TYPE_PALMZ72              904
 #define MACH_TYPE_NXDB500              905
 #define MACH_TYPE_PALMT5               917
@@ -838,7 +848,6 @@ extern unsigned int __machine_arch_type;
 #define MACH_TYPE_NV1000               3218
 #define MACH_TYPE_NUC950TS             3219
 #define MACH_TYPE_NOKIA_RM680          3220
-#define MACH_TYPE_AST2200              3221
 #define MACH_TYPE_LEAD                 3222
 #define MACH_TYPE_UNINO1               3223
 #define MACH_TYPE_GREECO               3224
@@ -3050,6 +3059,126 @@ extern unsigned int __machine_arch_type;
 # define machine_is_wg302v2()	(machine_arch_type == MACH_TYPE_WG302V2)
 #else
 # define machine_is_wg302v2()	(0)
+#endif
+
+#ifdef CONFIG_MACH_AST1100
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type	__machine_arch_type
+# else
+#  define machine_arch_type	MACH_TYPE_AST1100
+# endif
+# define machine_is_ast1100()	(machine_arch_type == MACH_TYPE_AST1100)
+#else
+# define machine_is_ast1100()	(0)
+#endif
+
+#ifdef CONFIG_MACH_AST2000
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type	__machine_arch_type
+# else
+#  define machine_arch_type	MACH_TYPE_AST2000
+# endif
+# define machine_is_ast2000()	(machine_arch_type == MACH_TYPE_AST2000)
+#else
+# define machine_is_ast2000()	(0)
+#endif
+
+#ifdef CONFIG_MACH_AST2100
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type	__machine_arch_type
+# else
+#  define machine_arch_type	MACH_TYPE_AST2100
+# endif
+# define machine_is_ast2100()	(machine_arch_type == MACH_TYPE_AST2100)
+#else
+# define machine_is_ast2100()	(0)
+#endif
+
+#ifdef CONFIG_MACH_AST2150
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type	__machine_arch_type
+# else
+#  define machine_arch_type	MACH_TYPE_AST2150
+# endif
+# define machine_is_ast2150()	(machine_arch_type == MACH_TYPE_AST2150)
+#else
+# define machine_is_ast2150()	(0)
+#endif
+
+#ifdef CONFIG_MACH_AST2200
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type	__machine_arch_type
+# else
+#  define machine_arch_type	MACH_TYPE_AST2200
+# endif
+# define machine_is_ast2200()	(machine_arch_type == MACH_TYPE_AST2200)
+#else
+# define machine_is_ast2200()	(0)
+#endif
+
+#ifdef CONFIG_MACH_AST2300_FPGA_1
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type	__machine_arch_type
+# else
+#  define machine_arch_type	MACH_TYPE_AST2300_FPGA_1
+# endif
+# define machine_is_ast2300_fpga_1()	(machine_arch_type == MACH_TYPE_AST2300_FPGA_1)
+#else
+# define machine_is_ast2300_fpga_1()	(0)
+#endif
+
+#ifdef CONFIG_MACH_AST2300_FPGA_2
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type	__machine_arch_type
+# else
+#  define machine_arch_type	MACH_TYPE_AST2300_FPGA_2
+# endif
+# define machine_is_ast2300_fpga_2()	(machine_arch_type == MACH_TYPE_AST2300_FPGA_2)
+#else
+# define machine_is_ast2300_fpga_2()	(0)
+#endif
+
+#ifdef CONFIG_MACH_AST3100
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type	__machine_arch_type
+# else
+#  define machine_arch_type	MACH_TYPE_AST3100
+# endif
+# define machine_is_ast3100()	(machine_arch_type == MACH_TYPE_AST3100)
+#else
+# define machine_is_ast3100()	(0)
+#endif
+
+#ifdef CONFIG_MACH_ASPEED
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type	__machine_arch_type
+# else
+#  define machine_arch_type	MACH_TYPE_ASPEED
+# endif
+# define machine_is_aspeed()	(machine_arch_type == MACH_TYPE_ASPEED)
+#else
+# define machine_is_aspeed()	(0)
+#endif
+
+#ifdef CONFIG_MACH_AST2300
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type	__machine_arch_type
+# else
+#  define machine_arch_type	MACH_TYPE_AST2300
+# endif
+# define machine_is_ast2300()	(machine_arch_type == MACH_TYPE_AST2300)
+#else
+# define machine_is_ast2300()	(0)
 #endif
 
 #ifdef CONFIG_MACH_OMAP_2430SDP
@@ -10982,18 +11111,6 @@ extern unsigned int __machine_arch_type;
 # define machine_is_nokia_rm680()	(machine_arch_type == MACH_TYPE_NOKIA_RM680)
 #else
 # define machine_is_nokia_rm680()	(0)
-#endif
-
-#ifdef CONFIG_MACH_AST2200
-# ifdef machine_arch_type
-#  undef machine_arch_type
-#  define machine_arch_type	__machine_arch_type
-# else
-#  define machine_arch_type	MACH_TYPE_AST2200
-# endif
-# define machine_is_ast2200()	(machine_arch_type == MACH_TYPE_AST2200)
-#else
-# define machine_is_ast2200()	(0)
 #endif
 
 #ifdef CONFIG_MACH_LEAD

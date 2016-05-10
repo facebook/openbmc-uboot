@@ -20,6 +20,7 @@ obj-$(CONFIG_MX25) += mx25/
 obj-$(CONFIG_MX27) += mx27/
 obj-$(if $(filter mxs,$(SOC)),y) += mxs/
 obj-$(if $(filter spear,$(SOC)),y) += spear/
+obj-$(if $(filter aspeed,$(SOC)),y) += aspeed/
 
 # some files can only build in ARM or THUMB2, not THUMB1
 

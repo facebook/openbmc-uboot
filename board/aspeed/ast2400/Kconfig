@@ -1,0 +1,15 @@
+if TARGET_AST2400
+
+config SYS_BOARD
+	default "ast2400"
+
+config SYS_VENDOR
+	default "aspeed"
+
+config SYS_SOC
+	default "aspeed"
+
+config SYS_CONFIG_NAME
+	default "ast2400"
+
+endif

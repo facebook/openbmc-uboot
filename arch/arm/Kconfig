@@ -131,6 +131,26 @@ config TARGET_GPLUGD
 	bool "Support gplugd"
 	select CPU_ARM926EJS
 
+config TARGET_AST2400
+	bool "Support ast2400"
+	select CPU_ARM926EJS
+
+config TARGET_FBYOSEMITE
+	bool "Support Facebook's OpenBMC Yosemite"
+	select CPU_ARM926EJS
+
+config TARGET_FBLIGHTNING
+	bool "Support Facebook's OpenBMC Lightning"
+	select CPU_ARM926EJS
+
+config TARGET_FBWEDGE
+	bool "Support Facebook's OpenBMC Wedge TOR"
+	select CPU_ARM926EJS
+
+config TARGET_FBWEDGE100
+	bool "Support Facebook's OpenBMC Wedge100 TOR"
+	select CPU_ARM926EJS
+
 config ARCH_DAVINCI
 	bool "TI DaVinci"
 	select CPU_ARM926EJS
@@ -915,6 +935,7 @@ source "arch/arm/cpu/armv8/Kconfig"
 source "arch/arm/imx-common/Kconfig"
 
 source "board/aspeed/ast2400/Kconfig"
+source "board/facebook/Kconfig"
 
 source "board/bosch/shc/Kconfig"
 source "board/BuR/brxre1/Kconfig"

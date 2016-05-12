@@ -8,7 +8,6 @@
 #ifndef __FBWEDGE100_CONFIG_H
 #define __FBWEDGE100_CONFIG_H
 
-#define CONFIG_WEDGE
 #define CONFIG_BOOTARGS		"debug console=ttyS0,9600n8 root=/dev/ram rw"
 #define CONFIG_UPDATE		"tftp 40800000 ast2400.scr; so 40800000'"
 #define CONFIG_BOOTCOMMAND 	"bootm 20080000"	/* Location of FIT */

@@ -8,11 +8,13 @@
 #ifndef __AST2400_CONFIG_H
 #define __AST2400_CONFIG_H
 
+#define MACH_TYPE_ASPEED	8888
+#define CONFIG_MACH_TYPE	MACH_TYPE_ASPEED
+
 /*
  * High Level Configuration Options
  * (easy to change)
  */
-#undef CONFIG_INIT_CRITICAL
 #define CONFIG_ARM926EJS
 #define	CONFIG_ASPEED
 #define CONFIG_AST2400
@@ -160,7 +162,7 @@
  * Timer configuration
  */
 #define CONFIG_SYS_TIMERBASE		0x1E782000	/* use timer 1 */
-#define CONFIG_ASPEED_TIMER_CLK 	(1*1000*1000)	/* use external clk (1M) */
+#define CONFIG_ASPEED_TIMER_CLK		(1*1000*1000)	/* use external clk (1M) */
 
 /*
  * Serial configuration
@@ -203,8 +205,8 @@
 #define CONFIG_SYS_I2C_ASPEED
 
 /*
-* EEPROM configuration
-*/
+ * EEPROM configuration
+ */
 #define CONFIG_SYS_I2C_EEPROM_ADDR_LEN	2
 #define CONFIG_SYS_I2C_EEPROM_ADDR	0xa0
 
@@ -214,6 +216,13 @@
  */
 #define CONFIG_ASPEEDNIC
 #define CONFIG_NET_MULTI
+
+/*
+ * Watchdog configuration
+ */
+#define CONFIG_AST_WDT_BASE	0x1e785000
+#define CONFIG_AST_WDT2_BASE	0x1e785020
+#define CONFIG_AST_WDT_CLK	(1 * 1000 * 1000)
 
 /*
  * NOTICE: MAC1 and MAC2 now have their own separate PHY configuration.

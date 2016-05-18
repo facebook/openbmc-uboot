@@ -11,3 +11,4 @@
 
 obj-y = ast2400.o
 obj-y += platform.o
+obj-y += ddr3.o

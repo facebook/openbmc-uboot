@@ -35,7 +35,6 @@
  */
 
 	.globl reset
-
 reset:
 	/*
 	 * set the cpu to SVC32 mode
@@ -82,8 +81,9 @@ cpu_init_crit:
 	orr	r0, r0, #0x00001000	@ set bit 12 (I) I-Cache
 
 	/* Prepare to disable the MMU */
-	adr	r2, mmu_disable_phys
-	sub	r2, r2, #(CONFIG_SYS_PHY_UBOOT_BASE - CONFIG_SYS_TEXT_BASE)
+	/* Ryan TODO ....*/
+#	adr	r2, mmu_disable_phys
+#	sub	r2, r2, #(CONFIG_SYS_PHY_UBOOT_BASE - CONFIG_SYS_TEXT_BASE)
 	b	mmu_disable
 
 	.align 5
@@ -92,7 +92,7 @@ mmu_disable:
 	mcr	p15, 0, r0, c1, c0, 0
 	nop
 	nop
-	mov	pc, r2
+#	mov	pc, r2
 mmu_disable_phys:
 
 #endif

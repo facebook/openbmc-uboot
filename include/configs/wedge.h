@@ -133,7 +133,7 @@
 #define CONFIG_INITRD_TAG        1
 #define CONFIG_BOOTARGS          "debug console=ttyS2,9600n8 root=/dev/ram rw"
 #define CONFIG_UPDATE            "tftp 40800000 ast2400.scr; so 40800000'"
-#define CONFIG_BOOTCOMMAND       "bootm 20080000 20300000"
+#define CONFIG_BOOTCOMMAND       "bootm 20080000 20480000"
 #define CONFIG_BOOTFILE          "flash-wedge"
 #define CONFIG_ENV_IS_IN_FLASH   1
 #define CONFIG_ENV_OFFSET        0x60000 /* environment starts here  */

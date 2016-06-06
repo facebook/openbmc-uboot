@@ -83,8 +83,7 @@
 /*
  * Timer Set
  */
-#undef CONFIG_SYS_HZ
-#define CONFIG_SYS_HZ				(1*1000*1000) /* use external clk (1M) */
+#define CONFIG_ASPEED_TIMER_CLK		(1*1000*1000) /* use external clk (1M) */
 
 /*
  * Hardware drivers

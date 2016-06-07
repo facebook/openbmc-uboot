@@ -10,8 +10,23 @@
  */
 
 #include <common.h>
+#include <net.h>
+#include <asm/io.h>
 
-#if defined(CONFIG_CMD_NET) && defined(CONFIG_NET_MULTI) && defined(CONFIG_ASPEEDNIC)
+//#if defined(CONFIG_CMD_NET) && defined(CONFIG_NET_MULTI) && defined(CONFIG_ASPEEDNIC)
+
+/* From the board config file */
+#define CONFIG_MAC1_PHY_SETTING         2
+#define CONFIG_MAC2_PHY_SETTING         0
+#define CONFIG_ASPEED_MAC_NUMBER  1
+#define CONFIG_ASPEED_MAC_CONFIG  1 // config MAC1
+#define _PHY_SETTING_CONCAT(mac) CONFIG_MAC##mac##_PHY_SETTING
+#define _GET_MAC_PHY_SETTING(mac) _PHY_SETTING_CONCAT(mac)
+#define CONFIG_ASPEED_MAC_PHY_SETTING \
+	  _GET_MAC_PHY_SETTING(CONFIG_ASPEED_MAC_CONFIG)
+#define CONFIG_MAC_INTERFACE_CLOCK_DELAY        0x2255
+#define CONFIG_RANDOM_MACADDR
+
 
 #include <malloc.h>
 #include <net.h>
@@ -28,11 +43,7 @@
 */
 #define pci_find_devices         NULL
 #define pci_read_config_dword    NULL
-#if defined(CONFIG_AST1300)
-#define SCU_BASE                 CONFIG_SCUREG_BASE
-#else
 #define SCU_BASE                 0x1E6E2000
-#endif
 #define SCU_RESET_CONTROL        0x04
 #define SCU_CLOCK_SELECTION      0x08
 #define SCU_CLOCK_CONTROL        0x0C
@@ -49,46 +60,22 @@
 #define MAC1_CLOCK_ENABLE        (1 << 20)
 #define MAC2_CLOCK_ENABLE        (1 << 21)
 #define MAC_AHB_CLOCK_DIVIDER    (0x07 << 16)
-#if defined(CONFIG_AST2300_FPGA_2) || defined(CONFIG_AST2300) || defined(CONFIG_AST3100) \
-  || defined(CONFIG_ARCH_AST2400) || defined(CONFIG_ARCH_AST2500)
 #define MAC1_MDIO                (1 << 31)
 #define MAC1_MDC                 (1 << 30)
 #define MAC1_PHY_LINK            (1 << 0)
 #define MAC2_MDC_MDIO            (1 << 2)
 #define MAC2_PHY_LINK            (1 << 1)
-#else
-#define MAC2_MDC_MDIO            (1 << 20)
-#define MAC2_MII                 (1 << 21)
-#define MAC1_PHY_LINK            (1 << 25)
-#define MAC2_PHY_LINK            (1 << 26)
-#endif
 
-#if defined(CONFIG_AST1300)
-unsigned int aspeednic_iobase[1] = {CONFIG_MACREG_BASE};
-#else
-unsigned int aspeednic_iobase[CONFIG_ASPEED_MAC_NUMBER] = {
-  0x1E660000, 0x1E680000};
-#endif
+static unsigned int aspeednic_iobase[] = {
+	0x1E660000,
+	0x1E680000,
+};
 
 /* PHY address */
 static u8 g_phy_addr = 0;
 
-#undef DEBUG_SROM
-#undef DEBUG_SROM2
-
-#undef UPDATE_SROM
-
 /* PCI Registers.
  */
-#define PCI_CFDA_PSM    0x43
-
-#define CFRV_RN   0x000000f0  /* Revision Number */
-
-#define WAKEUP    0x00    /* Power Saving Wakeup */
-#define SLEEP   0x80    /* Power Saving Sleep Mode */
-
-#define DC2114x_BRK 0x0020    /* CFRV break between DC21142 & DC21143 */
-
 /* MAC chip register */
 #define ISR_REG       0x00        // interrups status register
 #define IER_REG       0x04        // interrupt maks register
@@ -228,7 +215,7 @@ static u8 g_phy_addr = 0;
 
 #define NUM_RX_DESC PKTBUFSRX
 #define NUM_TX_DESC 1     /* Number of TX descriptors   */
-#define RX_BUFF_SZ  PKTSIZE_ALIGN
+#define RX_BUFF_SZ  1600 /* Hardware defaults to this */
 #define TX_BUFF_SZ  1514
 
 #define TOUT_LOOP   1000000
@@ -238,41 +225,41 @@ static u8 g_phy_addr = 0;
 #define RETRY_COUNT     1
 
 struct de4x5_desc {
-  volatile s32 status;
-  u32 des1;
-  u32 reserved;
-  u32 buf;
+	volatile s32 status;
+	u32 des1;
+	u32 reserved;
+	u32 buf;
 };
 
 //PHY Information
-#define PHYID_VENDOR_MASK   0xfffffc00
-#define PHYID_VENDOR_MODEL_MASK   0xfffffff0
-#define PHYID_VENDOR_MARVELL    0x01410c00
-#define PHYID_VENDOR_BROADCOM   0x00406000
-#define PHYID_VENDOR_REALTEK    0x001cc800
-#define PHYID_RTL8201EL     0x001cc810
-#define PHYID_RTL8211         0x001cc910
-#define PHYID_BCM54612E             0x03625E6A
-#define PHYID_BCM54616S             0x03625D12
+#define PHYID_VENDOR_MASK	0xfffffc00
+#define PHYID_VENDOR_MODEL_MASK	0xfffffff0
+#define PHYID_VENDOR_MARVELL	0x01410c00
+#define PHYID_VENDOR_BROADCOM	0x00406000
+#define PHYID_VENDOR_REALTEK	0x001cc800
+#define PHYID_RTL8201EL		0x001cc810
+#define PHYID_RTL8211		0x001cc910
+#define PHYID_BCM54612E		0x03625E6A
+#define PHYID_BCM54616S		0x03625D12
 
 //NCSI define & structure
 //NC-SI Command Packet
 typedef struct {
-//Ethernet Header
-  unsigned char  DA[6];
-  unsigned char  SA[6];
-  unsigned short EtherType;           //DMTF NC-SI
-//NC-SI Control Packet
-  unsigned char  MC_ID;           //Management Controller should set this field to 0x00
-  unsigned char  Header_Revision;         //For NC-SI 1.0 spec, this field has to set 0x01
-  unsigned char  Reserved_1;            //Reserved has to set to 0x00
-  unsigned char  IID;             //Instance ID
-  unsigned char  Command;
-  unsigned char  Channel_ID;
-  unsigned short Payload_Length;          //Payload Length = 12 bits, 4 bits are reserved
-  unsigned long  Reserved_2;
-  unsigned long  Reserved_3;
-}  NCSI_Command_Packet;
+	//Ethernet Header
+	unsigned char  DA[6];
+	unsigned char  SA[6];
+	unsigned short EtherType;           //DMTF NC-SI
+	//NC-SI Control Packet
+	unsigned char  MC_ID;           //Management Controller should set this field to 0x00
+	unsigned char  Header_Revision;         //For NC-SI 1.0 spec, this field has to set 0x01
+	unsigned char  Reserved_1;            //Reserved has to set to 0x00
+	unsigned char  IID;             //Instance ID
+	unsigned char  Command;
+	unsigned char  Channel_ID;
+	unsigned short Payload_Length;          //Payload Length = 12 bits, 4 bits are reserved
+	unsigned long  Reserved_2;
+	unsigned long  Reserved_3;
+} NCSI_Command_Packet;
 
 unsigned char  Payload_Data[16];
 unsigned char  Payload_Pad[4] = {0x00, 0x00, 0x00, 0x00};
@@ -409,10 +396,10 @@ static unsigned int InstanceID = 0;
 static int Retry = 0;
 
 static int   aspeednic_init(struct eth_device* dev, bd_t* bis);
-static int   aspeednic_send(struct eth_device* dev, volatile void *packet, int length);
+static int   aspeednic_send(struct eth_device* dev, void *packet, int length);
 static int   aspeednic_recv(struct eth_device* dev);
 static void  aspeednic_halt(struct eth_device* dev);
-static void  set_mac_address (struct eth_device* dev, bd_t* bis);
+static int   aspeednic_write_hwaddr(struct eth_device* dev);
 static void  phy_write_register (struct eth_device* dev, u8 PHY_Register, u8 PHY_Address, u16 PHY_Data);
 static u16   phy_read_register (struct eth_device* dev, u8 PHY_Register, u8 PHY_Address);
 #if defined(CONFIG_MII) || defined(CONFIG_CMD_MII)
@@ -436,7 +423,7 @@ static int INL(struct eth_device* dev, u_long addr)
 
 static void OUTL(struct eth_device* dev, int command, u_long addr)
 {
-  *(volatile u_long *)(addr + dev->iobase) = cpu_to_le32(command);
+	*(volatile u_long *)(addr + dev->iobase) = cpu_to_le32(command);
 }
 
 
@@ -444,1137 +431,1150 @@ struct eth_device aspeednic_device[CONFIG_ASPEED_MAC_NUMBER];
 
 void NCSI_Struct_Initialize(void)
 {
-  unsigned long i;
+	unsigned long i;
 
-  for (i = 0; i < 6; i++) {
-    NCSI_Request.DA[i] = 0xFF;
-    NCSI_Respond.DA[i] = 0xFF;
-    NCSI_Respond.SA[i] = 0xFF;
-  }
-  NCSI_Request.EtherType = 0xF888;
-  NCSI_Request.MC_ID = 0;
-  NCSI_Request.Header_Revision = 0x01;
-  NCSI_Request.Reserved_1 = 0;
-  NCSI_Request.Reserved_2 = 0;
-  NCSI_Request.Reserved_3 = 0;
-  NCSI_Respond.EtherType = 0xF888;
-  NCSI_Respond.MC_ID = 0;
-  NCSI_Respond.Header_Revision = 0x01;
-  NCSI_Respond.Reserved_1 = 0;
-  NCSI_Respond.Reserved_2 = 0;
-  NCSI_Respond.Reserved_3 = 0;
+	for (i = 0; i < 6; i++) {
+		NCSI_Request.DA[i] = 0xFF;
+		NCSI_Respond.DA[i] = 0xFF;
+		NCSI_Respond.SA[i] = 0xFF;
+	}
+
+	NCSI_Request.EtherType = 0xF888;
+	NCSI_Request.MC_ID = 0;
+	NCSI_Request.Header_Revision = 0x01;
+	NCSI_Request.Reserved_1 = 0;
+	NCSI_Request.Reserved_2 = 0;
+	NCSI_Request.Reserved_3 = 0;
+	NCSI_Respond.EtherType = 0xF888;
+	NCSI_Respond.MC_ID = 0;
+	NCSI_Respond.Header_Revision = 0x01;
+	NCSI_Respond.Reserved_1 = 0;
+	NCSI_Respond.Reserved_2 = 0;
+	NCSI_Respond.Reserved_3 = 0;
+}
+
+static void aspeed_mac1_enable(void)
+{
+	u32 reg;
+
+	/* MAC1 CLOCK/RESET/PHY_LINK/MDC_MDIO in SCU */
+	reg = readl(AST_SCU_BASE + SCU_RESET_CONTROL);
+	writel(reg | BIT(11), AST_SCU_BASE + SCU_RESET_CONTROL);
+	udelay(100);
+
+	reg = readl(AST_SCU_BASE + SCU_CLOCK_CONTROL);
+	writel(reg & ~MAC1_CLOCK_ENABLE, AST_SCU_BASE + SCU_CLOCK_CONTROL);
+	udelay(10000);
+
+	reg = readl(AST_SCU_BASE + SCU_RESET_CONTROL);
+	writel(reg & ~BIT(11), AST_SCU_BASE + SCU_RESET_CONTROL);
+
+	/* Put pins in RMII/NCSI mode
+	 * Strap[6] = 0 and SCUA0[0:3, 12, 14:17]
+	 *
+	 * RMII1CLKI	SCUA0[12] = 0
+	 * RMII1RCLKO	SCUA0[0] = 0
+	 * RMII1TXEN	SCUA0[1] = 0
+	 * RMII1TXD0	SCUA0[2] = 0
+	 * RMII1TXD1	SCUA0[3] = 0
+	 * RMII1RXD0	SCUA0[14] = 0
+	 * RMII1RXD1	SCUA0[15] = 0
+	 * RMII1CRSDV	SCUA0[16] = 0
+	 * RMII1RXER	SCUA0[17] = 0
+	 */
+	reg = readl(AST_SCU_BASE + 0xA0);
+	writel(reg & ~0x3d00f, AST_SCU_BASE + 0xA0);
+
+	reg = readl(AST_SCU_BASE + 0x70);
+	writel(reg & ~BIT(6), AST_SCU_BASE + 0x70);
+
+	/* RMII1 50MHz RCLK output enable */
+	reg = readl(AST_SCU_BASE + 0x48);
+	writel(reg | BIT(29), AST_SCU_BASE + 0x48);
+
+#ifdef CONFIG_MAC1_PHY_LINK_INTERRUPT
+	reg = readl(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL1_REG);
+	writel(reg | MAC1_PHY_LINK, SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL1_REG);
+#endif
+}
+
+static void aspeed_mac2_enable(void)
+{
+	//MAC2 CLOCK/RESET/PHY_LINK/MDC_MDIO
+#ifdef CONFIG_MAC2_ENABLE
+	u32 reg;
+
+	reg = readl(SCU_BASE + SCU_RESET_CONTROL);
+	writel(reg | 0x1000, SCU_BASE + SCU_RESET_CONTROL);
+	udelay(10);
+	reg = readl(SCU_BASE + SCU_CLOCK_CONTROL);
+	writel(reg & ~MAC2_CLOCK_ENABLE, SCU_BASE + SCU_CLOCK_CONTROL);
+	udelay(10000);
+	reg = readl(SCU_BASE + SCU_RESET_CONTROL);
+	writel(reg & ~0x1000, SCU_BASE + SCU_RESET_CONTROL);
+	reg = readl(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL5_REG);
+	writel(reg | (MAC2_MDC_MDIO), SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL5_REG);
+#ifdef CONFIG_MAC2_PHY_LINK_INTERRUPT
+	reg = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL1_REG));
+	writel(reg | MAC2_PHY_LINK, SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL1_REG);
+#endif
+#endif
 }
 
 int aspeednic_initialize(bd_t *bis)
 {
-  int               card_number = CONFIG_ASPEED_MAC_CONFIG - 1;
-  unsigned int    iobase, SCURegister;
-  struct eth_device*  dev;
+	int card_number = CONFIG_ASPEED_MAC_CONFIG - 1;
+	unsigned int iobase;
+	struct eth_device*  dev;
 
-#if defined(CONFIG_AST2300_FPGA_2) || defined(CONFIG_AST2300) || defined(CONFIG_AST3100) \
-  || defined(CONFIG_ARCH_AST2400) || defined(CONFIG_ARCH_AST2500)
-//MAC1 CLOCK/RESET/PHY_LINK/MDC_MDIO in SCU
-#ifdef CONFIG_MAC1_ENABLE
-  SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL));
-  *(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL) = cpu_to_le32(SCURegister | 0x800);
-  udelay(100);
-  SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_CLOCK_CONTROL));
-  *(volatile u_long *)(SCU_BASE + SCU_CLOCK_CONTROL) = cpu_to_le32(SCURegister & ~(MAC1_CLOCK_ENABLE));
-  udelay(10000);
-//Add Clock Selection in AST2300 A1, Please check the datasheet for more detail
-//The current sample code uses 0: H-PLL/2 because all EVBs have RGMII interface
-//        SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_CLOCK_SELECTION));
-//  *(volatile u_long *)(SCU_BASE + SCU_CLOCK_SELECTION) = cpu_to_le32(SCURegister & ~(MAC_AHB_CLOCK_DIVIDER));
-  SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL));
-  *(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL) = cpu_to_le32(SCURegister & ~(0x800));
-  SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL3_REG));
-  *(volatile u_long *)(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL3_REG) = cpu_to_le32(SCURegister | (MAC1_MDIO | MAC1_MDC));
-//        SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_MAC_CLOCK_DELAY));
-//Currently we use fix value in MAC timing on EVB
-//  *(volatile u_long *)(SCU_BASE + SCU_MAC_CLOCK_DELAY) = CONFIG_MAC_INTERFACE_CLOCK_DELAY;
-#ifdef CONFIG_MAC1_PHY_LINK_INTERRUPT
-  SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL1_REG));
-  *(volatile u_long *)(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL1_REG) = cpu_to_le32(SCURegister | (MAC1_PHY_LINK));
-#endif
-#endif
+	aspeed_mac1_enable();
+	aspeed_mac2_enable();
 
-//MAC2 CLOCK/RESET/PHY_LINK/MDC_MDIO
-#ifdef CONFIG_MAC2_ENABLE
-  SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL));
-  *(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL) = cpu_to_le32(SCURegister | 0x1000);
-  udelay(10);
-  SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_CLOCK_CONTROL));
-  *(volatile u_long *)(SCU_BASE + SCU_CLOCK_CONTROL) = cpu_to_le32(SCURegister & ~(MAC2_CLOCK_ENABLE));
-  udelay(10000);
-  SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL));
-  *(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL) = cpu_to_le32(SCURegister & ~(0x1000));
-  SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL5_REG));
-  *(volatile u_long *)(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL5_REG) = cpu_to_le32(SCURegister | (MAC2_MDC_MDIO));
-#endif
-#ifdef CONFIG_MAC2_PHY_LINK_INTERRUPT
-  SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL1_REG));
-  *(volatile u_long *)(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL1_REG) = cpu_to_le32(SCURegister | (MAC2_PHY_LINK));
-#endif
-#else
-//AST1100/AST2050/AST2100
-//MAC1 RESET/PHY_LINK in SCU
-  SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL));
-  *(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL) = cpu_to_le32(SCURegister & ~(0x800));
-#ifdef CONFIG_MAC1_PHY_LINK_INTERRUPT
-  SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_PIN_MUX));
-  *(volatile u_long *)(SCU_BASE + SCU_PIN_MUX) = cpu_to_le32(SCURegister | (MAC1_PHY_LINK));
-#endif
+	iobase = aspeednic_iobase[card_number];
 
-//MAC2
-#ifdef CONFIG_MAC2_ENABLE
-  SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL));
-  *(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL) = cpu_to_le32(SCURegister & ~(0x1000));
-  SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_PIN_MUX));
-  *(volatile u_long *)(SCU_BASE + SCU_PIN_MUX) = cpu_to_le32(SCURegister | (MAC2_MDC_MDIO));
-#endif
-#ifdef CONFIG_MAC2_MII_ENABLE
-  SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_PIN_MUX));
-  *(volatile u_long *)(SCU_BASE + SCU_PIN_MUX) = cpu_to_le32(SCURegister | (MAC2_MII));
-#endif
-#ifdef CONFIG_MAC2_PHY_LINK_INTERRUPT
-  SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_PIN_MUX));
-  *(volatile u_long *)(SCU_BASE + SCU_PIN_MUX) = cpu_to_le32(SCURegister | (MAC2_PHY_LINK));
-#endif
-#endif
+	dev = &aspeednic_device[card_number];
 
-  iobase = aspeednic_iobase[card_number];
+	sprintf(dev->name, "aspeednic#%d", card_number);
 
-  dev = &aspeednic_device[card_number];
+	dev->iobase = iobase;
 
+	if (CONFIG_ASPEED_MAC_PHY_SETTING >= 1) {
+		//NCSI Struct Initialize
+		NCSI_Struct_Initialize();
+	}
 
-  sprintf(dev->name, "aspeednic#%d", card_number);
+	dev->init = aspeednic_init;
+	dev->halt = aspeednic_halt;
+	dev->send = aspeednic_send;
+	dev->recv = aspeednic_recv;
+	dev->write_hwaddr = aspeednic_write_hwaddr;
 
-  dev->iobase = iobase;
+	/* Ensure we're not sleeping. */
+	if (CONFIG_ASPEED_MAC_PHY_SETTING >= 1) {
+		udelay(2000000); //2.0 sec
+	}
+	else {
+		udelay(10 * 1000);
+	}
 
-  if (CONFIG_ASPEED_MAC_PHY_SETTING >= 1) {
-//NCSI Struct Initialize
-    NCSI_Struct_Initialize();
-  }
-//Set Scratch register (0x1E6E2040 D[15:14])(0x1E6E2041 D[7:6]) to inform kernel MAC1 driver
-  SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_SCRATCH_REGISTER));
-  *(volatile u_long *)(SCU_BASE + SCU_SCRATCH_REGISTER) = cpu_to_le32((SCURegister & ~(0xc000)) | (CONFIG_MAC1_PHY_SETTING << 14));
-//Set Scratch register (0x1E6E2040 D[13:12])(0x1E6E2041 D[5:4]) to inform kernel MAC2 driver
-  SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_SCRATCH_REGISTER));
-  *(volatile u_long *)(SCU_BASE + SCU_SCRATCH_REGISTER) = cpu_to_le32((SCURegister & ~(0x3000)) | (CONFIG_MAC2_PHY_SETTING << 12));
-
-
-  dev->init   = aspeednic_init;
-  dev->halt   = aspeednic_halt;
-  dev->send   = aspeednic_send;
-  dev->recv   = aspeednic_recv;
-
-  /* Ensure we're not sleeping. */
-  if (CONFIG_ASPEED_MAC_PHY_SETTING >= 1) {
-    udelay(2000000); //2.0 sec
-  }
-  else {
-    udelay(10 * 1000);
-  }
-
-  dev->init(dev, bis);
-
-  eth_register(dev);
+	eth_register(dev);
 
 #if defined(CONFIG_MII) || defined(CONFIG_CMD_MII)
-  miiphy_register(dev->name, faraday_mdio_read, faraday_mdio_write);
+	miiphy_register(dev->name, faraday_mdio_read, faraday_mdio_write);
 #endif
 
-  return 1;
+	return 1;
 }
 
 void Calculate_Checksum(unsigned char *buffer_base, int Length)
 {
-  unsigned int i, CheckSum = 0;
-  unsigned int Data, Data1;
+	unsigned int i, CheckSum = 0;
+	unsigned int Data, Data1;
 
-  for (i = 0; i < ((Length - 14) / 2); i++) {
-    Data = buffer_base[i * 2];
-    Data1 = buffer_base[i * 2 + 1];
-    CheckSum += ((Data << 8) + Data1);
-  }
-  Payload_Checksum = (~(CheckSum) + 1); //2's complement
-//Inverse for insert into buffer
-  Data = (Payload_Checksum & 0xFF000000) >> 24;
-  Data1 = (Payload_Checksum & 0x000000FF) << 24;
-  Payload_Checksum = (Payload_Checksum & 0x00FFFF00) + Data + Data1;
-  Data = (Payload_Checksum & 0x00FF0000) >> 8;
-  Data1 = (Payload_Checksum & 0x0000FF00) << 8;
-  Payload_Checksum = (Payload_Checksum & 0xFF0000FF) + Data + Data1;
+	for (i = 0; i < ((Length - 14) / 2); i++) {
+		Data = buffer_base[i * 2];
+		Data1 = buffer_base[i * 2 + 1];
+		CheckSum += ((Data << 8) + Data1);
+	}
+	Payload_Checksum = (~(CheckSum) + 1); //2's complement
+	//Inverse for insert into buffer
+	Data = (Payload_Checksum & 0xFF000000) >> 24;
+	Data1 = (Payload_Checksum & 0x000000FF) << 24;
+	Payload_Checksum = (Payload_Checksum & 0x00FFFF00) + Data + Data1;
+	Data = (Payload_Checksum & 0x00FF0000) >> 8;
+	Data1 = (Payload_Checksum & 0x0000FF00) << 8;
+	Payload_Checksum = (Payload_Checksum & 0xFF0000FF) + Data + Data1;
 }
 
 void copy_data (int Length)
 {
-  memcpy ((unsigned char *)(tx_ring[tx_new].buf + 30), &Payload_Data, Length);
-  Calculate_Checksum((unsigned char *)(tx_ring[tx_new].buf + 14), 30 + Length);
-  memcpy ((unsigned char *)(tx_ring[tx_new].buf + 30 + Length), &Payload_Checksum, 4);
+	memcpy ((unsigned char *)(tx_ring[tx_new].buf + 30), &Payload_Data, Length);
+	Calculate_Checksum((unsigned char *)(tx_ring[tx_new].buf + 14), 30 + Length);
+	memcpy ((unsigned char *)(tx_ring[tx_new].buf + 30 + Length), &Payload_Checksum, 4);
 }
 
 void NCSI_Rx (void)
 {
-  unsigned long status, length, i = 0;
+	unsigned long status, length, i = 0;
 
-  do {
-    status = (s32)le32_to_cpu(rx_ring[rx_new].status);
-    i++;
-  } while (!(((status & RXPKT_STATUS) != 0) || (i >= NCSI_LOOP)));
+	do {
+		status = (s32)le32_to_cpu(rx_ring[rx_new].status);
+		i++;
+	} while (!(((status & RXPKT_STATUS) != 0) || (i >= NCSI_LOOP)));
 
-  if (i < NCSI_LOOP) {
-    if (status & LRS) {
-      length = (le32_to_cpu(rx_ring[rx_new].status) & 0x3FFF);
-      memcpy (&NCSI_Respond, (unsigned char *)rx_ring[rx_new].buf, length);
-    }
-    rx_ring[rx_new].status &= cpu_to_le32(0x7FFFFFFF);
-    rx_new = (rx_new + 1) % rxRingSize;
-  }
+	if (i < NCSI_LOOP) {
+		if (status & LRS) {
+			length = (le32_to_cpu(rx_ring[rx_new].status) & 0x3FFF);
+			memcpy (&NCSI_Respond, (unsigned char *)rx_ring[rx_new].buf, length);
+		}
+		rx_ring[rx_new].status &= cpu_to_le32(0x7FFFFFFF);
+		rx_new = (rx_new + 1) % rxRingSize;
+	}
 }
 
 void DeSelect_Package (struct eth_device* dev, int Package_ID)
 {
-  unsigned long Combined_Channel_ID;
+	unsigned long Combined_Channel_ID;
 
-//TX
-  do {
-    InstanceID++;
-    NCSI_Request.IID = InstanceID;
-    NCSI_Request.Command = DESELECT_PACKAGE;
-    Combined_Channel_ID = (Package_ID << 5) + 0x1F; //Internal Channel ID = 0x1F, 0x1F means all channel
-    NCSI_Request.Channel_ID = Combined_Channel_ID;
-    NCSI_Request.Payload_Length = 0;
-    memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
-    copy_data (NCSI_Request.Payload_Length);
-    aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
-//RX
-    NCSI_Rx();
-    if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (DESELECT_PACKAGE | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
-      printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
-      Retry++;
-      InstanceID--;
-    }
-    else {
-      Retry = 0;
-    }
-  } while ((Retry != 0) && (Retry <= RETRY_COUNT));
-  Retry = 0;
+	//TX
+	do {
+		InstanceID++;
+		NCSI_Request.IID = InstanceID;
+		NCSI_Request.Command = DESELECT_PACKAGE;
+		Combined_Channel_ID = (Package_ID << 5) + 0x1F; //Internal Channel ID = 0x1F, 0x1F means all channel
+		NCSI_Request.Channel_ID = Combined_Channel_ID;
+		NCSI_Request.Payload_Length = 0;
+		memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
+		copy_data (NCSI_Request.Payload_Length);
+		aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
+		//RX
+		NCSI_Rx();
+		if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (DESELECT_PACKAGE | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
+			printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
+			Retry++;
+			InstanceID--;
+		}
+		else {
+			Retry = 0;
+		}
+	} while ((Retry != 0) && (Retry <= RETRY_COUNT));
+	Retry = 0;
 }
 
 int Select_Package (struct eth_device* dev, int Package_ID)
 {
-  unsigned long Combined_Channel_ID, Found = 0;
+	unsigned long Combined_Channel_ID, Found = 0;
 
-//TX
-  do {
-    InstanceID++;
-    NCSI_Request.IID = InstanceID;
-    NCSI_Request.Command = SELECT_PACKAGE;
-    Combined_Channel_ID = (Package_ID << 5) + 0x1F; //Internal Channel ID = 0x1F
-    NCSI_Request.Channel_ID = Combined_Channel_ID;
-    NCSI_Request.Payload_Length = (4 << 8);
-    memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
-    NCSI_Request.Payload_Length = 4;
-    memset ((void *)Payload_Data, 0, 4);
-    Payload_Data[3] = 1; //Arbitration Disable
-    copy_data (NCSI_Request.Payload_Length);
-    aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
-//RX
-    NCSI_Rx();
-    if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (SELECT_PACKAGE | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
-      printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
-      Retry++;
-      Found = 0;
-      InstanceID--;
-    }
-    else {
-      Retry = 0;
-      Found = 1;
-    }
-  } while ((Retry != 0) && (Retry <= RETRY_COUNT));
-  Retry = 0;
+	//TX
+	do {
+		InstanceID++;
+		NCSI_Request.IID = InstanceID;
+		NCSI_Request.Command = SELECT_PACKAGE;
+		Combined_Channel_ID = (Package_ID << 5) + 0x1F; //Internal Channel ID = 0x1F
+		NCSI_Request.Channel_ID = Combined_Channel_ID;
+		NCSI_Request.Payload_Length = (4 << 8);
+		memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
+		NCSI_Request.Payload_Length = 4;
+		memset ((void *)Payload_Data, 0, 4);
+		Payload_Data[3] = 1; //Arbitration Disable
+		copy_data (NCSI_Request.Payload_Length);
+		aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
+		//RX
+		NCSI_Rx();
+		if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (SELECT_PACKAGE | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
+			printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
+			Retry++;
+			Found = 0;
+			InstanceID--;
+		}
+		else {
+			Retry = 0;
+			Found = 1;
+		}
+	} while ((Retry != 0) && (Retry <= RETRY_COUNT));
+	Retry = 0;
 
-  return Found;
+	return Found;
 }
 
 void DeSelect_Active_Package (struct eth_device* dev)
 {
-  unsigned long Combined_Channel_ID;
-//TX
-  do {
-    InstanceID++;
-    NCSI_Request.IID = InstanceID;
-    NCSI_Request.Command = DESELECT_PACKAGE;
-    Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + 0x1F; //Internal Channel ID = 0x1F, 0x1F means all channel
-    NCSI_Request.Channel_ID = Combined_Channel_ID;
-    NCSI_Request.Payload_Length = 0;
-    memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
-    copy_data (NCSI_Request.Payload_Length);
-    aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
-//RX
-    NCSI_Rx();
-    if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (DESELECT_PACKAGE | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
-      printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
-      Retry++;
-      InstanceID--;
-    }
-    else {
-      Retry = 0;
-    }
-  } while ((Retry != 0) && (Retry <= RETRY_COUNT));
-  Retry = 0;
+	unsigned long Combined_Channel_ID;
+	//TX
+	do {
+		InstanceID++;
+		NCSI_Request.IID = InstanceID;
+		NCSI_Request.Command = DESELECT_PACKAGE;
+		Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + 0x1F; //Internal Channel ID = 0x1F, 0x1F means all channel
+		NCSI_Request.Channel_ID = Combined_Channel_ID;
+		NCSI_Request.Payload_Length = 0;
+		memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
+		copy_data (NCSI_Request.Payload_Length);
+		aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
+		//RX
+		NCSI_Rx();
+		if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (DESELECT_PACKAGE | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
+			printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
+			Retry++;
+			InstanceID--;
+		}
+		else {
+			Retry = 0;
+		}
+	} while ((Retry != 0) && (Retry <= RETRY_COUNT));
+	Retry = 0;
 }
 
 int Select_Active_Package (struct eth_device* dev)
 {
-  unsigned long Combined_Channel_ID, Found = 0;
-//TX
-  do {
-    InstanceID++;
-    NCSI_Request.IID = InstanceID;
-    NCSI_Request.Command = SELECT_PACKAGE;
-    Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + 0x1F; //Internal Channel ID = 0x1F
-    NCSI_Request.Channel_ID = Combined_Channel_ID;
-    NCSI_Request.Payload_Length = (4 << 8);
-    memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
-    NCSI_Request.Payload_Length = 4;
-    memset ((void *)Payload_Data, 0, 4);
-    Payload_Data[3] = 1; //Arbitration Disable
-    copy_data (NCSI_Request.Payload_Length);
-    aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
-//RX
-    NCSI_Rx();
-    if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (SELECT_PACKAGE | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
-      printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
-      Retry++;
-      Found = 0;
-      InstanceID--;
-    }
-    else {
-      Retry = 0;
-      Found = 1;
-    }
-  } while ((Retry != 0) && (Retry <= RETRY_COUNT));
-  Retry = 0;
+	unsigned long Combined_Channel_ID, Found = 0;
+	//TX
+	do {
+		InstanceID++;
+		NCSI_Request.IID = InstanceID;
+		NCSI_Request.Command = SELECT_PACKAGE;
+		Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + 0x1F; //Internal Channel ID = 0x1F
+		NCSI_Request.Channel_ID = Combined_Channel_ID;
+		NCSI_Request.Payload_Length = (4 << 8);
+		memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
+		NCSI_Request.Payload_Length = 4;
+		memset ((void *)Payload_Data, 0, 4);
+		Payload_Data[3] = 1; //Arbitration Disable
+		copy_data (NCSI_Request.Payload_Length);
+		aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
+		//RX
+		NCSI_Rx();
+		if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (SELECT_PACKAGE | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
+			printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
+			Retry++;
+			Found = 0;
+			InstanceID--;
+		}
+		else {
+			Retry = 0;
+			Found = 1;
+		}
+	} while ((Retry != 0) && (Retry <= RETRY_COUNT));
+	Retry = 0;
 
-  return Found;
+	return Found;
 }
 
 int Clear_Initial_State (struct eth_device* dev, int Channel_ID)
 {
-  unsigned long Combined_Channel_ID, Found = 0;
-//TX
-  do {
-    InstanceID++;
-    NCSI_Request.IID = InstanceID;
-    NCSI_Request.Command = CLEAR_INITIAL_STATE;
-    Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + Channel_ID; //Internal Channel ID = 0
-    NCSI_Request.Channel_ID = Combined_Channel_ID;
-    NCSI_Request.Payload_Length = 0;
-    memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
-    copy_data (NCSI_Request.Payload_Length);
-    aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
-//RX
-    NCSI_Rx();
-    if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (CLEAR_INITIAL_STATE | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
-      printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
-      Retry++;
-      Found = 0;
-      InstanceID--;
-    }
-    else {
-      Retry = 0;
-      Found = 1;
-    }
-  } while ((Retry != 0) && (Retry <= RETRY_COUNT));
-  Retry = 0;
+	unsigned long Combined_Channel_ID, Found = 0;
+	//TX
+	do {
+		InstanceID++;
+		NCSI_Request.IID = InstanceID;
+		NCSI_Request.Command = CLEAR_INITIAL_STATE;
+		Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + Channel_ID; //Internal Channel ID = 0
+		NCSI_Request.Channel_ID = Combined_Channel_ID;
+		NCSI_Request.Payload_Length = 0;
+		memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
+		copy_data (NCSI_Request.Payload_Length);
+		aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
+		//RX
+		NCSI_Rx();
+		if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (CLEAR_INITIAL_STATE | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
+			printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
+			Retry++;
+			Found = 0;
+			InstanceID--;
+		}
+		else {
+			Retry = 0;
+			Found = 1;
+		}
+	} while ((Retry != 0) && (Retry <= RETRY_COUNT));
+	Retry = 0;
 
-  return Found;
+	return Found;
 }
 
 void Get_Version_ID (struct eth_device* dev)
 {
-  unsigned long Combined_Channel_ID;
-//TX
-  do {
-    InstanceID++;
-    NCSI_Request.IID = InstanceID;
-    NCSI_Request.Command = GET_VERSION_ID;
-    Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
-    NCSI_Request.Channel_ID = Combined_Channel_ID;
-    NCSI_Request.Payload_Length = 0;
-    memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
-    copy_data (NCSI_Request.Payload_Length);
-    aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
-//RX
-    NCSI_Rx();
-    if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (GET_VERSION_ID | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
-      printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
-      Retry++;
-      InstanceID--;
-    }
-    else {
-      Retry = 0;
-    }
-  } while ((Retry != 0) && (Retry <= RETRY_COUNT));
-  Retry = 0;
+	unsigned long Combined_Channel_ID;
+	//TX
+	do {
+		InstanceID++;
+		NCSI_Request.IID = InstanceID;
+		NCSI_Request.Command = GET_VERSION_ID;
+		Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
+		NCSI_Request.Channel_ID = Combined_Channel_ID;
+		NCSI_Request.Payload_Length = 0;
+		memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
+		copy_data (NCSI_Request.Payload_Length);
+		aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
+		//RX
+		NCSI_Rx();
+		if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (GET_VERSION_ID | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
+			printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
+			Retry++;
+			InstanceID--;
+		}
+		else {
+			Retry = 0;
+		}
+	} while ((Retry != 0) && (Retry <= RETRY_COUNT));
+	Retry = 0;
 }
 
 void Get_Capabilities (struct eth_device* dev)
 {
-  unsigned long Combined_Channel_ID;
-//TX
-  do {
-    InstanceID++;
-    NCSI_Request.IID = InstanceID;
-    NCSI_Request.Command = GET_CAPABILITIES;
-    Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
-    NCSI_Request.Channel_ID = Combined_Channel_ID;
-    NCSI_Request.Payload_Length = 0;
-    memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
-    copy_data (NCSI_Request.Payload_Length);
-    aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
-//RX
-    NCSI_Rx();
-    if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (GET_CAPABILITIES | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
-      printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
-      Retry++;
-      InstanceID--;
-    }
-    else {
-      Retry = 0;
-      NCSI_Cap.Capabilities_Flags = NCSI_Respond.Payload_Data[0];
-      NCSI_Cap.Broadcast_Packet_Filter_Capabilities = NCSI_Respond.Payload_Data[1];
-      NCSI_Cap.Multicast_Packet_Filter_Capabilities = NCSI_Respond.Payload_Data[2];
-      NCSI_Cap.Buffering_Capabilities = NCSI_Respond.Payload_Data[3];
-      NCSI_Cap.AEN_Control_Support = NCSI_Respond.Payload_Data[4];
-    }
-  } while ((Retry != 0) && (Retry <= RETRY_COUNT));
-  Retry = 0;
+	unsigned long Combined_Channel_ID;
+	//TX
+	do {
+		InstanceID++;
+		NCSI_Request.IID = InstanceID;
+		NCSI_Request.Command = GET_CAPABILITIES;
+		Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
+		NCSI_Request.Channel_ID = Combined_Channel_ID;
+		NCSI_Request.Payload_Length = 0;
+		memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
+		copy_data (NCSI_Request.Payload_Length);
+		aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
+		//RX
+		NCSI_Rx();
+		if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (GET_CAPABILITIES | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
+			printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
+			Retry++;
+			InstanceID--;
+		}
+		else {
+			Retry = 0;
+			NCSI_Cap.Capabilities_Flags = NCSI_Respond.Payload_Data[0];
+			NCSI_Cap.Broadcast_Packet_Filter_Capabilities = NCSI_Respond.Payload_Data[1];
+			NCSI_Cap.Multicast_Packet_Filter_Capabilities = NCSI_Respond.Payload_Data[2];
+			NCSI_Cap.Buffering_Capabilities = NCSI_Respond.Payload_Data[3];
+			NCSI_Cap.AEN_Control_Support = NCSI_Respond.Payload_Data[4];
+		}
+	} while ((Retry != 0) && (Retry <= RETRY_COUNT));
+	Retry = 0;
 }
 
 void Enable_Set_MAC_Address (struct eth_device* dev)
 {
-  unsigned long Combined_Channel_ID, i;
-//TX
-  do {
-    InstanceID++;
-    NCSI_Request.IID = InstanceID;
-    NCSI_Request.Command = SET_MAC_ADDRESS;
-    Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
-    NCSI_Request.Channel_ID = Combined_Channel_ID;
-    NCSI_Request.Payload_Length = (8 << 8);
-    memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
-    NCSI_Request.Payload_Length = 8;
-    for (i = 0; i < 6; i++) {
-      Payload_Data[i] = NCSI_Request.SA[i];
-    }
-    Payload_Data[6] = 1; //MAC Address Num = 1 --> address filter 1, fixed in sample code
-    Payload_Data[7] = UNICAST + 0 + ENABLE_MAC_ADDRESS_FILTER; //AT + Reserved + E
-    copy_data (NCSI_Request.Payload_Length);
-    aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
-//RX
-    NCSI_Rx();
-    if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (SET_MAC_ADDRESS | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
-      printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
-      Retry++;
-      InstanceID--;
-    }
-  } while ((Retry != 0) && (Retry <= RETRY_COUNT));
-  Retry = 0;
+	unsigned long Combined_Channel_ID, i;
+	//TX
+	do {
+		InstanceID++;
+		NCSI_Request.IID = InstanceID;
+		NCSI_Request.Command = SET_MAC_ADDRESS;
+		Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
+		NCSI_Request.Channel_ID = Combined_Channel_ID;
+		NCSI_Request.Payload_Length = (8 << 8);
+		memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
+		NCSI_Request.Payload_Length = 8;
+		for (i = 0; i < 6; i++) {
+			Payload_Data[i] = NCSI_Request.SA[i];
+		}
+		Payload_Data[6] = 1; //MAC Address Num = 1 --> address filter 1, fixed in sample code
+		Payload_Data[7] = UNICAST + 0 + ENABLE_MAC_ADDRESS_FILTER; //AT + Reserved + E
+		copy_data (NCSI_Request.Payload_Length);
+		aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
+		//RX
+		NCSI_Rx();
+		if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (SET_MAC_ADDRESS | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
+			printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
+			Retry++;
+			InstanceID--;
+		}
+	} while ((Retry != 0) && (Retry <= RETRY_COUNT));
+	Retry = 0;
 }
 
 void Enable_Broadcast_Filter (struct eth_device* dev)
 {
-  unsigned long Combined_Channel_ID;
-//TX
-  do {
-    InstanceID++;
-    NCSI_Request.IID = InstanceID;
-    NCSI_Request.Command = ENABLE_BROADCAST_FILTERING;
-    Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
-    NCSI_Request.Channel_ID = Combined_Channel_ID;
-    NCSI_Request.Payload_Length = (4 << 8);
-    memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
-    NCSI_Request.Payload_Length = 4;
-    memset ((void *)Payload_Data, 0, 4);
-    Payload_Data[3] = 0xF; //ARP, DHCP, NetBIOS
-    copy_data (NCSI_Request.Payload_Length);
-    aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
-//RX
-    NCSI_Rx();
-    if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (ENABLE_BROADCAST_FILTERING | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
-      printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
-      Retry++;
-      InstanceID--;
-    }
-    else {
-      Retry = 0;
-    }
-  } while ((Retry != 0) && (Retry <= RETRY_COUNT));
-  Retry = 0;
+	unsigned long Combined_Channel_ID;
+	//TX
+	do {
+		InstanceID++;
+		NCSI_Request.IID = InstanceID;
+		NCSI_Request.Command = ENABLE_BROADCAST_FILTERING;
+		Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
+		NCSI_Request.Channel_ID = Combined_Channel_ID;
+		NCSI_Request.Payload_Length = (4 << 8);
+		memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
+		NCSI_Request.Payload_Length = 4;
+		memset ((void *)Payload_Data, 0, 4);
+		Payload_Data[3] = 0xF; //ARP, DHCP, NetBIOS
+		copy_data (NCSI_Request.Payload_Length);
+		aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
+		//RX
+		NCSI_Rx();
+		if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (ENABLE_BROADCAST_FILTERING | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
+			printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
+			Retry++;
+			InstanceID--;
+		}
+		else {
+			Retry = 0;
+		}
+	} while ((Retry != 0) && (Retry <= RETRY_COUNT));
+	Retry = 0;
 }
 
 void Enable_AEN (struct eth_device* dev)
 {
-  unsigned long Combined_Channel_ID;
-//TX
-  do {
-    InstanceID++;
-    NCSI_Request.IID = InstanceID;
-    NCSI_Request.Command = AEN_ENABLE;
-    Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
-    NCSI_Request.Channel_ID = Combined_Channel_ID;
-    NCSI_Request.Payload_Length = (8 << 8);
-    memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
-    NCSI_Request.Payload_Length = 8;
-    memset ((void *)Payload_Data, 0, 8);
-    Payload_Data[3] = 0x00; //MC ID
-    Payload_Data[7] = 0x01; //Link Status only
-    copy_data (NCSI_Request.Payload_Length);
-    aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
-//RX
-    NCSI_Rx();
-    if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (AEN_ENABLE | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
-      printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
-      Retry++;
-      InstanceID--;
-    }
-    else {
-      Retry = 0;
-    }
-  } while ((Retry != 0) && (Retry <= RETRY_COUNT));
-  Retry = 0;
+	unsigned long Combined_Channel_ID;
+	//TX
+	do {
+		InstanceID++;
+		NCSI_Request.IID = InstanceID;
+		NCSI_Request.Command = AEN_ENABLE;
+		Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
+		NCSI_Request.Channel_ID = Combined_Channel_ID;
+		NCSI_Request.Payload_Length = (8 << 8);
+		memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
+		NCSI_Request.Payload_Length = 8;
+		memset ((void *)Payload_Data, 0, 8);
+		Payload_Data[3] = 0x00; //MC ID
+		Payload_Data[7] = 0x01; //Link Status only
+		copy_data (NCSI_Request.Payload_Length);
+		aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
+		//RX
+		NCSI_Rx();
+		if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (AEN_ENABLE | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
+			printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
+			Retry++;
+			InstanceID--;
+		}
+		else {
+			Retry = 0;
+		}
+	} while ((Retry != 0) && (Retry <= RETRY_COUNT));
+	Retry = 0;
 }
 
 void Enable_Network_TX (struct eth_device* dev)
 {
-  unsigned long Combined_Channel_ID;
-//TX
-  do {
-    InstanceID++;
-    NCSI_Request.IID = InstanceID;
-    NCSI_Request.Command = ENABLE_CHANNEL_NETWORK_TX;
-    Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
-    NCSI_Request.Channel_ID = Combined_Channel_ID;
-    NCSI_Request.Payload_Length = 0;
-    memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
-    copy_data (NCSI_Request.Payload_Length);
-    aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
-//RX
-    NCSI_Rx();
-    if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (ENABLE_CHANNEL_NETWORK_TX | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
-      printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
-      Retry++;
-      InstanceID--;
-    }
-    else {
-      Retry = 0;
-    }
-  } while ((Retry != 0) && (Retry <= RETRY_COUNT));
-  Retry = 0;
+	unsigned long Combined_Channel_ID;
+	//TX
+	do {
+		InstanceID++;
+		NCSI_Request.IID = InstanceID;
+		NCSI_Request.Command = ENABLE_CHANNEL_NETWORK_TX;
+		Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
+		NCSI_Request.Channel_ID = Combined_Channel_ID;
+		NCSI_Request.Payload_Length = 0;
+		memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
+		copy_data (NCSI_Request.Payload_Length);
+		aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
+		//RX
+		NCSI_Rx();
+		if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (ENABLE_CHANNEL_NETWORK_TX | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
+			printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
+			Retry++;
+			InstanceID--;
+		}
+		else {
+			Retry = 0;
+		}
+	} while ((Retry != 0) && (Retry <= RETRY_COUNT));
+	Retry = 0;
 }
 
 void Disable_Network_TX (struct eth_device* dev)
 {
-  unsigned long Combined_Channel_ID;
-//TX
-  do {
-    InstanceID++;
-    NCSI_Request.IID = InstanceID;
-    NCSI_Request.Command = DISABLE_CHANNEL_NETWORK_TX;
-    Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
-    NCSI_Request.Channel_ID = Combined_Channel_ID;
-    NCSI_Request.Payload_Length = 0;
-    memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
-    copy_data (NCSI_Request.Payload_Length);
-    aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
-//RX
-    NCSI_Rx();
-    if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (DISABLE_CHANNEL_NETWORK_TX | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
-      printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
-      Retry++;
-      InstanceID--;
-    }
-    else {
-      Retry = 0;
-    }
-  } while ((Retry != 0) && (Retry <= RETRY_COUNT));
-  Retry = 0;
+	unsigned long Combined_Channel_ID;
+	//TX
+	do {
+		InstanceID++;
+		NCSI_Request.IID = InstanceID;
+		NCSI_Request.Command = DISABLE_CHANNEL_NETWORK_TX;
+		Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
+		NCSI_Request.Channel_ID = Combined_Channel_ID;
+		NCSI_Request.Payload_Length = 0;
+		memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
+		copy_data (NCSI_Request.Payload_Length);
+		aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
+		//RX
+		NCSI_Rx();
+		if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (DISABLE_CHANNEL_NETWORK_TX | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
+			printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
+			Retry++;
+			InstanceID--;
+		}
+		else {
+			Retry = 0;
+		}
+	} while ((Retry != 0) && (Retry <= RETRY_COUNT));
+	Retry = 0;
 }
 
 void Enable_Channel (struct eth_device* dev)
 {
-  unsigned long Combined_Channel_ID;
-//TX
-  do {
-    InstanceID++;
-    NCSI_Request.IID = InstanceID;
-    NCSI_Request.Command = ENABLE_CHANNEL;
-    Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
-    NCSI_Request.Channel_ID = Combined_Channel_ID;
-    NCSI_Request.Payload_Length = 0;
-    memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
-    copy_data (NCSI_Request.Payload_Length);
-    aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
-//RX
-    NCSI_Rx();
-    if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (ENABLE_CHANNEL | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
-      printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
-      Retry++;
-      InstanceID--;
-    }
-    else {
-      Retry = 0;
-    }
-  } while ((Retry != 0) && (Retry <= RETRY_COUNT));
-  Retry = 0;
+	unsigned long Combined_Channel_ID;
+	//TX
+	do {
+		InstanceID++;
+		NCSI_Request.IID = InstanceID;
+		NCSI_Request.Command = ENABLE_CHANNEL;
+		Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
+		NCSI_Request.Channel_ID = Combined_Channel_ID;
+		NCSI_Request.Payload_Length = 0;
+		memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
+		copy_data (NCSI_Request.Payload_Length);
+		aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
+		//RX
+		NCSI_Rx();
+		if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (ENABLE_CHANNEL | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
+			printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
+			Retry++;
+			InstanceID--;
+		}
+		else {
+			Retry = 0;
+		}
+	} while ((Retry != 0) && (Retry <= RETRY_COUNT));
+	Retry = 0;
 }
 
 void Disable_Channel (struct eth_device* dev)
 {
-  unsigned long Combined_Channel_ID;
-//TX
-  do {
-    InstanceID++;
-    NCSI_Request.IID = InstanceID;
-    NCSI_Request.Command = DISABLE_CHANNEL;
-    Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
-    NCSI_Request.Channel_ID = Combined_Channel_ID;
-    NCSI_Request.Payload_Length = (4 << 8);
-    memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
-    NCSI_Request.Payload_Length = 4;
-    memset ((void *)Payload_Data, 0, 4);
-    Payload_Data[3] = 0x1; //ALD
-    copy_data (NCSI_Request.Payload_Length);
-    aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
-//RX
-    NCSI_Rx();
-    if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (DISABLE_CHANNEL | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
-      printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
-      Retry++;
-      InstanceID--;
-    }
-    else {
-      Retry = 0;
-    }
-  } while ((Retry != 0) && (Retry <= RETRY_COUNT));
-  Retry = 0;
+	unsigned long Combined_Channel_ID;
+	//TX
+	do {
+		InstanceID++;
+		NCSI_Request.IID = InstanceID;
+		NCSI_Request.Command = DISABLE_CHANNEL;
+		Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
+		NCSI_Request.Channel_ID = Combined_Channel_ID;
+		NCSI_Request.Payload_Length = (4 << 8);
+		memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
+		NCSI_Request.Payload_Length = 4;
+		memset ((void *)Payload_Data, 0, 4);
+		Payload_Data[3] = 0x1; //ALD
+		copy_data (NCSI_Request.Payload_Length);
+		aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
+		//RX
+		NCSI_Rx();
+		if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (DISABLE_CHANNEL | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
+			printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
+			Retry++;
+			InstanceID--;
+		}
+		else {
+			Retry = 0;
+		}
+	} while ((Retry != 0) && (Retry <= RETRY_COUNT));
+	Retry = 0;
 }
 
 int Get_Link_Status (struct eth_device* dev)
 {
-  unsigned long Combined_Channel_ID;
-//TX
-  do {
-    InstanceID++;
-    NCSI_Request.IID = InstanceID;
-    NCSI_Request.Command = GET_LINK_STATUS;
-    Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
-    NCSI_Request.Channel_ID = Combined_Channel_ID;
-    NCSI_Request.Payload_Length = 0;
-    memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
-    copy_data (NCSI_Request.Payload_Length);
-    aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
-//RX
-    NCSI_Rx();
-    if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (GET_LINK_STATUS | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
-      printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
-      Retry++;
-      InstanceID--;
-    }
-    else {
-      Retry = 0;
-    }
-  } while ((Retry != 0) && (Retry <= RETRY_COUNT));
-  Retry = 0;
-  if (NCSI_Respond.Payload_Data[3] & 0x40) {
-    return (NCSI_Respond.Payload_Data[3] & 0x01); //Link Up or Not
-  }
-  else {
-    return 0; //Auto Negotiate did not finish
-  }
+	unsigned long Combined_Channel_ID;
+	//TX
+	do {
+		InstanceID++;
+		NCSI_Request.IID = InstanceID;
+		NCSI_Request.Command = GET_LINK_STATUS;
+		Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
+		NCSI_Request.Channel_ID = Combined_Channel_ID;
+		NCSI_Request.Payload_Length = 0;
+		memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
+		copy_data (NCSI_Request.Payload_Length);
+		aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
+		//RX
+		NCSI_Rx();
+		if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (GET_LINK_STATUS | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
+			printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
+			Retry++;
+			InstanceID--;
+		}
+		else {
+			Retry = 0;
+		}
+	} while ((Retry != 0) && (Retry <= RETRY_COUNT));
+	Retry = 0;
+	if (NCSI_Respond.Payload_Data[3] & 0x40) {
+		return (NCSI_Respond.Payload_Data[3] & 0x01); //Link Up or Not
+	}
+	else {
+		return 0; //Auto Negotiate did not finish
+	}
 }
 
 void Set_Link (struct eth_device* dev)
 {
-  unsigned long Combined_Channel_ID;
-//TX
-  do {
-    InstanceID++;
-    NCSI_Request.IID = InstanceID;
-    NCSI_Request.Command = SET_LINK;
-    Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
-    NCSI_Request.Channel_ID = Combined_Channel_ID;
-    NCSI_Request.Payload_Length = (8 << 8);
-    memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
-    NCSI_Request.Payload_Length = 8;
-    memset ((void *)Payload_Data, 0, 8);
-    Payload_Data[2] = 0x02; //full duplex
-    Payload_Data[3] = 0x04; //100M, auto-disable
-    copy_data (NCSI_Request.Payload_Length);
-    aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
-//RX
-    NCSI_Rx();
-    if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (SET_LINK | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
-      printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
-      Retry++;
-      InstanceID--;
-    }
-    else {
-      Retry = 0;
-    }
-  } while ((Retry != 0) && (Retry <= RETRY_COUNT));
-  Retry = 0;
+	unsigned long Combined_Channel_ID;
+	//TX
+	do {
+		InstanceID++;
+		NCSI_Request.IID = InstanceID;
+		NCSI_Request.Command = SET_LINK;
+		Combined_Channel_ID = (NCSI_Cap.Package_ID << 5) + NCSI_Cap.Channel_ID;
+		NCSI_Request.Channel_ID = Combined_Channel_ID;
+		NCSI_Request.Payload_Length = (8 << 8);
+		memcpy ((unsigned char *)tx_ring[tx_new].buf, &NCSI_Request, 30);
+		NCSI_Request.Payload_Length = 8;
+		memset ((void *)Payload_Data, 0, 8);
+		Payload_Data[2] = 0x02; //full duplex
+		Payload_Data[3] = 0x04; //100M, auto-disable
+		copy_data (NCSI_Request.Payload_Length);
+		aspeednic_send (dev, (void *)tx_ring[tx_new].buf, 30 + NCSI_Request.Payload_Length + 4);
+		//RX
+		NCSI_Rx();
+		if ((NCSI_Respond.IID != InstanceID) || (NCSI_Respond.Command != (SET_LINK | 0x80)) || (NCSI_Respond.Response_Code != COMMAND_COMPLETED)) {
+			printf ("Retry: Command = %x, Response_Code = %x\n", NCSI_Request.Command, NCSI_Respond.Response_Code);
+			Retry++;
+			InstanceID--;
+		}
+		else {
+			Retry = 0;
+		}
+	} while ((Retry != 0) && (Retry <= RETRY_COUNT));
+	Retry = 0;
 }
 
 static void aspeednic_probe_phy(struct eth_device *dev)
 {
-  u8 phy_addr;
-  u16 phy_id;
+	u8 phy_addr;
+	u16 phy_id;
 
-  /* assume it as 0 */
-  g_phy_addr = 0;
+	/* assume it as 0 */
+	g_phy_addr = 0;
 
-  /* Check if the PHY is up to snuff..., max phy addr is 0x1f */
-  for (phy_addr = 0; phy_addr <= 0x1f; phy_addr++) {
-    phy_id = phy_read_register(dev, MII_PHYSID1, phy_addr);
-    /*
-     * When it is unable to found PHY,
-     * the interface usually return 0xffff or 0x0000
-     */
-    if (phy_id != 0xffff && phy_id != 0x0) {
-      g_phy_addr = phy_addr;
-      break;
-    }
-  }
-  printf("%s: PHY at 0x%02x\n", dev->name, phy_addr);
+	/* Check if the PHY is up to snuff..., max phy addr is 0x1f */
+	for (phy_addr = 0; phy_addr <= 0x1f; phy_addr++) {
+		phy_id = phy_read_register(dev, MII_PHYSID1, phy_addr);
+		/*
+		 * When it is unable to found PHY,
+		 * the interface usually return 0xffff or 0x0000
+		 */
+		if (phy_id != 0xffff && phy_id != 0x0) {
+			g_phy_addr = phy_addr;
+			break;
+		}
+	}
+	printf("%s: PHY at 0x%02x\n", dev->name, phy_addr);
 }
 
 static int aspeednic_init(struct eth_device* dev, bd_t* bis)
 {
-  unsigned long i, Package_Found = 0, Channel_Found = 0, Re_Send = 0, Link_Status;
+	unsigned long i, Package_Found = 0, Channel_Found = 0, Re_Send = 0, Link_Status;
 
-  RESET_DE4X5(dev);
+	RESET_DE4X5(dev);
 
-  aspeednic_probe_phy(dev);
+	aspeednic_probe_phy(dev);
 
-  set_mac_address (dev, bis);
-  set_mac_control_register (dev);
+	aspeednic_write_hwaddr(dev);
 
-  for (i = 0; i < NUM_RX_DESC; i++) {
-    rx_ring[i].status = cpu_to_le32(RXPKT_RDY + RX_BUFF_SZ);
-    rx_ring[i].buf = (u32)(&rx_buffer[i]);
-    rx_ring[i].reserved = 0;
-  }
+	for (i = 0; i < NUM_RX_DESC; i++) {
+		rx_ring[i].status = cpu_to_le32(RXPKT_RDY);
+		rx_ring[i].buf = (u32)(&rx_buffer[i]);
+		rx_ring[i].reserved = 0;
+	}
 
-  for (i=0; i < NUM_TX_DESC; i++) {
-    tx_ring[i].status = 0;
-    tx_ring[i].des1 = 0;
-    tx_ring[i].buf = (u32)(&tx_buffer[i]);
-    tx_ring[i].reserved = 0;
-  }
+	for (i=0; i < NUM_TX_DESC; i++) {
+		tx_ring[i].status = 0;
+		tx_ring[i].des1 = 0;
+		tx_ring[i].buf = (u32)(&tx_buffer[i]);
+		tx_ring[i].reserved = 0;
+	}
 
-  rxRingSize = NUM_RX_DESC;
-  txRingSize = NUM_TX_DESC;
+	rxRingSize = NUM_RX_DESC;
+	txRingSize = NUM_TX_DESC;
 
-  rx_ring[rxRingSize - 1].status |= cpu_to_le32(EDORR);
-  tx_ring[txRingSize - 1].status |= cpu_to_le32(EDOTR);
+	rx_ring[rxRingSize - 1].status |= cpu_to_le32(EDORR);
+	tx_ring[txRingSize - 1].status |= cpu_to_le32(EDOTR);
 
-  OUTL(dev, ((u32) &tx_ring), TXR_BADR_REG);
-  OUTL(dev, ((u32) &rx_ring), RXR_BADR_REG);
+	OUTL(dev, ((u32) &tx_ring), TXR_BADR_REG);
+	OUTL(dev, ((u32) &rx_ring), RXR_BADR_REG);
+	OUTL(dev, RX_BUFF_SZ, RBSR_REG);
 
-  START_MAC(dev);
+	set_mac_control_register(dev);
+	START_MAC(dev);
 
-  tx_new = 0;
-  rx_new = 0;
+	tx_new = 0;
+	rx_new = 0;
 
-  if (CONFIG_ASPEED_MAC_PHY_SETTING >= 1) {
-//NCSI Start
-//DeSelect Package/ Select Package
-    for (i = 0; i < 4; i++) {
-      DeSelect_Package (dev, i);
-      Package_Found = Select_Package (dev, i);
-      if (Package_Found == 1) {
-//AST2100/AST2050/AST1100 supports 1 package only in current firmware version
-        NCSI_Cap.Package_ID = i;
-//        Package_Found = 0;
-        break;
-      }
-    }
-    if (Package_Found != 0) {
-//Initiali State
-      for (i = 0; i < 2; i++) { //Suppose 2 channels in current version, You could modify it to 0x1F to support 31 channels
-        Channel_Found = Clear_Initial_State(dev, i);
-        if (Channel_Found == 1) {
-          NCSI_Cap.Channel_ID = i;
-          printf ("Found NCSI Network Controller at (%d, %d)\n", NCSI_Cap.Package_ID, NCSI_Cap.Channel_ID);
-//Get Version and Capabilities
-          Get_Version_ID(dev);
-          Get_Capabilities(dev);
-          Select_Active_Package(dev);
-//Configuration
-          Enable_Set_MAC_Address(dev);
-          Enable_Broadcast_Filter(dev);
-//Enable TX
-          Enable_Network_TX(dev);
-//Enable Channel
-          Enable_Channel(dev);
-//Get Link Status
-          Re_Get_Link_Status:
-          Link_Status = Get_Link_Status(dev);
-          if (Link_Status == LINK_UP) {
-            printf ("Using NCSI Network Controller (%d, %d)\n", NCSI_Cap.Package_ID, NCSI_Cap.Channel_ID);
-            break;
-          }
-          else if ((Link_Status == LINK_DOWN) && (Re_Send < 2)) {
-            Re_Send++;
-            goto Re_Get_Link_Status;
-          }
-//Disable TX
-          Disable_Network_TX(dev);
-//Disable Channel
-//          Disable_Channel(dev);
-          Re_Send = 0;
-          Channel_Found = 0;
-        }
-      }
-    }
-  }
-  return 1;
+	if (!(CONFIG_ASPEED_MAC_PHY_SETTING >= 1))
+		return 1;
+
+	//NCSI Start
+	//DeSelect Package/ Select Package
+	for (i = 0; i < 4; i++) {
+		DeSelect_Package (dev, i);
+		Package_Found = Select_Package (dev, i);
+		if (Package_Found == 1) {
+			//AST2100/AST2050/AST1100 supports 1 package only in current firmware version
+			NCSI_Cap.Package_ID = i;
+			//        Package_Found = 0;
+			break;
+		}
+	}
+	if (!(Package_Found != 0))
+		return 1;
+
+	// Initial State
+	// Suppose 2 channels in current version, You could modify it to 0x1F
+	// to support 31 channels
+	for (i = 0; i < 2; i++) {
+		Channel_Found = Clear_Initial_State(dev, i);
+		if (Channel_Found != 1)
+			continue;
+
+		NCSI_Cap.Channel_ID = i;
+		printf ("Found NCSI Network Controller at (%d, %d)\n", NCSI_Cap.Package_ID, NCSI_Cap.Channel_ID);
+		//Get Version and Capabilities
+		Get_Version_ID(dev);
+		Get_Capabilities(dev);
+		Select_Active_Package(dev);
+		//Configuration
+		Enable_Set_MAC_Address(dev);
+		Enable_Broadcast_Filter(dev);
+		//Enable TX
+		Enable_Network_TX(dev);
+		//Enable Channel
+		Enable_Channel(dev);
+		//Get Link Status
+Re_Get_Link_Status:
+		Link_Status = Get_Link_Status(dev);
+		if (Link_Status == LINK_UP) {
+			printf ("Using NCSI Network Controller (%d, %d)\n", NCSI_Cap.Package_ID, NCSI_Cap.Channel_ID);
+			break;
+		}
+		else if ((Link_Status == LINK_DOWN) && (Re_Send < 2)) {
+			Re_Send++;
+			goto Re_Get_Link_Status;
+		}
+		//Disable TX
+		Disable_Network_TX(dev);
+		//Disable Channel
+		//          Disable_Channel(dev);
+		Re_Send = 0;
+		Channel_Found = 0;
+	}
+	return 1;
 }
 
-static int aspeednic_send(struct eth_device* dev, volatile void *packet, int length)
+static int aspeednic_send(struct eth_device* dev, void *packet, int length)
 {
-  int   status = -1, oldlength = 0, fail = 0;
-  int   i;
+	int   status = -1, oldlength = 0, fail = 0;
+	int   i;
 
-  if (length <= 0) {
-    printf("%s: bad packet size: %d\n", dev->name, length);
-    goto Done;
-  }
-
-
-  for(i = 0; (tx_ring[tx_new].status & cpu_to_le32(TXDMA_OWN)) == 0x80000000; i++) {
-    if (i >= TOUT_LOOP) {
-      printf("%s: tx error buffer not ready\n", dev->name);
-      fail = 1;
-      goto Done;
-    }
-  }
+	if (length <= 0) {
+		printf("%s: bad packet size: %d\n", dev->name, length);
+		goto Done;
+	}
 
 
-  if (length < 60) {
-    oldlength = length;
-//            memset ((void *)cpu_to_le32((u32) (packet + length)), 0, 60 - length);
-    length = 60;
-  }
-  tx_ring[tx_new].buf    = cpu_to_le32(((u32) packet));
-  tx_ring[tx_new].status   &= (~(0x3FFF));
-  tx_ring[tx_new].status   |= cpu_to_le32(LTS | FTS | length);
-  tx_ring[tx_new].status |= cpu_to_le32(TXDMA_OWN);
+	for(i = 0; (tx_ring[tx_new].status & cpu_to_le32(TXDMA_OWN)) == 0x80000000; i++) {
+		if (i >= TOUT_LOOP) {
+			printf("%s: tx error buffer not ready\n", dev->name);
+			fail = 1;
+			goto Done;
+		}
+	}
 
-  OUTL(dev, POLL_DEMAND, TXPD_REG);
 
-  for (i = 0; (tx_ring[tx_new].status & cpu_to_le32(TXDMA_OWN)) == 0x80000000; i++)
-  {
-    if (i >= TOUT_LOOP)
-    {
-      printf(".%s: tx buffer not ready\n", dev->name);
-      fail = 1;
-      goto Done;
-    }
-  }
+	if (length < 60) {
+		oldlength = length;
+		//            memset ((void *)cpu_to_le32((u32) (packet + length)), 0, 60 - length);
+		length = 60;
+	}
+	tx_ring[tx_new].buf    = cpu_to_le32(((u32) packet));
+	tx_ring[tx_new].status   &= (~(0x3FFF));
+	tx_ring[tx_new].status   |= cpu_to_le32(LTS | FTS | length);
+	tx_ring[tx_new].status |= cpu_to_le32(TXDMA_OWN);
 
-  if (fail != 1) {
-    status = oldlength;
-  }
+	OUTL(dev, POLL_DEMAND, TXPD_REG);
 
-  Done:
-  tx_new = (tx_new+1) % NUM_TX_DESC;
+	for (i = 0; (tx_ring[tx_new].status & cpu_to_le32(TXDMA_OWN)) == 0x80000000; i++)
+	{
+		if (i >= TOUT_LOOP)
+		{
+			printf(".%s: tx buffer not ready\n", dev->name);
+			fail = 1;
+			goto Done;
+		}
+	}
 
-  return status;
+	if (fail != 1) {
+		status = oldlength;
+	}
+
+Done:
+	tx_new = (tx_new+1) % NUM_TX_DESC;
+
+	return status;
 }
 
 static int aspeednic_recv(struct eth_device* dev)
 {
-  s32   status;
-  int   length    = 0;
+	s32   status;
+	int   length    = 0;
 
-  for ( ; ; )
-  {
-    status = (s32)le32_to_cpu(rx_ring[rx_new].status);
+	for ( ; ; )
+	{
+		status = (s32)le32_to_cpu(rx_ring[rx_new].status);
 
-    if ((status & RXPKT_STATUS) == 0) {
-      break;
-    }
+		if ((status & RXPKT_STATUS) == 0) {
+			break;
+		}
 
-    if (status & LRS) {
-      /* Valid frame status.
-       */
-      if (status & (RX_ERR | CRC_ERR | FTL | RUNT | RX_ODD_NB)) {
+		if (status & LRS) {
+			/* Valid frame status.
+			*/
+			if (status & (RX_ERR | CRC_ERR | FTL | RUNT | RX_ODD_NB)) {
 
-        /* There was an error.
-         */
-        printf("RX error status = 0x%08X\n", status);
-      } else {
-        /* A valid frame received.
-         */
-        length = (le32_to_cpu(rx_ring[rx_new].status) & 0x3FFF);
-        debug("%s(): RX buffer %d, %x received\n",
-              __func__, rx_new, length);
+				/* There was an error.
+				*/
+				printf("RX error status = 0x%08X\n", status);
+			} else {
+				/* A valid frame received.
+				*/
+				length = (le32_to_cpu(rx_ring[rx_new].status) & 0x3FFF);
+				debug("%s(): RX buffer %d, %x received\n",
+						__func__, rx_new, length);
 
 
-        /* Pass the packet up to the protocol
-         * layers.
-         */
-        NetReceive(rx_buffer[rx_new], length - 4);
-      }
+				/* Pass the packet up to the protocol
+				 * layers.
+				 */
+				net_process_received_packet(rx_buffer[rx_new], length - 4);
+			}
 
-      /* Change buffer ownership for this frame, back
-       * to the adapter.
-       */
-      rx_ring[rx_new].status &= cpu_to_le32(0x7FFFFFFF);
-//      rx_ring[rx_new].status = cpu_to_le32(RXPKT_RDY);
-    }
+			/* Change buffer ownership for this frame, back
+			 * to the adapter.
+			 */
+			rx_ring[rx_new].status &= cpu_to_le32(0x7FFFFFFF);
 
-    /* Update entry information.
-     */
-    rx_new = (rx_new + 1) % rxRingSize;
-  }
+			/*
+			 * Ask the hardware for any other packets now that we
+			 * have a known spare slot
+			 */
+			OUTL(dev, POLL_DEMAND, RXPD_REG);
+			//      rx_ring[rx_new].status = cpu_to_le32(RXPKT_RDY);
+		}
 
-  return length;
+		/* Update entry information.
+		*/
+		rx_new = (rx_new + 1) % rxRingSize;
+	}
+
+	/*
+	 * Ask the hardware for more packets so that they'll be DMAed by the
+	 * time we return to this loop
+	 */
+	OUTL(dev, POLL_DEMAND, RXPD_REG);
+
+	return length;
 }
 
 static void aspeednic_halt(struct eth_device* dev)
 {
-  STOP_MAC(dev);
+	STOP_MAC(dev);
 }
 
-static void set_mac_address (struct eth_device* dev, bd_t* bis)
+static int aspeednic_write_hwaddr(struct eth_device* dev)
 {
-  if (!eth_getenv_enetaddr_by_index("eth", 0, dev->enetaddr)) {
-    eth_random_enetaddr(dev->enetaddr);
-  }
+	OUTL(dev, ((dev->enetaddr[2] << 24) | (dev->enetaddr[3] << 16)
+				| (dev->enetaddr[4] << 8) | dev->enetaddr[5]), MAC_LADR_REG);
+	OUTL(dev, ((dev->enetaddr[0] << 8) | dev->enetaddr[1]), MAC_MADR_REG);
+	if (CONFIG_ASPEED_MAC_PHY_SETTING >= 1) {
+		memcpy(NCSI_Request.SA, dev->enetaddr, 6);
+	}
 
-  OUTL(dev, ((dev->enetaddr[2] << 24) | (dev->enetaddr[3] << 16)
-             | (dev->enetaddr[4] << 8) | dev->enetaddr[5]), MAC_LADR_REG);
-  OUTL(dev, ((dev->enetaddr[0] << 8) | dev->enetaddr[1]), MAC_MADR_REG);
-  if (CONFIG_ASPEED_MAC_PHY_SETTING >= 1) {
-    memcpy(NCSI_Request.SA, dev->enetaddr, 6);
-  }
+	return 0;
 }
 
 static u16 phy_read_register (struct eth_device* dev, u8 PHY_Register, u8 PHY_Address)
 {
-  u32 Data, Status = 0, Loop_Count = 0, PHY_Ready = 1;
-  u16 Return_Data;
+	u32 Data, Status = 0, Loop_Count = 0, PHY_Ready = 1;
+	u16 Return_Data;
 
-//20us * 100 = 2ms > (1 / 2.5Mhz) * 0x34
-  OUTL(dev, (PHY_Register << 21) + (PHY_Address << 16) + MIIRD + MDC_CYCTHR, PHYCR_REG);
-  do {
-    udelay(20);
-    Status = (INL (dev, PHYCR_REG) & MIIRD);
-    Loop_Count++;
-    if (Loop_Count >= 100) {
-      PHY_Ready = 0;
-      break;
-    }
-  } while (Status == MIIRD);
+	//20us * 100 = 2ms > (1 / 2.5Mhz) * 0x34
+	OUTL(dev, (PHY_Register << 21) + (PHY_Address << 16) + MIIRD + MDC_CYCTHR, PHYCR_REG);
+	do {
+		udelay(20);
+		Status = (INL (dev, PHYCR_REG) & MIIRD);
+		Loop_Count++;
+		if (Loop_Count >= 100) {
+			PHY_Ready = 0;
+			break;
+		}
+	} while (Status == MIIRD);
 
-  if (PHY_Ready == 0) {
-    return 0;
-  }
-  Data = INL (dev, PHYDATA_REG);
-  Return_Data = (Data >> 16);
+	if (PHY_Ready == 0) {
+		return 0;
+	}
+	Data = INL (dev, PHYDATA_REG);
+	Return_Data = (Data >> 16);
 
-  return Return_Data;
+	return Return_Data;
 }
 
 
 static void phy_write_register (struct eth_device* dev, u8 PHY_Register, u8 PHY_Address, u16 PHY_Data)
 {
-  u32 Status = 0, Loop_Count = 0, PHY_Ready = 1;
+	u32 Status = 0, Loop_Count = 0;
 
-//20us * 100 = 2ms > (1 / 2.5Mhz) * 0x34
-  OUTL(dev, PHY_Data, PHYDATA_REG);
-  OUTL(dev, (PHY_Register << 21) + (PHY_Address << 16) + MIIWR + MDC_CYCTHR, PHYCR_REG);
-  do {
-    udelay(20);
-    Status = (INL (dev, PHYCR_REG) & MIIWR);
-    Loop_Count++;
-    if (Loop_Count >= 100) {
-      PHY_Ready = 0;
-      break;
-    }
-  } while (Status == MIIWR);
+	//20us * 100 = 2ms > (1 / 2.5Mhz) * 0x34
+	OUTL(dev, PHY_Data, PHYDATA_REG);
+	OUTL(dev, (PHY_Register << 21) + (PHY_Address << 16) + MIIWR + MDC_CYCTHR, PHYCR_REG);
+	do {
+		udelay(20);
+		Status = (INL (dev, PHYCR_REG) & MIIWR);
+		Loop_Count++;
+		if (Loop_Count >= 100) {
+			break;
+		}
+	} while (Status == MIIWR);
 }
 
 #if defined(CONFIG_MII) || defined(CONFIG_CMD_MII)
 
 static int faraday_mdio_read(
-  const char *devname, uint8_t addr, uint8_t reg, uint16_t *value)
+		const char *devname, uint8_t addr, uint8_t reg, uint16_t *value)
 {
-  int ret = 0;
-  struct eth_device *dev;
+	int ret = 0;
+	struct eth_device *dev;
 
-  dev = eth_get_dev_by_name(devname);
-  if (dev == NULL) {
-    printf("%s: no such device\n", devname);
-    ret = -1;
-  } else {
-    *value = phy_read_register(dev, reg, addr);
-  }
+	dev = eth_get_dev_by_name(devname);
+	if (dev == NULL) {
+		printf("%s: no such device\n", devname);
+		ret = -1;
+	} else {
+		*value = phy_read_register(dev, reg, addr);
+	}
 
-  return ret;
+	return ret;
 }
 
 static int faraday_mdio_write(
-  const char *devname, uint8_t addr, uint8_t reg, uint16_t value)
+		const char *devname, uint8_t addr, uint8_t reg, uint16_t value)
 {
-  int ret = 0;
-  struct eth_device *dev;
+	int ret = 0;
+	struct eth_device *dev;
 
-  dev = eth_get_dev_by_name(devname);
-  if (dev == NULL) {
-    printf("%s: no such device\n", devname);
-    ret = -1;
-  } else {
-    phy_write_register(dev, reg, addr, value);
-  }
+	dev = eth_get_dev_by_name(devname);
+	if (dev == NULL) {
+		printf("%s: no such device\n", devname);
+		ret = -1;
+	} else {
+		phy_write_register(dev, reg, addr, value);
+	}
 
-  return ret;
+	return ret;
 }
 
 #endif    /* #if defined(CONFIG_MII) || defined(CONFIG_CMD_MII) */
 
 static void set_mac_control_register (struct eth_device* dev)
 {
-  unsigned long MAC_CR_Register = 0;
-  unsigned int   Loop_Count = 0, PHY_Ready = 1, Chip_ID;
-  u16    PHY_Status, PHY_Speed, PHY_Duplex, Resolved_Status = 0, Advertise, Link_Partner;
+	unsigned long MAC_CR_Register = 0;
+	unsigned int   Loop_Count = 0, PHY_Ready = 1, Chip_ID;
+	u16    PHY_Status, PHY_Speed, PHY_Duplex, Resolved_Status = 0, Advertise, Link_Partner;
 
-  if (CONFIG_ASPEED_MAC_PHY_SETTING >= 1) {
-    MAC_CR_Register = SPEED_100M_MODE_bit | RX_BROADPKT_bit | FULLDUP_bit | RXMAC_EN_bit | RXDMA_EN_bit | TXMAC_EN_bit | TXDMA_EN_bit | CRC_APD_bit;
-  }
-  else {
-    MAC_CR_Register = SPEED_100M_MODE_bit | FULLDUP_bit | RXMAC_EN_bit | RXDMA_EN_bit | TXMAC_EN_bit | TXDMA_EN_bit | CRC_APD_bit;
-  }
+	if (CONFIG_ASPEED_MAC_PHY_SETTING >= 1) {
+		printf("%s %d\n", __func__, __LINE__);
+		MAC_CR_Register = SPEED_100M_MODE_bit | RX_BROADPKT_bit |
+			FULLDUP_bit | RXMAC_EN_bit | RXDMA_EN_bit |
+			TXMAC_EN_bit | TXDMA_EN_bit | CRC_APD_bit;
+	}
+	else {
+		printf("%s %d\n", __func__, __LINE__);
+		MAC_CR_Register = SPEED_100M_MODE_bit | FULLDUP_bit |
+			RXMAC_EN_bit | RXDMA_EN_bit | TXMAC_EN_bit |
+			TXDMA_EN_bit | CRC_APD_bit;
+	}
 
-  if (CONFIG_ASPEED_MAC_PHY_SETTING != 2) {
-    Chip_ID = ((phy_read_register (dev, 0x02, g_phy_addr)) << 16);
-    Chip_ID |= (phy_read_register (dev, 0x03, g_phy_addr) & 0xffff);
-    if (((Chip_ID & PHYID_VENDOR_MASK) == PHYID_VENDOR_BROADCOM) ||
-        ((Chip_ID & PHYID_VENDOR_MODEL_MASK) == PHYID_RTL8201EL)) {
-      Advertise = phy_read_register (dev, 0x04, g_phy_addr);
-      Link_Partner = phy_read_register (dev, 0x05, g_phy_addr);
-      Advertise = (Advertise & PHY_SPEED_DUPLEX_MASK);
-      Link_Partner = (Link_Partner & PHY_SPEED_DUPLEX_MASK);
-      if ((Advertise & Link_Partner) & PHY_100M_DUPLEX) {
-        MAC_CR_Register |= SPEED_100M_MODE_bit;
-        MAC_CR_Register |= FULLDUP_bit;
-      }
-      else if ((Advertise & Link_Partner) & PHY_100M_HALF) {
-        MAC_CR_Register |= SPEED_100M_MODE_bit;
-        MAC_CR_Register &= ~FULLDUP_bit;
-      }
-      else if ((Advertise & Link_Partner) & PHY_10M_DUPLEX) {
-        MAC_CR_Register &= ~SPEED_100M_MODE_bit;
-        MAC_CR_Register |= FULLDUP_bit;
-      }
-      else if ((Advertise & Link_Partner) & PHY_10M_HALF) {
-        MAC_CR_Register &= ~SPEED_100M_MODE_bit;
-        MAC_CR_Register &= ~FULLDUP_bit;
-      }
-    }
-    else if (((Chip_ID & PHYID_VENDOR_MASK) == PHYID_VENDOR_MARVELL) ||
-             ((Chip_ID & PHYID_VENDOR_MODEL_MASK) == PHYID_RTL8211)) {
-//Max waiting time = (20 + 2)ms * 250(PHY_LOOP) = 5.5s
-      do {
-        udelay (20000);
-        Resolved_Status = (phy_read_register (dev, 0x11, g_phy_addr)
-                           & RESOLVED_BIT);
-        Loop_Count++;
-        if (Loop_Count >= PHY_LOOP) {
-          PHY_Ready = 0;
-          printf ("PHY NOT READY ");
-          break;
-        }
-      } while (Resolved_Status != RESOLVED_BIT);
+	if (CONFIG_ASPEED_MAC_PHY_SETTING != 2) {
+		Chip_ID = ((phy_read_register (dev, 0x02, g_phy_addr)) << 16);
+		Chip_ID |= (phy_read_register (dev, 0x03, g_phy_addr) & 0xffff);
+		if (((Chip_ID & PHYID_VENDOR_MASK) == PHYID_VENDOR_BROADCOM) ||
+				((Chip_ID & PHYID_VENDOR_MODEL_MASK) == PHYID_RTL8201EL)) {
+			Advertise = phy_read_register (dev, 0x04, g_phy_addr);
+			Link_Partner = phy_read_register (dev, 0x05, g_phy_addr);
+			Advertise = (Advertise & PHY_SPEED_DUPLEX_MASK);
+			Link_Partner = (Link_Partner & PHY_SPEED_DUPLEX_MASK);
+			if ((Advertise & Link_Partner) & PHY_100M_DUPLEX) {
+				MAC_CR_Register |= SPEED_100M_MODE_bit;
+				MAC_CR_Register |= FULLDUP_bit;
+			}
+			else if ((Advertise & Link_Partner) & PHY_100M_HALF) {
+				MAC_CR_Register |= SPEED_100M_MODE_bit;
+				MAC_CR_Register &= ~FULLDUP_bit;
+			}
+			else if ((Advertise & Link_Partner) & PHY_10M_DUPLEX) {
+				MAC_CR_Register &= ~SPEED_100M_MODE_bit;
+				MAC_CR_Register |= FULLDUP_bit;
+			}
+			else if ((Advertise & Link_Partner) & PHY_10M_HALF) {
+				MAC_CR_Register &= ~SPEED_100M_MODE_bit;
+				MAC_CR_Register &= ~FULLDUP_bit;
+			}
+		}
+		else if (((Chip_ID & PHYID_VENDOR_MASK) == PHYID_VENDOR_MARVELL) ||
+				((Chip_ID & PHYID_VENDOR_MODEL_MASK) == PHYID_RTL8211)) {
+			//Max waiting time = (20 + 2)ms * 250(PHY_LOOP) = 5.5s
+			do {
+				udelay (20000);
+				Resolved_Status = (phy_read_register (dev, 0x11, g_phy_addr)
+						& RESOLVED_BIT);
+				Loop_Count++;
+				if (Loop_Count >= PHY_LOOP) {
+					PHY_Ready = 0;
+					printf ("PHY NOT READY ");
+					break;
+				}
+			} while (Resolved_Status != RESOLVED_BIT);
 
-      if (PHY_Ready == 1) {
-        PHY_Status = phy_read_register (dev, 0x11, g_phy_addr);
-        PHY_Speed = (PHY_Status & PHY_SPEED_MASK) >> 14;
-        PHY_Duplex = (PHY_Status & PHY_DUPLEX_MASK) >> 13;
+			if (PHY_Ready == 1) {
+				PHY_Status = phy_read_register (dev, 0x11, g_phy_addr);
+				PHY_Speed = (PHY_Status & PHY_SPEED_MASK) >> 14;
+				PHY_Duplex = (PHY_Status & PHY_DUPLEX_MASK) >> 13;
 
-        if (PHY_Speed == SPEED_1000M) {
-          MAC_CR_Register |= GMAC_MODE_bit;
-        }
-        else {
-          MAC_CR_Register &= ~GMAC_MODE_bit;
-          if (PHY_Speed == SPEED_10M) {
-            MAC_CR_Register &= ~SPEED_100M_MODE_bit;
-          }
-        }
-        if (PHY_Duplex == DUPLEX_HALF) {
-          MAC_CR_Register &= ~FULLDUP_bit;
-        }
-      }
-//LED Control
-//              if (Chip_ID == 0x1C) {
-//                  PHY_Status = phy_read_register (dev, 0x18, g_phy_addr);
-//                phy_write_register (dev, 0x18, g_phy_addr, (PHY_Status | 0x09));
-//              }
-//LED Control D[0], D[6]
-//              if (Chip_ID == 0x141) {
-//                  PHY_Status = phy_read_register (dev, 0x18, g_phy_addr);
-//                phy_write_register (dev, 0x18, g_phy_addr, ((PHY_Status & ~(0x41)) | 0x01));
-//              }
-    }
-    else if (Chip_ID == PHYID_BCM54612E || Chip_ID == PHYID_BCM54616S) {
-      // Disable GTXCLK Clock Delay Enable
-      phy_write_register( dev, 0x1C, g_phy_addr, 0x8C00);
-      // Disable RGMII RXD to RXC Skew
-      phy_write_register( dev, 0x18, g_phy_addr, 0xF0E7);
-      // First Switch shadow register selector
-      phy_write_register(dev, 0x1C, g_phy_addr, 0x2000);
-      PHY_Status = phy_read_register(dev, 0x1C, g_phy_addr);
-      PHY_Duplex = (PHY_Status & 0x0080);
-      switch (PHY_Status & 0x0018) {
-      case 0x0000:
-        PHY_Speed = SPEED_1000M;
-        break;
-      case 0x0008:
-        PHY_Speed = SPEED_100M;
-        break;
-      case 0x0010:
-        PHY_Speed = SPEED_10M;
-        break;
-      default:
-        PHY_Speed = SPEED_100M;
-        break;
-      }
-      if (PHY_Speed == SPEED_1000M) {
-        MAC_CR_Register |= GMAC_MODE_bit;
-      } else {
-        MAC_CR_Register &= ~GMAC_MODE_bit;
-        if (PHY_Speed == SPEED_100M) {
-          MAC_CR_Register |= SPEED_100M_MODE_bit;
-        } else {
-          MAC_CR_Register &= ~SPEED_100M_MODE_bit;
-        }
-      }
-      if (PHY_Duplex) {
-        MAC_CR_Register |= FULLDUP_bit;
-      } else {
-        MAC_CR_Register &= ~FULLDUP_bit;
-      }
-    } else {
-      printf("Unknow Chip_ID %x\n",Chip_ID);
-    }
-  }
-  OUTL(dev, MAC_CR_Register, MACCR_REG);
+				if (PHY_Speed == SPEED_1000M) {
+					MAC_CR_Register |= GMAC_MODE_bit;
+				}
+				else {
+					MAC_CR_Register &= ~GMAC_MODE_bit;
+					if (PHY_Speed == SPEED_10M) {
+						MAC_CR_Register &= ~SPEED_100M_MODE_bit;
+					}
+				}
+				if (PHY_Duplex == DUPLEX_HALF) {
+					MAC_CR_Register &= ~FULLDUP_bit;
+				}
+			}
+			//LED Control
+			//              if (Chip_ID == 0x1C) {
+			//                  PHY_Status = phy_read_register (dev, 0x18, g_phy_addr);
+			//                phy_write_register (dev, 0x18, g_phy_addr, (PHY_Status | 0x09));
+			//              }
+			//LED Control D[0], D[6]
+			//              if (Chip_ID == 0x141) {
+			//                  PHY_Status = phy_read_register (dev, 0x18, g_phy_addr);
+			//                phy_write_register (dev, 0x18, g_phy_addr, ((PHY_Status & ~(0x41)) | 0x01));
+			//              }
+		}
+		else if (Chip_ID == PHYID_BCM54612E || Chip_ID == PHYID_BCM54616S) {
+			// Disable GTXCLK Clock Delay Enable
+			phy_write_register( dev, 0x1C, g_phy_addr, 0x8C00);
+			// Disable RGMII RXD to RXC Skew
+			phy_write_register( dev, 0x18, g_phy_addr, 0xF0E7);
+			// First Switch shadow register selector
+			phy_write_register(dev, 0x1C, g_phy_addr, 0x2000);
+			PHY_Status = phy_read_register(dev, 0x1C, g_phy_addr);
+			PHY_Duplex = (PHY_Status & 0x0080);
+			switch (PHY_Status & 0x0018) {
+				case 0x0000:
+					PHY_Speed = SPEED_1000M;
+					break;
+				case 0x0008:
+					PHY_Speed = SPEED_100M;
+					break;
+				case 0x0010:
+					PHY_Speed = SPEED_10M;
+					break;
+				default:
+					PHY_Speed = SPEED_100M;
+					break;
+			}
+			if (PHY_Speed == SPEED_1000M) {
+				MAC_CR_Register |= GMAC_MODE_bit;
+			} else {
+				MAC_CR_Register &= ~GMAC_MODE_bit;
+				if (PHY_Speed == SPEED_100M) {
+					MAC_CR_Register |= SPEED_100M_MODE_bit;
+				} else {
+					MAC_CR_Register &= ~SPEED_100M_MODE_bit;
+				}
+			}
+			if (PHY_Duplex) {
+				MAC_CR_Register |= FULLDUP_bit;
+			} else {
+				MAC_CR_Register &= ~FULLDUP_bit;
+			}
+		} else {
+			printf("Unknow Chip_ID %x\n",Chip_ID);
+		}
+	}
+	OUTL(dev, MAC_CR_Register, MACCR_REG);
 }
 
-#endif  /* CFG_CMD_NET && CONFIG_NET_MULTI && CONFIG_ASPEEDMAC */
+//#endif  /* CFG_CMD_NET && CONFIG_NET_MULTI && CONFIG_ASPEEDMAC */

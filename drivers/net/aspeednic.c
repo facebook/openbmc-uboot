@@ -523,8 +523,8 @@ static void aspeed_mac2_enable(void)
 
 int aspeednic_initialize(bd_t *bis)
 {
-	int               card_number = CONFIG_ASPEED_MAC_CONFIG - 1;
-	unsigned int    iobase, reg;
+	int card_number = CONFIG_ASPEED_MAC_CONFIG - 1;
+	unsigned int iobase;
 	struct eth_device*  dev;
 
 	aspeed_mac1_enable();
@@ -1140,8 +1140,8 @@ static int aspeednic_init(struct eth_device* dev, bd_t* bis)
 
 	aspeednic_probe_phy(dev);
 
-	set_mac_address (dev, bis);
-	set_mac_control_register (dev);
+	set_mac_address(dev, bis);
+	set_mac_control_register(dev);
 
 	for (i = 0; i < NUM_RX_DESC; i++) {
 		rx_ring[i].status = cpu_to_le32(RXPKT_RDY + RX_BUFF_SZ);
@@ -1170,57 +1170,62 @@ static int aspeednic_init(struct eth_device* dev, bd_t* bis)
 	tx_new = 0;
 	rx_new = 0;
 
-	if (CONFIG_ASPEED_MAC_PHY_SETTING >= 1) {
-		//NCSI Start
-		//DeSelect Package/ Select Package
-		for (i = 0; i < 4; i++) {
-			DeSelect_Package (dev, i);
-			Package_Found = Select_Package (dev, i);
-			if (Package_Found == 1) {
-				//AST2100/AST2050/AST1100 supports 1 package only in current firmware version
-				NCSI_Cap.Package_ID = i;
-				//        Package_Found = 0;
-				break;
-			}
+	if (!(CONFIG_ASPEED_MAC_PHY_SETTING >= 1))
+		return 1;
+
+	//NCSI Start
+	//DeSelect Package/ Select Package
+	for (i = 0; i < 4; i++) {
+		DeSelect_Package (dev, i);
+		Package_Found = Select_Package (dev, i);
+		if (Package_Found == 1) {
+			//AST2100/AST2050/AST1100 supports 1 package only in current firmware version
+			NCSI_Cap.Package_ID = i;
+			//        Package_Found = 0;
+			break;
 		}
-		if (Package_Found != 0) {
-			//Initiali State
-			for (i = 0; i < 2; i++) { //Suppose 2 channels in current version, You could modify it to 0x1F to support 31 channels
-				Channel_Found = Clear_Initial_State(dev, i);
-				if (Channel_Found == 1) {
-					NCSI_Cap.Channel_ID = i;
-					printf ("Found NCSI Network Controller at (%d, %d)\n", NCSI_Cap.Package_ID, NCSI_Cap.Channel_ID);
-					//Get Version and Capabilities
-					Get_Version_ID(dev);
-					Get_Capabilities(dev);
-					Select_Active_Package(dev);
-					//Configuration
-					Enable_Set_MAC_Address(dev);
-					Enable_Broadcast_Filter(dev);
-					//Enable TX
-					Enable_Network_TX(dev);
-					//Enable Channel
-					Enable_Channel(dev);
-					//Get Link Status
+	}
+	if (!(Package_Found != 0))
+		return 1;
+
+	// Initial State
+	// Suppose 2 channels in current version, You could modify it to 0x1F
+	// to support 31 channels
+	for (i = 0; i < 2; i++) {
+		Channel_Found = Clear_Initial_State(dev, i);
+		if (Channel_Found != 1)
+			continue;
+
+		NCSI_Cap.Channel_ID = i;
+		printf ("Found NCSI Network Controller at (%d, %d)\n", NCSI_Cap.Package_ID, NCSI_Cap.Channel_ID);
+		//Get Version and Capabilities
+		Get_Version_ID(dev);
+		Get_Capabilities(dev);
+		Select_Active_Package(dev);
+		//Configuration
+		Enable_Set_MAC_Address(dev);
+		Enable_Broadcast_Filter(dev);
+		//Enable TX
+		Enable_Network_TX(dev);
+		//Enable Channel
+		Enable_Channel(dev);
+		//Get Link Status
 Re_Get_Link_Status:
-					Link_Status = Get_Link_Status(dev);
-					if (Link_Status == LINK_UP) {
-						printf ("Using NCSI Network Controller (%d, %d)\n", NCSI_Cap.Package_ID, NCSI_Cap.Channel_ID);
-						break;
-					}
-					else if ((Link_Status == LINK_DOWN) && (Re_Send < 2)) {
-						Re_Send++;
-						goto Re_Get_Link_Status;
-					}
-					//Disable TX
-					Disable_Network_TX(dev);
-					//Disable Channel
-					//          Disable_Channel(dev);
-					Re_Send = 0;
-					Channel_Found = 0;
-				}
-			}
+		Link_Status = Get_Link_Status(dev);
+		if (Link_Status == LINK_UP) {
+			printf ("Using NCSI Network Controller (%d, %d)\n", NCSI_Cap.Package_ID, NCSI_Cap.Channel_ID);
+			break;
 		}
+		else if ((Link_Status == LINK_DOWN) && (Re_Send < 2)) {
+			Re_Send++;
+			goto Re_Get_Link_Status;
+		}
+		//Disable TX
+		Disable_Network_TX(dev);
+		//Disable Channel
+		//          Disable_Channel(dev);
+		Re_Send = 0;
+		Channel_Found = 0;
 	}
 	return 1;
 }

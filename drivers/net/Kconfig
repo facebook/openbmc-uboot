@@ -168,10 +168,16 @@ config ZYNQ_GEM
 
 config PIC32_ETH
 	bool "Microchip PIC32 Ethernet Support"
-	depends on DM_ETH && MACH_PIC32
-	select PHYLIB
 	help
 	  This driver implements 10/100 Mbps Ethernet and MAC layer for
 	  Microchip PIC32 microcontrollers.
+
+config ASPEEDNIC
+	bool "Aspeed ethernet support"
+	depends on MACH_ARM
+	select PHYLIB
+	help
+	  Network support for the Aspeed ast2400 and ast2500 series network
+	  devices including NC-SI support.
 
 endif # NETDEVICES

@@ -1,0 +1,18 @@
+if TARGET_WITHERSPOON_BMC
+
+config SYS_CPU
+	default "arm1176"
+
+config SYS_BOARD
+	default "witherspoon-bmc"
+
+config SYS_VENDOR
+	default "aspeed"
+
+config SYS_SOC
+	default "aspeed"
+
+config SYS_CONFIG_NAME
+	default "witherspoon-bmc"
+
+endif

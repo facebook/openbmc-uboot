@@ -542,12 +542,6 @@ int aspeednic_initialize(bd_t *bis)
 		//NCSI Struct Initialize
 		NCSI_Struct_Initialize();
 	}
-	//Set Scratch register (0x1E6E2040 D[15:14])(0x1E6E2041 D[7:6]) to inform kernel MAC1 driver
-	reg = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_SCRATCH_REGISTER));
-	*(volatile u_long *)(SCU_BASE + SCU_SCRATCH_REGISTER) = cpu_to_le32((reg & ~(0xc000)) | (CONFIG_MAC1_PHY_SETTING << 14));
-	//Set Scratch register (0x1E6E2040 D[13:12])(0x1E6E2041 D[5:4]) to inform kernel MAC2 driver
-	reg = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_SCRATCH_REGISTER));
-	*(volatile u_long *)(SCU_BASE + SCU_SCRATCH_REGISTER) = cpu_to_le32((reg & ~(0x3000)) | (CONFIG_MAC2_PHY_SETTING << 12));
 
 	dev->init = aspeednic_init;
 	dev->halt = aspeednic_halt;

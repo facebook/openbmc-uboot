@@ -11,6 +11,7 @@
 
 #include <common.h>
 #include <net.h>
+#include <asm/io.h>
 
 //#if defined(CONFIG_CMD_NET) && defined(CONFIG_NET_MULTI) && defined(CONFIG_ASPEEDNIC)
 
@@ -452,58 +453,86 @@ void NCSI_Struct_Initialize(void)
 	NCSI_Respond.Reserved_3 = 0;
 }
 
+static void aspeed_mac1_enable(void)
+{
+	u32 reg;
+
+	/* MAC1 CLOCK/RESET/PHY_LINK/MDC_MDIO in SCU */
+	reg = readl(AST_SCU_BASE + SCU_RESET_CONTROL);
+	writel(reg | BIT(11), AST_SCU_BASE + SCU_RESET_CONTROL);
+	udelay(100);
+
+	reg = readl(AST_SCU_BASE + SCU_CLOCK_CONTROL);
+	writel(reg & ~MAC1_CLOCK_ENABLE, AST_SCU_BASE + SCU_CLOCK_CONTROL);
+	udelay(10000);
+
+	reg = readl(AST_SCU_BASE + SCU_RESET_CONTROL);
+	writel(reg & ~BIT(11), AST_SCU_BASE + SCU_RESET_CONTROL);
+
+	/* Put pins in RMII/NCSI mode
+	 * Strap[6] = 0 and SCUA0[0:3, 12, 14:17]
+	 *
+	 * RMII1CLKI	SCUA0[12] = 0
+	 * RMII1RCLKO	SCUA0[0] = 0
+	 * RMII1TXEN	SCUA0[1] = 0
+	 * RMII1TXD0	SCUA0[2] = 0
+	 * RMII1TXD1	SCUA0[3] = 0
+	 * RMII1RXD0	SCUA0[14] = 0
+	 * RMII1RXD1	SCUA0[15] = 0
+	 * RMII1CRSDV	SCUA0[16] = 0
+	 * RMII1RXER	SCUA0[17] = 0
+	 */
+	reg = readl(AST_SCU_BASE + 0xA0);
+	writel(reg & ~0x3d00f, AST_SCU_BASE + 0xA0);
+
+	reg = readl(AST_SCU_BASE + 0x70);
+	writel(reg & ~BIT(6), AST_SCU_BASE + 0x70);
+
+	/* RMII1 50MHz RCLK output enable */
+	reg = readl(AST_SCU_BASE + 0x48);
+	writel(reg | BIT(29), AST_SCU_BASE + 0x48);
+
+#ifdef CONFIG_MAC1_PHY_LINK_INTERRUPT
+	reg = readl(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL1_REG);
+	writel(reg | MAC1_PHY_LINK, SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL1_REG);
+#endif
+}
+
+static void aspeed_mac2_enable(void)
+{
+	//MAC2 CLOCK/RESET/PHY_LINK/MDC_MDIO
+#ifdef CONFIG_MAC2_ENABLE
+	u32 reg;
+
+	reg = readl(SCU_BASE + SCU_RESET_CONTROL);
+	writel(reg | 0x1000, SCU_BASE + SCU_RESET_CONTROL);
+	udelay(10);
+	reg = readl(SCU_BASE + SCU_CLOCK_CONTROL);
+	writel(reg & ~MAC2_CLOCK_ENABLE, SCU_BASE + SCU_CLOCK_CONTROL);
+	udelay(10000);
+	reg = readl(SCU_BASE + SCU_RESET_CONTROL);
+	writel(reg & ~0x1000, SCU_BASE + SCU_RESET_CONTROL);
+	reg = readl(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL5_REG);
+	writel(reg | (MAC2_MDC_MDIO), SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL5_REG);
+#ifdef CONFIG_MAC2_PHY_LINK_INTERRUPT
+	reg = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL1_REG));
+	writel(reg | MAC2_PHY_LINK, SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL1_REG);
+#endif
+#endif
+}
+
 int aspeednic_initialize(bd_t *bis)
 {
 	int               card_number = CONFIG_ASPEED_MAC_CONFIG - 1;
-	unsigned int    iobase, SCURegister;
+	unsigned int    iobase, reg;
 	struct eth_device*  dev;
 
-	//AST2300
-	//MAC1 CLOCK/RESET/PHY_LINK/MDC_MDIO in SCU
-	SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL));
-	*(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL) = cpu_to_le32(SCURegister | 0x800);
-	udelay(100);
-	SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_CLOCK_CONTROL));
-	*(volatile u_long *)(SCU_BASE + SCU_CLOCK_CONTROL) = cpu_to_le32(SCURegister & ~(MAC1_CLOCK_ENABLE));
-	udelay(10000);
-	//Add Clock Selection in AST2300 A1, Please check the datasheet for more detail
-	//The current sample code uses 0: H-PLL/2 because all EVBs have RGMII interface
-	//        SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_CLOCK_SELECTION));
-	//  *(volatile u_long *)(SCU_BASE + SCU_CLOCK_SELECTION) = cpu_to_le32(SCURegister & ~(MAC_AHB_CLOCK_DIVIDER));
-	SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL));
-	*(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL) = cpu_to_le32(SCURegister & ~(0x800));
-	SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL3_REG));
-	*(volatile u_long *)(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL3_REG) = cpu_to_le32(SCURegister | (MAC1_MDIO | MAC1_MDC));
-	//        SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_MAC_CLOCK_DELAY));
-	//Currently we use fix value in MAC timing on EVB
-	//  *(volatile u_long *)(SCU_BASE + SCU_MAC_CLOCK_DELAY) = CONFIG_MAC_INTERFACE_CLOCK_DELAY;
-#ifdef CONFIG_MAC1_PHY_LINK_INTERRUPT
-	SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL1_REG));
-	*(volatile u_long *)(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL1_REG) = cpu_to_le32(SCURegister | (MAC1_PHY_LINK));
-#endif
-
-	//MAC2 CLOCK/RESET/PHY_LINK/MDC_MDIO
-#ifdef CONFIG_MAC2_ENABLE
-	SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL));
-	*(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL) = cpu_to_le32(SCURegister | 0x1000);
-	udelay(10);
-	SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_CLOCK_CONTROL));
-	*(volatile u_long *)(SCU_BASE + SCU_CLOCK_CONTROL) = cpu_to_le32(SCURegister & ~(MAC2_CLOCK_ENABLE));
-	udelay(10000);
-	SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL));
-	*(volatile u_long *)(SCU_BASE + SCU_RESET_CONTROL) = cpu_to_le32(SCURegister & ~(0x1000));
-	SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL5_REG));
-	*(volatile u_long *)(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL5_REG) = cpu_to_le32(SCURegister | (MAC2_MDC_MDIO));
-#endif
-#ifdef CONFIG_MAC2_PHY_LINK_INTERRUPT
-	SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL1_REG));
-	*(volatile u_long *)(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL1_REG) = cpu_to_le32(SCURegister | (MAC2_PHY_LINK));
-#endif
+	aspeed_mac1_enable();
+	aspeed_mac2_enable();
 
 	iobase = aspeednic_iobase[card_number];
 
 	dev = &aspeednic_device[card_number];
-
 
 	sprintf(dev->name, "aspeednic#%d", card_number);
 
@@ -514,11 +543,11 @@ int aspeednic_initialize(bd_t *bis)
 		NCSI_Struct_Initialize();
 	}
 	//Set Scratch register (0x1E6E2040 D[15:14])(0x1E6E2041 D[7:6]) to inform kernel MAC1 driver
-	SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_SCRATCH_REGISTER));
-	*(volatile u_long *)(SCU_BASE + SCU_SCRATCH_REGISTER) = cpu_to_le32((SCURegister & ~(0xc000)) | (CONFIG_MAC1_PHY_SETTING << 14));
+	reg = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_SCRATCH_REGISTER));
+	*(volatile u_long *)(SCU_BASE + SCU_SCRATCH_REGISTER) = cpu_to_le32((reg & ~(0xc000)) | (CONFIG_MAC1_PHY_SETTING << 14));
 	//Set Scratch register (0x1E6E2040 D[13:12])(0x1E6E2041 D[5:4]) to inform kernel MAC2 driver
-	SCURegister = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_SCRATCH_REGISTER));
-	*(volatile u_long *)(SCU_BASE + SCU_SCRATCH_REGISTER) = cpu_to_le32((SCURegister & ~(0x3000)) | (CONFIG_MAC2_PHY_SETTING << 12));
+	reg = le32_to_cpu(*(volatile u_long *)(SCU_BASE + SCU_SCRATCH_REGISTER));
+	*(volatile u_long *)(SCU_BASE + SCU_SCRATCH_REGISTER) = cpu_to_le32((reg & ~(0x3000)) | (CONFIG_MAC2_PHY_SETTING << 12));
 
 	dev->init = aspeednic_init;
 	dev->halt = aspeednic_halt;
@@ -1412,10 +1441,16 @@ static void set_mac_control_register (struct eth_device* dev)
 	u16    PHY_Status, PHY_Speed, PHY_Duplex, Resolved_Status = 0, Advertise, Link_Partner;
 
 	if (CONFIG_ASPEED_MAC_PHY_SETTING >= 1) {
-		MAC_CR_Register = SPEED_100M_MODE_bit | RX_BROADPKT_bit | FULLDUP_bit | RXMAC_EN_bit | RXDMA_EN_bit | TXMAC_EN_bit | TXDMA_EN_bit | CRC_APD_bit;
+		printf("%s %d\n", __func__, __LINE__);
+		MAC_CR_Register = SPEED_100M_MODE_bit | RX_BROADPKT_bit |
+			FULLDUP_bit | RXMAC_EN_bit | RXDMA_EN_bit |
+			TXMAC_EN_bit | TXDMA_EN_bit | CRC_APD_bit;
 	}
 	else {
-		MAC_CR_Register = SPEED_100M_MODE_bit | FULLDUP_bit | RXMAC_EN_bit | RXDMA_EN_bit | TXMAC_EN_bit | TXDMA_EN_bit | CRC_APD_bit;
+		printf("%s %d\n", __func__, __LINE__);
+		MAC_CR_Register = SPEED_100M_MODE_bit | FULLDUP_bit |
+			RXMAC_EN_bit | RXDMA_EN_bit | TXMAC_EN_bit |
+			TXDMA_EN_bit | CRC_APD_bit;
 	}
 
 	if (CONFIG_ASPEED_MAC_PHY_SETTING != 2) {

@@ -48,7 +48,7 @@
 //#define CONFIG_USE_IRQ				/* we don't need IRQ/FIQ stuff */
 #define CONFIG_MISC_INIT_R
 
-#define CONFIG_FBPLATFORM1
+#define CONFIG_LIGHTNING
 
 /*
  * DRAM Config

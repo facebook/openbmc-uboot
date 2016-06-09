@@ -1188,6 +1188,13 @@ static int aspeednic_init(struct eth_device* dev, bd_t* bis)
   tx_new = 0;
   rx_new = 0;
 
+/*
+ * Commenting out the NC-SI controller initialization code. This causes
+ * increase in the bootup time otherwise. Task: 10954041
+ * TODO: Need to root case the NC-SI initialization failures, and hence
+ * increase in bootup because of NC-SI.
+ */
+#if 0
   if (CONFIG_ASPEED_MAC_PHY_SETTING >= 1) {
 //NCSI Start
 //DeSelect Package/ Select Package
@@ -1240,6 +1247,7 @@ static int aspeednic_init(struct eth_device* dev, bd_t* bis)
       }
     }
   }
+#endif
   return 1;
 }
 

@@ -48,7 +48,7 @@ void show_boot_progress(int progress)
 }
 #endif
 
-int board_init (void)
+int board_init(void)
 {
 	/* adress of boot parameters */
 	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
@@ -56,18 +56,7 @@ int board_init (void)
 	return 0;
 }
 
-
-int misc_init_r (void)
-{
-	return 0;
-
-}
-
-/******************************
- Routine:
- Description:
-******************************/
-int dram_init (void)
+int dram_init(void)
 {
 	/* dram_init must store complete ramsize in gd->ram_size */
 	u32 vga = ast_scu_get_vga_memsize();

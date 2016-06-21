@@ -33,7 +33,6 @@
  * (easy to change)
  */
 #define CONFIG_ARCH_CPU_INIT
-#define CONFIG_MISC_INIT_R		1
 #define CONFIG_MACH_TYPE		MACH_TYPE_ASPEED
 
 

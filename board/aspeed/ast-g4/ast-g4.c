@@ -36,6 +36,10 @@ void show_boot_progress(int progress)
 
 int board_init (void)
 {
+	/* The BSP did this in the cpu code */
+	icache_enable();
+	dcache_enable();
+
 	/* adress of boot parameters */
 	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
 	gd->flags = 0;

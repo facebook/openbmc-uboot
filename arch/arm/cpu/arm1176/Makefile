@@ -12,5 +12,3 @@ obj- += dummy.o
 extra-y	= start.o
 
 obj-y += ../arm11/
-
-obj-$(if $(filter aspeed,$(SOC)),y) += aspeed/

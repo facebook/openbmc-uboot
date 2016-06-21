@@ -32,6 +32,7 @@
 #include "TYPEDEF.H"
 #include "LIB.H"
 #include "MAC.H"
+#include "PHYSPECIAL.H"
 
 //---------------------------------------------------------
 // Print Message
@@ -54,7 +55,7 @@
               fprintf(stdout, __VA_ARGS__);                \
               break;                                       \
           default : break; }
-#else
+#elif defined (SLT_UBOOT)
   #define PRINTF(i, ...)                                          \
      do {                                                         \
          if (i == STD_OUT) {                                      \
@@ -66,20 +67,62 @@
              fprintf(stdout, __VA_ARGS__);                        \
          }                                                        \
      } while ( 0 );
+#else
+  #define PRINTF(i, ...) do {} while ( 0 );
 #endif
 
 //---------------------------------------------------------
 // Function
 //---------------------------------------------------------
-#if defined(SLT_UBOOT)
-    #define DELAY( x )                           udelay( x * 1000 ) // For Uboot, the unit of udelay() is us.
-    #define GET_CAHR                             getc
+  #define SWAP_4B( x )                                                             \
+                                                 ( ( ( ( x ) & 0xff000000 ) >> 24) \
+                                                 | ( ( ( x ) & 0x00ff0000 ) >>  8) \
+                                                 | ( ( ( x ) & 0x0000ff00 ) <<  8) \
+                                                 | ( ( ( x ) & 0x000000ff ) << 24) \
+                                                 )
+  #define SWAP_2B( x )                                                             \
+                                                 ( ( ( ( x ) & 0xff00     ) >>  8) \
+                                                 | ( ( ( x ) & 0x00ff     ) <<  8) \
+                                                 )
+#if defined(ENABLE_BIG_ENDIAN)
+  #define SWAP_2B_BEDN( x )                      ( x )
+  #define SWAP_2B_LEDN( x )                      ( SWAP_2B ( x ) )
+  #define SWAP_4B_BEDN( x )                      ( x )
+  #define SWAP_4B_LEDN( x )                      ( SWAP_4B ( x ) )
+#else
+  #define SWAP_2B_BEDN( x )                      ( SWAP_2B ( x ) )
+  #define SWAP_2B_LEDN( x )                      ( x )
+  #define SWAP_4B_BEDN( x )                      ( SWAP_4B ( x ) )
+  #define SWAP_4B_LEDN( x )                      ( x )
 #endif
-#if defined(DOS_ALONE) || defined(SLT_NEW_ARCH)
-    #define DELAY( x )                           delay( x )         // For DOS, the unit of delay() is ms.
+
+#if defined(ENABLE_BIG_ENDIAN)
+  #define SWAP_4B_BEDN_NCSI( x )                 ( x )
+  #define SWAP_4B_LEDN_NCSI( x )                 ( SWAP_4B( x ) )
+#else
+  #define SWAP_4B_BEDN_NCSI( x )                 ( SWAP_4B( x ) )
+  #define SWAP_4B_LEDN_NCSI( x )                 ( x )
+#endif
+
+#if defined(ENABLE_BIG_ENDIAN_MEM)
+  #define SWAP_4B_LEDN_MEM( x )                  ( SWAP_4B( x ) )
+#else
+  #define SWAP_4B_LEDN_MEM( x )                  ( x )
+#endif
+#if defined(ENABLE_BIG_ENDIAN_REG)
+  #define SWAP_4B_LEDN_REG( x )                  ( SWAP_4B( x ) )
+#else
+  #define SWAP_4B_LEDN_REG( x )                  ( x )
+#endif
+
+#if defined(DOS_ALONE) || defined(SLT_NEW_ARCH) || defined(LinuxAP)
+//    #define DELAY( x )                           delay( x )         // For DOS, the unit of delay() is m
+    #define DELAY( x )                           delay_hwtimer( x )   // For hardware timer #2, the unit of delay() is ms.s.
     #define GET_CAHR                             getchar
-#endif
-#if defined(LinuxAP)
+#elif defined(SLT_UBOOT)
+    #define DELAY( x )                           udelay( ( x ) * 1000 ) // For Uboot, the unit of udelay() is us.
+    #define GET_CAHR                             getc
+#else
     #define DELAY(val)                           usleep( val * 1000 )
     #define GET_CAHR                             getchar
 #endif
@@ -103,6 +146,7 @@
 #define  SET_100MBPS                             1              // 100M bps
 #define  SET_10MBPS                              2              // 10M bps
 #define  SET_1G_100M_10MBPS                      3              // 1G and 100M and 10M bps
+#define  SET_100M_10MBPS                         4              // 100M and 10M bps
 #ifdef Enable_MAC_ExtLoop
 #define  DEF_GSPEED                              SET_1GBPS
 #else
@@ -123,10 +167,10 @@
 
 #if ( AST1010_IOMAP == 2 )
   // AST1010 only has a MAC
-  #define MAC_BASE1                              0x0830000
-  #define MAC_BASE2                              0x0830000
-  #define MAC_BASE3                              0x0830000
-  #define MAC_BASE4                              0x0830000
+  #define MAC_BASE1                              0x00830000
+  #define MAC_BASE2                              0x00830000
+  #define MAC_BASE3                              0x00830000
+  #define MAC_BASE4                              0x00830000
 #endif
 
 #ifndef AST1010_IOMAP
@@ -167,11 +211,7 @@
 //---------------------------------------------------------
 // Data information
 //---------------------------------------------------------
-#ifdef Enable_MAC_ExtLoop
-      #define ZeroCopy_OFFSET                    0
-#elif Enable_MAC_ExtLoop_PakcegMode
-      #define ZeroCopy_OFFSET                    0
-#elif SelectSimpleBoundary
+#if defined(Enable_MAC_ExtLoop) || defined(Enable_MAC_ExtLoop_PakcegMode) || defined(SelectSimpleBoundary) || defined(PHY_SPECIAL)
       #define ZeroCopy_OFFSET                    0
 #else
       #define ZeroCopy_OFFSET                    (( eng->run.TM_Burst ) ? 0 : 2)
@@ -212,41 +252,37 @@
 //      ---------------------------------
 
 #if ( AST1010_IOMAP == 1 )
-    #define DRAM_MapAdr                          ( CONFIG_DRAM_SWAP_BASE + 0x00200000 ) // We use 0xA00000 to 0xEFFFFF
-    #define CPU_BUS_ADDR_SDRAM_OFFSET            0x01000000                             // In ReMapping function, MAC engine need Bus address
-                                                                                         // But Coldfire need CPU address, so need to do offset
+    #define DRAM_OFS_BUF                         0x01a00000
+    #define DRAM_OFS_WINDOW                      0x00800000
+//    #define DRAM_OFS_REMAP                      (CONFIG_DRAM_SWAP_BASE & 0x7fffffff)
+    #define DRAM_OFS_REMAP                       0x01800000
 #endif
-
 #if ( AST1010_IOMAP == 2 )
-    #define DRAM_MapAdr                          0x01A00000                              // We use 0xA00000 to 0xEFFFFF
-    #define CPU_BUS_ADDR_SDRAM_OFFSET            0
+    #define DRAM_OFS_BUF                         0x00a00000
+    #define DRAM_OFS_WINDOW                      0x01000000
+    #define DRAM_OFS_REMAP                       0x00000000
 #endif
-
 #ifndef AST1010_IOMAP
-  #ifdef AST2500_IOMAP
-    #ifdef Enable_MAC_ExtLoop
-      #define DRAM_MapAdr                        0x80000000
-    #else
-      #define DRAM_MapAdr                        0x84000000
-    #endif
+  #ifdef Enable_MAC_ExtLoop
+    #define DRAM_OFS_BUF                         0x00000000
   #else
-    #ifdef Enable_MAC_ExtLoop
-      #define DRAM_MapAdr                        0x40000000
-    #else
-      #define DRAM_MapAdr                        0x44000000
-    #endif
+    #define DRAM_OFS_BUF                         0x06000000 // 0x04000000 for SLT
   #endif
-
-  #define   CPU_BUS_ADDR_SDRAM_OFFSET            0
+  #ifdef AST2500_IOMAP
+    #define DRAM_OFS_WINDOW                      0x80000000
+  #else
+    #define DRAM_OFS_WINDOW                      0x40000000
+  #endif
+    #define DRAM_OFS_REMAP                       0x00000000
 #endif
 
-  #define TDES_BASE1                             ( 0x00000000 + DRAM_MapAdr )
+  #define TDES_BASE1                             ( 0x00000000 + DRAM_OFS_BUF - DRAM_OFS_REMAP + DRAM_OFS_WINDOW )
 #ifdef Enable_MAC_ExtLoop
-  #define RDES_BASE1                             ( 0x00080000 + DRAM_MapAdr )
+  #define RDES_BASE1                             ( 0x00080000 + DRAM_OFS_BUF - DRAM_OFS_REMAP + DRAM_OFS_WINDOW )
 #else
-  #define RDES_BASE1                             ( 0x00040000 + DRAM_MapAdr )
+  #define RDES_BASE1                             ( 0x00040000 + DRAM_OFS_BUF - DRAM_OFS_REMAP + DRAM_OFS_WINDOW )
 #endif
-  #define DMA_BASE                               ( 0x00100000 + DRAM_MapAdr )
+  #define DMA_BASE                               ( 0x00100000 + DRAM_OFS_BUF - DRAM_OFS_REMAP + DRAM_OFS_WINDOW )
 
   #define TDES_IniVal                            ( 0xb0000000 + eng->dat.FRAME_LEN_Cur )
   #define RDES_IniVal                            ( 0x00000fff )
@@ -255,71 +291,89 @@
   #define HWOwnRx(dat)                           ((dat & 0x80000000) == 0)
   #define HWEOR(dat)                             ( dat & 0x40000000      )
 
+  #define AT_MEMRW_BUF( x )                      ( ( x ) + DRAM_OFS_REMAP - DRAM_OFS_WINDOW )
+  #define AT_BUF_MEMRW( x )                      ( ( x ) - DRAM_OFS_REMAP + DRAM_OFS_WINDOW )
+
 //---------------------------------------------------------
 // Error Flag Bits
 //---------------------------------------------------------
-#define Err_MACMode                              ( 1 <<  0 )   // MAC interface mode mismatch
-#define Err_PHY_Type                             ( 1 <<  1 )   // Unidentifiable PHY
-#define Err_MALLOC_FrmSize                       ( 1 <<  2 )   // Malloc fail at frame size buffer
-#define Err_MALLOC_LastWP                        ( 1 <<  3 )   // Malloc fail at last WP buffer
-#define Err_Check_Buf_Data                       ( 1 <<  4 )   // Received data mismatch
-#define Err_Check_Des                            ( 1 <<  5 )   // Descriptor error
-#define Err_NCSI_LinkFail                        ( 1 <<  6 )   // NCSI packet retry number over flows
-#define Err_NCSI_Check_TxOwnTimeOut              ( 1 <<  7 )   // Time out of checking Tx owner bit in NCSI packet
-#define Err_NCSI_Check_RxOwnTimeOut              ( 1 <<  8 )   // Time out of checking Rx owner bit in NCSI packet
-#define Err_NCSI_Check_ARPOwnTimeOut             ( 1 <<  9 )   // Time out of checking ARP owner bit in NCSI packet
-#define Err_NCSI_No_PHY                          ( 1 << 10 )   // Can not find NCSI PHY
-#define Err_NCSI_Channel_Num                     ( 1 << 11 )   // NCSI Channel Number Mismatch
-#define Err_NCSI_Package_Num                     ( 1 << 12 )   // NCSI Package Number Mismatch
-#define Err_PHY_TimeOut_RW                       ( 1 << 13 )   // Time out of read/write PHY register
-#define Err_PHY_TimeOut_Rst                      ( 1 << 14 )   // Time out of reset PHY register
-#define Err_RXBUF_UNAVA                          ( 1 << 15 )   // MAC00h[2]:Receiving buffer unavailable
-#define Err_RPKT_LOST                            ( 1 << 16 )   // MAC00h[3]:Received packet lost due to RX FIFO full
-#define Err_NPTXBUF_UNAVA                        ( 1 << 17 )   // MAC00h[6]:Normal priority transmit buffer unavailable
-#define Err_TPKT_LOST                            ( 1 << 18 )   // MAC00h[7]:Packets transmitted to Ethernet lost
-#define Err_DMABufNum                            ( 1 << 19 )   // DMA Buffer is not enough
-#define Err_IOMargin                             ( 1 << 20 )   // IO timing margin is not enough
-#define Err_IOMarginOUF                          ( 1 << 21 )   // IO timing testing out of boundary
-#define Err_MHCLK_Ratio                          ( 1 << 22 )   // Error setting of MAC AHB bus clock (SCU08[18:16])
+#define Err_Flag_MACMode                              ( 1 <<  0 )   // MAC interface mode mismatch
+#define Err_Flag_PHY_Type                             ( 1 <<  1 )   // Unidentifiable PHY
+#define Err_Flag_MALLOC_FrmSize                       ( 1 <<  2 )   // Malloc fail at frame size buffer
+#define Err_Flag_MALLOC_LastWP                        ( 1 <<  3 )   // Malloc fail at last WP buffer
+#define Err_Flag_Check_Buf_Data                       ( 1 <<  4 )   // Received data mismatch
+#define Err_Flag_Check_Des                            ( 1 <<  5 )   // Descriptor error
+#define Err_Flag_NCSI_LinkFail                        ( 1 <<  6 )   // NCSI packet retry number over flows
+#define Err_Flag_NCSI_Check_TxOwnTimeOut              ( 1 <<  7 )   // Time out of checking Tx owner bit in NCSI packet
+#define Err_Flag_NCSI_Check_RxOwnTimeOut              ( 1 <<  8 )   // Time out of checking Rx owner bit in NCSI packet
+#define Err_Flag_NCSI_Check_ARPOwnTimeOut             ( 1 <<  9 )   // Time out of checking ARP owner bit in NCSI packet
+#define Err_Flag_NCSI_No_PHY                          ( 1 << 10 )   // Can not find NCSI PHY
+#define Err_Flag_NCSI_Channel_Num                     ( 1 << 11 )   // NCSI Channel Number Mismatch
+#define Err_Flag_NCSI_Package_Num                     ( 1 << 12 )   // NCSI Package Number Mismatch
+#define Err_Flag_PHY_TimeOut_RW                       ( 1 << 13 )   // Time out of read/write PHY register
+#define Err_Flag_PHY_TimeOut_Rst                      ( 1 << 14 )   // Time out of reset PHY register
+#define Err_Flag_RXBUF_UNAVA                          ( 1 << 15 )   // MAC00h[2]:Receiving buffer unavailable
+#define Err_Flag_RPKT_LOST                            ( 1 << 16 )   // MAC00h[3]:Received packet lost due to RX FIFO full
+#define Err_Flag_NPTXBUF_UNAVA                        ( 1 << 17 )   // MAC00h[6]:Normal priority transmit buffer unavailable
+#define Err_Flag_TPKT_LOST                            ( 1 << 18 )   // MAC00h[7]:Packets transmitted to Ethernet lost
+#define Err_Flag_DMABufNum                            ( 1 << 19 )   // DMA Buffer is not enough
+#define Err_Flag_IOMargin                             ( 1 << 20 )   // IO timing margin is not enough
+#define Err_Flag_IOMarginOUF                          ( 1 << 21 )   // IO timing testing out of boundary
+#define Err_Flag_MHCLK_Ratio                          ( 1 << 22 )   // Error setting of MAC AHB bus clock (SCU08[18:16])
 
-#define Wrn_IOMarginOUF                          ( 1 <<  0 )   // IO timing testing out of boundary
+#define Wrn_Flag_IOMarginOUF                          ( 1 <<  0 )   // IO timing testing out of boundary
 
-#define Check_Des_TxOwnTimeOut                   ( 1 <<  0 )   // Time out of checking Tx owner bit
-#define Check_Des_RxOwnTimeOut                   ( 1 <<  1 )   // Time out of checking Rx owner bit
-#define Check_Des_FrameLen                       ( 1 <<  2 )   // Frame length mismatch
-#define Check_Des_RxErr                          ( 1 <<  3 )   // Input signal RxErr
-#define Check_Des_CRC                            ( 1 <<  4 )   // CRC error of frame
-#define Check_Des_FTL                            ( 1 <<  5 )   // Frame too long
-#define Check_Des_Runt                           ( 1 <<  6 )   // Runt packet
-#define Check_Des_OddNibble                      ( 1 <<  7 )   // Nibble bit happen
-#define Check_Des_RxFIFOFull                     ( 1 <<  8 )   // Rx FIFO full
+#define Des_Flag_TxOwnTimeOut                         ( 1 <<  0 )   // Time out of checking Tx owner bit
+#define Des_Flag_RxOwnTimeOut                         ( 1 <<  1 )   // Time out of checking Rx owner bit
+#define Des_Flag_FrameLen                             ( 1 <<  2 )   // Frame length mismatch
+#define Des_Flag_RxErr                                ( 1 <<  3 )   // Input signal RxErr
+#define Des_Flag_CRC                                  ( 1 <<  4 )   // CRC error of frame
+#define Des_Flag_FTL                                  ( 1 <<  5 )   // Frame too long
+#define Des_Flag_Runt                                 ( 1 <<  6 )   // Runt packet
+#define Des_Flag_OddNibble                            ( 1 <<  7 )   // Nibble bit happen
+#define Des_Flag_RxFIFOFull                           ( 1 <<  8 )   // Rx FIFO full
 
-#define NCSI_LinkFail_Get_Version_ID             ( 1 <<  0 )   // Time out when Get Version ID
-#define NCSI_LinkFail_Get_Capabilities           ( 1 <<  1 )   // Time out when Get Capabilities
-#define NCSI_LinkFail_Select_Active_Package      ( 1 <<  2 )   // Time out when Select Active Package
-#define NCSI_LinkFail_Enable_Set_MAC_Address     ( 1 <<  3 )   // Time out when Enable Set MAC Address
-#define NCSI_LinkFail_Enable_Broadcast_Filter    ( 1 <<  4 )   // Time out when Enable Broadcast Filter
-#define NCSI_LinkFail_Enable_Network_TX          ( 1 <<  5 )   // Time out when Enable Network TX
-#define NCSI_LinkFail_Enable_Channel             ( 1 <<  6 )   // Time out when Enable Channel
-#define NCSI_LinkFail_Disable_Network_TX         ( 1 <<  7 )   // Time out when Disable Network TX
-#define NCSI_LinkFail_Disable_Channel            ( 1 <<  8 )   // Time out when Disable Channel
+#define NCSI_Flag_Get_Version_ID                      ( 1 <<  0 )   // Time out when Get Version ID
+#define NCSI_Flag_Get_Capabilities                    ( 1 <<  1 )   // Time out when Get Capabilities
+#define NCSI_Flag_Select_Active_Package               ( 1 <<  2 )   // Time out when Select Active Package
+#define NCSI_Flag_Enable_Set_MAC_Address              ( 1 <<  3 )   // Time out when Enable Set MAC Address
+#define NCSI_Flag_Enable_Broadcast_Filter             ( 1 <<  4 )   // Time out when Enable Broadcast Filter
+#define NCSI_Flag_Enable_Network_TX                   ( 1 <<  5 )   // Time out when Enable Network TX
+#define NCSI_Flag_Enable_Channel                      ( 1 <<  6 )   // Time out when Enable Channel
+#define NCSI_Flag_Disable_Network_TX                  ( 1 <<  7 )   // Time out when Disable Network TX
+#define NCSI_Flag_Disable_Channel                     ( 1 <<  8 )   // Time out when Disable Channel
+#define NCSI_Flag_Select_Package                      ( 1 <<  9 )   // Time out when Select Package
+#define NCSI_Flag_Deselect_Package                    ( 1 << 10 )   // Time out when Deselect Package
+#define NCSI_Flag_Set_Link                            ( 1 << 11 )   // Time out when Set Link
+#define NCSI_Flag_Get_Controller_Packet_Statistics    ( 1 << 12 )   // Time out when Get Controller Packet Statistics
 
 //---------------------------------------------------------
 // SCU information
 //---------------------------------------------------------
 #if ( AST1010_IOMAP == 1 )
-    #define SMB_BASE                             AST_SMB_BASE
-    #define SCU_BASE                             AST_SCU_BASE
+  #define SMB_BASE                               0x00300000
+  #define SCU_BASE                               0x00241000
+  #define SDR_BASE                               0x00240000
+  #define WDT_BASE                               0x00243000
+  #define TIMER_BASE                             0x00242000
+  #define GPIO_BASE                              0x0024b000
 #endif
 #if ( AST1010_IOMAP == 2 )
-    #define SMB_BASE                             0x00900000
-    #define SCU_BASE                             0x00841000
+  #define SMB_BASE                               0x00900000
+  #define SCU_BASE                               0x00841000
+  #define SDR_BASE                               0x00840000
+  #define WDT_BASE                               0x00843000
+  #define TIMER_BASE                             0x00842000
+  #define GPIO_BASE                              0x0084b000
 #endif
 
 #ifndef AST1010_IOMAP
   #define SMB_BASE                               0x1e720000
   #define SCU_BASE                               0x1e6e2000
   #define SDR_BASE                               0x1e6e0000
+  #define WDT_BASE                               0x1e785000
+  #define TIMER_BASE                             0x1e782000
+  #define GPIO_BASE                              0x1e780000
 #endif
 
 #define SCU_48h_AST1010                          0x00000200
@@ -361,7 +415,8 @@
 
 #define DMA_BufNum                               ( ( DRAM_KByteSize * 1024 ) / ( eng->dat.DMABuf_Size ) )                //vary by eng->dat.Des_Num
 #define GET_DMA_BASE_SETUP                       ( DMA_BASE )
-#define GET_DMA_BASE(x)                          ( DMA_BASE + ( ( ( ( x ) % eng->dat.DMABuf_Num ) + 1 ) * eng->dat.DMABuf_Size ) )//vary by eng->dat.Des_Num
+//#define GET_DMA_BASE(x)                          ( DMA_BASE + ( ( ( ( x ) % eng->dat.DMABuf_Num ) + 1 ) * eng->dat.DMABuf_Size ) )//vary by eng->dat.Des_Num
+#define GET_DMA_BASE(x)                          ( DMA_BASE + ( ( ( ( x ) % eng->dat.DMABuf_Num ) + 1 ) * eng->dat.DMABuf_Size ) + ( ( ( x ) % 7 ) * DMA_PakSize ) )//vary by eng->dat.Des_Num
 
 #define SEED_START                               8
 #define DATA_SEED(seed)                          ( ( seed ) | (( seed + 1 ) << 16 ) )
@@ -385,12 +440,8 @@
 //---------------------------------------------------------
 // Delay (ms)
 //---------------------------------------------------------
-//#define Delay_DesGap                             1000    //off
-//#define Delay_DesGap                             700     //off
-
-//#define Delay_ChkRxOwn                           1
-//#define Delay_ChkTxOwn                           1
-#define Delay_CntMax                             100000000
+//#define Delay_DesGap                             1    //off
+//#define Delay_CntMax                             40
 //#define Delay_CntMax                             1000
 //#define Delay_CntMax                             8465
 //#define Delay_CntMaxIncVal                       50000
@@ -403,7 +454,7 @@
 //#define Delay_SCU                                11
 #define Delay_SCU                                1         //20150423
 #define Delay_MACRst                             1
-#define Delay_MACDump                            100
+#define Delay_MACDump                            1
 
 //#define Delay_DES                                1
 #ifdef Enable_MAC_ExtLoop_PakcegMode
@@ -418,27 +469,48 @@
 // Time Out
 //---------------------------------------------------------
 #ifdef Enable_MAC_ExtLoop_PakcegMode
-    #define TIME_OUT_Des_1G                      1000000
+    #define TIME_OUT_Des_1G                      0
+    #define TIME_OUT_Des_100M                    0
+    #define TIME_OUT_Des_10M                     0
+    #define TIME_OUT_NCSI                        0
+    #define TIME_OUT_PHY_RW                      10000
+    #define TIME_OUT_PHY_Rst                     10000
 #else
   #ifdef DOS_LPC
-    #define TIME_OUT_Des_1G                      20        //20150529 (16x slower then DOS_PCIE)
-    #define TIME_OUT_PHY_RW                      20000
-    #define TIME_OUT_PHY_Rst                     20000
+    #define TIME_OUT_Des_1G                      4         //20150529 (16x slower then DOS_PCIE)
+    #define TIME_OUT_Des_100M                    40
+    #define TIME_OUT_Des_10M                     200
+    #define TIME_OUT_NCSI                        400
+    #define TIME_OUT_PHY_RW                      1000
+    #define TIME_OUT_PHY_Rst                     10
   #elif defined(DOS_PCIE)
-    #define TIME_OUT_Des_1G                      200       //20150423
+    #define TIME_OUT_Des_1G                      1000       //20150423
+    #define TIME_OUT_Des_100M                    2000
+    #define TIME_OUT_Des_10M                     5000
+    #define TIME_OUT_NCSI                        10000
     #define TIME_OUT_PHY_RW                      200000
-    #define TIME_OUT_PHY_Rst                     200000
+    #define TIME_OUT_PHY_Rst                     2000
+  #elif ( AST1010_IOMAP == 1 ) /* Coldfire and uboot */
+    #define TIME_OUT_Des_1G                      40
+    #define TIME_OUT_Des_100M                    400
+    #define TIME_OUT_Des_10M                     2000
+    #define TIME_OUT_NCSI                        4000
+    #define TIME_OUT_PHY_RW                      10000
+    #define TIME_OUT_PHY_Rst                     100
   #else
-    #define TIME_OUT_Des_1G                      20000
-    #define TIME_OUT_PHY_RW                      20000000
-    #define TIME_OUT_PHY_Rst                     20000000
+    #define TIME_OUT_Des_1G                      10000     //400
+    #define TIME_OUT_Des_100M                    20000     //4000
+    #define TIME_OUT_Des_10M                     50000     //20000
+    #define TIME_OUT_NCSI                        100000    //40000
+    #define TIME_OUT_PHY_RW                      2000000   //100000
+    #define TIME_OUT_PHY_Rst                     20000     //1000
   #endif
 #endif
 //#define TIME_OUT_PHY_RW                          10000
 //#define TIME_OUT_PHY_Rst                         10000
 
-//#define TIME_OUT_NCSI                            300000
-#define TIME_OUT_NCSI                            30000     //20150423
+////#define TIME_OUT_NCSI                            300000
+//#define TIME_OUT_NCSI                            30000     //20150423
 
 //---------------------------------------------------------
 // Others
@@ -488,7 +560,8 @@ typedef struct {
 	unsigned char        Reserved_1;                   // Reserved has to set to 0x00
 	unsigned char        IID;                          // Instance ID
 	unsigned char        Command;
-	unsigned char        Channel_ID;
+//	unsigned char        Channel_ID;
+	unsigned char        ChID;
 	unsigned short       Payload_Length;               // Payload Length = 12 bits, 4 bits are reserved
 	unsigned long        Reserved_2;
 	unsigned long        Reserved_3;
@@ -510,7 +583,7 @@ typedef struct {
 	unsigned char        Reserved_1;                   //Reserved has to set to 0x00
 	unsigned char        IID;                          //Instance ID
 	unsigned char        Command;
-	unsigned char        Channel_ID;
+	unsigned char        ChID;
 	unsigned short       Payload_Length;               //Payload Length = 12 bits, 4 bits are reserved
 	unsigned short       Reserved_2;
 	unsigned short       Reserved_3;
@@ -554,6 +627,7 @@ typedef struct {
 	ULONG                SCU_004_en                    ;//__attribute__ ((aligned (4)));
 	ULONG                SCU_008                       ;//__attribute__ ((aligned (4)));
 	ULONG                SCU_00c                       ;//__attribute__ ((aligned (4)));
+	ULONG                SCU_00c_clkbit                ;//__attribute__ ((aligned (4)));
 	ULONG                SCU_048                       ;//__attribute__ ((aligned (4)));
 	ULONG                SCU_048_mix                   ;//__attribute__ ((aligned (4)));
 	ULONG                SCU_048_default               ;//__attribute__ ((aligned (4)));
@@ -564,6 +638,7 @@ typedef struct {
 	ULONG                SCU_080                       ;//__attribute__ ((aligned (4)));
 	ULONG                SCU_088                       ;//__attribute__ ((aligned (4)));
 	ULONG                SCU_090                       ;//__attribute__ ((aligned (4)));
+	ULONG                SCU_09c                       ;//__attribute__ ((aligned (4)));
 #ifdef AST1010_CHIP
 	ULONG                SCU_0ac                       ;//__attribute__ ((aligned (4)));
 #endif
@@ -574,6 +649,9 @@ typedef struct {
 	ULONG                SCU_0f0                       ;//__attribute__ ((aligned (4)));
 	ULONG                WDT_00c                       ;//__attribute__ ((aligned (4)));
 	ULONG                WDT_02c                       ;//__attribute__ ((aligned (4)));
+#ifdef AST2500_IOMAP
+	ULONG                WDT_04c                       ;//__attribute__ ((aligned (4)));
+#endif
 
 	CHAR                 SCU_oldvld                    ;//__attribute__ ((aligned (4)));
 } MAC_Register;
@@ -628,6 +706,8 @@ typedef struct {
 	CHAR                 GEn_IntLoopPHY                ;//__attribute__ ((aligned (4)));//GCtrl[4]
 	CHAR                 GEn_InitPHY                   ;//__attribute__ ((aligned (4)));//GCtrl[3]
 	CHAR                 GDis_RecovPHY                 ;//__attribute__ ((aligned (4)));//GCtrl[2]
+	CHAR                 GEn_PHYAdrInv                 ;//__attribute__ ((aligned (4)));//GCtrl[1]
+	CHAR                 GEn_SinglePacket              ;//__attribute__ ((aligned (4)));//GCtrl[0]
 } MAC_Argument;
 typedef struct {
 	CHAR                 MAC_idx                       ;//__attribute__ ((aligned (4)));//GRun_Mode
@@ -653,6 +733,7 @@ typedef struct {
 	ULONG                TDES_BASE                     ;//__attribute__ ((aligned (4)));
 	ULONG                RDES_BASE                     ;//__attribute__ ((aligned (4)));
 
+	ULONG                NCSI_TxDesBase                ;//__attribute__ ((aligned (4)));
 	ULONG                NCSI_RxDesBase                ;//__attribute__ ((aligned (4)));
 	int                  NCSI_RxTimeOutScale           ;//__attribute__ ((aligned (4)));
 
@@ -660,6 +741,7 @@ typedef struct {
 	ULONG                LOOP_CheckNum                 ;//__attribute__ ((aligned (4)));
 	ULONG                CheckBuf_MBSize               ;//__attribute__ ((aligned (4)));
 	ULONG                TIME_OUT_Des                  ;//__attribute__ ((aligned (4)));
+	ULONG                TIME_OUT_Des_PHYRatio         ;//__attribute__ ((aligned (4)));
 
 	int                  Loop_ofcnt                    ;//__attribute__ ((aligned (4)));
 	int                  Loop                          ;//__attribute__ ((aligned (4)));
@@ -670,6 +752,7 @@ typedef struct {
 	CHAR                 NewMDIO                       ;//__attribute__ ((aligned (4))); //start from AST2300
 } MAC_Information;
 typedef struct {
+	ULONG                PHY_BASE                      ;//__attribute__ ((aligned (4)));
 	int                  loop_phy                      ;//__attribute__ ((aligned (4)));
 	CHAR                 Adr                           ;//__attribute__ ((aligned (4)));
 
@@ -680,6 +763,7 @@ typedef struct {
 	ULONG                PHY_00h                       ;//__attribute__ ((aligned (4)));
 	ULONG                PHY_06h                       ;//__attribute__ ((aligned (4)));
 	ULONG                PHY_09h                       ;//__attribute__ ((aligned (4)));
+	ULONG                PHY_0eh                       ;//__attribute__ ((aligned (4)));
 	ULONG                PHY_10h                       ;//__attribute__ ((aligned (4)));
 	ULONG                PHY_11h                       ;//__attribute__ ((aligned (4)));
 	ULONG                PHY_12h                       ;//__attribute__ ((aligned (4)));
@@ -687,12 +771,13 @@ typedef struct {
 	ULONG                PHY_15h                       ;//__attribute__ ((aligned (4)));
 	ULONG                PHY_18h                       ;//__attribute__ ((aligned (4)));
 	ULONG                PHY_1ch                       ;//__attribute__ ((aligned (4)));
+	ULONG                PHY_1eh                       ;//__attribute__ ((aligned (4)));
 	ULONG                PHY_1fh                       ;//__attribute__ ((aligned (4)));
 	ULONG                PHY_06hA[7]                   ;//__attribute__ ((aligned (4)));
-	char                 PHYID[8]                      ;//__attribute__ ((aligned (4)));
 	BOOLEAN              PHYAdrValid                   ;//__attribute__ ((aligned (4)));
 } MAC_PHY;
 typedef struct {
+	CHAR                 init_done                     ;//__attribute__ ((aligned (4)));
 	BYTE                 Dly_MrgEn                     ;//__attribute__ ((aligned (4)));
 	CHAR                 Dly_3Regiser                  ;//__attribute__ ((aligned (4)));
 
@@ -772,7 +857,6 @@ typedef struct {
 
 	BYTE                 number_chl                    ;//__attribute__ ((aligned (4)));
 	BYTE                 number_pak                    ;//__attribute__ ((aligned (4)));
-	int                  InstanceID                    ;//__attribute__ ((aligned (4)));
 	ULONG                NCSI_TxDWBUF[512]             ;//__attribute__ ((aligned (4)));
 	ULONG                NCSI_RxDWBUF[512]             ;//__attribute__ ((aligned (4)));
 	char                 NCSI_CommandStr[512]          ;//__attribute__ ((aligned (4)));
@@ -782,12 +866,14 @@ typedef struct {
 	unsigned long        Payload_Checksum_NCSI         ;//__attribute__ ((aligned (4)));
 } MAC_Data;
 typedef struct {
-	ULONG                Check_Des_Val                 ;//__attribute__ ((aligned (4)));
-	ULONG                CheckDesFail_DesNum           ;//__attribute__ ((aligned (4)));
 	ULONG                Wrn_Flag                      ;//__attribute__ ((aligned (4)));
 	ULONG                Err_Flag                      ;//__attribute__ ((aligned (4)));
-	CHAR                 Err_Flag_PrintEn              ;//__attribute__ ((aligned (4)));
-	ULONG                NCSI_LinkFail_Val             ;//__attribute__ ((aligned (4)));
+	ULONG                Des_Flag                      ;//__attribute__ ((aligned (4)));
+	ULONG                NCSI_Flag                     ;//__attribute__ ((aligned (4)));
+	ULONG                Bak_Err_Flag                  ;//__attribute__ ((aligned (4)));
+	ULONG                Bak_NCSI_Flag                 ;//__attribute__ ((aligned (4)));
+	CHAR                 Flag_PrintEn                  ;//__attribute__ ((aligned (4)));
+	ULONG                CheckDesFail_DesNum           ;//__attribute__ ((aligned (4)));
 } MAC_Flag;
 typedef struct {
 	MAC_Register         reg;
@@ -803,6 +889,9 @@ typedef struct {
 	NCSI_Response_Packet ncsi_rsp;
 	NCSI_Capability      ncsi_cap;
 
+#if defined(PHY_SPECIAL)
+	PHY_BCM5389          BCM5389;
+#endif
 #if defined(ENABLE_LOG_FILE)
 	FILE                 *fp_log;
 	FILE                 *fp_io;
@@ -821,6 +910,11 @@ typedef struct {
 	time_t               timestart;
 #endif
 } MAC_ENGINE;
+typedef void (* PHY_SETTING) (MAC_ENGINE *);
+typedef struct {
+	PHY_SETTING          fp_set;
+	PHY_SETTING          fp_clr;
+} PHY_ENGINE;
 
 #undef GLOBAL
 #ifdef NCSI_C
@@ -877,15 +971,23 @@ GLOBAL ULONG   Read_Mem_Des_NCSI_DD (ULONG addr);
 GLOBAL ULONG   Read_Mem_Dat_DD (ULONG addr);
 GLOBAL ULONG   Read_Mem_Des_DD (ULONG addr);
 GLOBAL ULONG   Read_Reg_MAC_DD (MAC_ENGINE *eng, ULONG addr);
+GLOBAL ULONG   Read_Reg_PHY_DD (MAC_ENGINE *eng, ULONG addr);
 GLOBAL ULONG   Read_Reg_SCU_DD (ULONG addr);
+GLOBAL ULONG   Read_Reg_WDT_DD (ULONG addr);
 GLOBAL ULONG   Read_Reg_SDR_DD (ULONG addr);
 GLOBAL ULONG   Read_Reg_SMB_DD (ULONG addr);
+GLOBAL ULONG   Read_Reg_TIMER_DD (ULONG addr);
+GLOBAL ULONG   Read_Reg_GPIO_DD (ULONG addr);
 GLOBAL void    Write_Mem_Dat_NCSI_DD (ULONG addr, ULONG data);
 GLOBAL void    Write_Mem_Des_NCSI_DD (ULONG addr, ULONG data);
 GLOBAL void    Write_Mem_Dat_DD (ULONG addr, ULONG data);
 GLOBAL void    Write_Mem_Des_DD (ULONG addr, ULONG data);
 GLOBAL void    Write_Reg_MAC_DD (MAC_ENGINE *eng, ULONG addr, ULONG data);
+GLOBAL void    Write_Reg_PHY_DD (MAC_ENGINE *eng, ULONG addr, ULONG data);
 GLOBAL void    Write_Reg_SCU_DD (ULONG addr, ULONG data);
+GLOBAL void    Write_Reg_WDT_DD (ULONG addr, ULONG data);
+GLOBAL void    Write_Reg_TIMER_DD (ULONG addr, ULONG data);
+GLOBAL void    Write_Reg_GPIO_DD (ULONG addr, ULONG data);
 GLOBAL void    init_iodelay (MAC_ENGINE *eng);
 GLOBAL int     get_iodelay (MAC_ENGINE *eng);
 GLOBAL void    read_scu (MAC_ENGINE *eng);
@@ -908,12 +1010,26 @@ GLOBAL void    setup_arp (MAC_ENGINE *eng);
 GLOBAL void    TestingSetup (MAC_ENGINE *eng);
 GLOBAL void    init_scu2 (MAC_ENGINE *eng);
 GLOBAL void    init_scu3 (MAC_ENGINE *eng);
+GLOBAL void    get_mac_info (MAC_ENGINE *eng);
 GLOBAL void    init_mac (MAC_ENGINE *eng);
 GLOBAL char    TestingLoop (MAC_ENGINE *eng, ULONG loop_checknum);
 GLOBAL void    PrintIO_Line_LOG (MAC_ENGINE *eng);
-GLOBAL void    init_phy (MAC_ENGINE *eng);
+GLOBAL void    init_phy (MAC_ENGINE *eng, PHY_ENGINE *phyeng);
 GLOBAL BOOLEAN find_phyadr (MAC_ENGINE *eng);
-GLOBAL void    recov_phy (MAC_ENGINE *eng);
+GLOBAL void    phy_write (MAC_ENGINE *eng, int adr, ULONG data);
+GLOBAL ULONG   phy_read (MAC_ENGINE *eng, int adr);
+GLOBAL void    phy_sel (MAC_ENGINE *eng, PHY_ENGINE *phyeng);
+GLOBAL void    recov_phy (MAC_ENGINE *eng, PHY_ENGINE *phyeng);
+#ifdef PHY_SPECIAL
+GLOBAL void    special_PHY_init (MAC_ENGINE *eng);
+GLOBAL void    special_PHY_buf_init (MAC_ENGINE *eng);
+GLOBAL void    special_PHY_recov (MAC_ENGINE *eng);
+GLOBAL void    special_PHY_reg_init (MAC_ENGINE *eng);
+GLOBAL void    special_PHY_debug (MAC_ENGINE *eng);
+GLOBAL ULONG   special_PHY_FRAME_LEN (MAC_ENGINE *eng);
+GLOBAL ULONG  *special_PHY_txpkt_ptr (MAC_ENGINE *eng);
+GLOBAL ULONG  *special_PHY_rxpkt_ptr (MAC_ENGINE *eng);
+#endif
 GLOBAL int     FindErr (MAC_ENGINE *eng, int value);
 GLOBAL int     FindErr_Des (MAC_ENGINE *eng, int value);
 GLOBAL void    PrintIO_Header (MAC_ENGINE *eng, BYTE option);
@@ -921,6 +1037,9 @@ GLOBAL void    Print_Header (MAC_ENGINE *eng, BYTE option);
 GLOBAL void    PrintIO_LineS (MAC_ENGINE *eng, BYTE option);
 GLOBAL void    PrintIO_Line (MAC_ENGINE *eng, BYTE option);
 GLOBAL void    FPri_ErrFlag (MAC_ENGINE *eng, BYTE option);
+
+GLOBAL void init_hwtimer( void );
+GLOBAL void delay_hwtimer( USHORT msec );
 
 #ifdef SUPPORT_PHY_LAN9303
 // ========================================================

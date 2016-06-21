@@ -88,6 +88,7 @@ endif # !CONFIG_SPL_BUILD
 
 #AST MAC test command
 COBJS-$(CONFIG_CMD_NETTEST) += cmd_nettest.o
+COBJS-$(CONFIG_CMD_SLT) += cmd_slt.o
 
 ifdef CONFIG_SPL_BUILD
 obj-$(CONFIG_SPL_HASH_SUPPORT) += hash.o

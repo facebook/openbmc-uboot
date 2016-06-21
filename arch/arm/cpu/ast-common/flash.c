@@ -23,7 +23,7 @@
  */
 
 /* The DEBUG define must be before common to enable debugging */
-/* #define DEBUG */
+/* #define DEBUG	*/
 
 #include <common.h>
 #include <asm/processor.h>
@@ -78,6 +78,7 @@ flash_info_t flash_info[CONFIG_SYS_MAX_FLASH_BANKS];		/* FLASH chips info */
 #define MX25L1605D		0x1520C2
 #define MX25L12805D		0x1820C2
 #define MX25L25635E		0x1920C2
+#define MX66L51235F		0x1A20C2
 #define SST25VF016B		0x4125bf
 #define SST25VF064C		0x4b25bf
 #define SST25VF040B		0x8d25bf
@@ -122,7 +123,7 @@ flash_info_t flash_info[CONFIG_SYS_MAX_FLASH_BANKS];		/* FLASH chips info */
 #define DUMMY_COMMAND_OUT	0x00008000
 
 /* specificspi */
-#define SpecificSPI_N25Q512	0x00000001		
+#define SpecificSPI_N25Q512	0x00000001
 
 /*-----------------------------------------------------------------------*/
 static u32 ast_spi_calculate_divisor(u32 max_speed_hz)
@@ -139,7 +140,7 @@ static u32 ast_spi_calculate_divisor(u32 max_speed_hz)
 			break;
 		}
 	}
-		
+
 //	printf("hclk is %d, divisor is %d, target :%d , cal speed %d\n", hclk, spi_cdvr, max_speed_hz, hclk/i);
 	return spi_cdvr;
 }
@@ -149,12 +150,12 @@ inline uchar *flash_make_addr (flash_info_t * info, flash_sect_t sect, uint offs
 {
 #ifdef CONFIG_2SPIFLASH
         if (info->start[0] >= PHYS_FLASH_2)
-	    return ((uchar *) (info->start[sect] + (offset * 1) - (PHYS_FLASH_2 - PHYS_FLASH_2_BASE) ));        
+	    return ((uchar *) (info->start[sect] + (offset * 1) - (PHYS_FLASH_2 - PHYS_FLASH_2_BASE) ));
         else
 	    return ((uchar *) (info->start[sect] + (offset * 1)));
 #else
 	return ((uchar *) (info->start[sect] + (offset * 1)));
-#endif	
+#endif
 }
 
 static void reset_flash (flash_info_t * info)
@@ -178,15 +179,15 @@ static void reset_flash (flash_info_t * info)
 
 #if 1
         ulCtrlData = info->iomode | (info->readcmd << 16) | (info->tCK_Read << 8) | (info->dummybyte << 6) | FASTREAD;
-#else      
-        ulCtrlData  = (info->readcmd << 16) | (info->tCK_Read << 8) | (info->dummybyte << 6) | FASTREAD;         
+#else
+        ulCtrlData  = (info->readcmd << 16) | (info->tCK_Read << 8) | (info->dummybyte << 6) | FASTREAD;
         if (info->dualport)
-            ulCtrlData  |= 0x08;        
-#endif        
-        *(ulong *) (info->reg_base + CtrlOffset) = ulCtrlData;        
-        
+            ulCtrlData  |= 0x08;
+#endif
+        *(ulong *) (info->reg_base + CtrlOffset) = ulCtrlData;
+
 }
-	 
+
 static void enable_write (flash_info_t * info)
 {
 	ulong base;
@@ -206,11 +207,11 @@ static void enable_write (flash_info_t * info)
 			CtrlOffset = CS2_CTRL;
 			break;
 	}
-	
+
 	//base = info->start[0];
 	base = flash_make_addr (info, 0, 0);
 
-        ulCtrlData  = (info->tCK_Write << 8);        
+        ulCtrlData  = (info->tCK_Write << 8);
         ulCtrlData |= CE_LOW | USERMODE;
         *(ulong *) (info->reg_base + CtrlOffset) = ulCtrlData;
         udelay(200);
@@ -227,16 +228,16 @@ static void enable_write (flash_info_t * info)
         udelay(200);
         *(uchar *) (base) = (uchar) (0x05);
         udelay(10);
-        do {                                
+        do {
             jReg = *(volatile uchar *) (base);
-        } while (!(jReg & 0x02));                  	                
+        } while (!(jReg & 0x02));
         ulCtrlData &= CMD_MASK;
         ulCtrlData |= CE_HIGH | USERMODE;
         *(ulong *) (info->reg_base + CtrlOffset) = ulCtrlData;
         udelay(200);
 
 }
-		
+
 static void write_status_register (flash_info_t * info, uchar data)
 {
 	ulong base;
@@ -256,7 +257,7 @@ static void write_status_register (flash_info_t * info, uchar data)
 			CtrlOffset = CS2_CTRL;
 			break;
 	}
-    
+
 	//base = info->start[0];
 	base = flash_make_addr (info, 0, 0);
 
@@ -268,7 +269,7 @@ static void write_status_register (flash_info_t * info, uchar data)
         udelay(200);
         *(uchar *) (base) = (uchar) (0x01);
         udelay(10);
-        *(uchar *) (base) = (uchar) (data);                
+        *(uchar *) (base) = (uchar) (data);
         ulCtrlData &= CMD_MASK;
         ulCtrlData |= CE_HIGH | USERMODE;
         *(ulong *) (info->reg_base + CtrlOffset) = ulCtrlData;
@@ -280,10 +281,10 @@ static void write_status_register (flash_info_t * info, uchar data)
         udelay(200);
         *(uchar *) (base) = (uchar) (0x05);
         udelay(10);
-        do {                                
+        do {
             jReg = *(volatile uchar *) (base);
         } while (jReg & 0x01);
-        ulCtrlData &= CMD_MASK;                          	                
+        ulCtrlData &= CMD_MASK;
         ulCtrlData |= CE_HIGH | USERMODE;
         *(ulong *) (info->reg_base + CtrlOffset) = ulCtrlData;
         udelay(200);
@@ -308,7 +309,7 @@ static void enable4b (flash_info_t * info)
 			CtrlOffset = CS2_CTRL;
 			break;
 	}
-    
+
 	//base = info->start[0];
 	base = flash_make_addr (info, 0, 0);
 
@@ -317,11 +318,11 @@ static void enable4b (flash_info_t * info)
         *(ulong *) (info->reg_base + CtrlOffset) = ulCtrlData;
         udelay(200);
         *(uchar *) (base) = (uchar) (0xb7);
-        ulCtrlData &= CMD_MASK;                          	                
+        ulCtrlData &= CMD_MASK;
         ulCtrlData |= CE_HIGH | USERMODE;
         *(ulong *) (info->reg_base + CtrlOffset) = ulCtrlData;
         udelay(200);
- 
+
 } /* enable4b */
 
 static void enable4b_spansion (flash_info_t * info)
@@ -329,7 +330,7 @@ static void enable4b_spansion (flash_info_t * info)
 	ulong base;
     	ulong ulCtrlData, CtrlOffset;
     	uchar jReg;
-        
+
 	switch(info->CE) {
 		case 0:
 			CtrlOffset = CS0_CTRL;
@@ -343,7 +344,7 @@ static void enable4b_spansion (flash_info_t * info)
 			CtrlOffset = CS2_CTRL;
 			break;
 	}
-    
+
 	//base = info->start[0];
 	base = flash_make_addr (info, 0, 0);
 
@@ -354,33 +355,33 @@ static void enable4b_spansion (flash_info_t * info)
     	udelay(200);
     	*(uchar *) (base) = (uchar) (0x17);
     	udelay(10);
-    	*(uchar *) (base) = (uchar) (0x80);    
-    	ulCtrlData &= CMD_MASK;                          	                
+    	*(uchar *) (base) = (uchar) (0x80);
+    	ulCtrlData &= CMD_MASK;
     	ulCtrlData |= CE_HIGH | USERMODE;
     	*(ulong *) (info->reg_base + CtrlOffset) = ulCtrlData;
     	udelay(200);
 
-    	ulCtrlData &= CMD_MASK;                          	                
+    	ulCtrlData &= CMD_MASK;
     	ulCtrlData |= CE_LOW | USERMODE;
     	*(ulong *) (info->reg_base + CtrlOffset) = ulCtrlData;
     	udelay(200);
     	*(uchar *) (base) = (uchar) (0x16);
     	udelay(10);
-    	do {                                
+    	do {
             jReg = *(volatile uchar *) (base);
     	} while (!(jReg & 0x80));
-    	ulCtrlData &= CMD_MASK;                          	                                          	                
+    	ulCtrlData &= CMD_MASK;
     	ulCtrlData |= CE_HIGH | USERMODE;
    	 *(ulong *) (info->reg_base + CtrlOffset) = ulCtrlData;
     	udelay(200);
-	
+
 } /* enable4b_spansion */
 
 static void enable4b_numonyx (flash_info_t * info)
 {
 	ulong base;
     	ulong ulCtrlData, CtrlOffset;
-        
+
 	switch(info->CE) {
 		case 0:
 			CtrlOffset = CS0_CTRL;
@@ -394,13 +395,13 @@ static void enable4b_numonyx (flash_info_t * info)
 			CtrlOffset = CS2_CTRL;
 			break;
 	}
-    
+
 	//base = info->start[0];
 	base = flash_make_addr (info, 0, 0);
 
 	/* Enable Write */
 	enable_write (info);
-	
+
 	/* Enable 4B: CMD:0xB7 */
     	ulCtrlData  = (info->tCK_Write << 8);
     	ulCtrlData |= CE_LOW | USERMODE;
@@ -408,7 +409,7 @@ static void enable4b_numonyx (flash_info_t * info)
     	udelay(200);
     	*(uchar *) (base) = (uchar) (0xB7);
     	udelay(10);
-    	ulCtrlData &= CMD_MASK;                          	                
+    	ulCtrlData &= CMD_MASK;
     	ulCtrlData |= CE_HIGH | USERMODE;
     	*(ulong *) (info->reg_base + CtrlOffset) = ulCtrlData;
     	udelay(200);
@@ -436,11 +437,11 @@ static void flash_write_buffer (flash_info_t *info, uchar *src, ulong addr, int 
 			CtrlOffset = CS2_CTRL;
 			break;
 	}
-            
+
 	base = info->start[0];
 	offset = addr - base;
 	base = flash_make_addr (info, 0, 0);
-	
+
         enable_write (info);
 
         ulCtrlData  = (info->tCK_Write << 8);
@@ -467,8 +468,8 @@ static void flash_write_buffer (flash_info_t *info, uchar *src, ulong addr, int 
         {
             *(uchar *) (base) = *(uchar *) (src++);
             udelay(10);
-        }    
-                 
+        }
+
         ulCtrlData &= CMD_MASK;
         ulCtrlData |= CE_HIGH | USERMODE;
         *(ulong *) (info->reg_base + CtrlOffset) = ulCtrlData;
@@ -480,7 +481,7 @@ static void flash_write_buffer (flash_info_t *info, uchar *src, ulong addr, int 
         udelay(200);
         *(uchar *) (base) = (uchar) (0x05);
         udelay(10);
-        do {                             
+        do {
             jReg = *(volatile uchar *) (base);
         } while ((jReg & 0x01));
         ulCtrlData &= CMD_MASK;
@@ -497,22 +498,22 @@ static void flash_write_buffer (flash_info_t *info, uchar *src, ulong addr, int 
             udelay(200);
             *(uchar *) (base) = (uchar) (0x70);
             udelay(10);
-            do {                                                            
+            do {
                 jReg = *(volatile uchar *) (base);
             } while (!(jReg & 0x80));
             ulCtrlData &= CMD_MASK;
             ulCtrlData |= CE_HIGH | USERMODE;
             *(ulong *) (info->reg_base + CtrlOffset) = ulCtrlData;
             udelay(200);
-        }           
-}	
+        }
+}
 
 /*-----------------------------------------------------------------------
  *
  * export functions
- *  
+ *
  */
- 
+
 
 
 #if defined(CFG_ENV_IS_IN_FLASH) || defined(CFG_ENV_ADDR_REDUND) || (CFG_MONITOR_BASE >= CFG_FLASH_BASE)
@@ -557,7 +558,7 @@ int flash_erase (flash_info_t * info, int s_first, int s_last)
 			CtrlOffset = CS2_CTRL;
 			break;
 	}
-                    
+
 	if ((s_first < 0) || (s_first > s_last)) {
 		puts ("- no sectors to erase\n");
 		return 1;
@@ -592,10 +593,10 @@ int flash_erase (flash_info_t * info, int s_first, int s_last)
                         *(uchar *) (base) = (uchar) (0xd8);
                         udelay(10);
                         if (info->address32)
-                        { 
+                        {
                             *(uchar *) (base) = (uchar) ((offset & 0xff000000) >> 24);
                             udelay(10);
-                        }                        
+                        }
                         *(uchar *) (base) = (uchar) ((offset & 0xff0000) >> 16);
                         udelay(10);
                         *(uchar *) (base) = (uchar) ((offset & 0x00ff00) >> 8);
@@ -614,7 +615,7 @@ int flash_erase (flash_info_t * info, int s_first, int s_last)
                         udelay(200);
                         *(uchar *) (base) = (uchar) (0x05);
                         udelay(10);
-                        do {                                                            
+                        do {
                             jReg = *(volatile uchar *) (base);
                         } while ((jReg & 0x01));
                         ulCtrlData &= CMD_MASK;
@@ -631,22 +632,22 @@ int flash_erase (flash_info_t * info, int s_first, int s_last)
                             udelay(200);
                             *(uchar *) (base) = (uchar) (0x70);
                             udelay(10);
-                            do {                                                            
+                            do {
                                 jReg = *(volatile uchar *) (base);
                             } while (!(jReg & 0x80));
                             ulCtrlData &= CMD_MASK;
                             ulCtrlData |= CE_HIGH | USERMODE;
                             *(ulong *) (info->reg_base + CtrlOffset) = ulCtrlData;
                             udelay(200);
-                        }   
-                        
+                        }
+
 			putc ('.');
 		}
 	}
 	puts (" done\n");
-	
+
 	reset_flash(info);
-	
+
 	return rcode;
 }
 
@@ -692,18 +693,18 @@ int write_buff (flash_info_t * info, uchar * src, ulong addr, ulong cnt)
 	unsigned char pat[] = {'|', '-', '/', '\\'};
 	int patcnt;
 	ulong BufferSize = info->buffersize;
-	/* get lower aligned address */	
+	/* get lower aligned address */
 	if (addr & (BufferSize - 1))
 	{
-		count = cnt >= BufferSize ? (BufferSize - (addr & 0xff)):cnt;	
+		count = cnt >= BufferSize ? (BufferSize - (addr & 0xff)):cnt;
 		flash_write_buffer (info, src, addr, count);
 		addr+= count;
 		src += count;
-		cnt -= count;	
+		cnt -= count;
 	}
-	
-	/* prog */		
-	while (cnt > 0) {				
+
+	/* prog */
+	while (cnt > 0) {
 		count = cnt >= BufferSize ? BufferSize:cnt;
 		flash_write_buffer (info, src, addr, count);
 		addr+= count;
@@ -728,7 +729,7 @@ static ulong flash_get_size (ulong base, flash_info_t *info)
 	ulong reg;
 	ulong WriteClk, EraseClk, ReadClk;
 	ulong vbase;
-	          
+
 	info->start[0] = base;
 //	printf("base %x \n",base);
 	vbase = flash_make_addr (info, 0, 0);
@@ -746,9 +747,9 @@ static ulong flash_get_size (ulong base, flash_info_t *info)
 			CtrlOffset = CS2_CTRL;
 			break;
 	}
-		
+
 	/* Get Flash ID */
-	ulCtrlData  = *(ulong *) (info->reg_base + CtrlOffset) & CMD_MASK;        
+	ulCtrlData  = *(ulong *) (info->reg_base + CtrlOffset) & CMD_MASK;
 	ulCtrlData |= CE_LOW | USERMODE;
 	*(ulong *) (info->reg_base + CtrlOffset) = ulCtrlData;
 	udelay(200);
@@ -759,17 +760,17 @@ static ulong flash_get_size (ulong base, flash_info_t *info)
 	ch[1] = *(volatile uchar *)(vbase);
 	udelay(10);
 	ch[2] = *(volatile uchar *)(vbase);
-	udelay(10);               
-	ulCtrlData  = *(ulong *) (info->reg_base + CtrlOffset) & CMD_MASK;        
+	udelay(10);
+	ulCtrlData  = *(ulong *) (info->reg_base + CtrlOffset) & CMD_MASK;
 	ulCtrlData |= CE_HIGH | USERMODE;
 	*(ulong *) (info->reg_base + CtrlOffset) = ulCtrlData;
 	udelay(200);
-	ulID = ((ulong)ch[0]) | ((ulong)ch[1] << 8) | ((ulong)ch[2] << 16) ;        
+	ulID = ((ulong)ch[0]) | ((ulong)ch[1] << 8) | ((ulong)ch[2] << 16) ;
 	info->flash_id = ulID;
-        
+
 	printf("SPI Flash ID: %x \n", ulID);
 
-	/* init default */        
+	/* init default */
 	info->iomode = IOMODEx1;
 	info->address32 = 0;
 	info->quadport = 0;
@@ -778,7 +779,7 @@ static ulong flash_get_size (ulong base, flash_info_t *info)
 	switch (info->flash_id) {
 		case STM25P64:
 			info->sector_count = 128;
-			info->size = 0x800000;        	
+			info->size = 0x800000;
 			erase_region_size  = 0x10000;
 			info->readcmd = 0x0b;
 			info->dualport = 0;
@@ -791,17 +792,17 @@ static ulong flash_get_size (ulong base, flash_info_t *info)
 
 		case STM25P128:
 			info->sector_count = 64;
-			info->size = 0x1000000;        	
+			info->size = 0x1000000;
 			erase_region_size  = 0x40000;
-			info->readcmd = 0x0b;            
+			info->readcmd = 0x0b;
 			info->dualport = 0;
 			info->dummybyte = 1;
-			info->buffersize = 256;            
+			info->buffersize = 256;
 			WriteClk = 50;
 			EraseClk = 20;
 			ReadClk  = 50;
 			break;
-            
+
 		case N25Q128:
 			info->sector_count = 256;
 			info->size = 0x1000000;
@@ -817,78 +818,78 @@ static ulong flash_get_size (ulong base, flash_info_t *info)
 
 		case N25Q256:
 			info->sector_count = 256;
-			info->size = 0x1000000;        	
+			info->size = 0x1000000;
 			erase_region_size  = 0x10000;
-			info->readcmd = 0x0b;            
+			info->readcmd = 0x0b;
 			info->dualport = 0;
 			info->dummybyte = 1;
-			info->buffersize = 256;            
+			info->buffersize = 256;
 			WriteClk = 50;
 			EraseClk = 20;
 			ReadClk  = 50;
 #if	1
 			info->sector_count = 512;
 			info->size = 0x2000000;
-			info->address32 = 1;        	
+			info->address32 = 1;
 #endif
 			break;
 
 		case N25Q512:
 			info->sector_count = 256;
-			info->size = 0x1000000;        	
+			info->size = 0x1000000;
 			erase_region_size  = 0x10000;
-			info->readcmd = 0x0b;            
+			info->readcmd = 0x0b;
 			info->dualport = 0;
 			info->dummybyte = 1;
-			info->buffersize = 256; 
-			info->specificspi = SpecificSPI_N25Q512;           
+			info->buffersize = 256;
+			info->specificspi = SpecificSPI_N25Q512;
 			WriteClk = 50;
 			EraseClk = 20;
 			ReadClk  = 50;
 #if	1
 			info->sector_count = 1024;
 			info->size = 0x4000000;
-			info->address32 = 1;        	
+			info->address32 = 1;
 #endif
 			break;
-	    	    	                            
+
 		case W25X16:
 			info->sector_count = 32;
-			info->size = 0x200000;        	
+			info->size = 0x200000;
 			erase_region_size  = 0x10000;
-			info->readcmd = 0x3b;            
-			info->dualport = 1;            
+			info->readcmd = 0x3b;
+			info->dualport = 1;
 			info->dummybyte = 1;
-			info->iomode = IOMODEx2; 
-			info->buffersize = 256;                                   
+			info->iomode = IOMODEx2;
+			info->buffersize = 256;
 			WriteClk = 50;
 			EraseClk = 25;
-			ReadClk  = 50;            
+			ReadClk  = 50;
 			break;
 
 		case W25X64:
 			info->sector_count = 128;
-			info->size = 0x800000;        	
+			info->size = 0x800000;
 			erase_region_size  = 0x10000;
-			info->readcmd = 0x3b;            
-			info->dualport = 1;            
+			info->readcmd = 0x3b;
+			info->dualport = 1;
 			info->dummybyte = 1;
 			info->iomode = IOMODEx2;
-			info->buffersize = 256;                                    
+			info->buffersize = 256;
 			WriteClk = 50;
 			EraseClk = 25;
-			ReadClk  = 50;            
+			ReadClk  = 50;
 			break;
 
 		case W25Q64BV:
 			info->sector_count = 128;
-			info->size = 0x800000;        	
+			info->size = 0x800000;
 			erase_region_size  = 0x10000;
-			info->readcmd = 0x3b;            
-			info->dualport = 1;            
+			info->readcmd = 0x3b;
+			info->dualport = 1;
 			info->dummybyte = 1;
-			info->iomode = IOMODEx2; 
-			info->buffersize = 256;                                   
+			info->iomode = IOMODEx2;
+			info->buffersize = 256;
 			WriteClk = 80;
 			EraseClk = 40;
 			ReadClk  = 80;
@@ -896,13 +897,13 @@ static ulong flash_get_size (ulong base, flash_info_t *info)
 
 		case W25Q128BV:
 			info->sector_count = 256;
-			info->size = 0x1000000;        	
+			info->size = 0x1000000;
 			erase_region_size  = 0x10000;
-			info->readcmd = 0x3b;            
-			info->dualport = 1;            
+			info->readcmd = 0x3b;
+			info->dualport = 1;
 			info->dummybyte = 1;
-			info->iomode = IOMODEx2; 
-			info->buffersize = 256;                                   
+			info->iomode = IOMODEx2;
+			info->buffersize = 256;
 			WriteClk = 104;
 			EraseClk = 50;
 			ReadClk  = 104;
@@ -910,105 +911,134 @@ static ulong flash_get_size (ulong base, flash_info_t *info)
 
 		case W25Q256FV:
 			info->sector_count = 256;
-			info->size = 0x1000000;        	
+			info->size = 0x1000000;
 			erase_region_size  = 0x10000;
-			info->readcmd = 0x0b;            
+			info->readcmd = 0x0b;
 			info->dualport = 0;
 			info->dummybyte = 1;
-			info->buffersize = 256;            
+			info->buffersize = 256;
 			WriteClk = 50;
 			EraseClk = 20;
 			ReadClk  = 50;
 #if	1
 			info->sector_count = 512;
 			info->size = 0x2000000;
-			info->address32 = 1;        	
+			info->address32 = 1;
 #endif
 			break;
-		        
+
 		case S25FL064A:
 			info->sector_count = 128;
-			info->size = 0x800000;        	
+			info->size = 0x800000;
 			erase_region_size  = 0x10000;
-			info->readcmd = 0x0b;            
-			info->dualport = 0;            
+			info->readcmd = 0x0b;
+			info->dualport = 0;
 			info->dummybyte = 1;
-			info->buffersize = 256;            
+			info->buffersize = 256;
 			WriteClk = 50;
 			EraseClk = 25;
-			ReadClk  = 50;            
+			ReadClk  = 50;
 			break;
 
 		case S25FL128P:
 			info->sector_count = 256;
-			info->size = 0x1000000;        	
+			info->size = 0x1000000;
 			erase_region_size  = 0x10000;
-			info->readcmd = 0x0b;            
-			info->dualport = 0;            
+			info->readcmd = 0x0b;
+			info->dualport = 0;
 			info->dummybyte = 1;
-			info->buffersize = 256;            
+			info->buffersize = 256;
 			WriteClk = 100;
 			EraseClk = 40;
-			ReadClk  = 100;            
+			ReadClk  = 100;
 			break;
 
 		case S25FL256S:
 			info->sector_count = 256;
-			info->size = 0x1000000;        	
+			info->size = 0x1000000;
 			erase_region_size  = 0x10000;
-			info->readcmd = 0x0b;            
+			info->readcmd = 0x0b;
 			info->dualport = 0;
 			info->dummybyte = 1;
-			info->buffersize = 256;            
+			info->buffersize = 256;
 			WriteClk = 50;
 			EraseClk = 20;
 			ReadClk  = 50;
 #if	1
 			info->sector_count = 512;
 			info->size = 0x2000000;
-			info->address32 = 1;        	
+			info->address32 = 1;
 #endif
 			break;
 
 		case MX25L25635E:
 			info->sector_count = 256;
-			info->size = 0x1000000;        	
+			info->size = 0x1000000;
 			erase_region_size  = 0x10000;
-			info->readcmd = 0x0b;            
+			info->readcmd = 0x0b;
 			info->dualport = 0;
 			info->dummybyte = 1;
-			info->buffersize = 256;            
+			info->buffersize = 256;
 			WriteClk = 50;
 			EraseClk = 20;
 			ReadClk  = 50;
 #if	1
 			info->sector_count = 512;
 			info->size = 0x2000000;
-			info->address32 = 1;        	
+			info->address32 = 1;
 #if	defined(CONFIG_FLASH_SPIx2_Dummy)
-			info->readcmd = 0xbb;            
+			info->readcmd = 0xbb;
 			info->dummybyte = 1;
-			info->dualport = 1;            
+			info->dualport = 1;
 			info->iomode = IOMODEx2_dummy;
 #elif	defined(CONFIG_FLASH_SPIx4_Dummy)
-			info->readcmd = 0xeb;            
+			info->readcmd = 0xeb;
 			info->dummybyte = 3;
-			info->dualport = 0;            
+			info->dualport = 0;
 			info->iomode = IOMODEx4_dummy;
 			info->quadport = 1;
-			info->dummydata = 0xaa;            
-#endif            
-#endif             
+			info->dummydata = 0xaa;
+#endif
+#endif
+			break;
+
+		case MX66L51235F:
+			erase_region_size  = 0x10000;
+			info->readcmd = 0x0b;
+			info->dualport = 0;
+			info->dummybyte = 1;
+			info->buffersize = 512;
+			WriteClk = 50;
+			EraseClk = 20;
+			ReadClk  = 50;
+#if	1
+			info->sector_count = 1024;
+			info->size = 0x4000000;
+			info->address32 = 1;
+#if	defined(CONFIG_FLASH_SPIx2_Dummy)
+			info->readcmd = 0xbb;
+			info->dummybyte = 1;
+			info->dualport = 1;
+			info->iomode = IOMODEx2_dummy;
+#elif	defined(CONFIG_FLASH_SPIx4_Dummy)
+			info->readcmd = 0xeb;
+			info->dummybyte = 3;
+			info->dualport = 0;
+			info->iomode = IOMODEx4_dummy;
+			info->quadport = 1;
+			info->dummydata = 0xaa;
+#endif
+#endif
 			break;
 
 		case MX25L12805D:
 			info->sector_count = 256;
-			info->size = 0x1000000;        	
+			info->size = 0x1000000;
 			erase_region_size  = 0x10000;
-			info->readcmd = 0x0b;            
+			info->readcmd = 0x0b;
 			info->dualport = 0;
 			info->dummybyte = 1;
-			info->buffersize = 256;            
+			info->buffersize = 256;
 
 			WriteClk = 50;
 			EraseClk = 20;
@@ -1016,29 +1046,29 @@ static ulong flash_get_size (ulong base, flash_info_t *info)
 
 #if	1
 #if	defined(CONFIG_FLASH_SPIx2_Dummy)
-			info->readcmd = 0xbb;            
+			info->readcmd = 0xbb;
 			info->dummybyte = 1;
-			info->dualport = 1;            
+			info->dualport = 1;
 			info->iomode = IOMODEx2_dummy;
 #elif	defined(CONFIG_FLASH_SPIx4_Dummy)
-			info->readcmd = 0xeb;            
+			info->readcmd = 0xeb;
 			info->dummybyte = 3;
-			info->dualport = 0;            
+			info->dualport = 0;
 			info->iomode = IOMODEx4_dummy;
 			info->quadport = 1;
-			info->dummydata = 0xaa;            
-#endif            
-#endif             
+			info->dummydata = 0xaa;
+#endif
+#endif
 			break;
 
 		case MX25L1605D:
 			info->sector_count = 32;
-			info->size = 0x200000;        	
+			info->size = 0x200000;
 			erase_region_size  = 0x10000;
-			info->readcmd = 0x0b;            
+			info->readcmd = 0x0b;
 			info->dualport = 0;
 			info->dummybyte = 1;
-			info->buffersize = 256;            
+			info->buffersize = 256;
 			WriteClk = 50;
 			EraseClk = 20;
 			ReadClk  = 50;
@@ -1046,166 +1076,166 @@ static ulong flash_get_size (ulong base, flash_info_t *info)
 
 		case SST25VF016B:
 			info->sector_count = 32;
-			info->size = 0x200000;        	
+			info->size = 0x200000;
 			erase_region_size  = 0x10000;
-			info->readcmd = 0x0b;            
-			info->dualport = 0;            
+			info->readcmd = 0x0b;
+			info->dualport = 0;
 			info->dummybyte = 1;
-			info->buffersize = 1;            
+			info->buffersize = 1;
 			WriteClk = 50;
 			EraseClk = 25;
-			ReadClk  = 50;            
+			ReadClk  = 50;
 			break;
 
 		case SST25VF064C:
 			info->sector_count = 128;
-			info->size = 0x800000;        	
+			info->size = 0x800000;
 			erase_region_size  = 0x10000;
-			info->readcmd = 0x0b;            
-			info->dualport = 0;            
+			info->readcmd = 0x0b;
+			info->dualport = 0;
 			info->dummybyte = 1;
-			info->buffersize = 1;            
+			info->buffersize = 1;
 			WriteClk = 50;
 			EraseClk = 25;
-			ReadClk  = 50;            
+			ReadClk  = 50;
 			break;
 
 		case SST25VF040B:
 			info->sector_count = 8;
-			info->size = 0x80000;        	
+			info->size = 0x80000;
 			erase_region_size  = 0x10000;
-			info->readcmd = 0x0b;            
-			info->dualport = 0;            
+			info->readcmd = 0x0b;
+			info->dualport = 0;
 			info->dummybyte = 1;
-			info->buffersize = 1;            
+			info->buffersize = 1;
 			WriteClk = 50;
 			EraseClk = 25;
-			ReadClk  = 50;            
+			ReadClk  = 50;
 			break;
 
 		case AT25DF161:
 			info->sector_count = 32;
-			info->size = 0x200000;        	
+			info->size = 0x200000;
 			erase_region_size  = 0x10000;
-			info->readcmd = 0x0b;            
-			info->dualport = 0;            
+			info->readcmd = 0x0b;
+			info->dualport = 0;
 			info->dummybyte = 1;
-			info->buffersize = 1;            
+			info->buffersize = 1;
 			WriteClk = 50;
 			EraseClk = 25;
-			ReadClk  = 50;            
+			ReadClk  = 50;
 			break;
 
 		case AT25DF321:
 			info->sector_count = 32;
-			info->size = 0x400000;        	
+			info->size = 0x400000;
 			erase_region_size  = 0x10000;
-			info->readcmd = 0x0b;            
-			info->dualport = 0;            
+			info->readcmd = 0x0b;
+			info->dualport = 0;
 			info->dummybyte = 1;
-			info->buffersize = 1;            
+			info->buffersize = 1;
 			WriteClk = 50;
 			EraseClk = 25;
-			ReadClk  = 50;            
+			ReadClk  = 50;
 			break;
-                                                                      
+
 		default:	/* use JEDEC ID */
 			printf("Unsupported SPI Flash!! 0x%08X\n", info->flash_id);
 			erase_region_size  = 0x10000;
-			info->readcmd = 0x0b;                        
-			info->dualport  = 0;            
+			info->readcmd = 0x0b;
+			info->dualport  = 0;
 			info->dummybyte = 1;
-			info->buffersize = 1;            
+			info->buffersize = 1;
 			WriteClk = 50;
 			EraseClk = 25;
-			ReadClk  = 50;  
+			ReadClk  = 50;
 			if ((info->flash_id & 0xFF) == 0x1F) {
 			/* Atmel */
 				switch (info->flash_id & 0x001F00) {
-					case 0x000400:	
+					case 0x000400:
 						info->sector_count = 8;
-						info->size = 0x80000;        	
-						break;	            	                
-					case 0x000500:	
+						info->size = 0x80000;
+						break;
+					case 0x000500:
 						info->sector_count = 16;
-						info->size = 0x100000;        	
-						break;	            	                
-					case 0x000600:	
+						info->size = 0x100000;
+						break;
+					case 0x000600:
 						info->sector_count = 32;
-						info->size = 0x200000;        	
+						info->size = 0x200000;
 						break;
-					case 0x000700:	
+					case 0x000700:
 						info->sector_count = 64;
-						info->size = 0x400000;        	
+						info->size = 0x400000;
 						break;
-					case 0x000800:	
+					case 0x000800:
 						info->sector_count = 128;
-						info->size = 0x800000;        	
-						break;	            
-					case 0x000900:	
+						info->size = 0x800000;
+						break;
+					case 0x000900:
 						info->sector_count = 256;
-						info->size = 0x1000000;        	
-						break;	            	            
+						info->size = 0x1000000;
+						break;
 					default:
 						printf("Can't support this SPI Flash!! \n");
-						return 0;	            
-				}   	            
+						return 0;
+				}
 			} else {
-				/* JDEC */        
+				/* JDEC */
 				switch (info->flash_id & 0xFF0000)
 				{
-					case 0x120000:	
+					case 0x120000:
 						info->sector_count = 4;
-						info->size = 0x40000;        	
+						info->size = 0x40000;
 						break;
-					case 0x130000:	
+					case 0x130000:
 						info->sector_count = 8;
-						info->size = 0x80000;        	
+						info->size = 0x80000;
 						break;
-					case 0x140000:	
+					case 0x140000:
 						info->sector_count =16;
-						info->size = 0x100000;        	
+						info->size = 0x100000;
 						break;
-					case 0x150000:	
+					case 0x150000:
 						info->sector_count =32;
-						info->size = 0x200000;        	
+						info->size = 0x200000;
 						break;
-					case 0x160000:	
+					case 0x160000:
 						info->sector_count =64;
-						info->size = 0x400000;        	
+						info->size = 0x400000;
 						break;
-					case 0x170000:	
+					case 0x170000:
 						info->sector_count =128;
-						info->size = 0x800000;        	
+						info->size = 0x800000;
 						break;
-					case 0x180000:	
+					case 0x180000:
 						info->sector_count =256;
-						info->size = 0x1000000;        	
+						info->size = 0x1000000;
 						break;
-					case 0x190000:	
+					case 0x190000:
 						info->sector_count =256;
 						info->size = 0x1000000;
 #if	1
 						info->sector_count = 512;
 						info->size = 0x2000000;
-						info->address32 = 1;        	
+						info->address32 = 1;
 #if	defined(CONFIG_FLASH_SPIx2_Dummy)
-						info->readcmd = 0xbb;            
+						info->readcmd = 0xbb;
 						info->dummybyte = 1;
-						info->dualport = 1;            
+						info->dualport = 1;
 						info->iomode = IOMODEx2_dummy;
 #elif	defined(CONFIG_FLASH_SPIx4_Dummy)
-						info->readcmd = 0xeb;            
+						info->readcmd = 0xeb;
 						info->dummybyte = 3;
-						info->dualport = 0;            
+						info->dualport = 0;
 						info->iomode = IOMODEx4_dummy;
 						info->quadport = 1;
-						info->dummydata = 0xaa;            
-#endif            
-#endif             	                	
+						info->dummydata = 0xaa;
+#endif
+#endif
 						break;
 
-					case 0x200000:	
+					case 0x200000:
 						info->sector_count =256;
 						info->size = 0x1000000;
 						if ((info->flash_id & 0xFF) == 0x20)	/* numonyx */
@@ -1213,33 +1243,33 @@ static ulong flash_get_size (ulong base, flash_info_t *info)
 #if	1
 						info->sector_count = 1024;
 						info->size = 0x4000000;
-						info->address32 = 1;        	
+						info->address32 = 1;
 #if	defined(CONFIG_FLASH_SPIx2_Dummy)
-						info->readcmd = 0xbb;            
+						info->readcmd = 0xbb;
 						info->dummybyte = 1;
-						info->dualport = 1;            
+						info->dualport = 1;
 						info->iomode = IOMODEx2_dummy;
 #elif	defined(CONFIG_FLASH_SPIx4_Dummy)
-						info->readcmd = 0xeb;            
+						info->readcmd = 0xeb;
 						info->dummybyte = 3;
-						info->dualport = 0;            
+						info->dualport = 0;
 						info->iomode = IOMODEx4_dummy;
 						info->quadport = 1;
-						info->dummydata = 0xaa;            
-#endif            
-#endif             	                	
+						info->dummydata = 0xaa;
+#endif
+#endif
 						break;
-					        	        
+
 					default:
 						printf("Can't support this SPI Flash!! \n");
 						return 0;
-				}    
-			} /* JDEC */        
+				}
+			} /* JDEC */
 	}
 
-	sector = base;			
+	sector = base;
 	for (j = 0; j < info->sector_count; j++) {
-		
+
 		info->start[j] = sector;
 		sector += erase_region_size;
 		info->protect[j] = 0; /* default: not protected */
@@ -1254,18 +1284,18 @@ static ulong flash_get_size (ulong base, flash_info_t *info)
 	info->tCK_Erase = ast_spi_calculate_divisor(EraseClk*1000000);
 	info->tCK_Read = ast_spi_calculate_divisor(ReadClk*1000000);
 
-	/* unprotect flash */	
+	/* unprotect flash */
 	write_status_register(info, 0);
 
 	if (info->quadport)
 		write_status_register(info, 0x40);	/* enable QE */
 
-	if (info->address32) {          
+	if (info->address32) {
 #ifndef AST_SOC_G5
 		reg = *((volatile ulong*) 0x1e6e2070);	/* set H/W Trappings */
 		reg |= 0x10;
 		*((volatile ulong*) 0x1e6e2070) = reg;
-#endif            
+#endif
 		reg  = *((volatile ulong*) (info->reg_base + 0x4));	/* enable 32b control bit*/
 		reg |= (0x01 << info->CE);
 		*((volatile ulong*) (info->reg_base + 0x4)) = reg;
@@ -1274,10 +1304,10 @@ static ulong flash_get_size (ulong base, flash_info_t *info)
 		if ((info->flash_id & 0xFF) == 0x01)	/* Spansion */
 			enable4b_spansion(info);
 		else if ((info->flash_id & 0xFF) == 0x20)	/* Numonyx */
-			enable4b_numonyx(info);                
+			enable4b_numonyx(info);
 		else /* MXIC, Winbond */
-			enable4b(info);	        
-	}    
+			enable4b(info);
+	}
 
 	reset_flash(info);
 //	printf("%08x \n", info->size);
@@ -1290,7 +1320,7 @@ unsigned long flash_init (void)
 	unsigned long size = 0;
 	int i;
 
-	*((volatile ulong*) AST_FMC_BASE) |= 0x800f0000;	/* enable Flash Write */	 
+	*((volatile ulong*) AST_FMC_BASE) |= 0x800f0000;	/* enable Flash Write */
 
 	/* Init: FMC  */
 	/* BANK 0 : FMC CS0 , 1: FMC CS1, */
@@ -1318,9 +1348,9 @@ unsigned long flash_init (void)
 
 	/* BANK 2:SYSSPI CS0 */
 #ifdef CONFIG_SPI0_CS
-	//pin switch by trap[13:12]	-- [0:1] Enable SPI Master 
+	//pin switch by trap[13:12]	-- [0:1] Enable SPI Master
 	ast_scu_spi_master(1);	/* enable SPI master */
-	*((volatile ulong*) AST_FMC_SPI0_BASE) |= 0x10000;	/* enable Flash Write */	 
+	*((volatile ulong*) AST_FMC_SPI0_BASE) |= 0x10000;	/* enable Flash Write */
 	flash_info[CONFIG_FMC_CS].sysspi = 1;
 	flash_info[CONFIG_FMC_CS].reg_base = AST_FMC_SPI0_BASE;
 	flash_info[CONFIG_FMC_CS].flash_id = FLASH_UNKNOWN;
@@ -1329,8 +1359,8 @@ unsigned long flash_init (void)
 	if (flash_info[2].flash_id == FLASH_UNKNOWN) {
 		printf ("## Unknown FLASH on Bank 2 SYS SPI - Size = 0x%08lx = %ld MB\n",
 			flash_info[CONFIG_FMC_CS].size, flash_info[CONFIG_FMC_CS].size << 20);
-	} 
-#endif 
+	}
+#endif
 
 	/* Monitor protection ON by default */
 #if (CONFIG_MONITOR_BASE >= AST_FMC_CS0_BASE)
@@ -1362,26 +1392,26 @@ unsigned long flash_init (void)
 void memmove_dma(void * dest,const void *src,size_t count)
 {
 	ulong count_align, poll_time, data;
-	
+
 	count_align = (count + 3) & 0xFFFFFFFC;	/* 4-bytes align */
         poll_time = 100;			/* set 100 us as default */
 
         /* force end of burst read */
 	*(volatile ulong *) (AST_FMC_BASE + CS0_CTRL) |= CE_HIGH;
 	*(volatile ulong *) (AST_FMC_BASE + CS0_CTRL) &= ~CE_HIGH;
-          
-	*(ulong *) (AST_FMC_BASE + REG_FLASH_DMA_CONTROL) = (ulong) (~FLASH_DMA_ENABLE);	
+
+	*(ulong *) (AST_FMC_BASE + REG_FLASH_DMA_CONTROL) = (ulong) (~FLASH_DMA_ENABLE);
 	*(ulong *) (AST_FMC_BASE + REG_FLASH_DMA_FLASH_BASE) = (ulong *) (src);
 	*(ulong *) (AST_FMC_BASE + REG_FLASH_DMA_DRAM_BASE) = (ulong *) (dest);
 	*(ulong *) (AST_FMC_BASE + REG_FLASH_DMA_LENGTH) = (ulong) (count_align);
 	*(ulong *) (AST_FMC_BASE + REG_FLASH_DMA_CONTROL) = (ulong) (FLASH_DMA_ENABLE);
-	
+
 	/* wait poll */
 	do {
-		udelay(poll_time);	
+		udelay(poll_time);
 		data = *(ulong *) (AST_FMC_BASE + REG_FLASH_INTERRUPT_STATUS);
 	} while (!(data & FLASH_STATUS_DMA_READY));
-	
+
 	/* clear status */
 	*(ulong *) (AST_FMC_BASE + REG_FLASH_INTERRUPT_STATUS) |= FLASH_STATUS_DMA_CLEAR;
-}	
+}

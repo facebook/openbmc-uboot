@@ -39,83 +39,106 @@ static const char ThisFile[] = "MAC.c";
 
 // -------------------------------------------------------------
 const  ULONG   ARP_org_data[16] = {
-        0xffffffff,
-        0x0000ffff, // SA:00 00
-        0x12345678, // SA:12 34 56 78
-        0x01000608, // ARP(0x0806)
-        0x04060008,
-        0x00000100, // sender MAC Address: 00 00
-        0x12345678, // sender MAC Address: 12 34 56 78
-        0xeb00a8c0, // sender IP Address:  192.168.0.235
-        0x00000000, // target MAC Address: 00 00 00 00
-        0xa8c00000, // target MAC Address: 00 00, sender IP Address:192.168
-        0x00000100, // sender IP Address:  0.1
-//      0x0000de00, // sender IP Address:  0.222
-        0x00000000,
-        0x00000000,
-        0x00000000,
-        0x00000000,
-        0xc68e2bd5
+	0xffffffff,
+	0x0000ffff, // SA:00-00-
+	0x12345678, // SA:78-56-34-12
+	0x01000608, // ARP(0x0806)
+	0x04060008,
+	0x00000100, // sender MAC Address: 00 00
+	0x12345678, // sender MAC Address: 12 34 56 78
+	0xeb00a8c0, // sender IP Address:  192.168.0.235 (C0.A8.0.EB)
+	0x00000000, // target MAC Address: 00 00 00 00
+	0xa8c00000, // target MAC Address: 00 00, target IP Address:192.168
+	0x00005c00, // target IP Address:  0.92 (C0.A8.0.5C)
+//	0x00000100, // target IP Address:  0.1 (C0.A8.0.1)
+//	0x0000de00, // target IP Address:  0.222 (C0.A8.0.DE)
+	0x00000000,
+	0x00000000,
+	0x00000000,
+	0x00000000,
+	0xc68e2bd5
 };
 
-
-
 //------------------------------------------------------------
-// Read
+// Read Memory
 //------------------------------------------------------------
 ULONG Read_Mem_Dat_NCSI_DD (ULONG addr) {
-#if defined(SLT_UBOOT) && defined(AST1010_CHIP)
-	return ( DWSwap_SLT(ReadSOC_DD(addr)) );
-#else
-	return ( ReadSOC_DD(addr) );
-#endif
+	return ( SWAP_4B_LEDN_MEM( ReadSOC_DD(addr) ) );
 }
 ULONG Read_Mem_Des_NCSI_DD (ULONG addr) {
-	return ( ReadSOC_DD(addr) );
+	return ( SWAP_4B_LEDN_MEM( ReadSOC_DD(addr) ) );
 }
 ULONG Read_Mem_Dat_DD (ULONG addr) {
-	return ( ReadSOC_DD(addr) );
+	return ( SWAP_4B_LEDN_MEM( ReadSOC_DD(addr) ) );
 }
 ULONG Read_Mem_Des_DD (ULONG addr) {
-	return ( ReadSOC_DD(addr) );
-}
-ULONG Read_Reg_MAC_DD (MAC_ENGINE *eng, ULONG addr) {
-	return ( ReadSOC_DD( eng->run.MAC_BASE + addr ) );
-}
-ULONG Read_Reg_SCU_DD (ULONG addr) {
-	return ( ReadSOC_DD( SCU_BASE + addr ) );
-}
-ULONG Read_Reg_SDR_DD (ULONG addr) {
-	return ( ReadSOC_DD( SDR_BASE + addr ) );
-}
-ULONG Read_Reg_SMB_DD (ULONG addr) {
-	return ( ReadSOC_DD( SMB_BASE + addr ) );
+	return ( SWAP_4B_LEDN_MEM( ReadSOC_DD(addr) ) );
 }
 
 //------------------------------------------------------------
-// Write
+// Read Register
+//------------------------------------------------------------
+ULONG Read_Reg_MAC_DD (MAC_ENGINE *eng, ULONG addr) {
+	return ( SWAP_4B_LEDN_REG( ReadSOC_DD( eng->run.MAC_BASE + addr ) ) );
+}
+ULONG Read_Reg_PHY_DD (MAC_ENGINE *eng, ULONG addr) {
+	return ( SWAP_4B_LEDN_REG( ReadSOC_DD( eng->phy.PHY_BASE + addr ) ) );
+}
+ULONG Read_Reg_SCU_DD (ULONG addr) {
+	return ( SWAP_4B_LEDN_REG( ReadSOC_DD( SCU_BASE + addr ) ) );
+}
+ULONG Read_Reg_WDT_DD (ULONG addr) {
+	return ( SWAP_4B_LEDN_REG( ReadSOC_DD( WDT_BASE + addr ) ) );
+}
+ULONG Read_Reg_SDR_DD (ULONG addr) {
+	return ( SWAP_4B_LEDN_REG( ReadSOC_DD( SDR_BASE + addr ) ) );
+}
+ULONG Read_Reg_SMB_DD (ULONG addr) {
+	return ( SWAP_4B_LEDN_REG( ReadSOC_DD( SMB_BASE + addr ) ) );
+}
+ULONG Read_Reg_TIMER_DD (ULONG addr) {
+	return ( SWAP_4B_LEDN_REG( ReadSOC_DD( TIMER_BASE + addr ) ) );
+}
+ULONG Read_Reg_GPIO_DD (ULONG addr) {
+	return ( SWAP_4B_LEDN_REG( ReadSOC_DD( GPIO_BASE + addr ) ) );
+}
+
+//------------------------------------------------------------
+// Write Memory
 //------------------------------------------------------------
 void Write_Mem_Dat_NCSI_DD (ULONG addr, ULONG data) {
-#if defined(SLT_UBOOT) && defined(AST1010_CHIP)
-	WriteSOC_DD( addr, DWSwap_SLT(data) );
-#else
-	WriteSOC_DD( addr, data );
-#endif
+	WriteSOC_DD( addr, SWAP_4B_LEDN_MEM( data ) );
 }
 void Write_Mem_Des_NCSI_DD (ULONG addr, ULONG data) {
-	WriteSOC_DD( addr, data );
+	WriteSOC_DD( addr, SWAP_4B_LEDN_MEM( data ) );
 }
 void Write_Mem_Dat_DD (ULONG addr, ULONG data) {
-	WriteSOC_DD( addr, data );
+	WriteSOC_DD( addr, SWAP_4B_LEDN_MEM( data ) );
 }
 void Write_Mem_Des_DD (ULONG addr, ULONG data) {
-	WriteSOC_DD( addr, data );
+	WriteSOC_DD( addr, SWAP_4B_LEDN_MEM( data ) );
 }
+
+//------------------------------------------------------------
+// Write Register
+//------------------------------------------------------------
 void Write_Reg_MAC_DD (MAC_ENGINE *eng, ULONG addr, ULONG data) {
-	WriteSOC_DD( eng->run.MAC_BASE + addr, data );
+	WriteSOC_DD( eng->run.MAC_BASE + addr, SWAP_4B_LEDN_REG( data ) );
+}
+void Write_Reg_PHY_DD (MAC_ENGINE *eng, ULONG addr, ULONG data) {
+	WriteSOC_DD( eng->phy.PHY_BASE + addr, SWAP_4B_LEDN_REG( data ) );
 }
 void Write_Reg_SCU_DD (ULONG addr, ULONG data) {
-	WriteSOC_DD( SCU_BASE + addr, data );
+	WriteSOC_DD( SCU_BASE + addr, SWAP_4B_LEDN_REG( data ) );
+}
+void Write_Reg_WDT_DD (ULONG addr, ULONG data) {
+	WriteSOC_DD( WDT_BASE + addr, SWAP_4B_LEDN_REG( data ) );
+}
+void Write_Reg_TIMER_DD (ULONG addr, ULONG data) {
+	WriteSOC_DD( TIMER_BASE + addr, SWAP_4B_LEDN_REG( data ) );
+}
+void Write_Reg_GPIO_DD (ULONG addr, ULONG data) {
+	WriteSOC_DD( GPIO_BASE + addr, SWAP_4B_LEDN_REG( data ) );
 }
 
 //------------------------------------------------------------
@@ -129,7 +152,9 @@ void Debug_delay (void) {
 
 //------------------------------------------------------------
 void dump_mac_ROreg (MAC_ENGINE *eng) {
+#ifdef Delay_MACDump
 	DELAY( Delay_MACDump );
+#endif
 	printf("\n");
 	printf("[MAC-H] ROReg A0h~ACh: %08lx %08lx %08lx %08lx\n", Read_Reg_MAC_DD( eng, 0xA0 ), Read_Reg_MAC_DD( eng, 0xA4 ), Read_Reg_MAC_DD( eng, 0xA8 ), Read_Reg_MAC_DD( eng, 0xAC ));
 	printf("[MAC-H] ROReg B0h~BCh: %08lx %08lx %08lx %08lx\n", Read_Reg_MAC_DD( eng, 0xB0 ), Read_Reg_MAC_DD( eng, 0xB4 ), Read_Reg_MAC_DD( eng, 0xB8 ), Read_Reg_MAC_DD( eng, 0xBC ));
@@ -141,6 +166,11 @@ void dump_mac_ROreg (MAC_ENGINE *eng) {
 //------------------------------------------------------------
 void init_iodelay (MAC_ENGINE *eng) {
 	int        index;
+
+#ifdef  DbgPrn_FuncHeader
+	printf("init_iodelay\n");
+	Debug_delay();
+#endif
 
 #ifdef AST2500_IOMAP
 	if ( eng->env.AST2500A1 && ( !eng->env.MAC_RMII ) )
@@ -218,7 +248,7 @@ void init_iodelay (MAC_ENGINE *eng) {
 			case 2  : eng->io.Str_shf = 12; break;
 			case 3  : eng->io.Str_shf = 14; break;
 		}
-		}
+	}
 #endif
 	if ( !eng->run.TM_IOStrength )
 		eng->io.Str_max = 0;
@@ -302,11 +332,18 @@ void init_iodelay (MAC_ENGINE *eng) {
 		for (index = 0; index < eng->io.Dly_stage; index++)
 			eng->io.value_ary[ index ] = index;
 	}
+
+	eng->io.init_done = 1;
 }
 
 //------------------------------------------------------------
 int get_iodelay (MAC_ENGINE *eng) {
 	int        index;
+
+#ifdef  DbgPrn_FuncHeader
+	printf("get_iodelay\n");
+	Debug_delay();
+#endif
 
 	//------------------------------
 	// IO Delay Register Setting
@@ -322,8 +359,8 @@ int get_iodelay (MAC_ENGINE *eng) {
 		case 2        : eng->io.Dly_reg_idx = 0xbc; eng->io.Dly_reg_value = eng->reg.SCU_0bc; break;
 	}
 #else
-	 eng->io.Dly_reg_idx   = 0x48;
-	 eng->io.Dly_reg_value = eng->reg.SCU_048;
+	eng->io.Dly_reg_idx   = 0x48;
+	eng->io.Dly_reg_value = eng->reg.SCU_048;
 #endif
 
 	//------------------------------
@@ -333,10 +370,10 @@ int get_iodelay (MAC_ENGINE *eng) {
 	// [IO]setup Dly_reg_name_rx_new
 	//------------------------------
 	if ( eng->env.MAC_RMII )
-		sprintf( eng->io.Dly_reg_name_tx, "Tx:SCU%2X[   %2d]=",  eng->io.Dly_reg_idx,                           eng->io.Dly_out_shf );
+		sprintf( eng->io.Dly_reg_name_tx, "Tx:SCU%2lX[   %2d]=",  eng->io.Dly_reg_idx,                           eng->io.Dly_out_shf );
 	else
-		sprintf( eng->io.Dly_reg_name_tx, "Tx:SCU%2X[%2d:%2d]=", eng->io.Dly_reg_idx, eng->io.Dly_out_shf_regH, eng->io.Dly_out_shf );
-	sprintf( eng->io.Dly_reg_name_rx, "Rx:SCU%2X[%2d:%2d]=", eng->io.Dly_reg_idx, eng->io.Dly_in_shf_regH,  eng->io.Dly_in_shf );
+		sprintf( eng->io.Dly_reg_name_tx, "Tx:SCU%2lX[%2d:%2d]=", eng->io.Dly_reg_idx, eng->io.Dly_out_shf_regH, eng->io.Dly_out_shf );
+	sprintf( eng->io.Dly_reg_name_rx, "Rx:SCU%2lX[%2d:%2d]=", eng->io.Dly_reg_idx, eng->io.Dly_in_shf_regH,  eng->io.Dly_in_shf );
 #ifdef AST2500_IOMAP
 	if ( eng->env.MAC_RMII )
 		sprintf( eng->io.Dly_reg_name_tx_new, "Tx[   %2d]=",                            eng->io.Dly_out_shf );
@@ -391,17 +428,17 @@ int get_iodelay (MAC_ENGINE *eng) {
 		}
 
 #ifdef Enable_No_IOBoundary
-	if ( eng->io.Dly_in_min  <  0                     ) { eng->flg.Wrn_Flag = eng->flg.Wrn_Flag | Wrn_IOMarginOUF; eng->io.Dly_in_min  = 0                     ;}
-	if ( eng->io.Dly_in_max  >= eng->io.Dly_stage_in  ) { eng->flg.Wrn_Flag = eng->flg.Wrn_Flag | Wrn_IOMarginOUF; eng->io.Dly_in_max  = eng->io.Dly_stage_in-1;}
+	if ( eng->io.Dly_in_min  <  0                     ) { eng->flg.Wrn_Flag = eng->flg.Wrn_Flag | Wrn_Flag_IOMarginOUF; eng->io.Dly_in_min  = 0                     ;}
+	if ( eng->io.Dly_in_max  >= eng->io.Dly_stage_in  ) { eng->flg.Wrn_Flag = eng->flg.Wrn_Flag | Wrn_Flag_IOMarginOUF; eng->io.Dly_in_max  = eng->io.Dly_stage_in-1;}
 
-	if ( eng->io.Dly_out_min <  0                     ) { eng->flg.Wrn_Flag = eng->flg.Wrn_Flag | Wrn_IOMarginOUF; eng->io.Dly_out_min = 0                      ;}
-	if ( eng->io.Dly_out_max >= eng->io.Dly_stage_out ) { eng->flg.Wrn_Flag = eng->flg.Wrn_Flag | Wrn_IOMarginOUF; eng->io.Dly_out_max = eng->io.Dly_stage_out-1;}
+	if ( eng->io.Dly_out_min <  0                     ) { eng->flg.Wrn_Flag = eng->flg.Wrn_Flag | Wrn_Flag_IOMarginOUF; eng->io.Dly_out_min = 0                      ;}
+	if ( eng->io.Dly_out_max >= eng->io.Dly_stage_out ) { eng->flg.Wrn_Flag = eng->flg.Wrn_Flag | Wrn_Flag_IOMarginOUF; eng->io.Dly_out_max = eng->io.Dly_stage_out-1;}
 #else
 	if ( ( eng->io.Dly_in_min < 0 ) || ( eng->io.Dly_in_max >= eng->io.Dly_stage_in ) )
-		return( Finish_Check( eng, Err_IOMarginOUF ) );
+		return( Finish_Check( eng, Err_Flag_IOMarginOUF ) );
 
 	if ( ( eng->io.Dly_out_min < 0 ) || ( eng->io.Dly_out_max >= eng->io.Dly_stage_out ) )
-		return( Finish_Check( eng, Err_IOMarginOUF ) );
+		return( Finish_Check( eng, Err_Flag_IOMarginOUF ) );
 #endif
 
 	//------------------------------
@@ -457,14 +494,10 @@ void recov_scu (MAC_ENGINE *eng) {
 #endif
 
 	//MAC
-	Write_Reg_MAC_DD( eng, 0x08, eng->reg.MAC_008 );
-	Write_Reg_MAC_DD( eng, 0x0c, eng->reg.MAC_00c );
 	Write_Reg_MAC_DD( eng, 0x40, eng->reg.MAC_040 );
 
 	//SCU
-	Write_Reg_SCU_DD( 0x004, eng->reg.SCU_004 );
 	Write_Reg_SCU_DD( 0x008, eng->reg.SCU_008 );
-	Write_Reg_SCU_DD( 0x00c, eng->reg.SCU_00c );
 	Write_Reg_SCU_DD( 0x048, eng->reg.SCU_048 );
 #ifdef AST2500_IOMAP
   #ifdef SLT_UBOOT
@@ -473,6 +506,7 @@ void recov_scu (MAC_ENGINE *eng) {
 	Write_Reg_SCU_DD( 0x070,   eng->reg.SCU_070  );
   #endif
 	Write_Reg_SCU_DD( 0x07c, (~eng->reg.SCU_070) );
+#elif ( AST1010_IOMAP == 1 )
 #else
   #ifdef SLT_UBOOT
 	Write_Reg_SCU_DD( 0x070, ( eng->reg.SCU_070 & 0xFFFFFFFE) );
@@ -493,11 +527,6 @@ void recov_scu (MAC_ENGINE *eng) {
 #endif
 
 	//WDT
-#ifdef AST1010_IOMAP
-#else
-//	WriteSOC_DD( 0x1e78500c, eng->reg.WDT_00c );
-//	WriteSOC_DD( 0x1e78502c, eng->reg.WDT_02c );
-#endif
 
 } // End void recov_scu (MAC_ENGINE *eng)
 
@@ -520,6 +549,7 @@ void read_scu (MAC_ENGINE *eng) {
 		eng->reg.SCU_080 = Read_Reg_SCU_DD( 0x080 );
 		eng->reg.SCU_088 = Read_Reg_SCU_DD( 0x088 );
 		eng->reg.SCU_090 = Read_Reg_SCU_DD( 0x090 );
+		eng->reg.SCU_09c = Read_Reg_SCU_DD( 0x09c );
 #ifdef AST1010_CHIP
 		eng->reg.SCU_0ac = Read_Reg_SCU_DD( 0x0ac );
 #endif
@@ -543,9 +573,10 @@ void read_scu (MAC_ENGINE *eng) {
 #endif
 
 		//WDT
-#ifndef AST1010_IOMAP
-		eng->reg.WDT_00c = ReadSOC_DD( 0x1e78500c );
-		eng->reg.WDT_02c = ReadSOC_DD( 0x1e78502c );
+		eng->reg.WDT_00c = Read_Reg_WDT_DD( 0x00c );
+		eng->reg.WDT_02c = Read_Reg_WDT_DD( 0x02c );
+#ifdef AST2500_IOMAP
+		eng->reg.WDT_04c = Read_Reg_WDT_DD( 0x04c );
 #endif
 
 		eng->reg.SCU_oldvld = 1;
@@ -580,15 +611,18 @@ void Setting_scu (MAC_ENGINE *eng) {
   #endif
 #endif
 
+	//WDT
+	Write_Reg_WDT_DD( 0x00c, eng->reg.WDT_00c & 0xfffffffc );
+	Write_Reg_WDT_DD( 0x02c, eng->reg.WDT_02c & 0xfffffffc );
+#ifdef AST2500_IOMAP
+	Write_Reg_WDT_DD( 0x04c, eng->reg.WDT_04c & 0xfffffffc );
+#endif
+
+	//Cache
 #ifdef AST1010_CHIP
   #if( AST1010_IOMAP == 1 )
 	Write_Reg_SCU_DD( 0x11C, 0x00000000 ); // Disable Cache functionn
   #endif
-#endif
-	//WDT
-#ifndef AST1010_IOMAP
-	WriteSOC_DD( 0x1e78500c, eng->reg.WDT_00c & 0xfffffffc );
-	WriteSOC_DD( 0x1e78502c, eng->reg.WDT_02c & 0xfffffffc );
 #endif
 }
 
@@ -600,8 +634,10 @@ void init_scu1 (MAC_ENGINE *eng) {
 #endif
 
 #ifdef AST1010_CHIP
-	Write_Reg_SCU_DD( 0x0c, ( eng->reg.SCU_00c & 0xffffffbf ) );//Clock Stop Control
 	Write_Reg_SCU_DD( 0x88, ((eng->reg.SCU_088 & 0x003fffff ) | 0xffc00000) );//Multi-function Pin Control
+	Write_Reg_SCU_DD( 0x9c, eng->reg.SCU_09c & 0xffffffdf );
+	eng->reg.SCU_00c_clkbit = 0x00000040;
+	Write_Reg_SCU_DD( 0x0c, ( eng->reg.SCU_00c & (~eng->reg.SCU_00c_clkbit) ) );//Clock Stop Control
 #else
 	if ( eng->env.AST2300 ) {
   #ifdef Enable_BufMerge
@@ -609,53 +645,84 @@ void init_scu1 (MAC_ENGINE *eng) {
   #endif
   #ifdef Enable_Int125MHz
   #endif
-		switch ( eng->run.MAC_idx ) {
-			case 0  :
-				Write_Reg_SCU_DD( 0x88, (eng->reg.SCU_088 & 0x3fffffff) | 0xc0000000 );//[31]MAC1 MDIO, [30]MAC1 MDC
-				break;
-			case 1  :
-				Write_Reg_SCU_DD( 0x90, (eng->reg.SCU_090 & 0xfffffffb) | 0x00000004 );//[2 ]MAC2 MDC/MDIO
-				break;
-			case 2  :
-			case 3  :
-			default : break;
-		}
-		if ( eng->env.AST2400 ) {
-			Write_Reg_SCU_DD( 0x0c, (eng->reg.SCU_00c & 0xffcfffff) );//Clock Stop Control
+		if ( eng->arg.GEn_PHYAdrInv ) {
+			switch ( eng->run.MAC_idx ) {
+				case 1  :
+					Write_Reg_SCU_DD( 0x88, (eng->reg.SCU_088 & 0x3fffffff) | 0xc0000000 );//[31]MAC1 MDIO, [30]MAC1 MDC
+					break;
+				case 0  :
+					Write_Reg_SCU_DD( 0x90, (eng->reg.SCU_090 & 0xfffffffb) | 0x00000004 );//[2 ]MAC2 MDC/MDIO
+					break;
+				default : break;
+			}
 		}
 		else {
-			Write_Reg_SCU_DD( 0x0c, (eng->reg.SCU_00c & 0xff0fffff) );//Clock Stop Control
+			switch ( eng->run.MAC_idx ) {
+				case 0  :
+					Write_Reg_SCU_DD( 0x88, (eng->reg.SCU_088 & 0x3fffffff) | 0xc0000000 );//[31]MAC1 MDIO, [30]MAC1 MDC
+					break;
+				case 1  :
+					Write_Reg_SCU_DD( 0x90, (eng->reg.SCU_090 & 0xfffffffb) | 0x00000004 );//[2 ]MAC2 MDC/MDIO
+					break;
+				default : break;
+			}
 		}
-//		Write_Reg_SCU_DD( 0x80, (eng->reg.SCU_080 & 0xfffffff0) | 0x0000000f );//MAC1LINK/MAC2LINK
+		if ( eng->env.AST2400 )
+			Write_Reg_SCU_DD( 0x9c, eng->reg.SCU_09c & 0xffffff9f );
+#ifdef AST2500_IOMAP
+		Write_Reg_WDT_DD( 0x01c, Read_Reg_WDT_DD( 0x01c ) & 0xffffff9f );
+		Write_Reg_WDT_DD( 0x03c, Read_Reg_WDT_DD( 0x03c ) & 0xffffff9f );
+		Write_Reg_WDT_DD( 0x05c, Read_Reg_WDT_DD( 0x05c ) & 0xffffff9f );
+#endif
+		if ( eng->arg.GEn_PHYAdrInv ) {
+			if ( eng->env.MAC34_vld )
+				eng->reg.SCU_00c_clkbit = 0x00f00000; //Clock Stop Control
+			else
+				eng->reg.SCU_00c_clkbit = 0x00300000; //Clock Stop Control
+		}
+		else {
+			switch ( eng->run.MAC_idx ) {
+				case 3: eng->reg.SCU_00c_clkbit = 0x00800000; break; //Clock Stop Control
+				case 2: eng->reg.SCU_00c_clkbit = 0x00400000; break; //Clock Stop Control
+				case 1: eng->reg.SCU_00c_clkbit = 0x00200000; break; //Clock Stop Control
+				case 0: eng->reg.SCU_00c_clkbit = 0x00100000; break; //Clock Stop Control
+			}
+		}
+		Write_Reg_SCU_DD( 0x0c, ( eng->reg.SCU_00c & (~eng->reg.SCU_00c_clkbit) ) );//Clock Stop Control
 	}
 	else {
-		switch ( eng->run.MAC_idx ) {
-			case 0  :
-//				Write_Reg_SCU_DD( 0x74, (eng->reg.SCU_074 & 0xfdffffff) | 0x02000000 );//[25]MAC1 PHYLINK
-				break;
-			case 1  :
-				if ( eng->env.MAC2_RMII ) {
-//					Write_Reg_SCU_DD( 0x74, (eng->reg.SCU_074 & 0xfbefffff) | 0x04100000 );//[26]MAC2 PHYLINK, [21]MAC2 MII, [20]MAC2 MDC/MDIO
-					Write_Reg_SCU_DD( 0x74, (eng->reg.SCU_074 & 0xffefffff) | 0x00100000 );//[26]MAC2 PHYLINK, [21]MAC2 MII, [20]MAC2 MDC/MDIO
-				}
-				else {
-//					Write_Reg_SCU_DD( 0x74, (eng->reg.SCU_074 & 0xfbcfffff) | 0x04300000 );//[26]MAC2 PHYLINK, [21]MAC2 MII, [20]MAC2 MDC/MDIO
-					Write_Reg_SCU_DD( 0x74, (eng->reg.SCU_074 & 0xffcfffff) | 0x00300000 );//[26]MAC2 PHYLINK, [21]MAC2 MII, [20]MAC2 MDC/MDIO
-				}
-				break;
-			default : break;
-		} // End switch ( eng->run.MAC_idx )
+		if ( eng->arg.GEn_PHYAdrInv ) {
+			switch ( eng->run.MAC_idx ) {
+				case 1  :
+					break;
+				case 0  :
+					if ( eng->env.MAC2_RMII ) {
+						Write_Reg_SCU_DD( 0x74, (eng->reg.SCU_074 & 0xffefffff) | 0x00100000 );//[26]MAC2 PHYLINK, [21]MAC2 MII, [20]MAC2 MDC/MDIO
+					}
+					else {
+						Write_Reg_SCU_DD( 0x74, (eng->reg.SCU_074 & 0xffcfffff) | 0x00300000 );//[26]MAC2 PHYLINK, [21]MAC2 MII, [20]MAC2 MDC/MDIO
+					}
+					break;
+				default : break;
+			} // End switch ( eng->run.MAC_idx )
+		} else {
+			switch ( eng->run.MAC_idx ) {
+				case 0  :
+					break;
+				case 1  :
+					if ( eng->env.MAC2_RMII ) {
+						Write_Reg_SCU_DD( 0x74, (eng->reg.SCU_074 & 0xffefffff) | 0x00100000 );//[26]MAC2 PHYLINK, [21]MAC2 MII, [20]MAC2 MDC/MDIO
+					}
+					else {
+						Write_Reg_SCU_DD( 0x74, (eng->reg.SCU_074 & 0xffcfffff) | 0x00300000 );//[26]MAC2 PHYLINK, [21]MAC2 MII, [20]MAC2 MDC/MDIO
+					}
+					break;
+				default : break;
+			} // End switch ( eng->run.MAC_idx )
+		}
+		eng->reg.SCU_00c_clkbit = 0x00000000;
 	} // End if ( eng->env.AST2300 )
 #endif
-
-	//------------------------------
-	// [Reg]setup SCU_004_mix
-	// [Reg]setup SCU_004_dis
-	// [Reg]setup SCU_004_en
-	//------------------------------
-	eng->reg.SCU_004_mix = eng->reg.SCU_004;
-	eng->reg.SCU_004_en  = eng->reg.SCU_004_mix & (~eng->reg.SCU_004_rstbit);
-	eng->reg.SCU_004_dis = eng->reg.SCU_004_mix |   eng->reg.SCU_004_rstbit;
 } // End void init_scu1 (MAC_ENGINE *eng)
 
 //------------------------------------------------------------
@@ -666,8 +733,18 @@ void init_scu_macrst (MAC_ENGINE *eng) {
 #endif
 
 	Write_Reg_SCU_DD( 0x04, eng->reg.SCU_004_dis );//Rst
+#ifdef Delay_SCU
 	DELAY( Delay_SCU );
+#endif
 	Write_Reg_SCU_DD( 0x04, eng->reg.SCU_004_en );//Enable Engine
+
+#ifndef AST2500_IOMAP
+  #ifdef MAC_040_def
+	Write_Reg_MAC_DD( eng, 0x40, eng->reg.MAC_040_new | MAC_040_def );
+  #else
+	Write_Reg_MAC_DD( eng, 0x40, eng->reg.MAC_040_new );
+  #endif
+#endif
 } // End void init_scu_macrst (MAC_ENGINE *eng)
 
 //------------------------------------------------------------
@@ -679,7 +756,9 @@ void init_scu2 (MAC_ENGINE *eng) {
   #endif
 
 	Write_Reg_SCU_DD( 0x74, eng->reg.SCU_074 | SCU_74h );//PinMux
+  #ifdef Delay_SCU
 	DELAY( Delay_SCU );
+  #endif
 #endif
 } // End void init_scu2 (MAC_ENGINE *eng)
 
@@ -692,12 +771,58 @@ void init_scu3 (MAC_ENGINE *eng) {
   #endif
 
 	Write_Reg_SCU_DD( 0x74, eng->reg.SCU_074 | (SCU_74h & 0xffefffff) );//PinMux
+  #ifdef Delay_SCU
 	DELAY( Delay_SCU );
+  #endif
 #endif
 } // End void init_scu3 (MAC_ENGINE *eng)
 
 //------------------------------------------------------------
 // MAC
+//------------------------------------------------------------
+void get_mac_info (MAC_ENGINE *eng) {
+#ifdef  DbgPrn_FuncHeader
+	printf("get_mac_info\n");
+	Debug_delay();
+#endif
+
+	//------------------------------
+	// [Inf]setup SA
+	//------------------------------
+	eng->reg.MAC_008 = Read_Reg_MAC_DD( eng, 0x08 );
+	eng->reg.MAC_00c = Read_Reg_MAC_DD( eng, 0x0c );
+	if (  (( eng->reg.MAC_008 == 0x0000 ) && ( eng->reg.MAC_00c == 0x00000000 ))
+	   || (( eng->reg.MAC_008 == 0xffff ) && ( eng->reg.MAC_00c == 0xffffffff ))
+	   )
+	{
+		eng->reg.MAC_008 = 0x0000000a;//MSB(0x00)
+		eng->reg.MAC_00c = 0xf7837dd4;//LSB(0xd4)
+	}
+	eng->inf.SA[ 0 ] = ( eng->reg.MAC_008 >>  8 ) & 0xff;//MSB
+	eng->inf.SA[ 1 ] = ( eng->reg.MAC_008       ) & 0xff;
+	eng->inf.SA[ 2 ] = ( eng->reg.MAC_00c >> 24 ) & 0xff;
+	eng->inf.SA[ 3 ] = ( eng->reg.MAC_00c >> 16 ) & 0xff;
+	eng->inf.SA[ 4 ] = ( eng->reg.MAC_00c >>  8 ) & 0xff;
+	eng->inf.SA[ 5 ] = ( eng->reg.MAC_00c       ) & 0xff;//LSB
+
+	//------------------------------
+	// [Reg]setup MAC_040_new
+	//------------------------------
+	eng->reg.MAC_040 = Read_Reg_MAC_DD( eng, 0x40 );
+	if ( eng->arg.GEn_MACLoopback )
+		eng->reg.MAC_040_new = eng->reg.MAC_040 | 0x40000000;
+	else
+		eng->reg.MAC_040_new = eng->reg.MAC_040;
+
+#ifdef AST2500_IOMAP
+  #ifdef MAC_040_def
+	Write_Reg_MAC_DD( eng, 0x40, eng->reg.MAC_040_new | MAC_040_def );
+  #else
+	Write_Reg_MAC_DD( eng, 0x40, eng->reg.MAC_040_new );
+  #endif
+#endif
+}
+
 //------------------------------------------------------------
 void init_mac (MAC_ENGINE *eng) {
 #ifdef  DbgPrn_FuncHeader
@@ -710,14 +835,21 @@ void init_mac (MAC_ENGINE *eng) {
 
 	while (0x80000000 & Read_Reg_MAC_DD( eng, 0x50 )) {
 //printf(".");
+  #ifdef Delay_MACRst
 		DELAY( Delay_MACRst );
+  #endif
 	}
+  #ifdef Delay_MACRst
 	DELAY( Delay_MACRst );
+  #endif
 #endif
 
-	Write_Reg_MAC_DD( eng, 0x20, ( eng->run.TDES_BASE + CPU_BUS_ADDR_SDRAM_OFFSET ) ); // 20130730
-	Write_Reg_MAC_DD( eng, 0x24, ( eng->run.RDES_BASE + CPU_BUS_ADDR_SDRAM_OFFSET ) ); // 20130730
+	Write_Reg_MAC_DD( eng, 0x20, AT_MEMRW_BUF( eng->run.TDES_BASE ) ); // 20130730
+	Write_Reg_MAC_DD( eng, 0x24, AT_MEMRW_BUF( eng->run.RDES_BASE ) ); // 20130730
 
+	Write_Reg_MAC_DD( eng, 0x08, eng->reg.MAC_008 );
+	Write_Reg_MAC_DD( eng, 0x0c, eng->reg.MAC_00c );
+//#endif
 #ifdef MAC_030_def
 	Write_Reg_MAC_DD( eng, 0x30, MAC_030_def );//Int Thr/Cnt
 #endif
@@ -726,11 +858,6 @@ void init_mac (MAC_ENGINE *eng) {
 #endif
 #ifdef MAC_038_def
 	Write_Reg_MAC_DD( eng, 0x38, MAC_038_def );
-#endif
-#ifdef MAC_040_def
-	Write_Reg_MAC_DD( eng, 0x40, eng->reg.MAC_040_new | MAC_040_def );
-#else
-	Write_Reg_MAC_DD( eng, 0x40, eng->reg.MAC_040_new );
 #endif
 #ifdef MAC_048_def
 	Write_Reg_MAC_DD( eng, 0x48, MAC_048_def );
@@ -758,34 +885,40 @@ void FPri_RegValue (MAC_ENGINE *eng, BYTE option) {
 #else
 	time_t     timecur;
 #endif
+#ifdef  DbgPrn_FuncHeader
+	printf("FPri_RegValue\n");
+	Debug_delay();
+#endif
 
 #ifdef AST2500_IOMAP
 	PRINTF( option, "[SDR] Date:%08lx\n", Read_Reg_SDR_DD( 0x88 ) );
 	PRINTF( option, "[SDR]  80:%08lx %08lx %08lx %08lx\n", Read_Reg_SDR_DD( 0x80 ), Read_Reg_SDR_DD( 0x84 ), Read_Reg_SDR_DD( 0x88 ), Read_Reg_SDR_DD( 0x8c ) );
 #else
-	PRINTF( option, "[SMB] Date:%08lx\n", Read_Reg_SMB_DD( 0xa8 ) );
-	PRINTF( option, "[SMB]  00:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0x00 ), Read_Reg_SMB_DD( 0x04 ), Read_Reg_SMB_DD( 0x08 ), Read_Reg_SMB_DD( 0x0c ) );
-	PRINTF( option, "[SMB]  10:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0x10 ), Read_Reg_SMB_DD( 0x14 ), Read_Reg_SMB_DD( 0x18 ), Read_Reg_SMB_DD( 0x1c ) );
-	PRINTF( option, "[SMB]  20:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0x20 ), Read_Reg_SMB_DD( 0x24 ), Read_Reg_SMB_DD( 0x28 ), Read_Reg_SMB_DD( 0x2c ) );
-	PRINTF( option, "[SMB]  30:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0x30 ), Read_Reg_SMB_DD( 0x34 ), Read_Reg_SMB_DD( 0x38 ), Read_Reg_SMB_DD( 0x3c ) );
-	PRINTF( option, "[SMB]  40:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0x40 ), Read_Reg_SMB_DD( 0x44 ), Read_Reg_SMB_DD( 0x48 ), Read_Reg_SMB_DD( 0x4c ) );
-	PRINTF( option, "[SMB]  50:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0x50 ), Read_Reg_SMB_DD( 0x54 ), Read_Reg_SMB_DD( 0x58 ), Read_Reg_SMB_DD( 0x5c ) );
-	PRINTF( option, "[SMB]  60:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0x60 ), Read_Reg_SMB_DD( 0x64 ), Read_Reg_SMB_DD( 0x68 ), Read_Reg_SMB_DD( 0x6c ) );
-	PRINTF( option, "[SMB]  70:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0x70 ), Read_Reg_SMB_DD( 0x74 ), Read_Reg_SMB_DD( 0x78 ), Read_Reg_SMB_DD( 0x7c ) );
-	PRINTF( option, "[SMB]  80:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0x80 ), Read_Reg_SMB_DD( 0x84 ), Read_Reg_SMB_DD( 0x88 ), Read_Reg_SMB_DD( 0x8c ) );
-	PRINTF( option, "[SMB]  90:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0x90 ), Read_Reg_SMB_DD( 0x94 ), Read_Reg_SMB_DD( 0x98 ), Read_Reg_SMB_DD( 0x9c ) );
-	PRINTF( option, "[SMB]  A0:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0xa0 ), Read_Reg_SMB_DD( 0xa4 ), Read_Reg_SMB_DD( 0xa8 ), Read_Reg_SMB_DD( 0xac ) );
-	PRINTF( option, "[SMB]  B0:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0xb0 ), Read_Reg_SMB_DD( 0xb4 ), Read_Reg_SMB_DD( 0xb8 ), Read_Reg_SMB_DD( 0xbc ) );
-	PRINTF( option, "[SMB]  C0:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0xc0 ), Read_Reg_SMB_DD( 0xc4 ), Read_Reg_SMB_DD( 0xc8 ), Read_Reg_SMB_DD( 0xcc ) );
-	PRINTF( option, "[SMB]  D0:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0xd0 ), Read_Reg_SMB_DD( 0xd4 ), Read_Reg_SMB_DD( 0xd8 ), Read_Reg_SMB_DD( 0xdc ) );
-	PRINTF( option, "[SMB]  E0:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0xe0 ), Read_Reg_SMB_DD( 0xe4 ), Read_Reg_SMB_DD( 0xe8 ), Read_Reg_SMB_DD( 0xec ) );
-	PRINTF( option, "[SMB]  F0:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0xf0 ), Read_Reg_SMB_DD( 0xf4 ), Read_Reg_SMB_DD( 0xf8 ), Read_Reg_SMB_DD( 0xfc ) );
+	if ( eng->env.AST2300 ) {
+		PRINTF( option, "[SMB] Date:%08lx\n", Read_Reg_SMB_DD( 0xa8 ) );
+		PRINTF( option, "[SMB]  00:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0x00 ), Read_Reg_SMB_DD( 0x04 ), Read_Reg_SMB_DD( 0x08 ), Read_Reg_SMB_DD( 0x0c ) );
+		PRINTF( option, "[SMB]  10:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0x10 ), Read_Reg_SMB_DD( 0x14 ), Read_Reg_SMB_DD( 0x18 ), Read_Reg_SMB_DD( 0x1c ) );
+		PRINTF( option, "[SMB]  20:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0x20 ), Read_Reg_SMB_DD( 0x24 ), Read_Reg_SMB_DD( 0x28 ), Read_Reg_SMB_DD( 0x2c ) );
+		PRINTF( option, "[SMB]  30:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0x30 ), Read_Reg_SMB_DD( 0x34 ), Read_Reg_SMB_DD( 0x38 ), Read_Reg_SMB_DD( 0x3c ) );
+		PRINTF( option, "[SMB]  40:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0x40 ), Read_Reg_SMB_DD( 0x44 ), Read_Reg_SMB_DD( 0x48 ), Read_Reg_SMB_DD( 0x4c ) );
+		PRINTF( option, "[SMB]  50:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0x50 ), Read_Reg_SMB_DD( 0x54 ), Read_Reg_SMB_DD( 0x58 ), Read_Reg_SMB_DD( 0x5c ) );
+		PRINTF( option, "[SMB]  60:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0x60 ), Read_Reg_SMB_DD( 0x64 ), Read_Reg_SMB_DD( 0x68 ), Read_Reg_SMB_DD( 0x6c ) );
+		PRINTF( option, "[SMB]  70:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0x70 ), Read_Reg_SMB_DD( 0x74 ), Read_Reg_SMB_DD( 0x78 ), Read_Reg_SMB_DD( 0x7c ) );
+		PRINTF( option, "[SMB]  80:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0x80 ), Read_Reg_SMB_DD( 0x84 ), Read_Reg_SMB_DD( 0x88 ), Read_Reg_SMB_DD( 0x8c ) );
+		PRINTF( option, "[SMB]  90:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0x90 ), Read_Reg_SMB_DD( 0x94 ), Read_Reg_SMB_DD( 0x98 ), Read_Reg_SMB_DD( 0x9c ) );
+		PRINTF( option, "[SMB]  A0:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0xa0 ), Read_Reg_SMB_DD( 0xa4 ), Read_Reg_SMB_DD( 0xa8 ), Read_Reg_SMB_DD( 0xac ) );
+		PRINTF( option, "[SMB]  B0:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0xb0 ), Read_Reg_SMB_DD( 0xb4 ), Read_Reg_SMB_DD( 0xb8 ), Read_Reg_SMB_DD( 0xbc ) );
+		PRINTF( option, "[SMB]  C0:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0xc0 ), Read_Reg_SMB_DD( 0xc4 ), Read_Reg_SMB_DD( 0xc8 ), Read_Reg_SMB_DD( 0xcc ) );
+		PRINTF( option, "[SMB]  D0:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0xd0 ), Read_Reg_SMB_DD( 0xd4 ), Read_Reg_SMB_DD( 0xd8 ), Read_Reg_SMB_DD( 0xdc ) );
+		PRINTF( option, "[SMB]  E0:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0xe0 ), Read_Reg_SMB_DD( 0xe4 ), Read_Reg_SMB_DD( 0xe8 ), Read_Reg_SMB_DD( 0xec ) );
+		PRINTF( option, "[SMB]  F0:%08lx %08lx %08lx %08lx\n", Read_Reg_SMB_DD( 0xf0 ), Read_Reg_SMB_DD( 0xf4 ), Read_Reg_SMB_DD( 0xf8 ), Read_Reg_SMB_DD( 0xfc ) );
+	}
 #endif
 
 	PRINTF( option, "[SCU]  04:%08lx  08:%08lx  0c:%08lx\n",           eng->reg.SCU_004, eng->reg.SCU_008, eng->reg.SCU_00c );
 	PRINTF( option, "[SCU]  1c:%08lx  2c:%08lx  48:%08lx  4c:%08lx\n", Read_Reg_SCU_DD( 0x01c ), Read_Reg_SCU_DD( 0x02c ), eng->reg.SCU_048, Read_Reg_SCU_DD( 0x04c ) );
-	PRINTF( option, "[SCU]  70:%08lx  74:%08lx  7c:%08lx\n",           eng->reg.SCU_070, eng->reg.SCU_074, eng->reg.SCU_07c );
-	PRINTF( option, "[SCU]  80:%08lx  88:%08lx  90:%08lx  f0:%08lx\n", eng->reg.SCU_080, eng->reg.SCU_088, eng->reg.SCU_090, eng->reg.SCU_0f0 );
+	PRINTF( option, "[SCU]  70:%08lx  74:%08lx  7c:%08lx  f0:%08lx\n", eng->reg.SCU_070, eng->reg.SCU_074, eng->reg.SCU_07c, eng->reg.SCU_0f0 );
+	PRINTF( option, "[SCU]  80:%08lx  88:%08lx  90:%08lx  9c:%08lx\n", eng->reg.SCU_080, eng->reg.SCU_088, eng->reg.SCU_090, eng->reg.SCU_09c );
 #ifdef AST1010_CHIP
 	PRINTF( option, "[SCU]  a4:%08lx  ac:%08lx\n",                     Read_Reg_SCU_DD( 0x0a4 ), eng->reg.SCU_0ac );
 #elif defined(AST2500_IOMAP)
@@ -795,8 +928,10 @@ void FPri_RegValue (MAC_ENGINE *eng, BYTE option) {
 #endif
 #ifdef AST2500_IOMAP
 	PRINTF( option, "[SCU] 13c:%08lx 140:%08lx 144:%08lx 1dc:%08lx\n", Read_Reg_SCU_DD( 0x13c ), Read_Reg_SCU_DD( 0x140 ), Read_Reg_SCU_DD( 0x144 ), Read_Reg_SCU_DD( 0x1dc ) );
-#endif
+	PRINTF( option, "[WDT]  0c:%08lx  2c:%08lx  4c:%08lx\n", eng->reg.WDT_00c, eng->reg.WDT_02c, eng->reg.WDT_04c );
+#else
 	PRINTF( option, "[WDT]  0c:%08lx  2c:%08lx\n", eng->reg.WDT_00c, eng->reg.WDT_02c );
+#endif
 	PRINTF( option, "[MAC]  08:%08lx  0c:%08lx\n", eng->reg.MAC_008, eng->reg.MAC_00c );
 	PRINTF( option, "[MAC]  A0|%08lx %08lx %08lx %08lx\n", Read_Reg_MAC_DD( eng, 0xa0 ), Read_Reg_MAC_DD( eng, 0xa4 ), Read_Reg_MAC_DD( eng, 0xa8 ), Read_Reg_MAC_DD( eng, 0xac ) );
 	PRINTF( option, "[MAC]  B0|%08lx %08lx %08lx %08lx\n", Read_Reg_MAC_DD( eng, 0xb0 ), Read_Reg_MAC_DD( eng, 0xb4 ), Read_Reg_MAC_DD( eng, 0xb8 ), Read_Reg_MAC_DD( eng, 0xbc ) );
@@ -823,17 +958,26 @@ void FPri_End (MAC_ENGINE *eng, BYTE option) {
 		PRINTF( option, "                    \n----> All Pass !!!\n" );
 	}
 
+	//------------------------------
+	//[Warning] PHY Address
+	//------------------------------
 	if ( eng->ModeSwitch == MODE_DEDICATED ) {
 		if ( eng->arg.GPHYADR != eng->phy.Adr )
 			PRINTF( option, "\n[Warning] PHY Address change from %d to %d !!!\n", eng->arg.GPHYADR, eng->phy.Adr );
 	}
 
 #ifdef AST1010_CHIP
-	if ( eng->io.Str_reg_value ) {
+	//------------------------------
+	//[Warning] IO Strength
+	//------------------------------
+	if ( eng->io.init_done && eng->io.Str_reg_value ) {
 		PRINTF( option, "\n[Warning] SCU%02lX[%2d:%2d] == 0x%02lx is not the suggestion value 0.\n", eng->io.Str_reg_idx, eng->io.Str_reg_Hbit, eng->io.Str_reg_Lbit, eng->io.Str_reg_value );
 		PRINTF( option, "          This change at this platform must been proven again by the ASPEED.\n" );
 	}
 
+	//------------------------------
+	//[Warning] IO Timing
+	//------------------------------
 	eng->reg.SCU_048_default = SCU_48h_AST1010 & 0x01000f00;
 	if ( ( eng->reg.SCU_048_check != eng->reg.SCU_048_default ) ) {
 		PRINTF( option, "\n[Warning] SCU48 == 0x%08lx is not the suggestion value 0x%08lx.\n", eng->reg.SCU_048, eng->reg.SCU_048_default );
@@ -841,12 +985,18 @@ void FPri_End (MAC_ENGINE *eng, BYTE option) {
 	}
 #else
 	if ( eng->env.AST2300 ) {
-		if ( eng->io.Str_reg_value ) {
+		//------------------------------
+		//[Warning] IO Strength
+		//------------------------------
+		if ( eng->io.init_done && eng->io.Str_reg_value ) {
 			PRINTF( option, "\n[Warning] SCU%02lX[%2d:%2d] == 0x%02lx is not the suggestion value 0.\n", eng->io.Str_reg_idx, eng->io.Str_reg_Hbit, eng->io.Str_reg_Lbit, eng->io.Str_reg_value );
 			PRINTF( option, "          This change at this platform must been proven again by the ASPEED.\n" );
 		}
 
-  #ifdef AST2500_IOMAP
+		//------------------------------
+		//[Warning] IO Timing
+		//------------------------------
+ #ifdef AST2500_IOMAP
 		eng->reg.SCU_048_default = SCU_48h_AST2500 & 0x03ffffff;
   #else
 		if ( eng->env.MAC34_vld )
@@ -862,11 +1012,11 @@ void FPri_End (MAC_ENGINE *eng, BYTE option) {
   #ifdef AST2500_IOMAP
 		if ( eng->env.AST2500A1 ) {
 			if ( ( eng->reg.SCU_0b8 != SCU_B8h_AST2500 ) ) {
-				PRINTF( option, "\n[Warning] SCUB8 == 0x%08lx is not the suggestion value 0x%08lx.\n", eng->reg.SCU_0b8, SCU_B8h_AST2500 );
+				PRINTF( option, "\n[Warning] SCUB8 == 0x%08lx is not the suggestion value 0x%08x.\n", eng->reg.SCU_0b8, SCU_B8h_AST2500 );
 				PRINTF( option, "          This change at this platform must been proven again by the ASPEED.\n" );
 			}
 			if ( ( eng->reg.SCU_0bc != SCU_BCh_AST2500 ) ) {
-				PRINTF( option, "\n[Warning] SCUBC == 0x%08lx is not the suggestion value 0x%08lx.\n", eng->reg.SCU_0bc, SCU_BCh_AST2500 );
+				PRINTF( option, "\n[Warning] SCUBC == 0x%08lx is not the suggestion value 0x%08x.\n", eng->reg.SCU_0bc, SCU_BCh_AST2500 );
 				PRINTF( option, "          This change at this platform must been proven again by the ASPEED.\n" );
 			}
 		}
@@ -875,7 +1025,7 @@ void FPri_End (MAC_ENGINE *eng, BYTE option) {
 #endif
 
 	if ( eng->ModeSwitch == MODE_NSCI ) {
-		PRINTF( option, "\n[Arg] %d %d %d %d %d %ld (%s)\n", eng->arg.GRun_Mode, eng->arg.GPackageTolNum, eng->arg.GChannelTolNum, eng->arg.GTestMode, eng->arg.GChk_TimingBund, ( eng->arg.GARPNumCnt | (ULONG)eng->arg.GEn_PrintNCSI ), eng->env.ASTChipName );
+		PRINTF( option, "\n[Arg] %d %d %d %d %d %ld (%s){%d}\n", eng->arg.GRun_Mode, eng->arg.GPackageTolNum, eng->arg.GChannelTolNum, eng->arg.GTestMode, eng->arg.GChk_TimingBund, ( eng->arg.GARPNumCnt | (ULONG)eng->arg.GEn_PrintNCSI ), eng->env.ASTChipName, TIME_OUT_NCSI );
 
 		switch ( eng->ncsi_cap.PCI_DID_VID ) {
 			case PCI_DID_VID_Intel_82574L        : { PRINTF( option, "[NC]%08lx %08lx: Intel 82574L       \n", eng->ncsi_cap.ManufacturerID, eng->ncsi_cap.PCI_DID_VID ); break; }
@@ -901,22 +1051,26 @@ void FPri_End (MAC_ENGINE *eng, BYTE option) {
 			case PCI_DID_VID_Broadcom_BCM5720    : { PRINTF( option, "[NC]%08lx %08lx: Broadcom BCM5720   \n", eng->ncsi_cap.ManufacturerID, eng->ncsi_cap.PCI_DID_VID ); break; }
 			case PCI_DID_VID_Broadcom_BCM5725    : { PRINTF( option, "[NC]%08lx %08lx: Broadcom BCM5725   \n", eng->ncsi_cap.ManufacturerID, eng->ncsi_cap.PCI_DID_VID ); break; }
 			case PCI_DID_VID_Broadcom_BCM57810S  : { PRINTF( option, "[NC]%08lx %08lx: Broadcom BCM57810S \n", eng->ncsi_cap.ManufacturerID, eng->ncsi_cap.PCI_DID_VID ); break; }
+			case PCI_DID_VID_Broadcom_Cumulus    : { PRINTF( option, "[NC]%08lx %08lx: Broadcom Cumulus   \n", eng->ncsi_cap.ManufacturerID, eng->ncsi_cap.PCI_DID_VID ); break; }
+			case PCI_DID_VID_Broadcom_BCM57302   : { PRINTF( option, "[NC]%08lx %08lx: Broadcom BCM57302  \n", eng->ncsi_cap.ManufacturerID, eng->ncsi_cap.PCI_DID_VID ); break; }
 			case PCI_DID_VID_Mellanox_ConnectX_3 : { PRINTF( option, "[NC]%08lx %08lx: Mellanox ConnectX-3\n", eng->ncsi_cap.ManufacturerID, eng->ncsi_cap.PCI_DID_VID ); break; }
+			case PCI_DID_VID_Mellanox_ConnectX_4 : { PRINTF( option, "[NC]%08lx %08lx: Mellanox ConnectX-4\n", eng->ncsi_cap.ManufacturerID, eng->ncsi_cap.PCI_DID_VID ); break; }
 			default:
 			switch ( eng->ncsi_cap.ManufacturerID ) {
 				case ManufacturerID_Intel    : { PRINTF( option, "[NC]%08lx %08lx: Intel              \n", eng->ncsi_cap.ManufacturerID, eng->ncsi_cap.PCI_DID_VID ); break; }
 				case ManufacturerID_Broadcom : { PRINTF( option, "[NC]%08lx %08lx: Broadcom           \n", eng->ncsi_cap.ManufacturerID, eng->ncsi_cap.PCI_DID_VID ); break; }
 				case ManufacturerID_Mellanox : { PRINTF( option, "[NC]%08lx %08lx: Mellanox           \n", eng->ncsi_cap.ManufacturerID, eng->ncsi_cap.PCI_DID_VID ); break; }
+				case ManufacturerID_Mellanox1: { PRINTF( option, "[NC]%08lx %08lx: Mellanox           \n", eng->ncsi_cap.ManufacturerID, eng->ncsi_cap.PCI_DID_VID ); break; }
 				default                      : { PRINTF( option, "[NC]%08lx %08lx                     \n", eng->ncsi_cap.ManufacturerID, eng->ncsi_cap.PCI_DID_VID ); break; }
 			} // End switch ( eng->ncsi_cap.ManufacturerID )
 		} // End switch ( eng->ncsi_cap.PCI_DID_VID )
 	}
 	else {
 		if (eng->arg.GLOOP_INFINI) {
-			PRINTF( option, "\n[Arg] %d %d %d # %d %d %d %lx (%s)[%d %d %d]\n"  , eng->arg.GRun_Mode, eng->arg.GSpeed, eng->arg.GCtrl,                     eng->arg.GTestMode, eng->arg.GPHYADR, eng->arg.GChk_TimingBund, eng->arg.GUserDVal, eng->env.ASTChipName, eng->run.Loop_rl[0], eng->run.Loop_rl[1], eng->run.Loop_rl[2] );
+			PRINTF( option, "\n[Arg] %d %d %d # %d %d %d %lx (%s){%ld x:%d %d %d}[%d %d %d]\n"  , eng->arg.GRun_Mode, eng->arg.GSpeed, eng->arg.GCtrl,                     eng->arg.GTestMode, eng->arg.GPHYADR, eng->arg.GChk_TimingBund, eng->arg.GUserDVal, eng->env.ASTChipName, eng->run.TIME_OUT_Des_PHYRatio, TIME_OUT_Des_1G, TIME_OUT_Des_100M, TIME_OUT_Des_10M, eng->run.Loop_rl[0], eng->run.Loop_rl[1], eng->run.Loop_rl[2] );
 		}
 		else {
-			PRINTF( option, "\n[Arg] %d %d %d %ld %d %d %d %lx (%s)[%d %d %d]\n", eng->arg.GRun_Mode, eng->arg.GSpeed, eng->arg.GCtrl, eng->arg.GLOOP_MAX, eng->arg.GTestMode, eng->arg.GPHYADR, eng->arg.GChk_TimingBund, eng->arg.GUserDVal, eng->env.ASTChipName, eng->run.Loop_rl[0], eng->run.Loop_rl[1], eng->run.Loop_rl[2] );
+			PRINTF( option, "\n[Arg] %d %d %d %ld %d %d %d %lx (%s){%ld x:%d %d %d}[%d %d %d]\n", eng->arg.GRun_Mode, eng->arg.GSpeed, eng->arg.GCtrl, eng->arg.GLOOP_MAX, eng->arg.GTestMode, eng->arg.GPHYADR, eng->arg.GChk_TimingBund, eng->arg.GUserDVal, eng->env.ASTChipName, eng->run.TIME_OUT_Des_PHYRatio, TIME_OUT_Des_1G, TIME_OUT_Des_100M, TIME_OUT_Des_10M, eng->run.Loop_rl[0], eng->run.Loop_rl[1], eng->run.Loop_rl[2] );
 		}
 
 		PRINTF( option, "[PHY] Adr:%d ID2:%04lx ID3:%04lx (%s)\n", eng->phy.Adr, eng->phy.PHY_ID2, eng->phy.PHY_ID3, eng->phy.PHYName );
@@ -932,8 +1086,8 @@ void FPri_End (MAC_ENGINE *eng, BYTE option) {
 //------------------------------------------------------------
 void FPri_ErrFlag (MAC_ENGINE *eng, BYTE option) {
 
-	if ( eng->flg.Wrn_Flag && eng->flg.Err_Flag_PrintEn ) {
-		if ( eng->flg.Wrn_Flag &Wrn_IOMarginOUF ) {
+	if ( eng->flg.Wrn_Flag && eng->flg.Flag_PrintEn ) {
+		if ( eng->flg.Wrn_Flag & Wrn_Flag_IOMarginOUF ) {
 			PRINTF( option, "[Warning] IO timing testing range out of boundary\n" );
 			if ( eng->env.MAC_RMII ) {
 				PRINTF( option, "      (%d,%d): %dx1 [%d:%d]x[%d]\n", eng->io.Dly_in_reg_idx,
@@ -953,52 +1107,52 @@ void FPri_ErrFlag (MAC_ENGINE *eng, BYTE option) {
 				                                                          eng->io.Dly_out_min,
 				                                                          eng->io.Dly_out_max );
 			}
-		} // End if ( eng->flg.Wrn_Flag & Wrn_IOMarginOUF )
+		} // End if ( eng->flg.Wrn_Flag & Wrn_Flag_IOMarginOUF )
 	}
 
-	if ( eng->flg.Err_Flag && eng->flg.Err_Flag_PrintEn ) {
+	if ( eng->flg.Err_Flag && eng->flg.Flag_PrintEn ) {
 		PRINTF( option, "\n\n" );
 //PRINTF( option, "Err_Flag: %x\n\n", eng->flg.Err_Flag );
 
-		if ( eng->flg.Err_Flag & Err_PHY_Type                ) { PRINTF( option, "[Err] Unidentifiable PHY                                     \n" ); }
-		if ( eng->flg.Err_Flag & Err_MALLOC_FrmSize          ) { PRINTF( option, "[Err] Malloc fail at frame size buffer                       \n" ); }
-		if ( eng->flg.Err_Flag & Err_MALLOC_LastWP           ) { PRINTF( option, "[Err] Malloc fail at last WP buffer                          \n" ); }
-		if ( eng->flg.Err_Flag & Err_Check_Buf_Data          ) { PRINTF( option, "[Err] Received data mismatch                                 \n" ); }
-		if ( eng->flg.Err_Flag & Err_NCSI_Check_TxOwnTimeOut ) { PRINTF( option, "[Err] Time out of checking Tx owner bit in NCSI packet       \n" ); }
-		if ( eng->flg.Err_Flag & Err_NCSI_Check_RxOwnTimeOut ) { PRINTF( option, "[Err] Time out of checking Rx owner bit in NCSI packet       \n" ); }
-		if ( eng->flg.Err_Flag & Err_NCSI_Check_ARPOwnTimeOut) { PRINTF( option, "[Err] Time out of checking ARP owner bit in NCSI packet      \n" ); }
-		if ( eng->flg.Err_Flag & Err_NCSI_No_PHY             ) { PRINTF( option, "[Err] Can not find NCSI PHY                                  \n" ); }
-		if ( eng->flg.Err_Flag & Err_NCSI_Channel_Num        ) { PRINTF( option, "[Err] NCSI Channel Number Mismatch                           \n" ); }
-		if ( eng->flg.Err_Flag & Err_NCSI_Package_Num        ) { PRINTF( option, "[Err] NCSI Package Number Mismatch                           \n" ); }
-		if ( eng->flg.Err_Flag & Err_PHY_TimeOut_RW          ) { PRINTF( option, "[Err] Time out of read/write PHY register                    \n" ); }
-		if ( eng->flg.Err_Flag & Err_PHY_TimeOut_Rst         ) { PRINTF( option, "[Err] Time out of reset PHY register                         \n" ); }
-		if ( eng->flg.Err_Flag & Err_RXBUF_UNAVA             ) { PRINTF( option, "[Err] MAC00h[2]:Receiving buffer unavailable                 \n" ); }
-		if ( eng->flg.Err_Flag & Err_RPKT_LOST               ) { PRINTF( option, "[Err] MAC00h[3]:Received packet lost due to RX FIFO full     \n" ); }
-		if ( eng->flg.Err_Flag & Err_NPTXBUF_UNAVA           ) { PRINTF( option, "[Err] MAC00h[6]:Normal priority transmit buffer unavailable  \n" ); }
-		if ( eng->flg.Err_Flag & Err_TPKT_LOST               ) { PRINTF( option, "[Err] MAC00h[7]:Packets transmitted to Ethernet lost         \n" ); }
-		if ( eng->flg.Err_Flag & Err_DMABufNum               ) { PRINTF( option, "[Err] DMA Buffer is not enough                               \n" ); }
-		if ( eng->flg.Err_Flag & Err_IOMargin                ) { PRINTF( option, "[Err] IO timing margin is not enough                         \n" ); }
+		if ( eng->flg.Err_Flag & Err_Flag_PHY_Type                ) { PRINTF( option, "[Err] Unidentifiable PHY                                     \n" ); }
+		if ( eng->flg.Err_Flag & Err_Flag_MALLOC_FrmSize          ) { PRINTF( option, "[Err] Malloc fail at frame size buffer                       \n" ); }
+		if ( eng->flg.Err_Flag & Err_Flag_MALLOC_LastWP           ) { PRINTF( option, "[Err] Malloc fail at last WP buffer                          \n" ); }
+		if ( eng->flg.Err_Flag & Err_Flag_Check_Buf_Data          ) { PRINTF( option, "[Err] Received data mismatch                                 \n" ); }
+		if ( eng->flg.Err_Flag & Err_Flag_NCSI_Check_TxOwnTimeOut ) { PRINTF( option, "[Err] Time out of checking Tx owner bit in NCSI packet       \n" ); }
+		if ( eng->flg.Err_Flag & Err_Flag_NCSI_Check_RxOwnTimeOut ) { PRINTF( option, "[Err] Time out of checking Rx owner bit in NCSI packet       \n" ); }
+		if ( eng->flg.Err_Flag & Err_Flag_NCSI_Check_ARPOwnTimeOut) { PRINTF( option, "[Err] Time out of checking ARP owner bit in NCSI packet      \n" ); }
+		if ( eng->flg.Err_Flag & Err_Flag_NCSI_No_PHY             ) { PRINTF( option, "[Err] Can not find NCSI PHY                                  \n" ); }
+		if ( eng->flg.Err_Flag & Err_Flag_NCSI_Channel_Num        ) { PRINTF( option, "[Err] NCSI Channel Number Mismatch                           \n" ); }
+		if ( eng->flg.Err_Flag & Err_Flag_NCSI_Package_Num        ) { PRINTF( option, "[Err] NCSI Package Number Mismatch                           \n" ); }
+		if ( eng->flg.Err_Flag & Err_Flag_PHY_TimeOut_RW          ) { PRINTF( option, "[Err] Time out of read/write PHY register                    \n" ); }
+		if ( eng->flg.Err_Flag & Err_Flag_PHY_TimeOut_Rst         ) { PRINTF( option, "[Err] Time out of reset PHY register                         \n" ); }
+		if ( eng->flg.Err_Flag & Err_Flag_RXBUF_UNAVA             ) { PRINTF( option, "[Err] MAC00h[2]:Receiving buffer unavailable                 \n" ); }
+		if ( eng->flg.Err_Flag & Err_Flag_RPKT_LOST               ) { PRINTF( option, "[Err] MAC00h[3]:Received packet lost due to RX FIFO full     \n" ); }
+		if ( eng->flg.Err_Flag & Err_Flag_NPTXBUF_UNAVA           ) { PRINTF( option, "[Err] MAC00h[6]:Normal priority transmit buffer unavailable  \n" ); }
+		if ( eng->flg.Err_Flag & Err_Flag_TPKT_LOST               ) { PRINTF( option, "[Err] MAC00h[7]:Packets transmitted to Ethernet lost         \n" ); }
+		if ( eng->flg.Err_Flag & Err_Flag_DMABufNum               ) { PRINTF( option, "[Err] DMA Buffer is not enough                               \n" ); }
+		if ( eng->flg.Err_Flag & Err_Flag_IOMargin                ) { PRINTF( option, "[Err] IO timing margin is not enough                         \n" ); }
 
-		if ( eng->flg.Err_Flag & Err_MHCLK_Ratio             ) {
+		if ( eng->flg.Err_Flag & Err_Flag_MHCLK_Ratio             ) {
 #ifdef AST1010_CHIP
 			PRINTF( option, "[Err] Error setting of MAC AHB bus clock (SCU08[13:12])      \n" );
-			PRINTF( option, "      SCU08[13:12] == 0x%01lx is not the suggestion value 0.\n", eng->env.MHCLK_Ratio );
+			PRINTF( option, "      SCU08[13:12] == 0x%01x is not the suggestion value 3.\n", eng->env.MHCLK_Ratio );
 #elif defined(AST2500_IOMAP)
 			PRINTF( option, "[Err] Error setting of MAC AHB bus clock (SCU08[18:16])      \n" );
 			if ( eng->env.MAC_atlast_1Gvld )
-				{ PRINTF( option, "      SCU08[18:16] == 0x%01lx is not the suggestion value 2.\n", eng->env.MHCLK_Ratio ); }
+				{ PRINTF( option, "      SCU08[18:16] == 0x%01x is not the suggestion value 2.\n", eng->env.MHCLK_Ratio ); }
 			else
-				{ PRINTF( option, "      SCU08[18:16] == 0x%01lx is not the suggestion value 4.\n", eng->env.MHCLK_Ratio ); }
+				{ PRINTF( option, "      SCU08[18:16] == 0x%01x is not the suggestion value 4.\n", eng->env.MHCLK_Ratio ); }
 #else
 			PRINTF( option, "[Err] Error setting of MAC AHB bus clock (SCU08[18:16])      \n" );
 			if ( eng->env.MAC_atlast_1Gvld )
-				{ PRINTF( option, "      SCU08[18:16] == 0x%01lx is not the suggestion value 2.\n", eng->env.MHCLK_Ratio ); }
+				{ PRINTF( option, "      SCU08[18:16] == 0x%01x is not the suggestion value 2.\n", eng->env.MHCLK_Ratio ); }
 			else
-				{ PRINTF( option, "      SCU08[18:16] == 0x%01lx is not the suggestion value 4.\n", eng->env.MHCLK_Ratio ); }
+				{ PRINTF( option, "      SCU08[18:16] == 0x%01x is not the suggestion value 4.\n", eng->env.MHCLK_Ratio ); }
 #endif
-		} // End if ( eng->flg.Err_Flag & Err_MHCLK_Ratio             )
+		} // End if ( eng->flg.Err_Flag & Err_Flag_MHCLK_Ratio             )
 
-		if ( eng->flg.Err_Flag & Err_IOMarginOUF ) {
+		if ( eng->flg.Err_Flag & Err_Flag_IOMarginOUF ) {
 			PRINTF( option, "[Err] IO timing testing range out of boundary\n");
 			if ( eng->env.MAC_RMII ) {
 				PRINTF( option, "      (%d,%d): %dx1 [%d:%d]x[%d]\n", eng->io.Dly_in_reg_idx,
@@ -1018,22 +1172,22 @@ void FPri_ErrFlag (MAC_ENGINE *eng, BYTE option) {
 				                                                          eng->io.Dly_out_min,
 				                                                          eng->io.Dly_out_max );
 			}
-		} // End if ( eng->flg.Err_Flag & Err_IOMarginOUF )
+		} // End if ( eng->flg.Err_Flag & Err_Flag_IOMarginOUF )
 
-		if ( eng->flg.Err_Flag & Err_Check_Des ) {
+		if ( eng->flg.Err_Flag & Err_Flag_Check_Des ) {
 			PRINTF( option, "[Err] Descriptor error\n");
-			if ( eng->flg.Check_Des_Val & Check_Des_TxOwnTimeOut ) { PRINTF( option, "[Des] Time out of checking Tx owner bit\n" ); }
-			if ( eng->flg.Check_Des_Val & Check_Des_RxOwnTimeOut ) { PRINTF( option, "[Des] Time out of checking Rx owner bit\n" ); }
-			if ( eng->flg.Check_Des_Val & Check_Des_FrameLen     ) { PRINTF( option, "[Des] Frame length mismatch            \n" ); }
-			if ( eng->flg.Check_Des_Val & Check_Des_RxErr        ) { PRINTF( option, "[Des] Input signal RxErr               \n" ); }
-			if ( eng->flg.Check_Des_Val & Check_Des_CRC          ) { PRINTF( option, "[Des] CRC error of frame               \n" ); }
-			if ( eng->flg.Check_Des_Val & Check_Des_FTL          ) { PRINTF( option, "[Des] Frame too long                   \n" ); }
-			if ( eng->flg.Check_Des_Val & Check_Des_Runt         ) { PRINTF( option, "[Des] Runt packet                      \n" ); }
-			if ( eng->flg.Check_Des_Val & Check_Des_OddNibble    ) { PRINTF( option, "[Des] Nibble bit happen                \n" ); }
-			if ( eng->flg.Check_Des_Val & Check_Des_RxFIFOFull   ) { PRINTF( option, "[Des] Rx FIFO full                     \n" ); }
-		} // End if ( eng->flg.Err_Flag & Err_Check_Des )
+			if ( eng->flg.Des_Flag & Des_Flag_TxOwnTimeOut ) { PRINTF( option, "[Des] Time out of checking Tx owner bit\n" ); }
+			if ( eng->flg.Des_Flag & Des_Flag_RxOwnTimeOut ) { PRINTF( option, "[Des] Time out of checking Rx owner bit\n" ); }
+			if ( eng->flg.Des_Flag & Des_Flag_FrameLen     ) { PRINTF( option, "[Des] Frame length mismatch            \n" ); }
+			if ( eng->flg.Des_Flag & Des_Flag_RxErr        ) { PRINTF( option, "[Des] Input signal RxErr               \n" ); }
+			if ( eng->flg.Des_Flag & Des_Flag_CRC          ) { PRINTF( option, "[Des] CRC error of frame               \n" ); }
+			if ( eng->flg.Des_Flag & Des_Flag_FTL          ) { PRINTF( option, "[Des] Frame too long                   \n" ); }
+			if ( eng->flg.Des_Flag & Des_Flag_Runt         ) { PRINTF( option, "[Des] Runt packet                      \n" ); }
+			if ( eng->flg.Des_Flag & Des_Flag_OddNibble    ) { PRINTF( option, "[Des] Nibble bit happen                \n" ); }
+			if ( eng->flg.Des_Flag & Des_Flag_RxFIFOFull   ) { PRINTF( option, "[Des] Rx FIFO full                     \n" ); }
+		} // End if ( eng->flg.Err_Flag & Err_Flag_Check_Des )
 
-		if ( eng->flg.Err_Flag & Err_MACMode ) {
+		if ( eng->flg.Err_Flag & Err_Flag_MACMode ) {
 			PRINTF( option, "[Err] MAC interface mode mismatch\n" );
 #ifndef AST1010_CHIP
 			if ( eng->env.AST2300 ) {
@@ -1057,32 +1211,39 @@ void FPri_ErrFlag (MAC_ENGINE *eng, BYTE option) {
 				}
 			} // End if ( eng->env.AST2300 )
 #endif
-		} // End if ( eng->flg.Err_Flag & Err_MACMode )
+		} // End if ( eng->flg.Err_Flag & Err_Flag_MACMode )
 
 		if ( eng->ModeSwitch == MODE_NSCI ) {
-			if ( eng->flg.Err_Flag & Err_NCSI_LinkFail ) {
+			if ( eng->flg.Err_Flag & Err_Flag_NCSI_LinkFail ) {
 				PRINTF( option, "[Err] NCSI packet retry number over flows when find channel\n" );
 
-				if ( eng->flg.NCSI_LinkFail_Val & NCSI_LinkFail_Get_Version_ID         ) { PRINTF( option, "[NCSI] Time out when Get Version ID         \n" ); }
-				if ( eng->flg.NCSI_LinkFail_Val & NCSI_LinkFail_Get_Capabilities       ) { PRINTF( option, "[NCSI] Time out when Get Capabilities       \n" ); }
-				if ( eng->flg.NCSI_LinkFail_Val & NCSI_LinkFail_Select_Active_Package  ) { PRINTF( option, "[NCSI] Time out when Select Active Package  \n" ); }
-				if ( eng->flg.NCSI_LinkFail_Val & NCSI_LinkFail_Enable_Set_MAC_Address ) { PRINTF( option, "[NCSI] Time out when Enable Set MAC Address \n" ); }
-				if ( eng->flg.NCSI_LinkFail_Val & NCSI_LinkFail_Enable_Broadcast_Filter) { PRINTF( option, "[NCSI] Time out when Enable Broadcast Filter\n" ); }
-				if ( eng->flg.NCSI_LinkFail_Val & NCSI_LinkFail_Enable_Network_TX      ) { PRINTF( option, "[NCSI] Time out when Enable Network TX      \n" ); }
-				if ( eng->flg.NCSI_LinkFail_Val & NCSI_LinkFail_Enable_Channel         ) { PRINTF( option, "[NCSI] Time out when Enable Channel         \n" ); }
-				if ( eng->flg.NCSI_LinkFail_Val & NCSI_LinkFail_Disable_Network_TX     ) { PRINTF( option, "[NCSI] Time out when Disable Network TX     \n" ); }
-				if ( eng->flg.NCSI_LinkFail_Val & NCSI_LinkFail_Disable_Channel        ) { PRINTF( option, "[NCSI] Time out when Disable Channel        \n" ); }
+				if ( eng->flg.NCSI_Flag & NCSI_Flag_Get_Version_ID                  ) { PRINTF( option, "[NCSI] Time out when Get Version ID                  \n" ); }
+				if ( eng->flg.NCSI_Flag & NCSI_Flag_Get_Capabilities                ) { PRINTF( option, "[NCSI] Time out when Get Capabilities                \n" ); }
+				if ( eng->flg.NCSI_Flag & NCSI_Flag_Select_Active_Package           ) { PRINTF( option, "[NCSI] Time out when Select Active Package           \n" ); }
+				if ( eng->flg.NCSI_Flag & NCSI_Flag_Enable_Set_MAC_Address          ) { PRINTF( option, "[NCSI] Time out when Enable Set MAC Address          \n" ); }
+				if ( eng->flg.NCSI_Flag & NCSI_Flag_Enable_Broadcast_Filter         ) { PRINTF( option, "[NCSI] Time out when Enable Broadcast Filter         \n" ); }
+				if ( eng->flg.NCSI_Flag & NCSI_Flag_Enable_Network_TX               ) { PRINTF( option, "[NCSI] Time out when Enable Network TX               \n" ); }
+				if ( eng->flg.NCSI_Flag & NCSI_Flag_Enable_Channel                  ) { PRINTF( option, "[NCSI] Time out when Enable Channel                  \n" ); }
+				if ( eng->flg.NCSI_Flag & NCSI_Flag_Disable_Network_TX              ) { PRINTF( option, "[NCSI] Time out when Disable Network TX              \n" ); }
+				if ( eng->flg.NCSI_Flag & NCSI_Flag_Disable_Channel                 ) { PRINTF( option, "[NCSI] Time out when Disable Channel                 \n" ); }
+				if ( eng->flg.NCSI_Flag & NCSI_Flag_Select_Package                  ) { PRINTF( option, "[NCSI] Time out when Select Package                  \n" ); }
+				if ( eng->flg.NCSI_Flag & NCSI_Flag_Deselect_Package                ) { PRINTF( option, "[NCSI] Time out when Deselect Package                \n" ); }
+				if ( eng->flg.NCSI_Flag & NCSI_Flag_Set_Link                        ) { PRINTF( option, "[NCSI] Time out when Set Link                        \n" ); }
+				if ( eng->flg.NCSI_Flag & NCSI_Flag_Get_Controller_Packet_Statistics) { PRINTF( option, "[NCSI] Time out when Get Controller Packet Statistics\n" ); }
 			}
 
-			if ( eng->flg.Err_Flag & Err_NCSI_Channel_Num ) { PRINTF( option, "[NCSI] Channel number expected: %d, real: %d\n", eng->arg.GChannelTolNum, eng->dat.number_chl ); }
-			if ( eng->flg.Err_Flag & Err_NCSI_Package_Num ) { PRINTF( option, "[NCSI] Peckage number expected: %d, real: %d\n", eng->arg.GPackageTolNum, eng->dat.number_pak ); }
+			if ( eng->flg.Err_Flag & Err_Flag_NCSI_Channel_Num ) { PRINTF( option, "[NCSI] Channel number expected: %d, real: %d\n", eng->arg.GChannelTolNum, eng->dat.number_chl ); }
+			if ( eng->flg.Err_Flag & Err_Flag_NCSI_Package_Num ) { PRINTF( option, "[NCSI] Peckage number expected: %d, real: %d\n", eng->arg.GPackageTolNum, eng->dat.number_pak ); }
 		} // End if ( eng->ModeSwitch == MODE_NSCI )
-	} // End if ( eng->flg.Err_Flag && eng->flg.Err_Flag_PrintEn )
+	} // End if ( eng->flg.Err_Flag && eng->flg.Flag_PrintEn )
 } // End void FPri_ErrFlag (MAC_ENGINE *eng, BYTE option)
 
 //------------------------------------------------------------
 void Finish_Close (MAC_ENGINE *eng) {
-
+#ifdef  DbgPrn_FuncHeader
+	printf("Finish_Close\n");
+	Debug_delay();
+#endif
 #ifdef Enable_RecovSCU
 	if ( eng->reg.SCU_oldvld )
 		recov_scu( eng );
@@ -1099,10 +1260,10 @@ void Finish_Close (MAC_ENGINE *eng) {
 
 //------------------------------------------------------------
 char Finish_Check (MAC_ENGINE *eng, int value) {
-#if defined( SLT_UBOOT ) && defined( CONFIG_ARCH_AST2500 )    
-    ULONG   reg;
-    BYTE    shift_value = 0;
-#endif    
+#if defined( SLT_UBOOT ) && defined( CONFIG_ARCH_AST2500 )
+	ULONG   reg;
+	BYTE    shift_value = 0;
+#endif
 #ifdef Disable_VGA
 	if ( eng->env.VGAModeVld ) {
 		outp(0x3d4, 0x17);
@@ -1114,11 +1275,13 @@ char Finish_Check (MAC_ENGINE *eng, int value) {
 	Debug_delay();
 #endif
 
-	if ( eng->dat.FRAME_LEN )
-		free( eng->dat.FRAME_LEN );
+	if ( eng->ModeSwitch ==  MODE_DEDICATED ) {
+		if ( eng->dat.FRAME_LEN )
+			free( eng->dat.FRAME_LEN );
 
-	if ( eng->dat.wp_lst )
-		free(eng->dat.wp_lst );
+		if ( eng->dat.wp_lst )
+			free( eng->dat.wp_lst );
+	}
 
 	eng->flg.Err_Flag = eng->flg.Err_Flag | value;
 
@@ -1146,35 +1309,37 @@ char Finish_Check (MAC_ENGINE *eng, int value) {
 		FPri_RegValue( eng, FP_LOG );
 	if ( eng->run.TM_IOTiming )
 		FPri_RegValue( eng, FP_IO  );
+#ifdef PHY_SPECIAL
+	if ( !eng->run.TM_Burst )
+		special_PHY_debug( eng );
+#endif
 
 	Finish_Close( eng );
 
 #if defined( SLT_UBOOT ) && defined( CONFIG_ARCH_AST2500 )
-    reg = Read_Reg_SCU_DD( 0x40 );
-    if ( eng->ModeSwitch == MODE_DEDICATED )
-        shift_value = 18;
-    else
-        shift_value = 16;
-    if ( eng->run.MAC_idx == 1 )
-        shift_value++;	        
-#endif	    
+	reg = Read_Reg_SCU_DD( 0x40 );
+	if ( eng->ModeSwitch == MODE_DEDICATED )
+		shift_value = 18 + eng->run.MAC_idx;
+	else
+		shift_value = 16 + eng->run.MAC_idx;
+#endif
 
 	if ( eng->flg.Err_Flag )
 	{
-	    // Fail
-#if defined( SLT_UBOOT ) && defined( CONFIG_ARCH_AST2500 )	    
-	    reg = reg & ~( 1 << shift_value );
-	    Write_Reg_SCU_DD( 0x40, reg );
-#endif	    	    
+		// Fail
+#if defined( SLT_UBOOT ) && defined( CONFIG_ARCH_AST2500 )
+		reg = reg & ~( 1 << shift_value );
+		Write_Reg_SCU_DD( 0x40, reg );
+#endif
 		return( 1 );
 	}
 	else
 	{
-	    // PASS
-#if defined( SLT_UBOOT ) && defined( CONFIG_ARCH_AST2500 )	    
-	    reg |= ( 1 << shift_value );
-	    Write_Reg_SCU_DD( 0x40, reg );
-#endif	    
+		// PASS
+#if defined( SLT_UBOOT ) && defined( CONFIG_ARCH_AST2500 )
+		reg |= ( 1 << shift_value );
+		Write_Reg_SCU_DD( 0x40, reg );
+#endif
 		return( 0 );
 	}
 } // End char Finish_Check (MAC_ENGINE *eng, int value)
@@ -1191,10 +1356,10 @@ int FindErr (MAC_ENGINE *eng, int value) {
 
 //------------------------------------------------------------
 int FindErr_Des (MAC_ENGINE *eng, int value) {
-	eng->flg.Check_Des_Val = eng->flg.Check_Des_Val | value;
-	eng->flg.Err_Flag      = eng->flg.Err_Flag | Err_Check_Des;
+	eng->flg.Err_Flag = eng->flg.Err_Flag | Err_Flag_Check_Des;
+	eng->flg.Des_Flag = eng->flg.Des_Flag | value;
 	if ( DbgPrn_ErrFlg )
-		printf("\nErr_Flag: [%08lx] Check_Des_Val: [%08lx]\n", eng->flg.Err_Flag, eng->flg.Check_Des_Val);
+		printf("\nErr_Flag: [%08lx] Des_Flag: [%08lx]\n", eng->flg.Err_Flag, eng->flg.Des_Flag);
 
 	return(1);
 }
@@ -1212,28 +1377,28 @@ int check_int (MAC_ENGINE *eng, char *type ) {
 #ifdef CheckRxbufUNAVA
 	if ( eng->reg.MAC_000 & 0x00000004 ) {
 		PRINTF( FP_LOG, "[%sIntStatus] Receiving buffer unavailable               : %08lx [loop[%d]:%d]\n", type, eng->reg.MAC_000, eng->run.Loop_ofcnt, eng->run.Loop );
-		FindErr( eng, Err_RXBUF_UNAVA );
+		FindErr( eng, Err_Flag_RXBUF_UNAVA );
 	}
 #endif
 
 #ifdef CheckRPktLost
 	if ( eng->reg.MAC_000 & 0x00000008 ) {
 		PRINTF( FP_LOG, "[%sIntStatus] Received packet lost due to RX FIFO full   : %08lx [loop[%d]:%d]\n", type, eng->reg.MAC_000, eng->run.Loop_ofcnt, eng->run.Loop );
-		FindErr( eng, Err_RPKT_LOST );
+		FindErr( eng, Err_Flag_RPKT_LOST );
 	}
 #endif
 
 #ifdef CheckNPTxbufUNAVA
 	if ( eng->reg.MAC_000 & 0x00000040 ) {
 		PRINTF( FP_LOG, "[%sIntStatus] Normal priority transmit buffer unavailable: %08lx [loop[%d]:%d]\n", type, eng->reg.MAC_000, eng->run.Loop_ofcnt, eng->run.Loop );
-		FindErr( eng, Err_NPTXBUF_UNAVA );
+		FindErr( eng, Err_Flag_NPTXBUF_UNAVA );
 	}
 #endif
 
 #ifdef CheckTPktLost
 	if ( eng->reg.MAC_000 & 0x00000080 ) {
 		PRINTF( FP_LOG, "[%sIntStatus] Packets transmitted to Ethernet lost       : %08lx [loop[%d]:%d]\n", type, eng->reg.MAC_000, eng->run.Loop_ofcnt, eng->run.Loop );
-		FindErr( eng, Err_TPKT_LOST );
+		FindErr( eng, Err_Flag_TPKT_LOST );
 	}
 #endif
 
@@ -1248,7 +1413,7 @@ int check_int (MAC_ENGINE *eng, char *type ) {
 // Buffer
 //------------------------------------------------------------
 void setup_framesize (MAC_ENGINE *eng) {
-	int        des_num;
+	LONG       des_num;
 
 #ifdef  DbgPrn_FuncHeader
 	printf("setup_framesize\n");
@@ -1272,10 +1437,10 @@ void setup_framesize (MAC_ENGINE *eng) {
 					default: eng->dat.FRAME_LEN[ des_num ] = 0x5ea; break;
 				}
 			else
-				eng->dat.FRAME_LEN[ des_num ] = ( rand() + RAND_SIZE_MIN ) % ( RAND_SIZE_MAX + 1 );
+				eng->dat.FRAME_LEN[ des_num ] = RAND_SIZE_MIN + ( rand() % ( RAND_SIZE_MAX - RAND_SIZE_MIN + 1 ) );
 
 			if ( DbgPrn_FRAME_LEN )
-				PRINTF( FP_LOG, "[setup_framesize] FRAME_LEN_Cur:%08lx[Des:%d][loop[%d]:%d]\n", eng->dat.FRAME_LEN[ des_num ], des_num, eng->run.Loop_ofcnt, eng->run.Loop );
+				PRINTF( FP_LOG, "[setup_framesize] FRAME_LEN_Cur:%08lx[Des:%ld][loop[%d]:%d]\n", eng->dat.FRAME_LEN[ des_num ], des_num, eng->run.Loop_ofcnt, eng->run.Loop );
 		}
 	}
 	else {
@@ -1285,6 +1450,8 @@ void setup_framesize (MAC_ENGINE *eng) {
 				eng->dat.FRAME_LEN[ des_num ] = FRAME_LENH;
 			else
 				eng->dat.FRAME_LEN[ des_num ] = FRAME_LENL;
+#elif defined(PHY_SPECIAL)
+			eng->dat.FRAME_LEN[ des_num ] = special_PHY_FRAME_LEN( eng );
 #else
 			if ( eng->run.TM_Burst ) {
 				if ( eng->run.TM_IEEE )
@@ -1308,7 +1475,7 @@ void setup_framesize (MAC_ENGINE *eng) {
 			} // End if ( eng->run.TM_Burst )
 #endif
 			if ( DbgPrn_FRAME_LEN )
-				PRINTF( FP_LOG, "[setup_framesize] FRAME_LEN_Cur:%08lx[Des:%d][loop[%d]:%d]\n", eng->dat.FRAME_LEN[ des_num ], des_num, eng->run.Loop_ofcnt, eng->run.Loop );
+				PRINTF( FP_LOG, "[setup_framesize] FRAME_LEN_Cur:%08lx[Des:%ld][loop[%d]:%d]\n", eng->dat.FRAME_LEN[ des_num ], des_num, eng->run.Loop_ofcnt, eng->run.Loop );
 
 		} // End for (des_num = 0; des_num < eng->dat.Des_Num; des_num++)
 	} // End if ( ENABLE_RAND_SIZE )
@@ -1348,35 +1515,40 @@ void setup_arp (MAC_ENGINE *eng) {
 		eng->dat.ARP_data[ i ] = ARP_org_data[ i ];
 
 	eng->dat.ARP_data[ 1 ] = 0x0000ffff
-	                       | ( eng->inf.SA[ 0 ] << 16 )
+	                       | ( eng->inf.SA[ 0 ] << 16 )//MSB
 	                       | ( eng->inf.SA[ 1 ] << 24 );
 
 	eng->dat.ARP_data[ 2 ] = ( eng->inf.SA[ 2 ]       )
 	                       | ( eng->inf.SA[ 3 ] <<  8 )
 	                       | ( eng->inf.SA[ 4 ] << 16 )
-	                       | ( eng->inf.SA[ 5 ] << 24 );
+	                       | ( eng->inf.SA[ 5 ] << 24 );//LSB
 
 	eng->dat.ARP_data[ 5 ] = 0x00000100
-	                       | ( eng->inf.SA[ 0 ] << 16 )
+	                       | ( eng->inf.SA[ 0 ] << 16 )//MSB
 	                       | ( eng->inf.SA[ 1 ] << 24 );
 
 	eng->dat.ARP_data[ 6 ] = ( eng->inf.SA[ 2 ]       )
 	                       | ( eng->inf.SA[ 3 ] <<  8 )
 	                       | ( eng->inf.SA[ 4 ] << 16 )
-	                       | ( eng->inf.SA[ 5 ] << 24 );
+	                       | ( eng->inf.SA[ 5 ] << 24 );//LSB
 } // End void setup_arp (MAC_ENGINE *eng)
 
 //------------------------------------------------------------
 void setup_buf (MAC_ENGINE *eng) {
-	int        des_num;
+	LONG       des_num_max;
+	LONG       des_num;
 	int        i;
 	ULONG      adr;
 	ULONG      adr_srt;
 	ULONG      adr_end;
-	ULONG      len;
-	int        cnt;
 	ULONG      Current_framelen;
-	ULONG      gdata;
+	ULONG      gdata = 0;
+#ifdef PHY_SPECIAL
+	ULONG      *gdata_ptr;
+#else
+	int        cnt;
+	ULONG      len;
+#endif
 
 #ifdef ENABLE_ARP_2_WOL
 	int        DA[3];
@@ -1398,14 +1570,13 @@ void setup_buf (MAC_ENGINE *eng) {
 
 	// It need be multiple of 4
 	eng->dat.DMA_Base_Setup = GET_DMA_BASE_SETUP & 0xfffffffc;
-	adr_srt = eng->dat.DMA_Base_Setup;
+	adr_srt = eng->dat.DMA_Base_Setup;//base for read/write
 
-	for ( des_num = 0; des_num < eng->dat.Des_Num; des_num++ ) {
-		if ( DbgPrn_BufAdr )
-			printf("[loop[%d]:%4d][des:%4d][setup_buf  ] %08lx\n", eng->run.Loop_ofcnt, eng->run.Loop, des_num, adr_srt);
-
-		if ( eng->run.TM_Burst ) {
-			if ( eng->run.TM_IEEE ) {
+	if ( eng->run.TM_Burst ) {
+		if ( eng->run.TM_IEEE ) {
+			for ( des_num = 0; des_num < eng->dat.Des_Num; des_num++ ) {
+				if ( DbgPrn_BufAdr )
+					printf("[loop[%d]:%4d][des:%4ld][setup_buf  ] %08lx\n", eng->run.Loop_ofcnt, eng->run.Loop, des_num, adr_srt);
 #ifdef ENABLE_DASA
 				Write_Mem_Dat_DD( adr_srt    , 0xffffffff           );
 				Write_Mem_Dat_DD( adr_srt + 4, eng->dat.ARP_data[1] );
@@ -1424,8 +1595,18 @@ void setup_buf (MAC_ENGINE *eng) {
 					}
 					Write_Mem_Dat_DD( adr, gdata );
 				} // End for()
-			}
-			else {
+				adr_srt += DMA_PakSize;
+			} // End for (des_num = 0; des_num < eng->dat.Des_Num; des_num++)
+		}
+		else {
+			printf("----->[ARP] 60 bytes\n");
+			for (i = 0; i < 16; i++)
+				printf("      [Tx%02d] %08lx %08lx\n", i, eng->dat.ARP_data[i], SWAP_4B( eng->dat.ARP_data[i] ) );
+
+			for ( des_num = 0; des_num < eng->dat.Des_Num; des_num++ ) {
+				if ( DbgPrn_BufAdr )
+					printf("[loop[%d]:%4d][des:%4ld][setup_buf  ] %08lx\n", eng->run.Loop_ofcnt, eng->run.Loop, des_num, adr_srt);
+
 				for (i = 0; i < 16; i++)
 					Write_Mem_Dat_DD( adr_srt + ( i << 2 ), eng->dat.ARP_data[i] );
 
@@ -1436,12 +1617,33 @@ void setup_buf (MAC_ENGINE *eng) {
 					Write_Mem_Dat_DD( adr_srt + ( i << 2 ) + 8, ( DA[ 2 ] << 16 ) |  DA[ 1 ] );
 				}
 #endif
-			} // End if ( eng->run.TM_IEEE )
-		}
-		else {
-			// --------------------------------------------
-#ifdef SelectSimpleData
-  #ifdef SimpleData_Fix
+				adr_srt += DMA_PakSize;
+			} // End for (des_num = 0; des_num < eng->dat.Des_Num; des_num++)
+		} // End if ( eng->run.TM_IEEE )
+	}
+	else {
+		if ( eng->arg.GEn_SinglePacket )
+			des_num_max = 1;
+		else
+			des_num_max = eng->dat.Des_Num;
+#ifdef PHY_SPECIAL
+		for ( des_num = 0; des_num < des_num_max; des_num++ ) {
+			Current_framelen = eng->dat.FRAME_LEN[ des_num ];
+			gdata_ptr = special_PHY_txpkt_ptr( eng );
+
+			adr_end = adr_srt + ( ( ( Current_framelen + 3 ) >> 2 ) << 2 );
+			for ( adr = adr_srt; adr < adr_end; adr += 4 ) {
+				Write_Mem_Dat_DD( adr, *gdata_ptr );
+				gdata_ptr++;
+			}
+			adr_srt += DMA_PakSize;
+		} // End for (des_num = 0; des_num < eng->dat.Des_Num; des_num++)
+#else
+		for ( des_num = 0; des_num < des_num_max; des_num++ ) {
+			if ( DbgPrn_BufAdr )
+				printf("[loop[%d]:%4d][des:%4ld][setup_buf  ] %08lx\n", eng->run.Loop_ofcnt, eng->run.Loop, des_num, adr_srt);
+  #ifdef SelectSimpleData
+    #ifdef SimpleData_Fix
 			switch( des_num % SimpleData_FixNum ) {
 				case  0 : gdata = SimpleData_FixVal00; break;
 				case  1 : gdata = SimpleData_FixVal01; break;
@@ -1456,60 +1658,64 @@ void setup_buf (MAC_ENGINE *eng) {
 				case 10 : gdata = SimpleData_FixVal10; break;
 				default : gdata = SimpleData_FixVal11; break;
 			}
-  #else
+    #else
 			gdata   = 0x11111111 * ((des_num + SEED_START) % 256);
-  #endif
-#else
+    #endif
+  #else
 			gdata   = DATA_SEED( des_num + SEED_START );
-#endif
+  #endif
 			Current_framelen = eng->dat.FRAME_LEN[ des_num ];
 
 			if ( DbgPrn_FRAME_LEN )
-				PRINTF( FP_LOG, "[setup_buf      ] Current_framelen:%08lx[Des:%d][loop[%d]:%d]\n", Current_framelen, des_num, eng->run.Loop_ofcnt, eng->run.Loop );
+				PRINTF( FP_LOG, "[setup_buf      ] Current_framelen:%08lx[Des:%ld][loop[%d]:%d]\n", Current_framelen, des_num, eng->run.Loop_ofcnt, eng->run.Loop );
 
 			cnt     = 0;
- 			len     = ( ( ( Current_framelen - 14 ) & 0xff ) << 8) |
- 			            ( ( Current_framelen - 14 ) >> 8 );
- 			adr_end = adr_srt + DMA_PakSize;
+			len     = ( ( ( Current_framelen - 14 ) & 0xff ) << 8) |
+			            ( ( Current_framelen - 14 ) >> 8 );
+			adr_end = adr_srt + DMA_PakSize;
 			for ( adr = adr_srt; adr < adr_end; adr += 4 ) {
-#ifdef SelectSimpleDA
+  #ifdef SelectSimpleDA
 				cnt++;
 				if      ( cnt == 1 ) Write_Mem_Dat_DD( adr, SelectSimpleDA_Dat0 );
 				else if ( cnt == 2 ) Write_Mem_Dat_DD( adr, SelectSimpleDA_Dat1 );
 				else if ( cnt == 3 ) Write_Mem_Dat_DD( adr, SelectSimpleDA_Dat2 );
 				else if ( cnt == 4 ) Write_Mem_Dat_DD( adr, len | (len << 16)   );
 				else
-#endif
+  #endif
 				                     Write_Mem_Dat_DD( adr, gdata );
-#ifdef SelectSimpleData
+  #ifdef SelectSimpleData
 				gdata = gdata ^ SimpleData_XORVal;
-#else
+  #else
 				gdata += DATA_IncVal;
-#endif
+  #endif
 			}
-		} // End if ( eng->run.TM_Burst )
-
-		adr_srt += DMA_PakSize;
-	} // End for (des_num = 0; des_num < eng->dat.Des_Num; des_num++)
+			adr_srt += DMA_PakSize;
+		} // End for (des_num = 0; des_num < eng->dat.Des_Num; des_num++)
+#endif
+	} // End if ( eng->run.TM_Burst )
 } // End void setup_buf (MAC_ENGINE *eng)
 
 //------------------------------------------------------------
 // Check data of one packet
 //------------------------------------------------------------
 char check_Data (MAC_ENGINE *eng, ULONG datbase, LONG number) {
+	LONG       number_dat;
 	int        index;
-	int        cnt;
 	ULONG      rdata;
 	ULONG      wp_lst_cur;
 	ULONG      adr_las;
 	ULONG      adr;
 	ULONG      adr_srt;
 	ULONG      adr_end;
-	ULONG      len;
 #ifdef SelectSimpleDA
+	int        cnt;
+	ULONG      len;
 	ULONG      gdata_bak;
 #endif
 	ULONG      gdata;
+#ifdef PHY_SPECIAL
+	ULONG      *gdata_ptr;
+#endif
 	ULONG      wp;
 
 #ifdef  DbgPrn_FuncHeader
@@ -1517,18 +1723,26 @@ char check_Data (MAC_ENGINE *eng, ULONG datbase, LONG number) {
 	Debug_delay();
 #endif
 
-	wp_lst_cur             = eng->dat.wp_lst[number];
-	eng->dat.FRAME_LEN_Cur = eng->dat.FRAME_LEN[number];
+	if ( eng->arg.GEn_SinglePacket )
+		number_dat = 0;
+	else
+		number_dat = number;
+
+	wp_lst_cur             = eng->dat.wp_lst[ number ];
+	eng->dat.FRAME_LEN_Cur = eng->dat.FRAME_LEN[ number_dat ];
 
 	if ( DbgPrn_FRAME_LEN )
-		PRINTF( FP_LOG, "[check_Data     ] FRAME_LEN_Cur:%08lx[Des:%d][loop[%d]:%d]\n", eng->dat.FRAME_LEN_Cur, number, eng->run.Loop_ofcnt, eng->run.Loop );
+		PRINTF( FP_LOG, "[check_Data     ] FRAME_LEN_Cur:%08lx[Des:%ld][loop[%d]:%d]\n", eng->dat.FRAME_LEN_Cur, number, eng->run.Loop_ofcnt, eng->run.Loop );
 
 	adr_srt = datbase;
 	adr_end = adr_srt + PktByteSize;
 
-#ifdef SelectSimpleData
-  #ifdef SimpleData_Fix
-	switch( number % SimpleData_FixNum ) {
+#ifdef PHY_SPECIAL
+	gdata_ptr = special_PHY_rxpkt_ptr( eng );
+	gdata = *gdata_ptr;
+#elif defined(SelectSimpleData)
+    #ifdef SimpleData_Fix
+	switch( number_dat % SimpleData_FixNum ) {
 		case  0 : gdata = SimpleData_FixVal00; break;
 		case  1 : gdata = SimpleData_FixVal01; break;
 		case  2 : gdata = SimpleData_FixVal02; break;
@@ -1542,25 +1756,26 @@ char check_Data (MAC_ENGINE *eng, ULONG datbase, LONG number) {
 		case 10 : gdata = SimpleData_FixVal10; break;
 		default : gdata = SimpleData_FixVal11; break;
 	}
-  #else
-	gdata   = 0x11111111 * (( number + SEED_START ) % 256 );
-  #endif
+    #else
+	gdata   = 0x11111111 * (( number_dat + SEED_START ) % 256 );
+    #endif
 #else
-	gdata   = DATA_SEED( number + SEED_START );
+	gdata   = DATA_SEED( number_dat + SEED_START );
 #endif
 
-//printf("check_buf: %08lx - %08lx \n", adr_srt, adr_end);
+//printf("check_buf: %08lx - %08lx [%08lx]\n", adr_srt, adr_end, datbase);
 	wp      = eng->dat.wp_fir;
 	adr_las = adr_end - 4;
+#ifdef SelectSimpleDA
 	cnt     = 0;
 	len     = ((( eng->dat.FRAME_LEN_Cur-14 ) & 0xff ) << 8 ) |
 	          ( ( eng->dat.FRAME_LEN_Cur-14 )          >> 8 );
+#endif
 
 	if ( DbgPrn_Bufdat )
-		PRINTF( FP_LOG, " Inf:%08lx ~ %08lx(%08lx) %08lx [Des:%d][loop[%d]:%d]\n", adr_srt, adr_end, adr_las, gdata, number, eng->run.Loop_ofcnt, eng->run.Loop );
+		PRINTF( FP_LOG, " Inf:%08lx ~ %08lx(%08lx) %08lx [Des:%ld][loop[%d]:%d]\n", adr_srt, adr_end, adr_las, gdata, number, eng->run.Loop_ofcnt, eng->run.Loop );
 
 	for ( adr = adr_srt; adr < adr_end; adr+=4 ) {
-
 #ifdef SelectSimpleDA
 		cnt++;
 		if      ( cnt == 1 ) { gdata_bak = gdata; gdata = SelectSimpleDA_Dat0; }
@@ -1573,24 +1788,27 @@ char check_Data (MAC_ENGINE *eng, ULONG datbase, LONG number) {
 			wp = wp & wp_lst_cur;
 
 		if ( ( rdata & wp ) != ( gdata & wp ) ) {
-			PRINTF( FP_LOG, "\nError: Adr:%08lx[%3d] (%08lx) (%08lx:%08lx) [Des:%d][loop[%d]:%d]\n", adr, ( adr - adr_srt ) / 4, rdata, gdata, wp, number, eng->run.Loop_ofcnt, eng->run.Loop );
+			PRINTF( FP_LOG, "\nError: Adr:%08lx[%3ld] (%08lx) (%08lx:%08lx) [Des:%ld][loop[%d]:%d]\n", adr, ( adr - adr_srt ) / 4, rdata, gdata, wp, number, eng->run.Loop_ofcnt, eng->run.Loop );
 			for ( index = 0; index < 6; index++ )
-				PRINTF( FP_LOG, "Rep  : Adr:%08lx      (%08lx) (%08lx:%08lx) [Des:%d][loop[%d]:%d]\n", adr, Read_Mem_Dat_DD( adr ), gdata, wp, number, eng->run.Loop_ofcnt, eng->run.Loop );
+				PRINTF( FP_LOG, "Rep  : Adr:%08lx      (%08lx) (%08lx:%08lx) [Des:%ld][loop[%d]:%d]\n", adr, Read_Mem_Dat_DD( adr ), gdata, wp, number, eng->run.Loop_ofcnt, eng->run.Loop );
 
 			if ( DbgPrn_DumpMACCnt )
 				dump_mac_ROreg( eng );
 
-			return( FindErr( eng, Err_Check_Buf_Data ) );
+			return( FindErr( eng, Err_Flag_Check_Buf_Data ) );
 		} // End if ( (rdata & wp) != (gdata & wp) )
 		if ( DbgPrn_BufdatDetail )
-			PRINTF( FP_LOG, " Adr:%08lx[%3d] (%08lx) (%08lx:%08lx) [Des:%d][loop[%d]:%d]\n", adr, ( adr - adr_srt ) / 4, rdata, gdata, wp, number, eng->run.Loop_ofcnt, eng->run.Loop );
+			PRINTF( FP_LOG, " Adr:%08lx[%3ld] (%08lx) (%08lx:%08lx) [Des:%ld][loop[%d]:%d]\n", adr, ( adr - adr_srt ) / 4, rdata, gdata, wp, number, eng->run.Loop_ofcnt, eng->run.Loop );
 
 #ifdef SelectSimpleDA
 		if ( cnt <= 4 )
 			gdata = gdata_bak;
 #endif
 
-#ifdef SelectSimpleData
+#ifdef PHY_SPECIAL
+		gdata_ptr++;
+		gdata = *gdata_ptr;
+#elif defined(SelectSimpleData)
 		gdata = gdata ^ SimpleData_XORVal;
 #else
 		gdata += DATA_IncVal;
@@ -1603,7 +1821,7 @@ char check_Data (MAC_ENGINE *eng, ULONG datbase, LONG number) {
 
 //------------------------------------------------------------
 char check_buf (MAC_ENGINE *eng, int loopcnt) {
-	int        des_num;
+	LONG       des_num;
 	ULONG      desadr;
 	ULONG      datbase;
 
@@ -1612,13 +1830,11 @@ char check_buf (MAC_ENGINE *eng, int loopcnt) {
 	Debug_delay();
 #endif
 
-	desadr = eng->run.RDES_BASE + ( 16 * eng->dat.Des_Num ) - 4;
+	desadr = eng->run.RDES_BASE + ( 16 * eng->dat.Des_Num ) - 4;//base for read/write
 	for ( des_num = eng->dat.Des_Num - 1; des_num >= 0; des_num-- ) {
-		datbase = Read_Mem_Des_DD( desadr ) & 0xfffffffc;
-//printf("%d:%08lx\n", des_num, desadr);
+		datbase = AT_BUF_MEMRW( Read_Mem_Des_DD( desadr ) & 0xfffffffc);//base for read/write
 		if ( check_Data( eng, datbase, des_num ) ) {
 			check_int ( eng, "" );
-
 			return(1);
 		}
 		desadr-= 16;
@@ -1626,7 +1842,7 @@ char check_buf (MAC_ENGINE *eng, int loopcnt) {
 	if ( check_int ( eng, "" ) )
 		return(1);
 
-#ifdef Delay_CheckData
+#if defined(Delay_CheckData_LoopNum) && defined(Delay_CheckData)
 	if ( ( loopcnt % Delay_CheckData_LoopNum ) == 0 ) DELAY( Delay_CheckData );
 #endif
 	return(0);
@@ -1637,8 +1853,9 @@ char check_buf (MAC_ENGINE *eng, int loopcnt) {
 //------------------------------------------------------------
 void setup_txdes (MAC_ENGINE *eng, ULONG desadr, ULONG bufbase) {
 	ULONG      bufadr;
-	ULONG      desval;
-	int        des_num;
+	ULONG      bufadrgap;
+	ULONG      desval = 0;
+	LONG       des_num;
 
 #ifdef  DbgPrn_FuncHeader
 	printf("setup_txdes: [%d]%d\n", eng->run.Loop_ofcnt, eng->run.Loop);
@@ -1646,6 +1863,10 @@ void setup_txdes (MAC_ENGINE *eng, ULONG desadr, ULONG bufbase) {
 #endif
 
 	bufadr = bufbase;
+	if ( eng->arg.GEn_SinglePacket )
+		bufadrgap = 0;
+	else
+		bufadrgap = DMA_PakSize;
 
 	if ( eng->run.TM_TxDataEn ) {
 		for ( des_num = 0; des_num < eng->dat.Des_Num; des_num++ ) {
@@ -1657,13 +1878,13 @@ void setup_txdes (MAC_ENGINE *eng, ULONG desadr, ULONG bufbase) {
 			Write_Mem_Des_DD( desadr       , desval );
 
 			if ( DbgPrn_FRAME_LEN )
-				PRINTF( FP_LOG, "[setup_txdes    ] FRAME_LEN_Cur:%08lx[Des:%d][loop[%d]:%d]\n", eng->dat.FRAME_LEN_Cur, des_num, eng->run.Loop_ofcnt, eng->run.Loop );
+				PRINTF( FP_LOG, "[setup_txdes    ] FRAME_LEN_Cur:%08lx[Des:%ld][loop[%d]:%d]\n", eng->dat.FRAME_LEN_Cur, des_num, eng->run.Loop_ofcnt, eng->run.Loop );
 
 			if ( DbgPrn_BufAdr )
-				printf("[loop[%d]:%4d][des:%4d][setup_txdes] %08lx\n", eng->run.Loop_ofcnt, eng->run.Loop, des_num, bufadr);
+				printf("[loop[%d]:%4d][des:%4ld][setup_txdes] %08lx [%08lx]\n", eng->run.Loop_ofcnt, eng->run.Loop, des_num, desadr, bufadr);
 
 			desadr += 16;
-			bufadr += DMA_PakSize;
+			bufadr += bufadrgap;
 		}
 		Write_Mem_Des_DD( desadr - 0x10, desval | EOR_IniVal );
 	}
@@ -1676,10 +1897,10 @@ void setup_txdes (MAC_ENGINE *eng, ULONG desadr, ULONG bufbase) {
 void setup_rxdes (MAC_ENGINE *eng, ULONG desadr, ULONG bufbase) {
 	ULONG      bufadr;
 	ULONG      desval;
-	int        des_num;
+	LONG       des_num;
 
 #ifdef  DbgPrn_FuncHeader
-	printf("setup_rxdes: [%d]%ld\n", eng->run.Loop_ofcnt, eng->run.Loop);
+	printf("setup_rxdes: [%d]%d\n", eng->run.Loop_ofcnt, eng->run.Loop);
 	Debug_delay();
 #endif
 
@@ -1693,7 +1914,7 @@ void setup_rxdes (MAC_ENGINE *eng, ULONG desadr, ULONG bufbase) {
 			Write_Mem_Des_DD( desadr       , desval );
 
 			if ( DbgPrn_BufAdr )
-				printf("[loop[%d]:%4d][des:%4d][setup_rxdes] %08lx\n", eng->run.Loop_ofcnt, eng->run.Loop, des_num, bufadr);
+				printf("[loop[%d]:%4d][des:%4ld][setup_rxdes] %08lx [%08lx]\n", eng->run.Loop_ofcnt, eng->run.Loop, des_num, desadr, bufadr);
 
 			desadr += 16;
 			bufadr += DMA_PakSize;
@@ -1719,19 +1940,19 @@ void setup_des (MAC_ENGINE *eng, ULONG bufnum) {
 	}
 #endif
 
-	eng->dat.DMA_Base_Tx = CPU_BUS_ADDR_SDRAM_OFFSET + ZeroCopy_OFFSET + eng->dat.DMA_Base_Setup; // 20130730
-	eng->dat.DMA_Base_Rx = CPU_BUS_ADDR_SDRAM_OFFSET + ZeroCopy_OFFSET + GET_DMA_BASE(0); // 20130730
+	eng->dat.DMA_Base_Tx = ZeroCopy_OFFSET + eng->dat.DMA_Base_Setup; // 20130730
+	eng->dat.DMA_Base_Rx = ZeroCopy_OFFSET + GET_DMA_BASE(0); // 20130730
 #ifndef Enable_MAC_ExtLoop
-	setup_txdes( eng, eng->run.TDES_BASE, eng->dat.DMA_Base_Tx );
+	setup_txdes( eng, eng->run.TDES_BASE, AT_MEMRW_BUF( eng->dat.DMA_Base_Tx ) );//base for read/write //base of the descriptor
 #endif
-	setup_rxdes( eng, eng->run.RDES_BASE, eng->dat.DMA_Base_Rx );
+	setup_rxdes( eng, eng->run.RDES_BASE, AT_MEMRW_BUF( eng->dat.DMA_Base_Rx ) );//base for read/write //base of the descriptor
 } // End void setup_des (ULONG bufnum)
 
 //------------------------------------------------------------
 // Move buffer point of TX and RX descriptor to next DMA buffer
 //------------------------------------------------------------
 void setup_des_loop (MAC_ENGINE *eng, ULONG bufnum) {
-	int        des_num;
+	LONG       des_num;
 	ULONG      H_rx_desadr;
 	ULONG      H_tx_desadr;
 	ULONG      H_tx_bufadr;
@@ -1748,47 +1969,44 @@ void setup_des_loop (MAC_ENGINE *eng, ULONG bufnum) {
 #endif
 
 	if ( eng->run.TM_RxDataEn ) {
-		H_rx_bufadr = eng->dat.DMA_Base_Rx;
-		H_rx_desadr = eng->run.RDES_BASE;
+		H_rx_bufadr = AT_MEMRW_BUF( eng->dat.DMA_Base_Rx );//base of the descriptor
+		H_rx_desadr = eng->run.RDES_BASE;//base for read/write
 		for ( des_num = 0; des_num < eng->dat.Des_Num - 1; des_num++ ) {
 			Write_Mem_Des_DD( H_rx_desadr + 0x0C, H_rx_bufadr );
 			Write_Mem_Des_DD( H_rx_desadr       , RDES_IniVal );
 
 			if ( DbgPrn_BufAdr )
-				printf("[loop[%d]:%4d][des:%4d][setup_rxdes] %08lx\n", eng->run.Loop_ofcnt, eng->run.Loop, des_num, H_rx_desadr);
+				printf("[loop[%d]:%4d][des:%4ld][setup_rxdes] %08lx [%08lx]\n", eng->run.Loop_ofcnt, eng->run.Loop, des_num, H_rx_desadr, H_rx_bufadr);
 
 			H_rx_bufadr += DMA_PakSize;
 			H_rx_desadr += 16;
 		}
-		if ( DbgPrn_BufAdr )
-			printf("[loop[%d]:%4d][des:%4d][setup_rxdes] %08lx\n", eng->run.Loop_ofcnt, eng->run.Loop, des_num, H_rx_desadr);
 		Write_Mem_Des_DD( H_rx_desadr + 0x0C, H_rx_bufadr );
 		Write_Mem_Des_DD( H_rx_desadr       , RDES_IniVal | EOR_IniVal );
+		if ( DbgPrn_BufAdr )
+			printf("[loop[%d]:%4d][des:%4ld][setup_rxdes] %08lx [%08lx]\n", eng->run.Loop_ofcnt, eng->run.Loop, des_num, H_rx_desadr, H_rx_bufadr);
 	}
 
 	if ( eng->run.TM_TxDataEn ) {
-		H_tx_bufadr = eng->dat.DMA_Base_Tx;
-		H_tx_desadr = eng->run.TDES_BASE;
+		H_tx_bufadr = AT_MEMRW_BUF( eng->dat.DMA_Base_Tx );//base of the descriptor
+		H_tx_desadr = eng->run.TDES_BASE;//base for read/write
 		for ( des_num = 0; des_num < eng->dat.Des_Num - 1; des_num++ ) {
 			eng->dat.FRAME_LEN_Cur = eng->dat.FRAME_LEN[ des_num ];
 			Write_Mem_Des_DD( H_tx_desadr + 0x0C, H_tx_bufadr );
 			Write_Mem_Des_DD( H_tx_desadr       , TDES_IniVal );
 
 			if ( DbgPrn_BufAdr )
-				printf("[loop[%d]:%4d][des:%4d][setup_txdes] %08lx\n", eng->run.Loop_ofcnt, eng->run.Loop, des_num, H_tx_desadr);
+				printf("[loop[%d]:%4d][des:%4ld][setup_txdes] %08lx [%08lx]\n", eng->run.Loop_ofcnt, eng->run.Loop, des_num, H_tx_desadr, H_tx_bufadr);
 
 			H_tx_bufadr += DMA_PakSize;
 			H_tx_desadr += 16;
 		}
-		if ( DbgPrn_BufAdr )
-			printf("[loop[%d]:%4d][des:%4d][setup_txdes] %08lx\n", eng->run.Loop_ofcnt, eng->run.Loop, des_num, H_tx_desadr);
 		eng->dat.FRAME_LEN_Cur = eng->dat.FRAME_LEN[ des_num ];
 		Write_Mem_Des_DD( H_tx_desadr + 0x0C, H_tx_bufadr );
 		Write_Mem_Des_DD( H_tx_desadr       , TDES_IniVal | EOR_IniVal );
+		if ( DbgPrn_BufAdr )
+			printf("[loop[%d]:%4d][des:%4ld][setup_txdes] %08lx [%08lx]\n", eng->run.Loop_ofcnt, eng->run.Loop, des_num, H_tx_desadr, H_tx_bufadr);
 	}
-
-	Write_Reg_MAC_DD( eng, 0x18, 0x00000000 ); // Tx Poll
-	Write_Reg_MAC_DD( eng, 0x1c, 0x00000000 ); // Rx Poll
 } // End void setup_des_loop (ULONG bufnum)
 
 //------------------------------------------------------------
@@ -1800,11 +2018,9 @@ char check_des_header_Tx (MAC_ENGINE *eng, char *type, ULONG adr, LONG desnum) {
 	while ( HWOwnTx( eng->dat.TxDes0DW ) ) {
 		// we will run again, if transfer has not been completed.
 		if ( ( eng->run.TM_Burst || eng->run.TM_RxDataEn ) && ( ++timeout > eng->run.TIME_OUT_Des ) ) {
-			PRINTF( FP_LOG, "[%sTxDesOwn] Address %08lx = %08lx [Des:%d][loop[%d]:%d]\n", type, adr, eng->dat.TxDes0DW, desnum, eng->run.Loop_ofcnt, eng->run.Loop );
-			return( FindErr_Des( eng, Check_Des_TxOwnTimeOut ) );
+			PRINTF( FP_LOG, "[%sTxDesOwn] Address %08lx = %08lx [Des:%ld][loop[%d]:%d]\n", type, adr, eng->dat.TxDes0DW, desnum, eng->run.Loop_ofcnt, eng->run.Loop );
+			return( FindErr_Des( eng, Des_Flag_TxOwnTimeOut ) );
 		}
-		Write_Reg_MAC_DD( eng, 0x18, 0x00000000 );//Tx Poll
-		Write_Reg_MAC_DD( eng, 0x1c, 0x00000000 );//Rx Poll
 
 #ifdef Delay_ChkTxOwn
 		DELAY( Delay_ChkTxOwn );
@@ -1825,11 +2041,9 @@ char check_des_header_Rx (MAC_ENGINE *eng, char *type, ULONG adr, LONG desnum) {
 	while ( HWOwnRx( eng->dat.RxDes0DW ) ) {
 		// we will run again, if transfer has not been completed.
 		if ( eng->run.TM_TxDataEn && ( ++timeout > eng->run.TIME_OUT_Des ) ) {
-			PRINTF( FP_LOG, "[%sRxDesOwn] Address %08lx = %08lx [Des:%d][loop[%d]:%d]\n", type, adr, eng->dat.RxDes0DW, desnum, eng->run.Loop_ofcnt, eng->run.Loop );
-			return( FindErr_Des( eng, Check_Des_RxOwnTimeOut ) );
+			PRINTF( FP_LOG, "[%sRxDesOwn] Address %08lx = %08lx [Des:%ld][loop[%d]:%d]\n", type, adr, eng->dat.RxDes0DW, desnum, eng->run.Loop_ofcnt, eng->run.Loop );
+			return( FindErr_Des( eng, Des_Flag_RxOwnTimeOut ) );
 		}
-		Write_Reg_MAC_DD( eng, 0x18, 0x00000000 );//Tx Poll
-		Write_Reg_MAC_DD( eng, 0x1c, 0x00000000 );//Rx Poll
 
   #ifdef Delay_ChkRxOwn
 		DELAY( Delay_ChkRxOwn );
@@ -1840,12 +2054,12 @@ char check_des_header_Rx (MAC_ENGINE *eng, char *type, ULONG adr, LONG desnum) {
 
   #ifdef CheckRxLen
 	if ( DbgPrn_FRAME_LEN )
-		PRINTF( FP_LOG, "[%sRxDes          ] FRAME_LEN_Cur:%08lx[Des:%d][loop[%d]:%d]\n", type, ( eng->dat.FRAME_LEN_Cur + 4 ), desnum, eng->run.Loop_ofcnt, eng->run.Loop );
+		PRINTF( FP_LOG, "[%sRxDes          ] FRAME_LEN_Cur:%08lx[Des:%ld][loop[%d]:%d]\n", type, ( eng->dat.FRAME_LEN_Cur + 4 ), desnum, eng->run.Loop_ofcnt, eng->run.Loop );
 
 	if ( ( eng->dat.RxDes0DW & 0x3fff ) != ( eng->dat.FRAME_LEN_Cur + 4 ) ) {
 		eng->dat.RxDes3DW = Read_Mem_Des_DD( adr + 12 );
-		PRINTF( FP_LOG, "[%sRxDes] Error Frame Length %08lx:%08lx %08lx(%4d/%4d) [Des:%d][loop[%d]:%d]\n",   type, adr, eng->dat.RxDes0DW, eng->dat.RxDes3DW, ( eng->dat.RxDes0DW & 0x3fff ), ( eng->dat.FRAME_LEN_Cur + 4 ), desnum, eng->run.Loop_ofcnt, eng->run.Loop );
-		FindErr_Des( eng, Check_Des_FrameLen );
+		PRINTF( FP_LOG, "[%sRxDes] Error Frame Length %08lx:%08lx %08lx(%4ld/%4ld) [Des:%ld][loop[%d]:%d]\n",   type, adr, eng->dat.RxDes0DW, eng->dat.RxDes3DW, ( eng->dat.RxDes0DW & 0x3fff ), ( eng->dat.FRAME_LEN_Cur + 4 ), desnum, eng->run.Loop_ofcnt, eng->run.Loop );
+		FindErr_Des( eng, Des_Flag_FrameLen );
 	}
   #endif // End CheckRxLen
 
@@ -1853,43 +2067,43 @@ char check_des_header_Rx (MAC_ENGINE *eng, char *type, ULONG adr, LONG desnum) {
 		eng->dat.RxDes3DW = Read_Mem_Des_DD( adr + 12 );
   #ifdef CheckRxErr
 		if ( eng->dat.RxDes0DW & Check_ErrMask_RxErr ) {
-			PRINTF( FP_LOG, "[%sRxDes] Error RxErr        %08lx:%08lx %08lx            [Des:%d][loop[%d]:%d]\n", type, adr, eng->dat.RxDes0DW, eng->dat.RxDes3DW, desnum, eng->run.Loop_ofcnt, eng->run.Loop );
-			FindErr_Des( eng, Check_Des_RxErr );
+			PRINTF( FP_LOG, "[%sRxDes] Error RxErr        %08lx:%08lx %08lx            [Des:%ld][loop[%d]:%d]\n", type, adr, eng->dat.RxDes0DW, eng->dat.RxDes3DW, desnum, eng->run.Loop_ofcnt, eng->run.Loop );
+			FindErr_Des( eng, Des_Flag_RxErr );
 		}
   #endif // End CheckRxErr
 
   #ifdef CheckCRC
 		if ( eng->dat.RxDes0DW & Check_ErrMask_CRC ) {
-			PRINTF( FP_LOG, "[%sRxDes] Error CRC          %08lx:%08lx %08lx            [Des:%d][loop[%d]:%d]\n", type, adr, eng->dat.RxDes0DW, eng->dat.RxDes3DW, desnum, eng->run.Loop_ofcnt, eng->run.Loop );
-			FindErr_Des( eng, Check_Des_CRC );
+			PRINTF( FP_LOG, "[%sRxDes] Error CRC          %08lx:%08lx %08lx            [Des:%ld][loop[%d]:%d]\n", type, adr, eng->dat.RxDes0DW, eng->dat.RxDes3DW, desnum, eng->run.Loop_ofcnt, eng->run.Loop );
+			FindErr_Des( eng, Des_Flag_CRC );
 		}
   #endif // End CheckCRC
 
   #ifdef CheckFTL
 		if ( eng->dat.RxDes0DW & Check_ErrMask_FTL ) {
-			PRINTF( FP_LOG, "[%sRxDes] Error FTL          %08lx:%08lx %08lx            [Des:%d][loop[%d]:%d]\n", type, adr, eng->dat.RxDes0DW, eng->dat.RxDes3DW, desnum, eng->run.Loop_ofcnt, eng->run.Loop );
-			FindErr_Des( eng, Check_Des_FTL );
+			PRINTF( FP_LOG, "[%sRxDes] Error FTL          %08lx:%08lx %08lx            [Des:%ld][loop[%d]:%d]\n", type, adr, eng->dat.RxDes0DW, eng->dat.RxDes3DW, desnum, eng->run.Loop_ofcnt, eng->run.Loop );
+			FindErr_Des( eng, Des_Flag_FTL );
 		}
   #endif // End CheckFTL
 
   #ifdef CheckRunt
 		if ( eng->dat.RxDes0DW & Check_ErrMask_Runt) {
-			PRINTF( FP_LOG, "[%sRxDes] Error Runt         %08lx:%08lx %08lx            [Des:%d][loop[%d]:%d]\n", type, adr, eng->dat.RxDes0DW, eng->dat.RxDes3DW, desnum, eng->run.Loop_ofcnt, eng->run.Loop );
-			FindErr_Des( eng, Check_Des_Runt );
+			PRINTF( FP_LOG, "[%sRxDes] Error Runt         %08lx:%08lx %08lx            [Des:%ld][loop[%d]:%d]\n", type, adr, eng->dat.RxDes0DW, eng->dat.RxDes3DW, desnum, eng->run.Loop_ofcnt, eng->run.Loop );
+			FindErr_Des( eng, Des_Flag_Runt );
 		}
   #endif // End CheckRunt
 
   #ifdef CheckOddNibble
 		if ( eng->dat.RxDes0DW & Check_ErrMask_OddNibble ) {
-			PRINTF( FP_LOG, "[%sRxDes] Odd Nibble         %08lx:%08lx %08lx            [Des:%d][loop[%d]:%d]\n", type, adr, eng->dat.RxDes0DW, eng->dat.RxDes3DW, desnum, eng->run.Loop_ofcnt, eng->run.Loop );
-			FindErr_Des( eng, Check_Des_OddNibble );
+			PRINTF( FP_LOG, "[%sRxDes] Odd Nibble         %08lx:%08lx %08lx            [Des:%ld][loop[%d]:%d]\n", type, adr, eng->dat.RxDes0DW, eng->dat.RxDes3DW, desnum, eng->run.Loop_ofcnt, eng->run.Loop );
+			FindErr_Des( eng, Des_Flag_OddNibble );
 		}
   #endif // End CheckOddNibble
 
   #ifdef CheckRxFIFOFull
 		if ( eng->dat.RxDes0DW & Check_ErrMask_RxFIFOFull ) {
-			PRINTF( FP_LOG, "[%sRxDes] Error Rx FIFO Full %08lx:%08lx %08lx            [Des:%d][loop[%d]:%d]\n", type, adr, eng->dat.RxDes0DW, eng->dat.RxDes3DW, desnum, eng->run.Loop_ofcnt, eng->run.Loop );
-			FindErr_Des( eng, Check_Des_RxFIFOFull );
+			PRINTF( FP_LOG, "[%sRxDes] Error Rx FIFO Full %08lx:%08lx %08lx            [Des:%ld][loop[%d]:%d]\n", type, adr, eng->dat.RxDes0DW, eng->dat.RxDes3DW, desnum, eng->run.Loop_ofcnt, eng->run.Loop );
+			FindErr_Des( eng, Des_Flag_RxFIFOFull );
 		}
   #endif // End CheckRxFIFOFull
 	}
@@ -1904,8 +2118,8 @@ char check_des_header_Rx (MAC_ENGINE *eng, char *type, ULONG adr, LONG desnum) {
 
 //------------------------------------------------------------
 char check_des (MAC_ENGINE *eng, ULONG bufnum, int checkpoint) {
-	int        desnum;
-	int        desnum_last;
+	LONG       desnum;
+	CHAR       desnum_last;
 	ULONG      H_rx_desadr;
 	ULONG      H_tx_desadr;
 	ULONG      H_tx_bufadr;
@@ -1921,15 +2135,16 @@ char check_des (MAC_ENGINE *eng, ULONG bufnum, int checkpoint) {
 #endif
 
 	// Fire the engine to send and recvice
+	Write_Reg_MAC_DD( eng, 0x1c, 0x00000000 );//Rx Poll
 	Write_Reg_MAC_DD( eng, 0x18, 0x00000000 );//Tx Poll
 	Write_Reg_MAC_DD( eng, 0x1c, 0x00000000 );//Rx Poll
 
 #ifndef SelectSimpleDes
-	H_tx_bufadr = eng->dat.DMA_Base_Tx;
-	H_rx_bufadr = eng->dat.DMA_Base_Rx;
+	H_tx_bufadr = AT_MEMRW_BUF( eng->dat.DMA_Base_Tx );//base of the descriptor
+	H_rx_bufadr = AT_MEMRW_BUF( eng->dat.DMA_Base_Rx );//base of the descriptor
 #endif
-	H_rx_desadr = eng->run.RDES_BASE;
-	H_tx_desadr = eng->run.TDES_BASE;
+	H_rx_desadr = eng->run.RDES_BASE;//base for read/write
+	H_tx_desadr = eng->run.TDES_BASE;//base for read/write
 
 #ifdef Delay_DES
 	DELAY( Delay_DES );
@@ -1937,38 +2152,29 @@ char check_des (MAC_ENGINE *eng, ULONG bufnum, int checkpoint) {
 
 	for ( desnum = 0; desnum < eng->dat.Des_Num; desnum++ ) {
 		desnum_last = ( desnum == ( eng->dat.Des_Num - 1 ) ) ? 1 : 0;
-		if ( DbgPrn_BufAdr )
-			printf("[loop[%d]:%4d][des:%4d][check_des  ] %08lx %08lx [%08lx] [%08lx]\n", eng->run.Loop_ofcnt, eng->run.Loop, desnum, ( H_tx_desadr ), ( H_rx_desadr ), Read_Mem_Des_DD( H_tx_desadr + 12 ), Read_Mem_Des_DD( H_rx_desadr + 12 ) );
+		if ( DbgPrn_BufAdr ) {
+			if ( checkpoint )
+				printf("[loop[%d]:%4d][des:%4ld][check_des  ] %08lx %08lx [%08lx %08lx]\n", eng->run.Loop_ofcnt, eng->run.Loop, desnum, ( H_tx_desadr ), ( H_rx_desadr ), Read_Mem_Des_DD( H_tx_desadr + 12 ), Read_Mem_Des_DD( H_rx_desadr + 12 ) );
+			else
+				printf("[loop[%d]:%4d][des:%4ld][check_des  ] %08lx %08lx [%08lx %08lx]->[%08lx %08lx]\n", eng->run.Loop_ofcnt, eng->run.Loop, desnum, ( H_tx_desadr ), ( H_rx_desadr ), Read_Mem_Des_DD( H_tx_desadr + 12 ), Read_Mem_Des_DD( H_rx_desadr + 12 ), H_tx_bufadr, H_rx_bufadr );
+		}
 
 		//[Delay]--------------------
 #ifdef Delay_DesGap
-		if ( dly_cnt++ > 3 ) {
-			switch ( rand() % 12 ) {
-				case 1 : dly_max = 00000; break;
-				case 3 : dly_max = 20000; break;
-				case 5 : dly_max = 40000; break;
-				case 7 : dly_max = 60000; break;
-				defaule: dly_max = 70000; break;
-			}
+		if ( dly_cnt > Delay_CntMax ) {
 
-			dly_max += ( rand() % 4 ) * 14321;
-
-			while (dly_cnt < dly_max) {
-				dly_cnt++;
-			}
-
+			DELAY( Delay_DesGap );
 			dly_cnt = 0;
 		}
 		else {
-//			timeout = 0;
-//			while (timeout < 50000) {timeout++;};
+			dly_cnt++;
 		}
 #endif // End Delay_DesGap
 
 		//[Check Owner Bit]--------------------
-		eng->dat.FRAME_LEN_Cur = eng->dat.FRAME_LEN[desnum];
+		eng->dat.FRAME_LEN_Cur = eng->dat.FRAME_LEN[ desnum ];
 		if ( DbgPrn_FRAME_LEN )
-			PRINTF( FP_LOG, "[check_des      ] FRAME_LEN_Cur:%08lx[Des:%d][loop[%d]:%d]%d\n", eng->dat.FRAME_LEN_Cur, desnum, eng->run.Loop_ofcnt, eng->run.Loop, checkpoint );
+			PRINTF( FP_LOG, "[check_des      ] FRAME_LEN_Cur:%08lx[Des:%ld][loop[%d]:%d]%d\n", eng->dat.FRAME_LEN_Cur, desnum, eng->run.Loop_ofcnt, eng->run.Loop, checkpoint );
 
 		// Check the description of Tx and Rx
 		if ( eng->run.TM_TxDataEn && check_des_header_Tx( eng, "", H_tx_desadr, desnum ) ) {
@@ -2119,20 +2325,20 @@ void Print_Header (MAC_ENGINE *eng, BYTE option) {
 //------------------------------------------------------------
 void PrintIO_Header (MAC_ENGINE *eng, BYTE option) {
 
-	if ( eng->run.TM_IOStrength )
+	if ( eng->run.TM_IOStrength ) {
 		if ( eng->io.Str_max > 1 )
 			{ PRINTF( option, "<IO Strength: SCU%02lx[%2d:%2d]=%2d>", eng->io.Str_reg_idx, eng->io.Str_shf + 1, eng->io.Str_shf, eng->io.Str_i ); }
 		else
 			{ PRINTF( option, "<IO Strength: SCU%02lx[%2d]=%2d>", eng->io.Str_reg_idx, eng->io.Str_shf, eng->io.Str_i ); }
+	}
 
 	if      ( eng->run.Speed_sel[ 0 ] ) { PRINTF( option, "[1G  ]========================================>\n" ); }
 	else if ( eng->run.Speed_sel[ 1 ] ) { PRINTF( option, "[100M]========================================>\n" ); }
 	else                                { PRINTF( option, "[10M ]========================================>\n" ); }
 
-
 	if ( !(option == FP_LOG) ) {
 #ifdef AST2500_IOMAP
-		PRINTF( option, "   SCU%2X      ", eng->io.Dly_reg_idx );
+		PRINTF( option, "   SCU%2lX      ", eng->io.Dly_reg_idx );
 
 		for ( eng->io.Dly_in = eng->io.Dly_in_str; eng->io.Dly_in <= eng->io.Dly_in_end; eng->io.Dly_in+=eng->io.Dly_in_cval ) {
 			eng->io.Dly_in_selval = eng->io.value_ary[ eng->io.Dly_in ];
@@ -2210,6 +2416,9 @@ void PrintIO_Line (MAC_ENGINE *eng, BYTE option) {
 
 //------------------------------------------------------------
 void PrintIO_Line_LOG (MAC_ENGINE *eng) {
+#ifdef PHY_SPECIAL
+	special_PHY_debug( eng );
+#endif
 	if ( eng->io.Dly_result ) {
 		PRINTF( FP_LOG, "\n=====>[Check]%s%2x, %s%2x:  X\n", eng->io.Dly_reg_name_rx, eng->io.Dly_in_selval, eng->io.Dly_reg_name_tx, eng->io.Dly_out_selval );
 	}
@@ -2228,7 +2437,7 @@ void Calculate_LOOP_CheckNum (MAC_ENGINE *eng) {
 #ifdef CheckDataEveryTime
 	eng->run.LOOP_CheckNum = 1;
 #else
-	if ( eng->run.IO_MrgChk || ( eng->arg.GSpeed == SET_1G_100M_10MBPS ) ) {
+	if ( eng->run.IO_MrgChk || ( eng->arg.GSpeed == SET_1G_100M_10MBPS ) || ( eng->arg.GSpeed == SET_100M_10MBPS ) ) {
 		eng->run.LOOP_CheckNum = eng->run.LOOP_MAX;
 	}
 	else {
@@ -2283,7 +2492,11 @@ char TestingLoop (MAC_ENGINE *eng, ULONG loop_checknum) {
 	char       checkprd;
 	char       looplast;
 	char       checken;
+#ifdef Enable_MAC_ExtLoop
+  #ifdef Enable_MAC_ExtLoop_PakcegMode
 	ULONG      desadr;
+  #endif
+#endif
 
 #ifdef Enable_ShowBW
   #ifdef SLT_UBOOT
@@ -2345,9 +2558,12 @@ char TestingLoop (MAC_ENGINE *eng, ULONG loop_checknum) {
 		}
 #endif
 
+#ifndef PHY_SPECIAL
 		if ( eng->run.TM_RxDataEn )
 			eng->dat.DMA_Base_Tx = eng->dat.DMA_Base_Rx;
-		eng->dat.DMA_Base_Rx = CPU_BUS_ADDR_SDRAM_OFFSET + ZeroCopy_OFFSET + GET_DMA_BASE( eng->run.Loop + 1 ); // 20130730
+#endif
+//		eng->dat.DMA_Base_Rx = CPU_BUS_ADDR_SDRAM_OFFSET + ZeroCopy_OFFSET + GET_DMA_BASE( eng->run.Loop + 1 ); // 20130730
+		eng->dat.DMA_Base_Rx = ZeroCopy_OFFSET + GET_DMA_BASE( eng->run.Loop + 1 ); // 20130730
 		//[Check DES]--------------------
 		if ( check_des( eng, eng->run.Loop, checken ) ) {
 			//descriptor error
@@ -2360,7 +2576,7 @@ char TestingLoop (MAC_ENGINE *eng, ULONG loop_checknum) {
 			eng->dat.Des_Num = eng->dat.Des_Num_Org;
 #endif
 
-			if (DbgPrn_DumpMACCnt)
+			if ( DbgPrn_DumpMACCnt )
 				dump_mac_ROreg ( eng );
 
 			return(1);
@@ -2424,7 +2640,7 @@ char TestingLoop (MAC_ENGINE *eng, ULONG loop_checknum) {
 #endif
 
 		if ( eng->arg.GLOOP_INFINI )
-				printf("===============> Loop[%d]: %d  \r", eng->run.Loop_ofcnt, eng->run.Loop);
+			printf("===============> Loop[%d]: %d  \r", eng->run.Loop_ofcnt, eng->run.Loop);
 		else if ( eng->arg.GTestMode == 0 ) {
 			if ( !( DbgPrn_BufAdr || eng->run.IO_Bund ) )
 				printf(" [%d]%d                        \r", eng->run.Loop_ofcnt, eng->run.Loop);
@@ -2453,13 +2669,13 @@ char TestingLoop (MAC_ENGINE *eng, ULONG loop_checknum) {
 		}
 		else
 			eng->run.Loop++;
-	} // End while ((eng->run.Loop < eng->run.LOOP_MAX) || eng->arg.GLOOP_INFINI)
-	eng->run.Loop_rl[ eng->run.Speed_idx ] = eng->run.Loop;
+	} // End while ( ( eng->run.Loop < eng->run.LOOP_MAX ) || eng->arg.GLOOP_INFINI )
+	eng->run.Loop_rl[ (int)eng->run.Speed_idx ] = eng->run.Loop;
 
 
 #ifdef Enable_MAC_ExtLoop
   #ifdef Enable_MAC_ExtLoop_PakcegMode
-	desadr = eng->run.RDES_BASE + ( eng->dat.Des_Num - 1 ) * 16;
+	desadr = eng->run.RDES_BASE + ( eng->dat.Des_Num - 1 ) * 16;//base for read/write
 	Write_Reg_MAC_DD( eng, 0x1c, 0x00000000 );//Rx Poll
 	while ( 1 ) {
 		while ( !HWOwnTx( Read_Mem_Des_DD( desadr ) ) ) {
@@ -2489,10 +2705,44 @@ char TestingLoop (MAC_ENGINE *eng, ULONG loop_checknum) {
 			eng->run.Loop_ofcnt++;
 		}
 
-		printf("[%d]Tx:%08lx, Rx:%08lx %08lx\r", eng->run.Loop_ofcnt, Read_Reg_MAC_DD( eng, 0xa0 ), Read_Reg_MAC_DD( eng, 0xb0 ), Read_Reg_MAC_DD( eng, 0xb4 ));
+		printf("[%d]Tx:%08lx(%08lx), Rx:%08lx %08lx\r", eng->run.Loop_ofcnt, Read_Reg_MAC_DD( eng, 0xa0 ), Read_Reg_MAC_DD( eng, 0x90 ), Read_Reg_MAC_DD( eng, 0xb0 ), Read_Reg_MAC_DD( eng, 0xb4 ));
 	}
   #endif
 #endif
 
 	return(0);
 } // End char TestingLoop (MAC_ENGINE *eng, ULONG loop_checknum)
+
+#if defined(DOS_ALONE) || defined(SLT_NEW_ARCH) || defined(LinuxAP)
+VOID init_hwtimer( VOID )
+{
+    ULONG uldata;
+
+    // Use timer #2
+    Write_Reg_TIMER_DD( 0x30, ( Read_Reg_TIMER_DD( 0x30 ) & 0xFFFFFF0F ) ); // Clear timer #2
+    Write_Reg_TIMER_DD( 0x10, 0xFFFFFFFF );
+    Write_Reg_TIMER_DD( 0x14, 0xFFFFFFFF );
+    uldata = Read_Reg_TIMER_DD( 0x30 );
+    uldata |= 0x30;
+    Write_Reg_TIMER_DD( 0x30, uldata );		/* enable timer2 */
+}
+
+VOID delay_hwtimer( USHORT msec )
+{
+    ULONG start = Read_Reg_TIMER_DD( 0x10 );
+    ULONG now;
+    ULONG diff;
+
+    do {
+        now = Read_Reg_TIMER_DD( 0x10 );
+        if ( start < now )
+            diff = 0xFFFFFFFF - now + start;
+        else
+            diff = start - now;
+        if ( diff > (msec * 1000) )
+            break;
+    } while ( 1 );
+
+    return;
+}
+#endif

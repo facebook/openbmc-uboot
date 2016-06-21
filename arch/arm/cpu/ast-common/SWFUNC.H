@@ -19,7 +19,11 @@
 //---------------------------------------------------------
 // Program information
 //---------------------------------------------------------
-#define    VER_NAME    "Ver 0.62 version @2015/08/18 1512"
+#ifdef PHY_SPECIAL
+#define    VER_NAME    "@2015/12/10 Verification PHY_SPECIAL"
+#else
+#define    VER_NAME    "Ver 0.67 version @2019/02/22 1419 for BCM54210E"
+#endif
 
 /* == Auto setting ==========================================  */
 /* ====  Support OS system                                     */
@@ -56,6 +60,11 @@
   #define SLT_UBOOT
 #endif
 
+#if defined(CONFIG_AST1010)
+  #define SLT_UBOOT
+  #define AST1010_CHIP
+#endif
+
 #if defined(DOS_PCIE)
   #define DOS_ALONE
   #define USE_P2A
@@ -70,6 +79,9 @@
   #if defined(AST25XX)
     #define AST2500_IOMAP
   #endif
+  #if defined(AST10XX)
+    #define AST1010_CHIP
+  #endif
 #endif
 
 #if defined(NewSLT) || defined(LinuxAP) || defined(WINSLT)
@@ -79,6 +91,11 @@
   #if defined(SLT2500) || defined(SLT2510) || defined(SLT2520) || defined(SLT2530) || defined(SLT1520) || defined(SLT1525) || defined(SLT3200)
     #define AST2500_IOMAP
   #endif
+#endif
+
+/* ========================================================== */
+#if defined(SLT_UBOOT) && defined(AST1010_CHIP)
+    #define ENABLE_BIG_ENDIAN
 #endif
 
 /* ========================================================== */
@@ -166,8 +183,6 @@
 // 5: ALL
 
 /* ====================== Switch print debug message ====================== */
-#define   DbgPrn_Enable_Debug_delay              0
-//#define   DbgPrn_FuncHeader                      0 //1
 #define   DbgPrn_ErrFlg                          0
 #define   DbgPrn_BufAdr                          0 //1
 #define   DbgPrn_Bufdat                          0

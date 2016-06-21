@@ -60,13 +60,20 @@ int main(int argc, char *argv[])
 #endif
 	MAC_ENGINE           MACENG;
 	MAC_ENGINE           *eng;
+	PHY_ENGINE           PHYENG;
+	PHY_ENGINE           *phyeng;
+#if defined(ENABLE_LOG_FILE)
 	CHAR                 FileNameMain[256];
 	CHAR                 FileName[256];
+#endif
 	int                  DES_LowNumber;
 
 	CHAR                 *stop_at;
 	ULONG                Wrn_Flag_allapeed;
 	ULONG                Err_Flag_allapeed;
+	ULONG                Des_Flag_allapeed;
+	ULONG                NCSI_Flag_allapeed;
+
 	int                  i;
 	int                  j;
 	ULONG                temp;
@@ -74,7 +81,13 @@ int main(int argc, char *argv[])
 //------------------------------------------------------------
 // main Start
 //------------------------------------------------------------
-	eng = &MACENG;
+	eng    = &MACENG;
+	phyeng = &PHYENG;
+	phyeng->fp_set = 0;
+	phyeng->fp_clr = 0;
+#if defined(PHY_SPECIAL)
+	special_PHY_init( eng );
+#endif
 
 #if defined(SLT_UBOOT)
 	eng->ModeSwitch = mode;
@@ -90,7 +103,7 @@ int main(int argc, char *argv[])
 #endif
 
 #if defined(DOS_ALONE) || defined(SLT_NEW_ARCH)
-    // DOS system
+	// DOS system
 	time( &(eng->timestart) );
 #endif
 
@@ -170,25 +183,44 @@ int main(int argc, char *argv[])
 	mmiobase = ulMMIOLinearBaseAddress;
 #endif
 
+#if defined(DOS_ALONE) || defined(SLT_NEW_ARCH) || defined(LinuxAP)
+	init_hwtimer();
+#endif
+
 //------------------------------------------------------------
 // Get Chip Feature
 //------------------------------------------------------------
-	Wrn_Flag_allapeed = 0;
-	Err_Flag_allapeed = 0;
-	eng->flg.Wrn_Flag          = 0;
-	eng->flg.Err_Flag          = 0;
-	eng->flg.Err_Flag_PrintEn  = 1;
-	eng->run.Loop_ofcnt        = 0;
-	eng->run.Loop_rl[0]        = 0;
-	eng->run.Loop_rl[1]        = 0;
-	eng->run.Loop_rl[2]        = 0;
-
-	eng->env.VGAModeVld = 0;
-	eng->reg.SCU_oldvld = 0;
+	Wrn_Flag_allapeed  = 0;
+	Err_Flag_allapeed  = 0;
+	Des_Flag_allapeed  = 0;
+	NCSI_Flag_allapeed = 0;
+	eng->flg.Wrn_Flag              = 0;
+	eng->flg.Err_Flag              = 0;
+	eng->flg.Des_Flag              = 0;
+	eng->flg.NCSI_Flag             = 0;
+	eng->flg.Flag_PrintEn          = 1;
+	eng->run.TIME_OUT_Des_PHYRatio = 1;
+	eng->run.Loop_ofcnt            = 0;
+	eng->run.Loop                  = 0;
+	eng->run.Loop_rl[0]            = 0;
+	eng->run.Loop_rl[1]            = 0;
+	eng->run.Loop_rl[2]            = 0;
+	eng->dat.FRAME_LEN             = 0;
+	eng->dat.wp_lst                = 0;
+	eng->io.init_done              = 0;
+	eng->env.VGAModeVld            = 0;
+	eng->reg.SCU_oldvld            = 0;
+	eng->phy.Adr                   = 0;
+	eng->phy.loop_phy              = 0;
+	eng->phy.PHY_ID2               = 0;
+	eng->phy.PHY_ID3               = 0;
+	eng->phy.PHYName[0]            = 0;
+	eng->ncsi_cap.PCI_DID_VID      = 0;
+	eng->ncsi_cap.ManufacturerID   = 0;
 	read_scu( eng );
 
 	if ( RUN_STEP >= 1 ) {
-	//------------------------------
+		//------------------------------
 		// [Reg]check SCU_07c
 		// [Env]setup ASTChipName
 		// [Env]setup ASTChipType
@@ -411,6 +443,7 @@ Error_GRun_Mode:
 			case SET_10MBPS         : eng->run.Speed_1G = 0; eng->run.Speed_org[ 0 ] = 0; eng->run.Speed_org[ 1 ] = 0; eng->run.Speed_org[ 2 ] = 1; break;
 #ifndef Enable_MAC_ExtLoop
 			case SET_1G_100M_10MBPS : eng->run.Speed_1G = 0; eng->run.Speed_org[ 0 ] = 1; eng->run.Speed_org[ 1 ] = 1; eng->run.Speed_org[ 2 ] = 1; break;
+			case SET_100M_10MBPS    : eng->run.Speed_1G = 0; eng->run.Speed_org[ 0 ] = 0; eng->run.Speed_org[ 1 ] = 1; eng->run.Speed_org[ 2 ] = 1; break;
 #endif
 			default:
 				printf("Error speed!!!\n");
@@ -425,19 +458,23 @@ Error_GRun_Mode:
 		// [Arg]setup GEn_IntLoopPHY
 		// [Arg]setup GEn_InitPHY
 		// [Arg]setup GDis_RecovPHY
+		// [Arg]setup GEn_PHYAdrInv
+		// [Arg]setup GEn_SinglePacket
 		//------------------------------
-		if ( eng->arg.GCtrl & 0xffffff83 ) {
+		if ( eng->arg.GCtrl & 0xffffff80 ) {
 			printf("Error ctrl!!!\n");
 			PrintCtrl ( eng );
 			return(1);
 		}
 		else {
-			eng->arg.GEn_MACLoopback = ( eng->arg.GCtrl >> 6 ) & 0x1;
-			eng->arg.GEn_SkipChkPHY  = ( eng->arg.GCtrl >> 5 ) & 0x1;
-			eng->arg.GEn_IntLoopPHY  = ( eng->arg.GCtrl >> 4 ) & 0x1;
+			eng->arg.GEn_MACLoopback  = ( eng->arg.GCtrl >> 6 ) & 0x1;
+			eng->arg.GEn_SkipChkPHY   = ( eng->arg.GCtrl >> 5 ) & 0x1;
+			eng->arg.GEn_IntLoopPHY   = ( eng->arg.GCtrl >> 4 ) & 0x1;
 
-			eng->arg.GEn_InitPHY     = ( eng->arg.GCtrl >> 3 ) & 0x1;
-			eng->arg.GDis_RecovPHY   = ( eng->arg.GCtrl >> 2 ) & 0x1;
+			eng->arg.GEn_InitPHY      = ( eng->arg.GCtrl >> 3 ) & 0x1;
+			eng->arg.GDis_RecovPHY    = ( eng->arg.GCtrl >> 2 ) & 0x1;
+			eng->arg.GEn_PHYAdrInv    = ( eng->arg.GCtrl >> 1 ) & 0x1;
+			eng->arg.GEn_SinglePacket = ( eng->arg.GCtrl      ) & 0x1;
 
 			if ( !eng->env.AST2400 && eng->arg.GEn_MACLoopback ) {
 				printf("Error ctrl!!!\n");
@@ -487,6 +524,7 @@ Error_GRun_Mode:
 					case SET_100MBPS       : eng->arg.GLOOP_MAX = DEF_GLOOP_MAX * 2 ; break;
 					case SET_10MBPS        : eng->arg.GLOOP_MAX = DEF_GLOOP_MAX     ; break;
 					case SET_1G_100M_10MBPS: eng->arg.GLOOP_MAX = DEF_GLOOP_MAX * 20; break;
+					case SET_100M_10MBPS   : eng->arg.GLOOP_MAX = DEF_GLOOP_MAX * 2 ; break;
 				}
 		} // End if ( eng->ModeSwitch == MODE_NSCI )
 
@@ -679,7 +717,7 @@ Error_GTestMode:
 				case 6 : eng->env.MAC1_RMII = 1; eng->env.MAC2_RMII = 1; eng->env.MAC2_vld = 1; break; //110: Select RMII(MAC#1) and RMII(MAC#2)
 //				case 7 : eng->env.MAC1_RMII = 0; eng->env.MAC2_RMII = 0; eng->env.MAC2_vld = 0; break; //111: Disable dual MAC
 				default:
-					return( Finish_Check( eng, Err_MACMode ) );
+					return( Finish_Check( eng, Err_Flag_MACMode ) );
 			}
 		} // End if ( eng->env.AST2300 )
 #endif
@@ -690,38 +728,58 @@ Error_GTestMode:
 // Check & Setup Environment
 //------------------------------------------------------------
 		//------------------------------
+		// [Phy]setup PHY_BASE
 		// [Env]setup MAC_1Gvld
 		// [Env]setup MAC_RMII
 		//------------------------------
 		if ( eng->run.MAC_idx == 0 ) {
+			if ( eng->arg.GEn_PHYAdrInv )
+				eng->phy.PHY_BASE = MAC_BASE2;
+			else
+				eng->phy.PHY_BASE = MAC_BASE1;
 			eng->env.MAC_1Gvld = eng->env.MAC1_1Gvld;
 			eng->env.MAC_RMII  = eng->env.MAC1_RMII;
 
 			if ( eng->run.Speed_1G & !eng->env.MAC1_1Gvld ) {
 				printf("\nMAC1 don't support 1Gbps !!!\n");
-				return( Finish_Check( eng, Err_MACMode ) );
+				return( Finish_Check( eng, Err_Flag_MACMode ) );
 			}
 		}
 		else if ( eng->run.MAC_idx == 1 ) {
+			if ( eng->arg.GEn_PHYAdrInv )
+				eng->phy.PHY_BASE = MAC_BASE1;
+			else
+				eng->phy.PHY_BASE = MAC_BASE2;
 			eng->env.MAC_1Gvld = eng->env.MAC2_1Gvld;
 			eng->env.MAC_RMII  = eng->env.MAC2_RMII;
 
 			if ( eng->run.Speed_1G & !eng->env.MAC2_1Gvld ) {
 				printf("\nMAC2 don't support 1Gbps !!!\n");
-				return( Finish_Check( eng, Err_MACMode ) );
+				return( Finish_Check( eng, Err_Flag_MACMode ) );
 			}
 			if ( !eng->env.MAC2_vld ) {
 				printf("\nMAC2 not valid !!!\n");
-				return( Finish_Check( eng, Err_MACMode ) );
+				return( Finish_Check( eng, Err_Flag_MACMode ) );
 			}
 		}
 		else {
+			if ( eng->run.MAC_idx == 2 )
+				if ( eng->arg.GEn_PHYAdrInv )
+					eng->phy.PHY_BASE = MAC_BASE4;
+				else
+					eng->phy.PHY_BASE = MAC_BASE3;
+			else
+				if ( eng->arg.GEn_PHYAdrInv )
+					eng->phy.PHY_BASE = MAC_BASE3;
+				else
+					eng->phy.PHY_BASE = MAC_BASE4;
+
 			eng->env.MAC_1Gvld = 0;
 			eng->env.MAC_RMII  = 1;
 
 			if ( eng->run.Speed_1G ) {
 				printf("\nMAC3/MAC4 don't support 1Gbps !!!\n");
-				return( Finish_Check( eng, Err_MACMode ) );
+				return( Finish_Check( eng, Err_Flag_MACMode ) );
 			}
 		} // End if ( eng->run.MAC_idx == 0 )
 
@@ -730,7 +788,7 @@ Error_GTestMode:
 
 		if ( ( eng->ModeSwitch == MODE_NSCI ) && ( !eng->env.MAC_RMII ) ) {
 			printf("\nNCSI must be RMII interface !!!\n");
-			return( Finish_Check( eng, Err_MACMode ) );
+			return( Finish_Check( eng, Err_Flag_MACMode ) );
 		}
 
 		//------------------------------
@@ -738,23 +796,24 @@ Error_GTestMode:
 		//------------------------------
 #ifdef AST1010_CHIP
 		// Check bit 13:12
+		// The STA of the AST1010 is MHCLK 100 MHz
 		eng->env.MHCLK_Ratio = ( eng->reg.SCU_008 >> 12 ) & 0x3;
-		if ( eng->env.MHCLK_Ratio != 0x3 ) {
-			FindErr( eng, Err_MHCLK_Ratio );
-//			return( Finish_Check( eng, Err_MHCLK_Ratio ) );
+		if ( eng->env.MHCLK_Ratio != 0x0 ) {
+			FindErr( eng, Err_Flag_MHCLK_Ratio );
+//			return( Finish_Check( eng, Err_Flag_MHCLK_Ratio ) );
 		}
 #elif defined(AST2500_IOMAP)
 		eng->env.MHCLK_Ratio = ( eng->reg.SCU_008 >> 16 ) & 0x7;
 		if ( eng->env.MAC_atlast_1Gvld ) {
 			if ( eng->env.MHCLK_Ratio != 2 ) {
-				FindErr( eng, Err_MHCLK_Ratio );
-//				return( Finish_Check( eng, Err_MHCLK_Ratio ) );
+				FindErr( eng, Err_Flag_MHCLK_Ratio );
+//				return( Finish_Check( eng, Err_Flag_MHCLK_Ratio ) );
 			}
 		}
 		else {
 			if ( eng->env.MHCLK_Ratio != 4 ) {
-				FindErr( eng, Err_MHCLK_Ratio );
-//				return( Finish_Check( eng, Err_MHCLK_Ratio ) );
+				FindErr( eng, Err_Flag_MHCLK_Ratio );
+//				return( Finish_Check( eng, Err_Flag_MHCLK_Ratio ) );
 			}
 		}
 #else
@@ -762,97 +821,57 @@ Error_GTestMode:
 			eng->env.MHCLK_Ratio = ( eng->reg.SCU_008 >> 16 ) & 0x7;
 			if ( eng->env.MAC_atlast_1Gvld ) {
 				if ( ( eng->env.MHCLK_Ratio == 0 ) || ( eng->env.MHCLK_Ratio > 2 ) ) {
-					FindErr( eng, Err_MHCLK_Ratio );
-//					return( Finish_Check( eng, Err_MHCLK_Ratio ) );
+					FindErr( eng, Err_Flag_MHCLK_Ratio );
+//					return( Finish_Check( eng, Err_Flag_MHCLK_Ratio ) );
 				}
 			}
 			else {
 				if ( eng->env.MHCLK_Ratio != 4 ) {
-					FindErr( eng, Err_MHCLK_Ratio );
-//					return( Finish_Check( eng, Err_MHCLK_Ratio ) );
+					FindErr( eng, Err_Flag_MHCLK_Ratio );
+//					return( Finish_Check( eng, Err_Flag_MHCLK_Ratio ) );
 				}
 			}
 		} // End if ( eng->env.AST2300 )
 #endif
 
 //------------------------------------------------------------
-// Get MAC Information
-//------------------------------------------------------------
-		eng->reg.MAC_008 = Read_Reg_MAC_DD( eng, 0x08 );
-		eng->reg.MAC_00c = Read_Reg_MAC_DD( eng, 0x0c );
-		eng->reg.MAC_040 = Read_Reg_MAC_DD( eng, 0x40 );
-
-		//------------------------------
-		// [Inf]setup SA
-		//------------------------------
-		if (  (( eng->reg.MAC_008 == 0x0000 ) && ( eng->reg.MAC_00c == 0x00000000 ))
-		   || (( eng->reg.MAC_008 == 0xffff ) && ( eng->reg.MAC_00c == 0xffffffff ))
-		   )
-		{
-			// Load default for MAC address
-			eng->inf.SA[ 0 ] = 0x00;
-			eng->inf.SA[ 1 ] = 0x57;
-			eng->inf.SA[ 2 ] = 0x89;
-			eng->inf.SA[ 3 ] = 0x56;
-			eng->inf.SA[ 4 ] = 0x88;
-			eng->inf.SA[ 5 ] = 0x38;
-		}
-		else {
-			eng->inf.SA[ 0 ] = ( eng->reg.MAC_008 >>  8 ) & 0xff;
-			eng->inf.SA[ 1 ] = ( eng->reg.MAC_008       ) & 0xff;
-			eng->inf.SA[ 2 ] = ( eng->reg.MAC_00c >> 24 ) & 0xff;
-			eng->inf.SA[ 3 ] = ( eng->reg.MAC_00c >> 16 ) & 0xff;
-			eng->inf.SA[ 4 ] = ( eng->reg.MAC_00c >>  8 ) & 0xff;
-			eng->inf.SA[ 5 ] = ( eng->reg.MAC_00c       ) & 0xff;
-		}
-
-		//------------------------------
-		// [Inf]setup NewMDIO
-		// [Reg]setup MAC_040_new
-		//------------------------------
-		if ( eng->env.AST2300 ) {
-#ifdef Force_Enable_NewMDIO
-			eng->inf.NewMDIO = 1;
-			eng->reg.MAC_040 = eng->reg.MAC_040 | 0x80000000;
-			Write_Reg_MAC_DD( eng, 0x40, eng->reg.MAC_040 );
-#else
-			eng->inf.NewMDIO = ( eng->reg.MAC_040 & 0x80000000 ) ? 1 : 0;
-#endif
-		} else
-			eng->inf.NewMDIO = 0;
-
-		eng->reg.MAC_040_new = eng->reg.MAC_040;
-		if ( eng->inf.NewMDIO )
-			eng->reg.MAC_040_new = eng->reg.MAC_040_new | 0x80000000;
-		if ( eng->arg.GEn_MACLoopback )
-			eng->reg.MAC_040_new = eng->reg.MAC_040_new | 0x40000000;
-
-//------------------------------------------------------------
 // Parameter Initial
 //------------------------------------------------------------
 		//------------------------------
 		// [Reg]setup SCU_004_rstbit
+		// [Reg]setup SCU_004_mix
+		// [Reg]setup SCU_004_dis
+		// [Reg]setup SCU_004_en
 		//------------------------------
 #ifdef AST1010_CHIP
 		eng->reg.SCU_004_rstbit = 0x00000010; //Reset Engine
 #elif defined(AST2500_IOMAP)
-		if ( eng->run.MAC_idx == 1 )
-			eng->reg.SCU_004_rstbit = 0x00001000; //Reset Engine
-		else
-			eng->reg.SCU_004_rstbit = 0x00000800; //Reset Engine
-#else
-		if ( eng->env.AST2300 )
-			eng->reg.SCU_004_rstbit = 0x0c001800; //Reset Engine
-		else
+		if ( eng->arg.GEn_PHYAdrInv ) {
 			eng->reg.SCU_004_rstbit = 0x00001800; //Reset Engine
+		}
+		else {
+			if ( eng->run.MAC_idx == 1 )
+				eng->reg.SCU_004_rstbit = 0x00001000; //Reset Engine
+			else
+				eng->reg.SCU_004_rstbit = 0x00000800; //Reset Engine
+		}
+#else
+			if ( eng->env.AST2300 )
+				eng->reg.SCU_004_rstbit = 0x0c001800; //Reset Engine
+			else
+				eng->reg.SCU_004_rstbit = 0x00001800; //Reset Engine
 #endif
+		eng->reg.SCU_004_mix = eng->reg.SCU_004;
+		eng->reg.SCU_004_en  = eng->reg.SCU_004_mix & (~eng->reg.SCU_004_rstbit);
+		eng->reg.SCU_004_dis = eng->reg.SCU_004_mix |   eng->reg.SCU_004_rstbit;
 
 		//------------------------------
 		// [Reg]setup MAC_050
 		//------------------------------
 		if ( eng->ModeSwitch == MODE_NSCI )
 			// Set to 100Mbps and Enable RX broabcast packets and CRC_APD and Full duplex
-			eng->reg.MAC_050 = 0x000a0500;
+			eng->reg.MAC_050 = 0x000a0500;// [100Mbps] RX_BROADPKT_EN & CRC_APD & Full duplex
+//			eng->reg.MAC_050 = 0x000a4500;// [100Mbps] RX_BROADPKT_EN & RX_ALLADR & CRC_APD & Full duplex
 		else {
 #ifdef Enable_MAC_ExtLoop
 			eng->reg.MAC_050 = 0x00004100;// RX_ALLADR & Full duplex
@@ -862,7 +881,9 @@ Error_GTestMode:
 #ifdef Enable_Runt
 			eng->reg.MAC_050 = eng->reg.MAC_050 | 0x00001000;
 #endif
-#ifdef Enable_Jumbo
+#if defined(PHY_SPECIAL)
+			eng->reg.MAC_050 = eng->reg.MAC_050 | 0x00002000;
+#elif defined(Enable_Jumbo)
 			eng->reg.MAC_050 = eng->reg.MAC_050 | 0x00002000;
 #endif
 		} // End if ( eng->ModeSwitch == MODE_NSCI )
@@ -892,6 +913,7 @@ Error_GTestMode:
 					case SET_100MBPS        : eng->dat.Des_Num = ( eng->run.IO_Bund ) ? 100 : ( DES_LowNumber ) ? 512 : 4096; break;
 					case SET_10MBPS         : eng->dat.Des_Num = ( eng->run.IO_Bund ) ? 100 : ( DES_LowNumber ) ? 100 :  830; break;
 					case SET_1G_100M_10MBPS : eng->dat.Des_Num = ( eng->run.IO_Bund ) ? 100 : ( DES_LowNumber ) ? 100 :  830; break;
+					case SET_100M_10MBPS    : eng->dat.Des_Num = ( eng->run.IO_Bund ) ? 100 : ( DES_LowNumber ) ? 100 :  830; break;
 				}
 #endif
 			} // End if ( eng->arg.GEn_SkipChkPHY && ( eng->arg.GTestMode == 0 ) )
@@ -914,12 +936,12 @@ Error_GTestMode:
 				printf("LOOP_CheckNum   : %ld\n",       eng->run.LOOP_CheckNum);
 				printf("Des_Num         : %ld\n",       eng->dat.Des_Num);
 				printf("DMA_BufSize     : %ld bytes\n", eng->dat.DMABuf_Size);
-				printf("DMA_BufNum      : %d\n",        eng->dat.DMABuf_Num);
-				printf("DMA_PakSize     : %ld\n",       DMA_PakSize);
+				printf("DMA_BufNum      : %ld\n",       eng->dat.DMABuf_Num);
+				printf("DMA_PakSize     : %d\n",        DMA_PakSize);
 				printf("\n");
 			}
 			if ( 2 > eng->dat.DMABuf_Num )
-				return( Finish_Check( eng, Err_DMABufNum ) );
+				return( Finish_Check( eng, Err_Flag_DMABufNum ) );
 		} // End if ( eng->ModeSwitch == MODE_DEDICATED )
 
 //------------------------------------------------------------
@@ -950,31 +972,37 @@ Error_GTestMode:
 // SCU Initial
 //------------------------------------------------------------
 	if ( RUN_STEP >= 2 ) {
+		get_mac_info( eng );
 		Setting_scu( eng );
 		init_scu1( eng );
 	}
 
 	if ( RUN_STEP >= 3 ) {
 		init_scu_macrst( eng );
-		if ( eng->arg.GEn_InitPHY )
+		if ( eng->ModeSwitch ==  MODE_DEDICATED ) {
 			eng->phy.PHYAdrValid = find_phyadr( eng );
+			if ( eng->phy.PHYAdrValid == TRUE )
+				phy_sel( eng, phyeng );
+		}
 	}
 
 //------------------------------------------------------------
 // Data Initial
 //------------------------------------------------------------
 	if (RUN_STEP >= 4) {
+#if defined(PHY_SPECIAL)
+		special_PHY_buf_init( eng );
+#endif
 		setup_arp ( eng );
 		if ( eng->ModeSwitch ==  MODE_DEDICATED ) {
 
 			eng->dat.FRAME_LEN = (ULONG *)malloc( eng->dat.Des_Num    * sizeof( ULONG ) );
 			eng->dat.wp_lst    = (ULONG *)malloc( eng->dat.Des_Num    * sizeof( ULONG ) );
 
-
 			if ( !eng->dat.FRAME_LEN )
-				return( Finish_Check( eng, Err_MALLOC_FrmSize ) );
+				return( Finish_Check( eng, Err_Flag_MALLOC_FrmSize ) );
 			if ( !eng->dat.wp_lst )
-				return( Finish_Check( eng, Err_MALLOC_LastWP ) );
+				return( Finish_Check( eng, Err_Flag_MALLOC_LastWP ) );
 
 			// Setup data and length
 			TestingSetup ( eng );
@@ -997,27 +1025,33 @@ Error_GTestMode:
 		Debug_delay();
 #endif
 
-#ifdef Enable_NCSI_LOOP_INFINI
-NCSI_LOOP_INFINI:;
+#ifdef Enable_LOOP_INFINI
+LOOP_INFINI:;
 #endif
 		for ( eng->run.Speed_idx = 0; eng->run.Speed_idx < 3; eng->run.Speed_idx++ )
-			eng->run.Speed_sel[ eng->run.Speed_idx ] = eng->run.Speed_org[ eng->run.Speed_idx ];
+			eng->run.Speed_sel[ (int)eng->run.Speed_idx ] = eng->run.Speed_org[ (int)eng->run.Speed_idx ];
 
 		//------------------------------
 		// [Start] The loop of different speed
 		//------------------------------
 		for ( eng->run.Speed_idx = 0; eng->run.Speed_idx < 3; eng->run.Speed_idx++ ) {
-			eng->flg.Err_Flag_PrintEn = 1;
-			if ( eng->run.Speed_sel[ eng->run.Speed_idx ] ) {
+			eng->flg.Flag_PrintEn = 1;
+			if ( eng->run.Speed_sel[ (int)eng->run.Speed_idx ] ) {
 				// Setting speed of LAN
 				if      ( eng->run.Speed_sel[ 0 ] ) eng->reg.MAC_050_Speed = eng->reg.MAC_050 | 0x0000020f;
 				else if ( eng->run.Speed_sel[ 1 ] ) eng->reg.MAC_050_Speed = eng->reg.MAC_050 | 0x0008000f;
 				else                                eng->reg.MAC_050_Speed = eng->reg.MAC_050 | 0x0000000f;
+#ifdef Enable_CLK_Stable
+				Write_Reg_SCU_DD( 0x0c, ( eng->reg.SCU_00c |   eng->reg.SCU_00c_clkbit  ) );//Clock Stop Control
+				Read_Reg_SCU_DD( 0x0c );
+				Write_Reg_MAC_DD( eng, 0x50, eng->reg.MAC_050_Speed & 0xfffffff0 );
+				Write_Reg_SCU_DD( 0x0c, ( eng->reg.SCU_00c & (~eng->reg.SCU_00c_clkbit) ) );//Clock Stop Control
+#endif
 
 				// Setting check owner time out
-				if      ( eng->run.Speed_sel[ 0 ] ) eng->run.TIME_OUT_Des = TIME_OUT_Des_1G;
-				else if ( eng->run.Speed_sel[ 1 ] ) eng->run.TIME_OUT_Des = TIME_OUT_Des_1G*10;
-				else                                eng->run.TIME_OUT_Des = TIME_OUT_Des_1G*100;
+				if      ( eng->run.Speed_sel[ 0 ] ) eng->run.TIME_OUT_Des = eng->run.TIME_OUT_Des_PHYRatio * TIME_OUT_Des_1G;
+				else if ( eng->run.Speed_sel[ 1 ] ) eng->run.TIME_OUT_Des = eng->run.TIME_OUT_Des_PHYRatio * TIME_OUT_Des_100M;
+				else                                eng->run.TIME_OUT_Des = eng->run.TIME_OUT_Des_PHYRatio * TIME_OUT_Des_10M;
 
 				if ( eng->run.TM_WaitStart )
 					eng->run.TIME_OUT_Des = eng->run.TIME_OUT_Des * 10000;
@@ -1025,7 +1059,7 @@ NCSI_LOOP_INFINI:;
 				// Setting the LAN speed
 				if ( eng->ModeSwitch ==  MODE_DEDICATED ) {
 					// Test three speed of LAN, we will modify loop number
-					if ( eng->arg.GSpeed == SET_1G_100M_10MBPS ) {
+					if ( ( eng->arg.GSpeed == SET_1G_100M_10MBPS ) || ( eng->arg.GSpeed == SET_100M_10MBPS ) ) {
 						if      ( eng->run.Speed_sel[ 0 ] ) eng->run.LOOP_MAX = eng->arg.GLOOP_MAX;
 						else if ( eng->run.Speed_sel[ 1 ] ) eng->run.LOOP_MAX = eng->arg.GLOOP_MAX / 100;
 						else                                eng->run.LOOP_MAX = eng->arg.GLOOP_MAX / 1000;
@@ -1042,14 +1076,19 @@ NCSI_LOOP_INFINI:;
 					if ( eng->env.AST1100 )
 						init_scu2 ( eng );
 
-					if ( eng->arg.GEn_InitPHY ) {
 #ifdef SUPPORT_PHY_LAN9303
+					if ( eng->arg.GEn_InitPHY )
 						LAN9303( LAN9303_I2C_BUSNUM, eng->arg.GPHYADR, eng->run.Speed_idx, eng->arg.GEn_IntLoopPHY | (eng->run.TM_Burst<<1) | eng->run.TM_IEEE );
+#elif defined(PHY_SPECIAL)
+					special_PHY_reg_init( eng );
 #else
-						init_phy( eng );
+					if ( phyeng->fp_set != 0 ) {
+						init_phy( eng, phyeng );
+  #ifdef Delay_PHYRst
+//						DELAY( Delay_PHYRst * 10 );
+  #endif
+					}
 #endif
-						DELAY( Delay_PHYRst * 10 );
-					} // End if ( eng->arg.GEn_InitPHY )
 
 					if ( eng->env.AST1100 )
 						init_scu3 ( eng );
@@ -1168,8 +1207,10 @@ NCSI_LOOP_INFINI:;
 								FPri_ErrFlag( eng, FP_LOG );
 								PrintIO_Line_LOG( eng );
 
-								eng->flg.Wrn_Flag = 0;
-								eng->flg.Err_Flag = 0;
+								eng->flg.Wrn_Flag  = 0;
+								eng->flg.Err_Flag  = 0;
+								eng->flg.Des_Flag  = 0;
+								eng->flg.NCSI_Flag = 0;
 							} //End if ( eng->run.IO_MrgChk )
 						} // End for ( eng->io.Dly_in = eng->io.Dly_in_str; eng->io.Dly_in <= eng->io.Dly_in_end; eng->io.Dly_in+=eng->io.Dly_in_cval )
 
@@ -1201,12 +1242,12 @@ NCSI_LOOP_INFINI:;
 										}
 									} // End if ( eng->run.TM_IOTiming )
 
-									FindErr( eng, Err_IOMargin );
-									goto Find_Err_IOMargin;
+									FindErr( eng, Err_Flag_IOMargin );
+									goto Find_Err_Flag_IOMargin;
 								} // End if ( eng->io.dlymap[ eng->io.Dly_in ][ eng->io.Dly_out ] )
 					} // End if ( eng->run.IO_MrgChk )
 
-Find_Err_IOMargin:;
+Find_Err_Flag_IOMargin:
 					if ( !eng->run.TM_Burst )
 						FPri_ErrFlag( eng, FP_LOG );
 					if ( eng->run.TM_IOTiming )
@@ -1214,35 +1255,46 @@ Find_Err_IOMargin:;
 
 					FPri_ErrFlag( eng, STD_OUT );
 
-					Wrn_Flag_allapeed = Wrn_Flag_allapeed | eng->flg.Wrn_Flag;
-					Err_Flag_allapeed = Err_Flag_allapeed | eng->flg.Err_Flag;
-					eng->flg.Wrn_Flag = 0;
-					eng->flg.Err_Flag = 0;
+					Wrn_Flag_allapeed  = Wrn_Flag_allapeed  | eng->flg.Wrn_Flag;
+					Err_Flag_allapeed  = Err_Flag_allapeed  | eng->flg.Err_Flag;
+					Des_Flag_allapeed  = Des_Flag_allapeed  | eng->flg.Err_Flag;
+					NCSI_Flag_allapeed = NCSI_Flag_allapeed | eng->flg.Err_Flag;
+					eng->flg.Wrn_Flag  = 0;
+					eng->flg.Err_Flag  = 0;
+					eng->flg.Des_Flag  = 0;
+					eng->flg.NCSI_Flag = 0;
 				} // End for ( eng->io.Str_i = 0; eng->io.Str_i <= eng->io.Str_max; eng->io.Str_i++ ) {
 
 				if ( eng->ModeSwitch == MODE_DEDICATED ) {
-					if ( eng->arg.GEn_InitPHY & !eng->arg.GDis_RecovPHY )
-						recov_phy( eng );
+#ifdef PHY_SPECIAL
+					if ( eng->arg.GEn_InitPHY )
+						special_PHY_recov( eng );
+#else
+					if ( phyeng->fp_clr != 0 )
+						recov_phy( eng, phyeng );
+#endif
 				}
 
-				eng->run.Speed_sel[ eng->run.Speed_idx ] = 0;
+				eng->run.Speed_sel[ (int)eng->run.Speed_idx ] = 0;
 			} // End if ( eng->run.Speed_sel[ eng->run.Speed_idx ] )
 
-			eng->flg.Err_Flag_PrintEn = 0;
+			eng->flg.Flag_PrintEn = 0;
 		} // End for ( eng->run.Speed_idx = 0; eng->run.Speed_idx < 3; eng->run.Speed_idx++ )
 
-		eng->flg.Wrn_Flag = Wrn_Flag_allapeed;
-		eng->flg.Err_Flag = Err_Flag_allapeed;
+		eng->flg.Wrn_Flag  = Wrn_Flag_allapeed;
+		eng->flg.Err_Flag  = Err_Flag_allapeed;
+		eng->flg.Des_Flag  = Des_Flag_allapeed;
+		eng->flg.NCSI_Flag = NCSI_Flag_allapeed;
 
-#ifdef Enable_NCSI_LOOP_INFINI
-		if ( eng->ModeSwitch == MODE_NSCI ) {
-			if ( eng->flg.Err_Flag == 0 ) {
-				if ( eng->fp_log ) {
-					fclose( eng->fp_log );
-					eng->fp_log = fopen(FileName,"w");
-				}
-				goto NCSI_LOOP_INFINI;
+#ifdef Enable_LOOP_INFINI
+		if ( eng->flg.Err_Flag == 0 ) {
+  #if defined(ENABLE_LOG_FILE)
+			if ( eng->fp_log ) {
+				fclose( eng->fp_log );
+				eng->fp_log = fopen(FileName,"w");
 			}
+  #endif
+			goto LOOP_INFINI;
 		}
 #endif
 	} // End if (RUN_STEP >= 5)

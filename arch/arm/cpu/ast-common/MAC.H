@@ -30,7 +30,9 @@
   #include <fcntl.h>
   #include <pthread.h>
   #include <sys/mman.h>
-  #include <sys/io.h>
+  #if defined(__i386__) || defined(__amd64__)
+    #include <sys/io.h>
+  #endif
 #endif
 #ifdef SLT_UBOOT
   #include <common.h>
@@ -62,7 +64,6 @@
 //#define   Enable_MAC_ExtLoop_PakcegMode//[off]
 #define   Enable_No_IOBoundary         //[ON]
 
-#define Enable_Runt
 //#define Enable_Jumbo
 //#define Enable_BufMerge
 //#define Disable_VGA

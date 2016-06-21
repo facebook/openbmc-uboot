@@ -24,7 +24,9 @@ static const char ThisFile[] = "IO.c";
   #include <fcntl.h>
   #include <pthread.h>
   #include <sys/mman.h>
-  #include <sys/io.h>
+  #if defined(__i386__) || defined(__amd64__)
+    #include <sys/io.h>
+  #endif
   #include "COMMINF.H"
 #endif
 #if defined(SLT_UBOOT)
@@ -261,20 +263,23 @@ int findlpcport(BYTE jldu_number)
 //------------------------------------------------------------
 void mm_write (ULONG addr, ULONG data, BYTE jmode)
 {
-    *(ULONG *) (mmiobase + 0xF004) = (ULONG) ((addr) & 0xFFFF0000);
-    *(ULONG *) (mmiobase + 0xF000) = (ULONG) 0x00000001;
+    *((volatile ULONG *) (mmiobase + 0xF004)) = (ULONG) ((addr) & 0xFFFF0000);
+#if defined(__powerpc64__)
+    asm("eieio");
+#endif
+    *((volatile ULONG *) (mmiobase + 0xF000)) = (ULONG) 0x00000001;
 
     switch ( jmode )
     {
         case 0:
-            *(BYTE *) (mmiobase + 0x10000 + ((addr) & 0x0000FFFF)) = (BYTE) data;
+            *((volatile BYTE *) (mmiobase + 0x10000 + ((addr) & 0x0000FFFF))) = (BYTE) data;
             break;
         case 1:
-            *(USHORT *) (mmiobase + 0x10000 + ((addr) & 0x0000FFFF)) = (USHORT) data;
+            *((volatile USHORT *) (mmiobase + 0x10000 + ((addr) & 0x0000FFFF))) = (USHORT) data;
             break;
         case 2:
         default:
-            *(ULONG *) (mmiobase + 0x10000 + ((addr) & 0x0000FFFF)) = data;
+            *((volatile ULONG *) (mmiobase + 0x10000 + ((addr) & 0x0000FFFF))) = data;
             break;
     } //switch
 }
@@ -282,19 +287,22 @@ void mm_write (ULONG addr, ULONG data, BYTE jmode)
 //------------------------------------------------------------
 ULONG mm_read (ULONG addr, BYTE jmode)
 {
-    *(ULONG *) (mmiobase + 0xF004) = (ULONG) ((addr) & 0xFFFF0000);
-    *(ULONG *) (mmiobase + 0xF000) = (ULONG) 0x00000001;
+    *((volatile ULONG *) (mmiobase + 0xF004)) = (ULONG) ((addr) & 0xFFFF0000);
+#if defined(__powerpc64__)
+    asm("eieio");
+#endif
+    *((volatile ULONG *) (mmiobase + 0xF000)) = (ULONG) 0x00000001;
     switch ( jmode )
     {
     case 0:
-        return ( *(BYTE *) (mmiobase + 0x10000 + ((addr) & 0x0000FFFF)) );
+        return ( *((volatile BYTE *) (mmiobase + 0x10000 + ((addr) & 0x0000FFFF))) );
         break;
     case 1:
-        return ( *(USHORT *) (mmiobase + 0x10000 + ((addr) & 0x0000FFFF)) );
+        return ( *((volatile USHORT *) (mmiobase + 0x10000 + ((addr) & 0x0000FFFF))) );
         break;
     default:
     case 2:
-        return ( *(ULONG *) (mmiobase + 0x10000 + ((addr) & 0x0000FFFF)) );
+        return ( *((volatile ULONG *) (mmiobase + 0x10000 + ((addr) & 0x0000FFFF))) );
         break;
     } //switch
 

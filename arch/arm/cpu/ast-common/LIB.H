@@ -13,7 +13,9 @@
 #define LIB_H
 
 #include "TYPEDEF.H"
-
+#if defined(DOS_ALONE) || defined(SLT_NEW_ARCH) || defined(LinuxAP)
+  #include "COMMINF.H"
+#endif
 //
 // Macro
 //

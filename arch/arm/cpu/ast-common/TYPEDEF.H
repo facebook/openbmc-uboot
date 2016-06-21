@@ -23,7 +23,7 @@
 #define   ACTIVE                4
 
 #if defined(LinuxAP)
-    #if defined(__amd64__) || defined(amd64)
+    #if defined(__amd64__) || defined(__powerpc64__) || defined(__aarch64__)
     // 64
         #ifndef ULONG
         #define ULONG unsigned int
@@ -94,7 +94,7 @@
     #endif
 #else
 /* DOS Program */
-    #define     VOID	  void
+    #define     VOID      void
     #define     FLONG     unsigned long
     #define     ULONG     unsigned long
     #define     USHORT    unsigned short
@@ -102,13 +102,13 @@
     #define     LONG      long
     #define     SHORT     short
     #define     CHAR      char
-    #define     BYTE	  UCHAR
-    #define     BOOL	  SHORT
+    #define     BYTE      UCHAR
+    #define     BOOL      SHORT
     #define     BOOLEAN   unsigned short
     #define     PULONG    ULONG *
     #define     SCHAR     signed char
 #endif
-    #define	    TRUE      1
-    #define	    FALSE     0
+    #define         TRUE      1
+    #define         FALSE     0
 
 #endif // TYPEDEF_H

@@ -15,11 +15,9 @@
 #define __CONFIG_H
 
 #define CONFIG_ARCH_ASPEED
-#define CONFIG_ARCH_AST2500
-#define CONFIG_EXTRA_ENV_SETTINGS AST2500_ENV_SETTINGS
+#define CONFIG_ARCH_AST2400
+#define CONFIG_EXTRA_ENV_SETTINGS AST2400_ENV_SETTINGS
 
-/* TODO: Find out if we require this */
-#define CONFIG_AST_FPGA_VER 4 /* for arm1176 */
 
 #define CONFIG_ARCH_CPU_INIT
 #define CONFIG_MACH_TYPE		MACH_TYPE_ASPEED
@@ -45,7 +43,6 @@
 #define CONFIG_NR_DRAM_BANKS		1
 
 #define CONFIG_SYS_TEXT_BASE		0x00000000
-#define CONFIG_SYS_UBOOT_BASE		CONFIG_SYS_TEXT_BASE
 
 #define CONFIG_SYS_MALLOC_LEN   	(0x1000 + 4*1024*1024) /* malloc() len */
 
@@ -89,7 +86,7 @@
 #define CONFIG_SYS_MAXARGS		16
 #define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE
 
-#define CONFIG_SYS_LOAD_ADDR		0x83000000	/* default load address */
+#define CONFIG_SYS_LOAD_ADDR		0x43000000	/* default load address */
 
 #define CONFIG_BOOTARGS			"console=ttyS4,115200n8 root=/dev/ram rw"
 
@@ -106,7 +103,7 @@
 #define CONFIG_BOOTCOMMAND	"bootm 20080000 20300000"
 #define CONFIG_ENV_OVERWRITE
 
-#define AST2500_ENV_SETTINGS					\
+#define AST2400_ENV_SETTINGS \
 	"verify=yes\0"	\
 	"spi_dma=yes\0" \
 	""
@@ -115,7 +112,27 @@
 #define CONFIG_LIB_RAND
 #define CONFIG_ASPEEDNIC
 
-/* TODO: How does this work? */
-#define	CONFIG_DRAM_ECC_SIZE	0x10000000
+/* -------------------------------------------------------------------------
+ * DRAM Config
+ *
+ * 1. DRAM Size              //
+ *    CONFIG_DRAM_512MBIT    // 512M bit
+ *    CONFIG_DRAM_1GBIT      // 1G   bit (default)
+ *    CONFIG_DRAM_2GBIT      // 2G   bit
+ *    CONFIG_DRAM_4GBIT      // 4G   bit 
+ * 2. DRAM Speed             //
+ *    CONFIG_DRAM_336        // 336MHz (DDR-667)
+ *    CONFIG_DRAM_408        // 408MHz (DDR-800) (default)
+ * 3. VGA Mode
+ *    CONFIG_CRT_DISPLAY     // define to disable VGA function
+ * 4. ECC Function enable
+ *    CONFIG_DRAM_ECC        // define to enable ECC function
+ * 5. UART Debug Message
+ *    CONFIG_DRAM_UART_OUT   // enable output message at UART5
+ *    CONFIG_DRAM_UART_38400 // set the UART baud rate to 38400, default is 115200
+ */
+
+#define CONFIG_CPU_420 1
+#define CONFIG_DRAM_528 1
 
 #endif	/* __CONFIG_H */

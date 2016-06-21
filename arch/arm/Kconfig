@@ -753,6 +753,9 @@ config TARGET_WITHERSPOON_BMC
        bool "Support ast2500 on Witherspoon"
        select CPU_ARM1176
 
+config TARGET_AST_G4
+       bool "Support ast2400"
+
 endchoice
 
 source "arch/arm/mach-at91/Kconfig"
@@ -891,6 +894,7 @@ source "board/woodburn/Kconfig"
 source "board/work-microwave/work_92105/Kconfig"
 source "board/zipitz2/Kconfig"
 source "board/aspeed/ast-g5/Kconfig"
+source "board/aspeed/ast-g4/Kconfig"
 source "board/aspeed/witherspoon-bmc/Kconfig"
 
 source "arch/arm/Kconfig.debug"

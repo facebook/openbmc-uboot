@@ -75,7 +75,6 @@ int dram_init (void)
 	gd->ram_size = (dram - vga);
 
 	return 0;
-
 }
 
 #ifdef CONFIG_CMD_NET

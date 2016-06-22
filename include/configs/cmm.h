@@ -196,6 +196,7 @@
 #define CONFIG_ASPEED_COM_IER           (CONFIG_ASPEED_COM + 0x4)
 #define CONFIG_ASPEED_COM_IIR           (CONFIG_ASPEED_COM + 0x8)
 #define CONFIG_ASPEED_COM_LCR           (CONFIG_ASPEED_COM + 0xc)
+#define CONFIG_ASPEED_COM_LSR           (CONFIG_ASPEED_COM + 0x14)
 
 
 /*

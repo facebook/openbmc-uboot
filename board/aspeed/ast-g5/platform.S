@@ -289,7 +289,7 @@ init_dram:
     b     bypass_first_reset
 
 start_first_reset:
-    ldr   r0, =0x1e6e2004
+    ldr   r0, =0x1e6e2004                        @ clear software strap flag for doing again after reset
     ldr   r1, [r0]
     orr   r1, r1, #0x01
     str   r1, [r0]
@@ -559,7 +559,7 @@ wait_mmc_reset_done:
     print_hex_char
     mov   r1, #0x2D                              @ '-'
     str   r1, [r0]
-    ldr   r0, =0x1e783014
+    ldr   r0, =CONFIG_ASPEED_COM_LSR
 wait_print:
     ldr   r1, [r0]
     tst   r1, #0x40
@@ -1532,7 +1532,7 @@ ddr_test_fail:
     str   r1, [r0]
     mov   r1, #0x0A                              @ '\n'
     str   r1, [r0]
-    ldr   r0, =0x1e783014
+    ldr   r0, =CONFIG_ASPEED_COM_LSR
 wait_print_0:
     ldr   r1, [r0]
     tst   r1, #0x40
@@ -1571,7 +1571,7 @@ set_scratch:
 
 /* Debug - UART console message */
    /* Print PHY timing information */
-    ldr   r0, =0x1e783014
+    ldr   r0, =CONFIG_ASPEED_COM_LSR
 wait_print_1:
     ldr   r1, [r0]
     tst   r1, #0x40
@@ -1609,7 +1609,7 @@ wait_print_1:
     mov   r1, #0x3A                              @ ':'
     str   r1, [r0]
 
-    ldr   r0, =0x1e783014
+    ldr   r0, =CONFIG_ASPEED_COM_LSR
 wait_print_2:
     ldr   r1, [r0]
     tst   r1, #0x40
@@ -1663,7 +1663,7 @@ print_DQH_eye_margin:
     mov   r1, #0x3A                              @ ':'
     str   r1, [r0]
 
-    ldr   r0, =0x1e783014
+    ldr   r0, =CONFIG_ASPEED_COM_LSR
 wait_print_3:
     ldr   r1, [r0]
     tst   r1, #0x40
@@ -1713,7 +1713,7 @@ print_DQ_eye_margin_last:
     mov   r1, #0x4B                              @ 'K'
     str   r1, [r0]
 
-    ldr   r0, =0x1e783014
+    ldr   r0, =CONFIG_ASPEED_COM_LSR
 wait_print_4:
     ldr   r1, [r0]
     tst   r1, #0x40

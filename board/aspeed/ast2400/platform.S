@@ -319,6 +319,54 @@ case_pos10\@:
   b case_end\@
 case_end\@:
 .endm
+
+.macro heartbeat_led_on
+  /* Select GPIOQ7 for Heartbeat LED instead of USB Host Port H */
+  ldr r0, =0x1e6e2090
+  ldr r1, [r0]
+  ldr r2, =0xEFFFFFFF
+  and r1, r1, r2
+  str r1, [r0]
+
+  ldr r0, =0x1e780084
+  ldr r1, [r0]
+  ldr r2, =0x80
+  orr r1, r1, r2
+  str r1, [r0]
+
+  ldr r0, =0x1e780080
+  ldr r1, [r0]
+  ldr r2, =0xffffff7f
+  and r1, r1, r2
+  str r1, [r0]
+.endm
+
+.macro pwr_leds_on
+  /* Enable GPIOM0..4 for PWRx_LED */
+  ldr r0, =0x1e6e2084
+  ldr r1, [r0]
+  ldr r2, =0x0F000000
+  orr r1, r1, r2
+  str r1, [r0]
+
+  ldr r0, =0x1e6e2090
+  ldr r1, [r0]
+  ldr r2, =0xffffffcf
+  and r1, r1, r2
+  str r1, [r0]
+
+  ldr r0, =0x1e78007c
+  ldr r1, [r0]
+  ldr r2, =0x0F
+  orr r1, r1, r2
+  str r1, [r0]
+
+  ldr r0, =0x1e780078
+  ldr r1, [r0]
+  ldr r2, =0xfffffff0
+  and r1, r1, r2
+  str r1, [r0]
+.endm
 #endif
 
 /******************************************************************************
@@ -507,6 +555,10 @@ set_MPLL:
     ldr r0, =0x1e786008
     ldr r1, =0x43004300                          @ Duty cycle for 70% PWM
     str r1, [r0]
+
+    /* Heartbeat and PWR LED to indicate power ON during boot */
+    heartbeat_led_on
+    pwr_leds_on
 
     console_sel
 #endif
@@ -2890,6 +2942,10 @@ platform_exit:
     ldr r0, =0x1e786008
     ldr r1, =0x43004300                          @ Duty cycle for 70% PWM
     str r1, [r0]
+
+    /* Heartbeat and PWR LED to indicate power ON during boot */
+    heartbeat_led_on
+    pwr_leds_on
 
     console_sel
 #endif

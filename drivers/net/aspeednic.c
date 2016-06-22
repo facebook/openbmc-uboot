@@ -215,7 +215,7 @@ static u8 g_phy_addr = 0;
 
 #define NUM_RX_DESC PKTBUFSRX
 #define NUM_TX_DESC 1     /* Number of TX descriptors   */
-#define RX_BUFF_SZ  PKTSIZE_ALIGN
+#define RX_BUFF_SZ  1600 /* Hardware defaults to this */
 #define TX_BUFF_SZ  1514
 
 #define TOUT_LOOP   1000000
@@ -1144,7 +1144,7 @@ static int aspeednic_init(struct eth_device* dev, bd_t* bis)
 	set_mac_control_register(dev);
 
 	for (i = 0; i < NUM_RX_DESC; i++) {
-		rx_ring[i].status = cpu_to_le32(RXPKT_RDY + RX_BUFF_SZ);
+		rx_ring[i].status = cpu_to_le32(RXPKT_RDY);
 		rx_ring[i].buf = (u32)(&rx_buffer[i]);
 		rx_ring[i].reserved = 0;
 	}
@@ -1164,6 +1164,7 @@ static int aspeednic_init(struct eth_device* dev, bd_t* bis)
 
 	OUTL(dev, ((u32) &tx_ring), TXR_BADR_REG);
 	OUTL(dev, ((u32) &rx_ring), RXR_BADR_REG);
+	OUTL(dev, RX_BUFF_SZ, RBSR_REG);
 
 	START_MAC(dev);
 

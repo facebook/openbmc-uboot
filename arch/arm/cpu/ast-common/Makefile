@@ -19,7 +19,6 @@ COBJS-$(CONFIG_ARCH_AST1070)	+= ast1070-scu.o
 COBJS-$(CONFIG_PCI)		+= pcie.o ast-p2x.o
 COBJS-$(CONFIG_AST_SPI_NOR)	+= flash.o
 COBJS-$(CONFIG_CMD_NETTEST)	+= MACTEST.o DRAM_SPI.o IO.o LIB.o MAC.o NCSI.o PCI_SPI.o PHY.o SPIM.o LAN9303.o STDUBOOT.o
-COBJS-y += STRESS.o
 
 SRCS	:= $(COBJS-y:.o=.c)
 OBJS	:= $(addprefix $(obj),$(SOBJS) $(COBJS-y))

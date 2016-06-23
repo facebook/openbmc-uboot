@@ -485,6 +485,13 @@ wait_mmc_reset_done:
     ldr   r1, =0x00020000
     str   r1, [r0]
 
+// FBTP platform specific
+#ifdef CONFIG_FBTP
+    ldr   r0, =0x1e789100                        @ HICRB
+    mov   r1, #0x40                              @ Disable iLPC2AHB
+    str   r1, [r0]
+#endif
+
 /* Debug - UART console message */
     ldr   r0, =CONFIG_ASPEED_COM_LCR
     mov   r1, #0x83

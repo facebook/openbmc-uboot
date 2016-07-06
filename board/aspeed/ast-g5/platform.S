@@ -17,8 +17,8 @@
  *
  * Gary Hsu, <gary_hsu@aspeedtech.com>
  *
- * Version     : 9
- * Release date: 2016.02.19
+ * Version     : 8
+ * Release date: 2016.01.27
  *
  * Change List :
  * V2|2014.07.25 : 1. Modify HPLL config sequence
@@ -51,7 +51,6 @@
  *   |2016.01.27 : 1. Modify the first reset from full chip reset to SOC reset
  *   |             2. Remove HPLL/MPLL patch code for revision A0
  *   |             3. Move the reset_mmc code to be after MPLL initialized
- * V9|2016.02.19 : 1. Remove definietion "CONFIG_FIRMWARE_2ND_BOOT"
  *
  * Optional define variable
  * 1. DRAM Speed             //
@@ -66,7 +65,7 @@
  *    CONFIG_DDR3_8GSTACK    // DDR3 8Gbit Stack die
  *    CONFIG_DDR4_4GX8       // DDR4 4Gbit X8 dual part
  * 5. Firmware 2nd boot flash
- *    CONFIG_FIRMWARE_2ND_BOOT (Removed)
+ *    CONFIG_FIRMWARE_2ND_BOOT
  ******************************************************************************
  */
 
@@ -155,6 +154,7 @@ TIME_TABLE_DDR4_1333:
     .word   0x0C400800       @ 0x2F8
     .word   0x7F5E3A3A       @ tRFC
     .word   0x00005B80       @ PLL
+
 TIME_TABLE_DDR4_1600:
     .word   0x63604E37       @ 0x010
     .word   0xE97AFA99       @ 0x014
@@ -306,6 +306,82 @@ wait_first_reset:
     b     wait_first_reset
 
 bypass_first_reset:
+
+    /* Check A1 to bypass A0 patch */
+    ldr   r0, =0x1e6e207c
+    ldr   r1, [r0]
+    mov   r1, r1, lsr #16
+    tst   r1, #0x0F
+    bne   bypass_config_hpll
+
+    /* Check Scratch to determine the HPLL ever been set or not */
+    ldr   r0, =0x1e6e2040
+    ldr   r1, [r0]
+    tst   r1, #0x80
+    bne   bypass_config_hpll
+
+    /* AST25x0-A0 patch for HPLL issue */
+    /* Set H-PLL */
+    ldr   r0, =0x1e6e2000
+    ldr   r1, =0x1688a8a8
+    str   r1, [r0]
+    ldr   r0, =0x1e6e2040
+    ldr   r1, [r0]
+    orr   r1, r1, #0x80
+    str   r1, [r0]
+    ldr   r0, =0x1e6e2148
+    ldr   r1, =0x00190032
+    str   r1, [r0]
+    ldr   r0, =0x1e6e2024
+    ldr   r2, =0x00380000
+    ldr   r1, =0x93000400                        @ set HPLL =  792 MHz
+    orr   r2, r1, r2
+    str   r2, [r0]
+    ldr   r2, =0x00000100                        @ delay 1 us
+wait_hpll_pd:
+    subs  r2, r2, #0x01
+    bne   wait_hpll_pd
+    str   r1, [r0]
+
+    ldr   r0, =0x1e6e2130                        @ fix D-PLL issue
+    ldr   r1, =0x00000580
+    str   r1, [r0]
+    ldr   r0, =0x1e6e2160                        @ set 24M Jitter divider
+    ldr   r1, =0x00000B01
+    str   r1, [r0]
+    ldr   r0, =0x1e6e200c                        @ enable UART clock
+    ldr   r1, [r0]
+    ldr   r2, =0xF9FC7FFF
+    and   r1, r1, r2
+    str   r1, [r0]
+
+    ldr   r0, =0x1e6e2180                        @ disable XDMA
+    ldr   r1, =0x000C003B
+    str   r1, [r0]
+
+    /* Enable Watchdog */
+    ldr   r0, =0x1e785004
+    ldr   r1, =0x00000BB8                        @ Set to 3 ms
+    str   r1, [r0]
+    add   r0, r0, #0x04
+    ldr   r1, =0x00004755
+    str   r1, [r0]
+    add   r0, r0, #0x04
+    mov   r1, #0x13
+    str   r1, [r0]
+
+    ldr   r0, =0x1e78018c                        @ control GPIOZ3 to disable ENTEST rework
+    ldr   r1, =0x00000800
+    str   r1, [r0]
+    ldr   r0, =0x1e7801e4
+    ldr   r1, =0x00000800
+    str   r1, [r0]
+    /* AST2500-A0 patch for HPLL issue - end */
+
+wait_hpll_init:
+    b     wait_hpll_init
+
+bypass_config_hpll:
     /* Enable Timer separate clear mode */
     ldr   r0, =0x1e782038
     mov   r1, #0xAE
@@ -373,13 +449,11 @@ bypass_USB_init:
 /******************************************************************************
  Disable WDT2 for 2nd boot function
  ******************************************************************************/
-/*
 #ifndef CONFIG_FIRMWARE_2ND_BOOT
     ldr   r0, =0x1e78502c
     mov   r1, #0
     str   r1, [r0]
 #endif
-*/
 /******************************************************************************
  Disable WDT3 for SPI Address mode (3 or 4 bytes) detection function
  ******************************************************************************/
@@ -406,6 +480,41 @@ bypass_USB_init:
     str   r1, [r0]
 
     /* Set M-PLL */
+    ldr   r0, =0x1e6e207c                        @ check A1
+    ldr   r1, [r0]
+    mov   r1, r1, lsr #16
+    tst   r1, #0x0F
+    bne   set_MPLL_A1
+
+#if   defined (CONFIG_DRAM_1333)
+    ldr   r0, =0x1e6e2148
+    ldr   r1, [r0]
+    bic   r1, r1, #0xFF
+    orr   r1, r1, #0x38
+    str   r1, [r0]
+    ldr   r2, =0x930066C0                        @ load PLL parameter for 24Mhz CLKIN (330)
+#else
+    ldr   r2, =0x93002400                        @ load PLL parameter for 24Mhz CLKIN (396)
+#endif
+
+    ldr   r0, =0x1e6e2070                        @ Check CLKIN = 25MHz
+    ldr   r1, [r0]
+    mov   r1, r1, lsr #23
+    tst   r1, #0x01
+    beq   set_MPLL
+#if   defined (CONFIG_DRAM_1333)
+    ldr   r0, =0x1e6e2148
+    ldr   r1, [r0]
+    bic   r1, r1, #0xFF
+    orr   r1, r1, #0x38
+    str   r1, [r0]
+    ldr   r2, =0x93006680                        @ load PLL parameter for 25Mhz CLKIN (331)
+#else
+    ldr   r2, =0x630023E0                        @ load PLL parameter for 25Mhz CLKIN (400)
+#endif
+    b     set_MPLL
+
+set_MPLL_A1:
 #if   defined (CONFIG_DRAM_1333)
     ldr   r2, =0xC48066C0                        @ load PLL parameter for 24Mhz CLKIN (330)
 #else
@@ -429,17 +538,16 @@ bypass_USB_init:
 set_MPLL:
     ldr   r0, =0x1e6e2020                        @ M-PLL (DDR SDRAM) Frequency
     str   r2, [r0]
+    ldr   r0, =0x1e6e2084                        @ SCU84: Multi-function Pin Control 2
+    ldr   r1, [r0]
+    ldr   r2, =0xffff0000
+    orr   r1, r1, r2                             @ Enable UART1 and UART2
+    str   r1, [r0]
 
-    clear_delay_timer
+    ldr   r0, =0x1e789098                        @ HICR9
+    mov   r1, #0x400                             @ UART5->IO6, UART1-4 controlled by BMC
+    str   r1, [r0]
 
-    /* Delay about 3ms */
-    ldr   r2, =0x00000BB8                        @ Set Timer3 Reload = 3 ms
-    init_delay_timer
-wait_mpll_init:
-    check_delay_timer
-    bne   wait_mpll_init
-    clear_delay_timer
-    /* end delay 3ms */
 
     /* Reset MMC */
 reset_mmc:
@@ -579,6 +687,17 @@ wait_print:
     mov   r1, #0x52                              @ 'R'
     str   r1, [r0]
 /* Debug - UART console message */
+
+    clear_delay_timer
+
+    /* Delay about 3ms */
+    ldr   r2, =0x00000BB8                        @ Set Timer3 Reload = 3 ms
+    init_delay_timer
+wait_mpll_init:
+    check_delay_timer
+    bne   wait_mpll_init
+    clear_delay_timer
+    /* end delay 3ms */
 
 /******************************************************************************
  Init DRAM common registers

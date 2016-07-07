@@ -566,12 +566,12 @@
 #elif defined(AST_SOC_G5)
 #define SCU_SYS_WDT3_RESET_FLAG			(0x1 << 4)
 #define SCU_SYS_WDT2_RESET_FLAG			(0x1 << 3)
-#define SCU_SYS_WDT_RESET_FLAG			(0x1 << 2)
+#define SCU_SYS_WDT1_RESET_FLAG			(0x1 << 2)
 #define SCU_SYS_EXT_RESET_FLAG			(0x1 << 1)
 #else
 #define SCU_SYS_EXT_SOC_RESET_EN		(0x1 << 3)
 #define SCU_SYS_EXT_RESET_FLAG			(0x1 << 2)
-#define SCU_SYS_WDT_RESET_FLAG			(0x1 << 1)
+#define SCU_SYS_WDT1_RESET_FLAG			(0x1 << 1)
 #endif
 #define SCU_SYS_PWR_RESET_FLAG			(0x1 << 0)
 
@@ -628,11 +628,11 @@
 
 /*	AST_SCU_HW_STRAP1			0x70		hardware strapping register */
 #ifdef AST_SOC_G5
-
-#define CLK_25M_IN					(0x1 << 23)
+#define SCU_HW_STRAP_ESPI_MODE			(0x1 << 25)
+#define CLK_25M_IN				(0x1 << 23)
 
 #define SCU_HW_STRAP_2ND_BOOT_WDT		(0x1 << 17)
-#define SCU_HW_STRAP_SUPER_IO_CONFIG	(0x1 << 16)
+#define SCU_HW_STRAP_SUPER_IO_CONFIG		(0x1 << 16)
 #define SCU_HW_STRAP_VGA_CLASS_CODE		(0x1 << 15)
 #define SCU_HW_STRAP_LPC_RESET_PIN		(0x1 << 14)
 #define SCU_HW_STRAP_SPI_MODE(x)			(x << 12)

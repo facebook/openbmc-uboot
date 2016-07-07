@@ -5,6 +5,7 @@
 # SPDX-License-Identifier:	GPL-2.0+
 #
 
+obj-$(CONFIG_AST_WATCHDOG) += ast_wdt.o
 obj-$(CONFIG_AT91SAM9_WATCHDOG) += at91sam9_wdt.o
 obj-$(CONFIG_FTWDT010_WATCHDOG) += ftwdt010_wdt.o
 ifneq (,$(filter $(SOC), mx31 mx35 mx5 mx6 mx7 vf610))

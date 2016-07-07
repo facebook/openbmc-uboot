@@ -208,6 +208,14 @@
 
 #endif
 
+/*-----------------------------------------------------------------------
+ * WDT
+ *-----------------------------------------------------------------------
+ */
+#define CONFIG_AST_WATCHDOG
+//#define CONFIG_AST_WATCHDOG_ENABLE
+#define CONFIG_AST_WATCHDOG_TIMEOUT		(1*1000*1000 *30)
+
 #ifdef CONFIG_PCI
 #define CONFIG_CMD_PCI 
 #define CONFIG_PCI_PNP

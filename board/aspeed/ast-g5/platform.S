@@ -51,6 +51,8 @@
  *   |2016.01.27 : 1. Modify the first reset from full chip reset to SOC reset
  *   |             2. Remove HPLL/MPLL patch code for revision A0
  *   |             3. Move the reset_mmc code to be after MPLL initialized
+ * V9|2016.04.21 : 1. Add USB PHY initial code - port B, to prevent wrong state on USB pins
+ * V10|2016.05.10 : 1. Add DRAM Extended temperature range support
  *
  * Optional define variable
  * 1. DRAM Speed             //
@@ -66,6 +68,8 @@
  *    CONFIG_DDR4_4GX8       // DDR4 4Gbit X8 dual part
  * 5. Firmware 2nd boot flash
  *    CONFIG_FIRMWARE_2ND_BOOT
+ * 6. Enable DRAM extended temperature range mode
+ *    CONFIG_DRAM_EXT_TEMP
  ******************************************************************************
  */
 
@@ -78,8 +82,8 @@
   Free registers:
   r0, r1, r2, r3, r6, r7, r8, r9, r10, r11
  ******************************************************************************/
-#define ASTMMC_INIT_VER      0x09                @ 8bit verison number
-#define ASTMMC_INIT_DATE     0x20160219          @ Release date
+#define ASTMMC_INIT_VER      0x0A                @ 8bit verison number
+#define ASTMMC_INIT_DATE     0x20160510          @ Release date
 
 #define ASTMMC_REGIDX_010    0x00
 #define ASTMMC_REGIDX_014    0x04
@@ -417,6 +421,9 @@ bypass_config_hpll:
     ldr   r2, =0x00004000
     ldr   r1, [r0]
     orr   r1, r1, r2
+    str   r1, [r0]
+    ldr   r0, =0x1e6e2094                        @ set portB as host mode
+    ldr   r1, =0x00004000
     str   r1, [r0]
     ldr   r0, =0x1e6e2070
     ldr   r2, =0x00800000
@@ -973,7 +980,11 @@ ddr3_check_dllrdy:
     bne   ddr3_check_dllrdy
 
     ldr   r0, =0x1e6e000c
+#ifdef CONFIG_DRAM_EXT_TEMP
+    ldr   r1, =0x42AA2F81
+#else
     ldr   r1, =0x42AA5C81
+#endif
     str   r1, [r0]
 
     ldr   r0, =0x1e6e0034
@@ -1316,7 +1327,11 @@ ddr4_phyinit_done:
 /* Debug - UART console message */
 
     ldr   r0, =0x1e6e000c
+#ifdef CONFIG_DRAM_EXT_TEMP
+    ldr   r1, =0x42AA2F81
+#else
     ldr   r1, =0x42AA5C81
+#endif
     str   r1, [r0]
 
     ldr   r0, =0x1e6e0034

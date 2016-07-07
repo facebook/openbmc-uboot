@@ -44,6 +44,14 @@ int print_cpuinfo(void)
 
 	ast_scu_get_who_init_dram();
 
+	if(ast_scu_2nd_wdt_mode)
+		puts("2nd Boot : Enable\n");
+
+	if(ast_scu_espi_mode())
+		printf("eSPI Mode : SuperIO-%02x\n", ast_scu_get_superio_addr_config());
+	else
+		printf("LPC Mode : SuperIO-%02x\n", ast_scu_get_superio_addr_config());
+	
 	return 0;
 }
 #endif

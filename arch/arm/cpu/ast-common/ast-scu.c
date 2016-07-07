@@ -1727,15 +1727,27 @@ ast_scu_sys_rest_info(void)
 #else
 	if(rest & SCU_SYS_EXT_RESET_FLAG) {
 		SCUMSG("RST : External \n");
-		ast_scu_write(SCU_SYS_EXT_RESET_FLAG, AST_SCU_SYS_CTRL);
-	} else if (rest & SCU_SYS_WDT_RESET_FLAG) {
-		SCUMSG("RST : Watchdog \n");
-		ast_scu_write(SCU_SYS_WDT_RESET_FLAG, AST_SCU_SYS_CTRL);
-	} else if (rest & SCU_SYS_PWR_RESET_FLAG) {
+		ast_scu_write(ast_scu_read(AST_SCU_SYS_CTRL) & ~SCU_SYS_EXT_RESET_FLAG, AST_SCU_SYS_CTRL);
+	}
+	if (rest & SCU_SYS_WDT1_RESET_FLAG) {
+		SCUMSG("RST : WDT1 \n");		
+		ast_scu_write(ast_scu_read(AST_SCU_SYS_CTRL) & ~SCU_SYS_WDT1_RESET_FLAG, AST_SCU_SYS_CTRL);
+	}
+#ifdef SCU_SYS_WDT2_RESET_FLAG		
+	if (rest & SCU_SYS_WDT2_RESET_FLAG) {
+		SCUMSG("RST : WDT2 - 2nd Boot \n");
+		ast_scu_write(ast_scu_read(AST_SCU_SYS_CTRL) & ~SCU_SYS_WDT2_RESET_FLAG, AST_SCU_SYS_CTRL);
+	}
+#endif
+#ifdef SCU_SYS_WDT3_RESET_FLAG
+	if (rest & SCU_SYS_WDT3_RESET_FLAG) {
+		SCUMSG("RST : WDT3 - 4byte SPI\n");
+		ast_scu_write(ast_scu_read(AST_SCU_SYS_CTRL) & ~SCU_SYS_WDT3_RESET_FLAG, AST_SCU_SYS_CTRL);
+	}
+#endif		
+	if (rest & SCU_SYS_PWR_RESET_FLAG) {
 		SCUMSG("RST : Power On \n");
-		ast_scu_write(SCU_SYS_PWR_RESET_FLAG, AST_SCU_SYS_CTRL);
-	} else {
-		SCUMSG("RST : CLK en \n");
+		ast_scu_write(ast_scu_read(AST_SCU_SYS_CTRL) & ~SCU_SYS_PWR_RESET_FLAG, AST_SCU_SYS_CTRL);
 	}
 #endif
 }	
@@ -1868,6 +1880,31 @@ ast_scu_get_who_init_dram(void)
 			printf("error vga size \n");
 			break;
 	}
+}
+
+extern int
+ast_scu_espi_mode(void)
+{
+#ifdef AST_SOC_G5
+	return(ast_scu_read(AST_SCU_HW_STRAP1) & SCU_HW_STRAP_ESPI_MODE);
+#else
+	return 0;
+#endif
+}
+
+extern int
+ast_scu_2nd_wdt_mode(void)
+{
+	return(ast_scu_read(AST_SCU_HW_STRAP1) & SCU_HW_STRAP_2ND_BOOT_WDT);
+}
+
+extern u8
+ast_scu_get_superio_addr_config(void)
+{
+	if(ast_scu_read(AST_SCU_HW_STRAP1) & SCU_HW_STRAP_SUPER_IO_CONFIG)
+		return 0x4E;
+	else
+		return 0x2E;
 }
 
 extern u8

@@ -207,6 +207,8 @@ static void watchdog_init()
   /* magic word to reload */
   __raw_writel(0x4755, AST_WDT2_BASE + 0x08);
   printf("Dual boot watchdog: %us\n", CONFIG_ASPEED_WATCHDOG_DUAL_BOOT_TIMEOUT);
+#else
+  __raw_writel(0x0, AST_WDT2_BASE + 0x0c);
 #endif
   reload = AST_WDT_CLK * CONFIG_ASPEED_WATCHDOG_TIMEOUT;
   /* set the reload value */

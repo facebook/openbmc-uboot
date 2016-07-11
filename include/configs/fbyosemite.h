@@ -19,6 +19,10 @@
 
 #ifndef __CONFIG_H
 #define __CONFIG_H
+/*
+ * Version Identity
+*/
+#define CONFIG_IDENT_STRING " Yosemite v1.0"
 
 /* Uncommit the following line to enable JTAG in u-boot */
 //#define CONFIG_ASPEED_ENABLE_JTAG

@@ -878,6 +878,14 @@ config TARGET_THUNDERX_88XX
 	select ARM64
 	select OF_CONTROL
 
+config TARGET_AST_G5
+       bool "Support Apseed fifth generation SoCs"
+       select CPU_ARM1176
+
+config TARGET_AST_G4
+       bool "Support Aspeed fourth generation SoCs"
+       select CPU_ARM926EJS
+
 endchoice
 
 source "arch/arm/mach-at91/Kconfig"

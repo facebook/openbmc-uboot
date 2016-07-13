@@ -1,0 +1,22 @@
+if TARGET_AST_G4
+
+config SYS_ARCH
+	default "arm"
+
+config SYS_CPU
+	default "arm926ejs"
+
+config SYS_BOARD
+	default "ast-g4"
+
+config SYS_VENDOR
+	default "aspeed"
+
+config SYS_SOC
+	default "aspeed"
+
+config SYS_CONFIG_NAME
+	default "ast-g4-phy" if ASPEED_NET_PHY
+	default "ast-g4-ncsi" if ASPEED_NET_NCSI
+
+endif

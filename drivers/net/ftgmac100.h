@@ -48,11 +48,11 @@ struct ftgmac100 {
 //	unsigned int	wfcrc;		/* 0x78 */
 //	unsigned int	resv2;		/* 0x7c */ /* not defined in spec */
 	unsigned int	wfbm1m;		/* 0x78 */
-	unsigned int	wfbm1l;		/* 0x7c */	
+	unsigned int	wfbm1l;		/* 0x7c */
 	unsigned int	wfbm2m;		/* 0x80 */
-	unsigned int	wfbm2l;		/* 0x84 */	
+	unsigned int	wfbm2l;		/* 0x84 */
 	unsigned int	wfbm3m;		/* 0x88 */
-	unsigned int	wfbm3l;		/* 0x8c */	
+	unsigned int	wfbm3l;		/* 0x8c */
 	unsigned int	nptxr_ptr;	/* 0x90 */
 	unsigned int	hptxr_ptr;	/* 0x94 */
 	unsigned int	rxr_ptr;	/* 0x98 */
@@ -190,7 +190,7 @@ struct ftgmac100 {
 #define FTGMAC100_PHYCR_MIIRD		(1 << 26)
 #define FTGMAC100_PHYCR_MIIWR		(1 << 27)
 
-//New MDC/MDIO 
+//New MDC/MDIO
 #define FTGMAC100_PHYCR_NEW_FIRE		(1 << 15)
 #define FTGMAC100_PHYCR_ST_22			(1 << 12)
 #define FTGMAC100_PHYCR_NEW_WRITE		(1 << 10)

@@ -1,0 +1,22 @@
+if TARGET_AST_G5
+
+config SYS_ARCH
+	default "arm"
+
+config SYS_CPU
+	default "arm1176"
+
+config SYS_BOARD
+	default "ast-g5"
+
+config SYS_VENDOR
+	default "aspeed"
+
+config SYS_SOC
+	default "aspeed"
+
+config SYS_CONFIG_NAME
+	default "ast-g5-phy" if ASPEED_NET_PHY
+	default "ast-g5-ncsi" if ASPEED_NET_NCSI
+
+endif

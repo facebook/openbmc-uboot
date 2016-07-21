@@ -555,6 +555,17 @@ set_MPLL:
     mov   r1, #0x400                             @ UART5->IO6, UART1-4 controlled by BMC
     str   r1, [r0]
 
+// FBTP specific initialization
+#ifdef CONFIG_FBTP
+    ldr   r0, =0x1e789100                        @ HICRB
+    mov   r1, #0x40                              @ Disable iLPC2AHB
+    str   r1, [r0]
+
+// Increase Fan speed to 70% PWM
+    ldr r0, =0x1e786008
+    ldr r1, =0x43004300                          @ Duty cycle for 70% PWM
+    str r1, [r0]
+#endif
 
     /* Reset MMC */
 reset_mmc:
@@ -599,13 +610,6 @@ wait_mmc_reset_done:
     ldr   r0, =0x1e6e0034                        @ disable MMC request
     ldr   r1, =0x00020000
     str   r1, [r0]
-
-// FBTP platform specific
-#ifdef CONFIG_FBTP
-    ldr   r0, =0x1e789100                        @ HICRB
-    mov   r1, #0x40                              @ Disable iLPC2AHB
-    str   r1, [r0]
-#endif
 
 /* Debug - UART console message */
     ldr   r0, =CONFIG_ASPEED_COM_LCR
@@ -1890,6 +1894,18 @@ wait_print_4:
 /* Debug - UART console message */
 
 platform_exit:
+// FBTP specific initialization
+#ifdef CONFIG_FBTP
+    ldr   r0, =0x1e789100                        @ HICRB
+    mov   r1, #0x40                              @ Disable iLPC2AHB
+    str   r1, [r0]
+
+// Increase Fan speed to 70% PWM
+    ldr r0, =0x1e786008
+    ldr r1, =0x43004300                          @ Duty cycle for 70% PWM
+    str r1, [r0]
+#endif
+
 #ifdef CONFIG_DRAM_ECC
     ldr   r0, =0x1e6e0004
     ldr   r1, [r0]

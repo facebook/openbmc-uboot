@@ -1028,11 +1028,6 @@ int boot_get_ramdisk(int argc, char * const argv[], bootm_headers_t *images,
 			rd_data = image_get_data(rd_hdr);
 			rd_len = image_get_data_size(rd_hdr);
 			rd_load = image_get_load(rd_hdr);
-#ifdef CONFIG_ASPEED
-			/* Need to copy the initrd into RAM */
-			memmove_wd((void *)rd_load, (void *)rd_data, rd_len, CHUNKSZ);
-			rd_data = rd_load;
-#endif
 			break;
 #endif
 #if IMAGE_ENABLE_FIT
@@ -1080,10 +1075,10 @@ int boot_get_ramdisk(int argc, char * const argv[], bootm_headers_t *images,
 		 * We need to copy the ramdisk to SRAM to let Linux boot
 		 */
 		if (rd_data) {
-			memmove_wd((void *)rd_load, (void *)rd_data, rd_len, CHUNKSZ);
+			memmove ((void *)rd_load, (uchar *)rd_data, rd_len);
 			rd_data = rd_load;
 		}
-#endif
+#endif /* CONFIG_ASPEED */
 
 	} else if (images->legacy_hdr_valid &&
 			image_check_type(&images->legacy_hdr_os_copy,

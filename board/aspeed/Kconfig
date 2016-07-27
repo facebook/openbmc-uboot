@@ -1,0 +1,21 @@
+if TARGET_AST2400
+config SYS_BOARD
+	default "ast-g4"
+config SYS_VENDOR
+	default "aspeed"
+config SYS_SOC
+	default "aspeed"
+config SYS_CONFIG_NAME
+	default "ast-g4"
+endif
+
+if TARGET_AST2500
+config SYS_BOARD
+  default "ast-g5"
+config SYS_VENDOR
+  default "aspeed"
+config SYS_SOC
+  default "aspeed"
+config SYS_CONFIG_NAME
+  default "ast-g5"
+endif

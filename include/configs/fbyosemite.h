@@ -36,5 +36,6 @@
 #define CONFIG_ASPEED_MAC_CONFIG	1
 
 #include "facebook_common.h"
+#include "ast2400_common.h"
 
 #endif	/* __FBYOSEMITE_CONFIG_H */

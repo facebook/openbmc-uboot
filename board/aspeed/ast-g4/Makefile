@@ -1,4 +1,3 @@
-#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -10,38 +9,5 @@
 # MA 02111-1307 USA
 #
 
-include $(TOPDIR)/config.mk
-
-LIB	= $(obj)lib$(BOARD).o
-
-COBJS	:= ast-g4.o
-
-ifdef CONFIG_FPGA_ASPEED
-
-ifndef CONFIG_SKIP_LOWLEVEL_INIT
-SOBJS   := platform_fpga.o
-endif
-
-else
-
-ifndef CONFIG_SKIP_LOWLEVEL_INIT
-SOBJS	:= platform.o
-endif
-
-endif
-
-SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)
-OBJS	:= $(addprefix $(obj),$(COBJS))
-SOBJS	:= $(addprefix $(obj),$(SOBJS))
-
-$(LIB):	$(obj).depend $(OBJS) $(SOBJS)
-	$(call cmd_link_o_target, $(OBJS) $(SOBJS))
-
-#########################################################################
-
-# defines $(obj).depend target
-include $(SRCTREE)/rules.mk
-
-sinclude $(obj).depend
-
-#########################################################################
+obj-y = ast-g4.o
+obj-y += platform.o

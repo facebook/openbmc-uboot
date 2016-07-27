@@ -46,5 +46,7 @@
 #define CONFIG_ASPEED_WATCHDOG_DUAL_BOOT_TIMEOUT	((5 * 60) - 5)
 
 #include "facebook_common.h"
+#include "ast2400_common.h"
+
 
 #endif  /* __FBWEDGE100_CONFIG_H */

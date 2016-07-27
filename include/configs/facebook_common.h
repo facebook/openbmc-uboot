@@ -9,9 +9,14 @@
 #define __FACEBOOK_CONFIG_H
 
 /*
+ * Requirements:
+ * Before including this common configuration, the board must include
+ * the CPU/arch platform configuration.
+ */
+
+/*
  * Basic boot command configuration based on flash
  */
-#define CONFIG_BOOTDELAY		3 			/* autoboot after 3 seconds */
 #define CONFIG_AUTOBOOT_PROMPT		"autoboot in %d seconds (stop with 'Delete' key)...\n"
 #define CONFIG_AUTOBOOT_STOP_STR	"\x1b\x5b\x33\x7e"	/* 'Delete', ESC[3~ */
 #define CONFIG_AUTOBOOT_KEYED
@@ -52,7 +57,7 @@
  * Miscellaneous configurable options
  */
 #define CONFIG_SYS_LONGHELP			/* undef to save memory   */
-#define CONFIG_SYS_TIMERBASE	0x1E782000 	/* use timer 1 */
+#define CONFIG_SYS_TIMERBASE	AST_TIMER_BASE 	/* use timer 1 */
 #define CONFIG_SYS_HZ 		1000
 
 /*
@@ -61,20 +66,21 @@
 #define CONFIG_NET_RANDOM_ETHADDR
 #define CONFIG_LIB_RAND
 
-
 /*
  * Command configuration
  */
 #define CONFIG_CMD_MII
 #define CONFIG_CMD_PING
-#define CONFIG_CMD_I2C
-#define CONFIG_CMD_EEPROM
 #define CONFIG_CMD_DHCP
 #define CONFIG_CMD_DIAG
 #define CONFIG_CMD_MEMINFO
 #define CONFIG_CMD_MEMTEST
 #define CONFIG_CMD_SDRAM
 
-#include "ast2400_common.h"
+/*
+ * Additional command configuration
+ *   CONFIG_CMD_I2C
+ *   CONFIG_CMD_EEPROM
+ */
 
 #endif /* __FACEBOOK_CONFIG_H */

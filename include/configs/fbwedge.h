@@ -40,5 +40,6 @@
 #define CONFIG_MAC2_PHY_LINK_INTERRUPT
 
 #include "facebook_common.h"
+#include "ast2400_common.h"
 
 #endif  /* __FBWEDGE_CONFIG_H */

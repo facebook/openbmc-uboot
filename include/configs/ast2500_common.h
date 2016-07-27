@@ -19,7 +19,6 @@
 #define CONFIG_ARCH_ASPEED
 #define CONFIG_ARCH_AST2500
 #define CONFIG_ARCH_CPU_INIT
-#define CONFIG_MISC_INIT_R
 
 #include <asm/arch/platform.h>
 #include <asm/arch/aspeed.h>
@@ -145,6 +144,11 @@
  */
 #define CONFIG_ASPEEDNIC
 #define CONFIG_NET_MULTI
+
+/*
+ * Timer
+ */
+#define CONFIG_ASPEED_TIMER_CLK   (1*1000*1000) /* use external clk (1M) */
 
 /*
  * NOTICE: MAC1 and MAC2 now have their own separate PHY configuration.

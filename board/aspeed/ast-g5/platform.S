@@ -296,8 +296,6 @@ init_dram:
 start_first_reset:
     ldr   r0, =0x1e62009c                         @ clear software strap flag for doing again after reset
     ldr   r1, =0xAEEDFC20
-    ldr   r1, [r0]
-    orr   r1, r1, #0x01
     str   r1, [r0]
     ldr   r0, =0x1e785004
     ldr   r1, =0x00000001

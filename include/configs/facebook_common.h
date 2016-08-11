@@ -27,19 +27,25 @@
  * This used to have:
  *   CONFIG_ENV_IS_IN_FLASH
  *   CONFIG_ENV_IS_IN_SPI_FLASH
+ *   CONFIG_ENV_IS_NOWHERE
  */
-#define CONFIG_ENV_IS_NOWHERE
-#define CONFIG_ENV_OFFSET	0x60000		/* environment starts here  */
-#define CONFIG_ENV_SIZE		0x20000		/* Total Size of Environment Sector */
-#define CONFIG_ENV_SECT_SIZE	0x20000
+#define CONFIG_ASPEED_WRITE_DEFAULT_ENV
+#define CONFIG_ENV_IS_IN_FLASH   1
+#define CONFIG_ENV_OFFSET        0x60000 /* environment starts here  */
+#define CONFIG_ENV_SIZE          0x20000 /* # of bytes of env, 128k */
 #define CONFIG_ENV_OVERWRITE
+#define CONFIG_ENV_ADDR          (AST_FMC_CS0_BASE + CONFIG_ENV_OFFSET)
+#define CONFIG_EXTRA_ENV_SETTINGS                       \
+    "verify=yes\0"                                      \
+    "spi_dma=yes\0"                                     \
+    ""
 
 /*
  * Flash configuration
  * It is possible to run using the SMC and not enable flash
  *   CONFIG_CMD_FLASH
+ *   CONFIG_SYS_NO_FLASH
  */
-#define CONFIG_SYS_NO_FLASH
 
 /*
  * Serial configuration
@@ -56,9 +62,8 @@
 /*
  * Miscellaneous configurable options
  */
-#define CONFIG_SYS_LONGHELP			/* undef to save memory   */
+#define CONFIG_SYS_HZ     1000
 #define CONFIG_SYS_TIMERBASE	AST_TIMER_BASE 	/* use timer 1 */
-#define CONFIG_SYS_HZ 		1000
 
 /*
  * NIC configuration
@@ -76,6 +81,7 @@
 #define CONFIG_CMD_MEMINFO
 #define CONFIG_CMD_MEMTEST
 #define CONFIG_CMD_SDRAM
+#define CONFIG_CMD_FLASH
 
 /*
  * Additional command configuration

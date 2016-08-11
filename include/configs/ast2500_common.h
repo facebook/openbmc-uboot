@@ -51,7 +51,6 @@
  */
 #define CONFIG_AST_SPI_NOR
 
-#define CONFIG_SYS_TEXT_BASE        0x00000000
 #define PHYS_FLASH_1                0x20000000 /* Flash Bank #1 */
 #define CONFIG_SYS_FLASH_BASE       PHYS_FLASH_1
 #define CONFIG_FLASH_BANKS_LIST     { PHYS_FLASH_1 }
@@ -61,9 +60,6 @@
 /* timeout values are in ticks */
 #define CONFIG_SYS_FLASH_ERASE_TOUT (20*CONFIG_SYS_HZ)  /* Timeout for Flash Erase */
 #define CONFIG_SYS_FLASH_WRITE_TOUT (20*CONFIG_SYS_HZ)  /* Timeout for Flash Write */
-
-
-#define CONFIG_SYS_UBOOT_BASE   CONFIG_SYS_TEXT_BASE
 
 /*
  * DRAM Config
@@ -84,18 +80,24 @@
  *    CONFIG_DRAM_UART_OUT   // enable output message at UART5
  *    CONFIG_DRAM_UART_38400 // set the UART baud rate to 38400, default is 115200
  */
+#define CONFIG_DRAM_UART_OUT
 #define CONFIG_DRAM_ECC_SIZE  0x10000000
+#define CONFIG_NR_DRAM_BANKS  1
 
-/* new */
 /* additions for new relocation code, must added to all boards */
 #define CONFIG_SYS_SDRAM_BASE     (AST_DRAM_BASE) /* used to be 0x40000000 */
+
 #define CONFIG_SYS_INIT_RAM_ADDR    CONFIG_SYS_SDRAM_BASE /*(AST_SRAM_BASE)*/
 #define CONFIG_SYS_INIT_RAM_SIZE    (32*1024)
 #define CONFIG_SYS_INIT_RAM_END     (CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_RAM_SIZE)
-#define CONFIG_SYS_INIT_SP_ADDR   (CONFIG_SYS_INIT_RAM_END - GENERATED_GBL_DATA_SIZE)
-#define CONFIG_NR_DRAM_BANKS  1
+#define CONFIG_SYS_INIT_SP_ADDR     (CONFIG_SYS_SDRAM_BASE + 0x1000 - GENERATED_GBL_DATA_SIZE)
+
 #define CONFIG_SYS_MEMTEST_START    CONFIG_SYS_SDRAM_BASE + 0x300000
 #define CONFIG_SYS_MEMTEST_END      (CONFIG_SYS_MEMTEST_START + (80*1024*1024))
+
+#define CONFIG_SYS_TEXT_BASE    0x00000000
+#define CONFIG_SYS_UBOOT_BASE   CONFIG_SYS_TEXT_BASE
+#define CONFIG_SYS_LOAD_ADDR    0x83000000  /* default load address */
 
 /*
  * Miscellaneous configurable options
@@ -104,13 +106,19 @@
 #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE+sizeof(CONFIG_SYS_PROMPT)+16) /* Print Buffer Size */
 #define CONFIG_SYS_MAXARGS    16    /* max number of command args */
 #define CONFIG_SYS_BARGSIZE   CONFIG_SYS_CBSIZE /* Boot Argument Buffer Size  */
-#define CONFIG_SYS_LOAD_ADDR    0x83000000  /* default load address */
 
 /*
  * Memory Info
  */
 #define CONFIG_SYS_MALLOC_LEN       (CONFIG_ENV_SIZE + 1*1024*1024)
 #define CONFIG_SYS_GBL_DATA_SIZE    128 /* size in bytes reserved for initial data */
+
+/*
+ * Stack sizes
+ */
+#define CONFIG_STACKSIZE            (128*1024) /* regular stack */
+#define CONFIG_STACKSIZE_IRQ        (4*1024)   /* IRQ stack */
+#define CONFIG_STACKSIZE_FIQ        (4*1024)   /* FIQ stack */
 
 /*
  * Environment Config

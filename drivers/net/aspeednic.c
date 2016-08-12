@@ -1170,6 +1170,7 @@ static int aspeednic_init(struct eth_device* dev, bd_t* bis)
 	tx_new = 0;
 	rx_new = 0;
 
+#ifdef CONFIG_ASPEED_NCSI_ENABLE
 	if (!(CONFIG_ASPEED_MAC_PHY_SETTING >= 1))
 		return 1;
 
@@ -1227,6 +1228,7 @@ Re_Get_Link_Status:
 		Re_Send = 0;
 		Channel_Found = 0;
 	}
+#endif
 	return 1;
 }
 

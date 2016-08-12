@@ -449,7 +449,7 @@ wait_mpll_init:
 
     ldr   r0, =0x1e6e2084                        @ SCU84: Multi-function Pin Control 2
     ldr   r1, [r0]
-    ldr   r2, =0xffff0000
+    ldr   r2, =0xc0c00000
     orr   r1, r1, r2                             @ Enable UART1 and UART2
     str   r1, [r0]
 

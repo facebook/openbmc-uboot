@@ -653,7 +653,7 @@ wait_print:
     str   r1, [r0]
 
     ldr   r0, =0x1e6e0240
-    ldr   r1, =0x86000000
+    ldr   r1, =0x87000002 @ DDR Driving Force
     str   r1, [r0]
 
     ldr   r0, =0x1e6e0244

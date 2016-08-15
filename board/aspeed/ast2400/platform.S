@@ -1,11 +1,11 @@
 /*
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 /*
@@ -17,7 +17,7 @@
  *
  * Gary Hsu, <gary_hsu@aspeedtech.com>
  *
- * Release date: 2014.12.29 formal release for SDK0.60
+ * Release date: 2016.07.13 formal release for SDK0.62
  *
  * Modified list from v0.23
  * EC1. Modify DQIDLY and DQSI-MCLK2X calibration algorithm
@@ -44,6 +44,12 @@
  * Modified list from v0.59
  * EC1. Add DQS input gating window delay tuning (1/2 T) when CBR retry
  * EC2. Modify DLL1 MAdj = 0x4C
+ *
+ * Modified list from v0.60
+ * EC1. Modify DDR2 init preliminary size to 1Gbit, and BL=4.
+ *
+ * Modified list from v0.61
+ * EC1. Initialize USB2.0 port to Host mode, to fix FB firmware USB initial fail issue.
  *
  * Optional define variable
  * 1. DRAM Speed             //
@@ -418,6 +424,12 @@ init_dram:
     orr r1, r1, #0x80
     str r1, [r0]
 
+    ldr r0, =0x1e6e2090                          @ set USB2.0 port as Host mode
+    ldr r2, =0x20000000
+    ldr r1, [r0]
+    orr r1, r1, r2
+    str r1, [r0]
+
     /* Fix LPC lock issue for AST2300 */
     ldr r0, =0x1e6e207c                          @ Check AST2300
     ldr r1, [r0]
@@ -509,13 +521,13 @@ lpc_recover_end:
     /* <END> Fix LPC lock issue for AST2300 */
 
     /* Check Scratch Register Bit 6 */
-    ldr r0, =0x1e6e2040
+/*  ldr r0, =0x1e6e2040
     ldr r1, [r0]
     bic r1, r1, #0xFFFFFFBF
     mov r2, r1, lsr #6
     cmp r2, #0x01
     beq platform_exit
-
+*/
     ldr r2, =0x033103F1                          @ load PLL parameter for 24Mhz CLKIN (396:324)
 /*  ldr r2, =0x019001F0                          @ load PLL parameter for 24Mhz CLKIN (408:336) */
     ldr r0, =0x1e6e207c                          @ Check Revision ID
@@ -1108,9 +1120,9 @@ delay2_4:
     orr r2, r2, r1
 
     ldr r0, =0x1e6e002c                          @ REG_MRS
-    ldr r1, =0x00000D03                          @ 408 MHz
+    ldr r1, =0x00000D02                          @ 408 MHz
 #if defined(CONFIG_DRAM_336)
-    ldr r1, =0x00000B03
+    ldr r1, =0x00000B02
 #endif
     orr r1, r1, r2
     str r1, [r0]
@@ -1143,9 +1155,9 @@ delay2_4:
     str r1, [r0]
 
     ldr r0, =0x1e6e002c                          @ REG_MRS
-    ldr r1, =0x00000C03                          @ 408 MHz
+    ldr r1, =0x00000C02                          @ 408 MHz
 #if defined(CONFIG_DRAM_336)
-    ldr r1, =0x00000A03
+    ldr r1, =0x00000A02
 #endif
     orr r1, r1, r2
     str r1, [r0]
@@ -2790,11 +2802,11 @@ check_dram_size_end:
  Version Number
  *****************************************************************************/
     ldr   r0, =0x1e7200a8
-    ldr   r1, =0x20141229                        @ released date
+    ldr   r1, =0x20160713                        @ released date
     str   r1, [r0]
 
     add   r0, r0, #4
-    ldr   r1, =0x00000060                        @ released SDK version
+    ldr   r1, =0x00000062                        @ released SDK version
     str   r1, [r0]
 
 /******************************************************************************
@@ -3000,13 +3012,11 @@ ECC_Init_Flag:
     orr r1, r1, #0x08
     str r1, [r0]
 
-#ifndef CONFIG_ASPEED_ENABLE_JTAG
     ldr r0, =0x1e6e2004
     ldr r1, [r0]
     ldr r2, =0xFFBFFFFF                          @ Enable JTAG Master, solve ARM stucked by JTAG issue
     and r1, r1, r2
     str r1, [r0]
-#endif
 
     ldr r0, =0x1e6e2048                          @ Set MAC interface delay timing
     ldr r1, =0x2255

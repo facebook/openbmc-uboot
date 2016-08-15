@@ -8,16 +8,15 @@
 #ifndef __FBCMM_CONFIG_H
 #define __FBCMM_CONFIG_H
 
+#define CONFIG_IDENT_STRING " fbcmm-v0.0"
+#define CONFIG_FBCMM 1
+
+#define CONFIG_SYS_LONGHELP     /* undef to save memory   */
+#define CONFIG_SYS_HUSH_PARSER  /* Use the HUSH parser */
 #define CONFIG_BOOTARGS   "debug console=ttyS1,9600n8 root=/dev/ram rw"
 #define CONFIG_UPDATE   "tftp 80800000 ast2500.scr; so 80800000'"
-#define CONFIG_BOOTCOMMAND  "bootm 20480000"  /* Location of FIT */
+#define CONFIG_BOOTCOMMAND  "bootm 20080000"  /* Location of FIT */
 #define CONFIG_BOOTFILE   "flash-wedge"
-
-/*
- * Memory Configuration
- * Deprecating with v2016.03: CONFIG_ASPEED_WRITE_DEFAULT_ENV
- */
-#define PHYS_SDRAM_1_SIZE 0x10000000  /* 256 MB */
 
 /*
  * Serial configuration
@@ -26,7 +25,6 @@
 #define CONFIG_SYS_NS16550_COM1  AST_UART1_BASE
 #define CONFIG_CONS_INDEX 1
 #define CONFIG_BAUDRATE   9600
-#define CONFIG_ASPEED_COM AST_UART1_BASE  /* COM1(UART1) */
 
 /*
  * NIC configuration

@@ -30,10 +30,10 @@
 #define CONFIG_UPDATE            "tftp 80800000 ast2500.scr; so 80800000'"
 #define CONFIG_BOOTCOMMAND       "bootm 20080000" /* Location of FIT */
 #define CONFIG_BOOTFILE          "flash-fbtp"
-#define CONFIG_EXTRA_ENV_SETTINGS                       \
-    "verify=yes\0"                                      \
-    "spi_dma=yes\0"                                     \
-    ""
+
+/*
+ * Serial configuration
+ */
 #define CONFIG_SYS_NS16550_MEM32
 #define CONFIG_SYS_NS16550_REG_SIZE     -4
 #define CONFIG_SYS_NS16550_COM1         AST_UART0_BASE

@@ -159,6 +159,10 @@ config TARGET_FBTP
 	bool "Support Facebook's OpenBMC TP"
 	select CPU_ARM1176
 
+config TARGET_FBTTN
+	bool "Support Facebook's OpenBMC TTN"
+	select CPU_ARM1176
+
 config ARCH_DAVINCI
 	bool "TI DaVinci"
 	select CPU_ARM926EJS

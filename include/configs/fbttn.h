@@ -24,11 +24,18 @@
 #define CONFIG_IDENT_STRING " fbttn-v0.1"
 #define CONFIG_FBTTN 1
 
+#define CONFIG_SYS_LONGHELP     /* undef to save memory   */
+#define CONFIG_SYS_HUSH_PARSER  /* Use the HUSH parser */
 #define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw"
 #define CONFIG_UPDATE            "tftp 80800000 ast2500.scr; so 80800000'"
-#define CONFIG_BOOTCOMMAND       "bootm 20080000 20480000"
+#define CONFIG_BOOTCOMMAND       "bootm 20080000" /* Location of FIT */
 #define CONFIG_BOOTFILE          "flash-fbttn"
 
+/*
+ * Serial configuration
+ */
+#define CONFIG_SYS_NS16550_MEM32
+#define CONFIG_SYS_NS16550_REG_SIZE     -4
 #define CONFIG_SYS_NS16550_COM1         AST_UART0_BASE
 #define CONFIG_CONS_INDEX               1
 #define CONFIG_BAUDRATE                 57600
@@ -45,7 +52,7 @@
 #define CONFIG_MAC1_PHY_SETTING     2
 #define CONFIG_MAC2_PHY_SETTING     0
 #define CONFIG_ASPEED_MAC_NUMBER  1
-#define CONFIG_ASPEED_MAC_CONFIG  1 // config MAC1
+#define CONFIG_ASPEED_MAC_CONFIG  1 /* config MAC1 */
 
 #include "facebook_common.h"
 #include "ast2500_common.h"

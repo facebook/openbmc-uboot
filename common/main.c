@@ -44,8 +44,19 @@ static void run_preboot_environment_command(void)
 void main_loop(void)
 {
 	const char *s;
+#ifdef CONFIG_CMD_MEMTEST2
+	char *mtest;
+#endif /* CONFIG_CMD_MEMTEST2 */
 
 	bootstage_mark_name(BOOTSTAGE_ID_MAIN_LOOP, "main_loop");
+
+#ifdef CONFIG_CMD_MEMTEST2
+	mtest = getenv("do_mtest");
+	if(!(strcmp(mtest,"obmtest")))
+   	{
+		run_command(mtest,0);
+	}
+#endif /* CONFIG_CMD_MEMTEST2 */
 
 #ifdef CONFIG_VERSION_VARIABLE
 	setenv("ver", version_string);  /* set version variable */

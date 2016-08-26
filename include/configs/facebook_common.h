@@ -72,6 +72,11 @@
 #define CONFIG_LIB_RAND
 
 /*
+ * Memory Test configuration
+ */
+#define CONFIG_SYS_MEMTEST_ITERATION 10
+
+/*
  * Command configuration
  */
 #define CONFIG_CMD_MII
@@ -80,6 +85,7 @@
 #define CONFIG_CMD_DIAG
 #define CONFIG_CMD_MEMINFO
 #define CONFIG_CMD_MEMTEST
+#define CONFIG_CMD_MEMTEST2
 #define CONFIG_CMD_SDRAM
 #define CONFIG_CMD_FLASH
 

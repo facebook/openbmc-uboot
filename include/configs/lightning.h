@@ -241,6 +241,10 @@
 
 #define CONFIG_SYS_LOAD_ADDR		0x43000000	/* default load address */
 
+#define CONFIG_CMD_MEMTEST
+#define CONFIG_CMD_MEMTEST2
+#define CONFIG_SYS_MEMTEST_ITERATION 10
+
 #define CONFIG_SYS_TIMERBASE		0x1E782000	/* use timer 1 */
 #define CONFIG_SYS_HZ			      1000
 #define CONFIG_ASPEED_TIMER_CLK (1*1000*1000) /* use external clk (1M) */

@@ -437,6 +437,9 @@ void main_loop(void)
 	int rc = 1;
 	int flag;
 #endif
+#ifdef CONFIG_CMD_MEMTEST2
+	char *mtest;
+#endif /* CONFIG_CMD_MEMTEST2 */
 #ifdef CONFIG_PREBOOT
 	char *p;
 #endif
@@ -453,6 +456,14 @@ void main_loop(void)
 		mdm_init(); /* wait for modem connection */
 	}
 #endif  /* CONFIG_MODEM_SUPPORT */
+
+#ifdef CONFIG_CMD_MEMTEST2
+	mtest = getenv("do_mtest");
+	if(!(strcmp(mtest,"obmtest")))
+	{
+		run_command(mtest,0);
+	}
+#endif /* CONFIG_CMD_MEMTEST2 */
 
 #ifdef CONFIG_VERSION_VARIABLE
 	{

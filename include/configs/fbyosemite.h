@@ -249,6 +249,10 @@
 #define CONFIG_SYS_HZ			      1000
 #define CONFIG_ASPEED_TIMER_CLK (1*1000*1000) /* use external clk (1M) */
 
+#define CONFIG_CMD_MEMTEST
+#define CONFIG_CMD_MEMTEST2
+#define CONFIG_SYS_MEMTEST_ITERATION 10
+
 /*
  * Serial Configuration
  */

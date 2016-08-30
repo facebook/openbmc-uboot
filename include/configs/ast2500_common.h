@@ -21,7 +21,6 @@
 #define CONFIG_ARCH_CPU_INIT
 
 #include <asm/arch/platform.h>
-#include <asm/arch/aspeed.h>
 
 /* new */
 #define CONFIG_SYS_DCACHE_OFF 1
@@ -52,10 +51,21 @@
 #define CONFIG_AST_SPI_NOR
 
 #define PHYS_FLASH_1                0x20000000 /* Flash Bank #1 */
-#define CONFIG_SYS_FLASH_BASE       PHYS_FLASH_1
+#define PHYS_FLASH_2                0x30000000 /* Flash Bank #2 */
+#define PHYS_FLASH_2_BASE           0x30000000 /* Base of Flash 1 */
+
+#ifndef CONFIG_SPL_BUILD
+#define CONFIG_2SPIFLASH
+#define CONFIG_FLASH_BANKS_LIST     { PHYS_FLASH_1, PHYS_FLASH_2 }
+#define CONFIG_FMC_CS               2
+#define CONFIG_SYS_MAX_FLASH_BANKS  2
+#else
 #define CONFIG_FLASH_BANKS_LIST     { PHYS_FLASH_1 }
 #define CONFIG_FMC_CS               1
 #define CONFIG_SYS_MAX_FLASH_BANKS  1
+#endif
+
+#define CONFIG_SYS_FLASH_BASE       PHYS_FLASH_1
 #define CONFIG_SYS_MAX_FLASH_SECT   (8192) /* max # of sectors on one chip */
 /* timeout values are in ticks */
 #define CONFIG_SYS_FLASH_ERASE_TOUT (20*CONFIG_SYS_HZ)  /* Timeout for Flash Erase */
@@ -90,12 +100,29 @@
 #define CONFIG_SYS_INIT_RAM_ADDR    CONFIG_SYS_SDRAM_BASE /*(AST_SRAM_BASE)*/
 #define CONFIG_SYS_INIT_RAM_SIZE    (32*1024)
 #define CONFIG_SYS_INIT_RAM_END     (CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_RAM_SIZE)
-#define CONFIG_SYS_INIT_SP_ADDR     (CONFIG_SYS_SDRAM_BASE + 0x1000 - GENERATED_GBL_DATA_SIZE)
+
+/*
+ * SRAM configuration
+ */
+#define CONFIG_SYS_SRAM_BASE    AST_SRAM_BASE
+#define CONFIG_SYS_SRAM_TOP   (CONFIG_SYS_SDRAM_BASE + 8000)
 
 #define CONFIG_SYS_MEMTEST_START    CONFIG_SYS_SDRAM_BASE + 0x300000
 #define CONFIG_SYS_MEMTEST_END      (CONFIG_SYS_MEMTEST_START + (80*1024*1024))
 
+/*
+ * U-Boot Entry Point (EP) and load location configuration.
+ *
+ * A board may set this specifically, for example a verified boot will change
+ * the EP for U-Boot to become the location of MMIO/strapped SPI1.
+ */
+#ifndef CONFIG_SYS_TEXT_BASE
 #define CONFIG_SYS_TEXT_BASE    0x00000000
+#endif
+#ifndef CONFIG_SYS_INIT_SP_ADDR
+#define CONFIG_SYS_INIT_SP_ADDR     (CONFIG_SYS_SDRAM_BASE + 0x1000 - GENERATED_GBL_DATA_SIZE)
+#endif
+
 #define CONFIG_SYS_UBOOT_BASE   CONFIG_SYS_TEXT_BASE
 #define CONFIG_SYS_LOAD_ADDR    0x83000000  /* default load address */
 

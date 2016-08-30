@@ -244,11 +244,67 @@ TIME_TABLE_DDR4_1600:
 
 .globl lowlevel_init
 lowlevel_init:
-
-init_dram:
     /* save lr */
     mov   r4, lr
 
+/* Debug - UART console message */
+    ldr   r0, =0x1e78400c /* CONFIG_ASPEED_COM_LCR */
+    mov   r1, #0x83
+    str   r1, [r0]
+
+    ldr   r0, =0x1e6e202c
+    ldr   r2, [r0]
+    mov   r2, r2, lsr #12
+    tst   r2, #0x01
+    ldr   r0, =AST_UART0_BASE /* CONFIG_ASPEED_COM */
+#if CONFIG_BAUDRATE == 115200
+    moveq r1, #0x0D                              @ Baudrate 115200
+    movne r1, #0x01                              @ Baudrate 115200, div13
+#elif CONFIG_BAUDRATE == 57600
+    moveq r1, #0x1A                              @ Baudrate 57600
+    movne r1, #0x02                              @ Baudrate 57600, div13
+#elif CONFIG_BAUDRATE == 38400
+    moveq r1, #0x27                              @ Baudrate 38400
+    movne r1, #0x03                              @ Baudrate 38400 , div13
+#elif CONFIG_BAUDRATE == 9600
+    moveq r1, #0x9c                              @ Baudrate 9600
+    movne r1, #0x0C                              @ Baudrate 9600 , div13
+#endif
+    str   r1, [r0]
+
+    ldr   r0, =0x1e784004 /* CONFIG_ASPEED_COM_IER */
+    mov   r1, #0x00
+    str   r1, [r0]
+
+    ldr   r0, =0x1e78400c /* CONFIG_ASPEED_COM_LCR */
+    mov   r1, #0x03
+    str   r1, [r0]
+
+    ldr   r0, =0x1e784008 /* CONFIG_ASPEED_COM_IIR */
+    mov   r1, #0x07
+    str   r1, [r0]
+
+#if defined(CONFIG_SPL_BUILD) /* This is a ROM/SPL build */
+    /* Debug - UART console message */
+    ldr r0, =AST_UART0_BASE
+    mov r1, #0x0D                                @ '\r'
+    str r1, [r0]
+    mov r1, #0x0A                                @ '\n'
+    str r1, [r0]
+    mov r1, #0x53                                @ 'S'
+    str r1, [r0]
+    mov r1, #0x50                                @ 'P'
+    str r1, [r0]
+    mov r1, #0x4C                                @ 'L'
+    str r1, [r0]
+    mov r1, #0x0D                                @ '\r'
+    str r1, [r0]
+    mov r1, #0x0A                                @ '\n'
+    str r1, [r0]
+    /* End Debug - UART console message */
+#endif
+
+#if defined(CONFIG_SPL_BUILD) || !defined(CONFIG_SPL)
     /* Clear AHB bus lock condition */
     ldr   r0, =0x1e600000
     ldr   r1, =0xAEED1A03
@@ -401,7 +457,7 @@ bypass_USB_init:
     bic   r1, r1, #0xFFFFFFBF
     mov   r2, r1, lsr #6
     cmp   r2, #0x01
-    beq   platform_exit
+    beq   platform_exit_finish
 
     /* Disable VGA display */
     ldr   r0, =0x1e6e202c
@@ -409,6 +465,13 @@ bypass_USB_init:
     orr   r1, r1, #0x40
     str   r1, [r0]
 
+#if defined(CONFIG_SPL_BUILD)
+    b platform_exit_finish
+#endif
+#endif /* CONFIG_SPL_BUILD || !defined(CONFIG_SPL) */
+
+#if !defined(CONFIG_SPL_BUILD)
+init_dram:
     /* Set M-PLL */
 #if   defined (CONFIG_DRAM_1333)
     ldr   r2, =0xC48066C0                        @ load PLL parameter for 24Mhz CLKIN (330)
@@ -487,36 +550,6 @@ wait_mmc_reset_done:
 
     ldr   r0, =0x1e6e0034                        @ disable MMC request
     ldr   r1, =0x00020000
-    str   r1, [r0]
-
-/* Debug - UART console message */
-    ldr   r0, =0x1e78400c
-    mov   r1, #0x83
-    str   r1, [r0]
-
-    ldr   r0, =0x1e6e202c
-    ldr   r2, [r0]
-    mov   r2, r2, lsr #12
-    tst   r2, #0x01
-    ldr   r0, =0x1e784000
-    moveq r1, #0x0D                              @ Baudrate 115200
-    movne r1, #0x01                              @ Baudrate 115200, div13
-#ifdef CONFIG_DRAM_UART_38400
-    moveq r1, #0x27                              @ Baudrate 38400
-    movne r1, #0x03                              @ Baudrate 38400 , div13
-#endif
-    str   r1, [r0]
-
-    ldr   r0, =0x1e784004
-    mov   r1, #0x00
-    str   r1, [r0]
-
-    ldr   r0, =0x1e78400c
-    mov   r1, #0x03
-    str   r1, [r0]
-
-    ldr   r0, =0x1e784008
-    mov   r1, #0x07
     str   r1, [r0]
 
     ldr   r0, =0x1e784000
@@ -1990,7 +2023,9 @@ set_D2PLL:
     ldr   r0, =0x1e782038
     ldr   r1, =0xEA
     str   r1, [r0]
+#endif /* CONFIG_SPL_BUILD: End normal U-Boot build */
 
+platform_exit_finish:
     /* restore lr */
     mov   lr, r4
 

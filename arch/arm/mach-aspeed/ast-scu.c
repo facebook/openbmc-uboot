@@ -49,13 +49,13 @@ static inline u32 ast_scu_read(u32 reg)
 {
 	u32 val = readl(AST_SCU_BASE + reg);
 
-	debug("ast_scu_read : reg = 0x%08x, val = 0x%08x\n", reg, val);
+	//debug("ast_scu_read : reg = 0x%08x, val = 0x%08x\n", reg, val);
 	return val;
 }
 
 static inline void ast_scu_write(u32 val, u32 reg)
 {
-	debug("ast_scu_write : reg = 0x%08x, val = 0x%08x\n", reg, val);
+	//debug("ast_scu_write : reg = 0x%08x, val = 0x%08x\n", reg, val);
 
 	writel(SCU_PROTECT_UNLOCK, AST_SCU_BASE);
 	writel(val, AST_SCU_BASE + reg);

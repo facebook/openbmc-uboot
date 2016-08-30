@@ -154,14 +154,17 @@ config TARGET_FBWEDGE100
 config TARGET_FBCMM
 	bool "Support Facebook's OpenBMC CMM"
 	select CPU_ARM1176
+	select SUPPORT_SPL
 
 config TARGET_FBTP
 	bool "Support Facebook's OpenBMC TP"
 	select CPU_ARM1176
+	select SUPPORT_SPL
 
 config TARGET_FBTTN
 	bool "Support Facebook's OpenBMC TTN"
 	select CPU_ARM1176
+	select SUPPORT_SPL
 
 config ARCH_DAVINCI
 	bool "TI DaVinci"

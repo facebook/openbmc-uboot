@@ -17,10 +17,10 @@
  */
 
 #ifdef CONFIG_SPL
-#define CONFIG_SYS_REMAP_BASE     0x30000000
-#define CONFIG_SYS_UBOOT_START    0x30008000 /* Must be defined as-is */
-#define CONFIG_SYS_ENV_BASE       0x30000000
-#define CONFIG_KERNEL_LOAD         "30080000"
+#define CONFIG_SYS_REMAP_BASE     0x28000000
+#define CONFIG_SYS_UBOOT_START    0x28008000 /* Must be defined as-is */
+#define CONFIG_SYS_ENV_BASE       0x28000000
+#define CONFIG_KERNEL_LOAD         "28080000"
 #else
 #define CONFIG_SYS_REMAP_BASE     0x00000000
 #define CONFIG_SYS_UBOOT_START    0x00000000

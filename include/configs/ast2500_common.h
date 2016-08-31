@@ -51,8 +51,8 @@
 #define CONFIG_AST_SPI_NOR
 
 #define PHYS_FLASH_1                0x20000000 /* Flash Bank #1 */
-#define PHYS_FLASH_2                0x30000000 /* Flash Bank #2 */
-#define PHYS_FLASH_2_BASE           0x30000000 /* Base of Flash 1 */
+#define PHYS_FLASH_2                0x28000000 /* Flash Bank #2 */
+#define PHYS_FLASH_2_BASE           0x28000000 /* Base of Flash 1 */
 
 #ifndef CONFIG_SPL_BUILD
 #define CONFIG_2SPIFLASH

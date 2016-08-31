@@ -14,6 +14,8 @@
 
 #include <asm/arch/aspeed.h>
 
+#include "flash-spl.h"
+
 DECLARE_GLOBAL_DATA_PTR;
 
 static ulong fdt_getprop_u32(const void *fdt, int node, const char *prop)
@@ -46,16 +48,11 @@ void spl_display_print() {
   /* Nothing */
 }
 
-u32 read_reg(u32 reg) {
-  return *(volatile u32*)reg;
-}
-
-void write_reg(u32 reg, u32 val) {
-  *((volatile u32*) reg) = val;
-}
-
 void load_fit(u32 from) {
   struct image_header *header;
+
+  /* Reset the target RW flash chip. */
+  ast_fmc_spi_cs1_reset();
 
   header = (struct image_header*)(from);
   if (!IS_ENABLED(CONFIG_SPL_LOAD_FIT) ||

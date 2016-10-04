@@ -521,13 +521,13 @@ lpc_recover_end:
     /* <END> Fix LPC lock issue for AST2300 */
 
     /* Check Scratch Register Bit 6 */
-/*  ldr r0, =0x1e6e2040
+    ldr r0, =0x1e6e2040
     ldr r1, [r0]
     bic r1, r1, #0xFFFFFFBF
     mov r2, r1, lsr #6
     cmp r2, #0x01
     beq platform_exit
-*/
+
     ldr r2, =0x033103F1                          @ load PLL parameter for 24Mhz CLKIN (396:324)
 /*  ldr r2, =0x019001F0                          @ load PLL parameter for 24Mhz CLKIN (408:336) */
     ldr r0, =0x1e6e207c                          @ Check Revision ID

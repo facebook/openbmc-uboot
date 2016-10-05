@@ -126,7 +126,7 @@
 #define CONFIG_BOOTP_HOSTNAME
 #define CONFIG_BOOTP_SUBNETMASK
 
-/* 
+/*
  * Environment Config
  */
 #define CONFIG_BOOTDELAY	2
@@ -138,7 +138,7 @@
 #define CONFIG_SYS_LONGHELP	/* undef to save memory */
 #define CONFIG_SYS_CBSIZE	256		/* Console I/O Buffer Size */
 /* Monitor Command Prompt	 */
-#define CONFIG_SYS_PROMPT		"ast# " 
+#define CONFIG_SYS_PROMPT		"ast# "
 
 /* Print Buffer Size */
 #define CONFIG_SYS_PBSIZE	(CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
@@ -217,7 +217,7 @@
 #define CONFIG_AST_WATCHDOG_TIMEOUT		(1*1000*1000 *30)
 
 #ifdef CONFIG_PCI
-#define CONFIG_CMD_PCI 
+#define CONFIG_CMD_PCI
 #define CONFIG_PCI_PNP
 #define CONFIG_PCI_SCAN_SHOW
 #define CONFIG_PCI_CONFIG_HOST_BRIDGE
@@ -253,7 +253,7 @@
 //3. DRAM Type
 //#define CONFIG_DDR3_8GSTACK    // DDR3 8Gbit Stack die
 //4. ECC Function enable
-//#define CONFIG_DRAM_ECC
+#define CONFIG_DRAM_ECC
 #define	CONFIG_DRAM_ECC_SIZE	0x10000000
 
 #endif	/* __CONFIG_H */

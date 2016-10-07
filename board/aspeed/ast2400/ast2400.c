@@ -96,6 +96,11 @@ enable this bit 0x1e6e2040 D[0]*/
     /* arch number */
     gd->bd->bi_arch_number = MACH_TYPE_ASPEED;
 
+#ifndef CONFIG_ASPEED_ENABLE_DUAL_BOOT_WATCHDOG
+    /* disable WDT2 */
+    *((volatile ulong*) 0x1e78502C) = 0x00;
+#endif
+
     /* adress of boot parameters */
     gd->bd->bi_boot_params = 0x40000100;
 

@@ -20,3 +20,8 @@ config SYS_CONFIG_NAME
 	default "ast-g5-ncsi" if ASPEED_NET_NCSI
 
 endif
+
+config ASPEED_RECOVERY_BUILD
+	bool "Build a recovery environment"
+	default n
+	depends on SPL

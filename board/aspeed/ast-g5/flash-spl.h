@@ -18,4 +18,4 @@
  *   AST_FMC_BASE     - the MMIO base of the FMC register group.
  *
  */
-void ast_fmc_spi_cs1_reset(void);
+int ast_fmc_spi_cs1_reset(void);

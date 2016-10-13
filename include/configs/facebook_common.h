@@ -12,16 +12,33 @@
  * Verified boot options.
  *
  * These are general feature flags related to verified boot.
- *   CONFIG_SPL_FIT_SIGNATURE: Enforce verified boot code in ROM.
  *   CONFIG_SPL: Use a dual SPI for booting U-Boot.
+ *   CONFIG_SPL_FIT_SIGNATURE: Enforce verified boot code in ROM.
+ *   CONFIG_SPL_BUILD: Defined when the compilation is for the SPL
+ *
+ *   CONFIG_SYS_REMAP_BASE: Location U-Boot expects to execute from.
+ *   CONFIG_SYS_UBOOT_START: Similar to CONFIG_SYS_REMAP_BASE
+ *   CONFIG_SYS_ENV_BASE: Flash base address for RW environment data.
+ *
+ * Custom build options:
+ *   CONFIG_SYS_SPL_FIT_BASE: The known location of FIT containing U-Boot.
+ *   CONFIG_SYS_RECOVERY_BASE: The known location of the Recovery U-Boot.
+ *   CONFIG_ASPEED_RECOVERY_BUILD: Defined when the compilation is for the Recovery.
  */
-
 #ifdef CONFIG_SPL
-#define CONFIG_SYS_REMAP_BASE     0x28000000
-#define CONFIG_SYS_UBOOT_START    0x28008000 /* Must be defined as-is */
-#define CONFIG_SYS_ENV_BASE       0x28000000
-#define CONFIG_KERNEL_LOAD         "28080000"
+#ifdef CONFIG_ASPEED_RECOVERY_BUILD
+#define CONFIG_SYS_REMAP_BASE     0x20010000
+#define CONFIG_SYS_UBOOT_START    0x20010000 /* Must be defined as-is */
 #else
+#define CONFIG_SYS_REMAP_BASE     0x28084000
+#define CONFIG_SYS_UBOOT_START    0x28084000 /* Must be defined as-is */
+#endif
+#define CONFIG_SYS_SPL_FIT_BASE   0x28080000
+#define CONFIG_SYS_RECOVERY_BASE  0x20010000
+#define CONFIG_SYS_ENV_BASE       0x28000000
+#define CONFIG_KERNEL_LOAD         "280E0000"
+#else
+/* Legacy non-Verified boot configuration. */
 #define CONFIG_SYS_REMAP_BASE     0x00000000
 #define CONFIG_SYS_UBOOT_START    0x00000000
 #define CONFIG_SYS_ENV_BASE       0x20000000
@@ -50,7 +67,9 @@
  *   CONFIG_ENV_IS_IN_SPI_FLASH
  *   CONFIG_ENV_IS_NOWHERE
  */
+#ifndef CONFIG_DEBUG_QEMU
 #define CONFIG_ASPEED_WRITE_DEFAULT_ENV
+#endif
 #define CONFIG_ENV_IS_IN_FLASH
 #define CONFIG_ENV_OFFSET        0x60000 /* environment starts here  */
 #define CONFIG_ENV_SIZE          0x20000 /* # of bytes of env, 128k */
@@ -117,10 +136,6 @@
  */
 
 #ifdef CONFIG_SPL
-/* Define the base address to search for a FIT within the SPL. */
-#define CONFIG_SYS_SPL_FIT_BASE     CONFIG_SYS_REMAP_BASE
-#define CONFIG_SPL_LOAD_FIT_OFFSET  0x8000
-
 #ifdef CONFIG_SPL_BUILD
 /* This is an SPL build */
 

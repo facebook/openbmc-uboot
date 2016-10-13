@@ -247,6 +247,10 @@ lowlevel_init:
     /* save lr */
     mov   r4, lr
 
+    /* save into SRAM */
+    ldr r0, =0x1e720100 /* vbs.uboot_exec_address */
+    str r4, [r0]
+
 /* Debug - UART console message */
     ldr   r0, =0x1e78400c /* CONFIG_ASPEED_COM_LCR */
     mov   r1, #0x83
@@ -305,6 +309,11 @@ lowlevel_init:
 #endif
 
 #if defined(CONFIG_SPL_BUILD) || !defined(CONFIG_SPL)
+    /* This is 'almost' the first code to execute (clear verified boot flags). */
+    ldr   r0, =0x1E720104
+    mov   r1, #0x0
+    str   r1, [r0]
+
     /* Clear AHB bus lock condition */
     ldr   r0, =0x1e600000
     ldr   r1, =0xAEED1A03
@@ -546,6 +555,10 @@ wait_mmc_reset_done:
     str   r1, [r0]
     ldr   r2, [r0]
     cmp   r2, #0x1
+    /* It seems the QEMU model does not let us pass. */
+#ifdef CONFIG_DEBUG_QEMU
+    b platform_exit_finish
+#endif
     bne   wait_mmc_reset_done
 
     ldr   r0, =0x1e6e0034                        @ disable MMC request

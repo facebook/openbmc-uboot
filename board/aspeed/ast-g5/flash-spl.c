@@ -59,14 +59,19 @@ inline void spi_reset(u32 ctrl) {
   write_reg(AST_FMC_BASE + ctrl, AST_FMC_STATUS_RESET);
 }
 
-inline void spi_status(u32 base, u32 ctrl, uchar mask, bool invert) {
+inline int spi_status(u32 base, u32 ctrl, uchar mask, bool invert) {
   spi_low(ctrl);
   spi_cmd(base, SPI_CMD_RS);
   uchar r1; /* Only need to read_byte(AST_FMC_CS1_BASE); */
+  u32 timeout = 1000;
   do {
     r1 = read_byte(base);
+    if (--timeout == 0) {
+      return 0;
+    }
   } while ((invert && !(r1 & mask)) || (!invert && (r1 & mask)));
   spi_high(ctrl);
+  return 1;
 }
 
 inline void spi_write_status(u32 base, u32 ctrl, uchar cmd) {
@@ -82,18 +87,23 @@ inline void spi_enable_3b(u32 base, u32 ctrl) {
   spi_high(ctrl);
 }
 
-void ast_fmc_spi_cs1_reset(void) {
+int ast_fmc_spi_cs1_reset(void) {
   /* Enable register changes for the FMC, then send write-enable to the SPI. */
   spi_enable_write(AST_FMC_CS1_BASE, AST_FMC_CE1_CONTROL);
-  spi_status(AST_FMC_CS1_BASE, AST_FMC_CE1_CONTROL, 0x02, true);
+  if (!spi_status(AST_FMC_CS1_BASE, AST_FMC_CE1_CONTROL, 0x02, true)) {
+    return 0;
+  }
 
   /* Write and clear the status register for the SPI chip. */
   spi_write_status(AST_FMC_CS1_BASE, AST_FMC_CE1_CONTROL, 0x00);
-  spi_status(AST_FMC_CS1_BASE, AST_FMC_CE1_CONTROL, 0x01, false);
+  if (!spi_status(AST_FMC_CS1_BASE, AST_FMC_CE1_CONTROL, 0x01, false)) {
+    return 0;
+  }
 
   /* Set the SPI chip to use 3-byte addressing mode (default). */
   spi_enable_3b(AST_FMC_CS1_BASE, AST_FMC_CE1_CONTROL);
 
   /* Reset the FMC state. */
   spi_reset(AST_FMC_CE1_CONTROL);
+  return 1;
 }

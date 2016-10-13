@@ -9,12 +9,22 @@
 #include <asm/spl.h>
 #include <malloc.h>
 
+#include <environment.h>
+
 #include <image.h>
 #include <libfdt.h>
 
 #include <asm/arch/aspeed.h>
+#include <asm/io.h>
 
 #include "flash-spl.h"
+
+/* Location in SRAM used for verified boot content/flags. */
+#define AST_SRAM_VBS_BASE   0x1E720100
+#define AST_SRAM_VBS_FLAGS  (AST_SRAM_VBS_BASE + 0x04)
+
+/* Size of RW environment parsable by ROM. */
+#define AST_ROM_ENV_MAX     0x200
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -32,6 +42,7 @@ static ulong fdt_getprop_u32(const void *fdt, int node, const char *prop)
 
 void __noreturn jump(u32 to)
 {
+  debug("Blindly jumping to 0x%08x\n", to);
   typedef void __noreturn (*image_entry_noargs_t)(void);
 
   image_entry_noargs_t image_entry =
@@ -48,11 +59,70 @@ void spl_display_print() {
   /* Nothing */
 }
 
+void spl_recovery(void) {
+  /* Overwirte all of the verified boot flags we've defined. */
+  writeb(1, AST_SRAM_VBS_FLAGS);
+
+  /* Jump to the well-known location of the Recovery U-Boot. */
+  printf("Booting recovery U-Boot\n");
+  jump(CONFIG_SYS_RECOVERY_BASE);
+}
+
+int spl_getenv_yesno(const char* var) {
+  const char* n = 0;
+  const char* v = 0;
+  int size = strlen(var);
+
+  /* Use a RW environment. */
+  env_t *env = (env_t*)CONFIG_ENV_ADDR;
+
+  int offset;
+  char last = 0;
+  char current = env->data[0];
+  for (offset = 1; offset < AST_ROM_ENV_MAX; ++offset) {
+    last = current;
+    current = env->data[offset];
+    if (last == 0 && current == 0) {
+      /* This is the end of the environment. */
+      return 0;
+    }
+
+    if (n == 0) {
+      /* This is the first variable. */
+      n = (const char*)&env->data[offset - 1];
+    } else if (current == 0) {
+      /* This is the end of a variable. */
+      v = 0;
+      n = (const char*)&env->data[offset + 1];
+    } else if (v == 0 && current == '=') {
+      v = (const char*)&env->data[offset + 1];
+      if (strncmp(n, var, size) == 0) {
+        if (*v == '1' || *v == 'y' || *v == 't' || *v == 'T' || *v == 'Y') {
+          return 1;
+        }
+      }
+    }
+  }
+  return 0;
+}
+
+int verify_required(int hw_verify, int sw_verify) {
+  if (hw_verify == 1) {
+    return 1;
+  } else if (sw_verify == 1) {
+    return 1;
+  }
+  return 0;
+}
+
 void load_fit(u32 from) {
   struct image_header *header;
 
   /* Reset the target RW flash chip. */
-  ast_fmc_spi_cs1_reset();
+  if (!ast_fmc_spi_cs1_reset()) {
+    debug("%s: Cannot reset FMC/CS1 (SPI0.1) state", __func__);
+    spl_recovery();
+  }
 
   header = (struct image_header*)(from);
   if (!IS_ENABLED(CONFIG_SPL_LOAD_FIT) ||
@@ -60,7 +130,7 @@ void load_fit(u32 from) {
     /* FIT loading is not available or this U-Boot is not a FIT. */
     /* This will bypass signature checking */
     debug("%s: Cannot find FIT image header: 0x%08x\n", __func__, from);
-    jump(from);
+    spl_recovery();
   }
 
   void *fit = header;
@@ -73,22 +143,34 @@ void load_fit(u32 from) {
   int images = fdt_path_offset(fit, FIT_IMAGES_PATH);
   if (images < 0) {
     debug("%s: Cannot find /images node: %d\n", __func__, images);
-    hang();
+    spl_recovery();
   }
 
   /* Be simple, select the first image. */
   int node = fdt_first_subnode(fit, images);
   if (node < 0) {
     debug("%s: Cannot find first image node: %d\n", __func__, node);
-    hang();
+    spl_recovery();
   }
 
   /* Get its information and set up the spl_image structure */
-  int data_offset = fdt_getprop_u32(fit, node, "data-offset");
+  int data_position = fdt_getprop_u32(fit, node, "data-position");
   int data_size = fdt_getprop_u32(fit, node, "data-size");
-  u32 load = fdt_getprop_u32(fit, node, "load");
-  debug("%s: data_offset=%x, data_size=%x load=%x\n",
-    __func__, data_offset, data_size, load);
+
+  u32 load = from;
+  if (data_position > 0) {
+    /* Position will include the relative offset from the base of U-Boot's FIT */
+    load += data_position;
+  }
+
+  int hw_verify = 0;
+  int sw_verify = spl_getenv_yesno("verify");
+  int force_recovery = spl_getenv_yesno("force_recovery");
+  debug("%s: data_position=%x, data_size=%x load=%x hw/sw verify=%d/%d\n",
+    __func__, data_position, data_size, load, hw_verify, sw_verify);
+  if (force_recovery == 1) {
+    spl_recovery();
+  }
 
   /*
    * It is possible to disabled verified boot at build-time.
@@ -136,16 +218,20 @@ void load_fit(u32 from) {
   if (fit_image_verify_required_sigs(fit, node, data, data_size,
              signature_store, &verified)) {
     printf("Unable to verify required signature.\n");
-    hang();
+    if (verify_required()) {
+      spl_recovery();
+    }
   }
 
   if (verified != 0) {
     /* When verified is 0, then an image was verified. */
     printf("No images were verified.\n");
-    hang();
+    if (verify_required()) {
+      spl_recovery();
+    }
+  } else {
+    printf("Images verified\n");
   }
-
-  printf("Images verified\n");
 #endif
   jump(load);
 }

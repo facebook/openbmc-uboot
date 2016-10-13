@@ -29,14 +29,15 @@
 #ifdef CONFIG_ASPEED_RECOVERY_BUILD
 #define CONFIG_SYS_REMAP_BASE     0x20010000
 #define CONFIG_SYS_UBOOT_START    0x20010000 /* Must be defined as-is */
+#define CONFIG_KERNEL_LOAD         "200E0000"
 #else
 #define CONFIG_SYS_REMAP_BASE     0x28084000
 #define CONFIG_SYS_UBOOT_START    0x28084000 /* Must be defined as-is */
+#define CONFIG_KERNEL_LOAD         "280E0000"
 #endif
 #define CONFIG_SYS_SPL_FIT_BASE   0x28080000
 #define CONFIG_SYS_RECOVERY_BASE  0x20010000
 #define CONFIG_SYS_ENV_BASE       0x28000000
-#define CONFIG_KERNEL_LOAD         "280E0000"
 #else
 /* Legacy non-Verified boot configuration. */
 #define CONFIG_SYS_REMAP_BASE     0x00000000
@@ -50,6 +51,15 @@
  * Before including this common configuration, the board must include
  * the CPU/arch platform configuration.
  */
+
+/*
+ * Recovery boot flow
+ */
+#ifdef CONFIG_ASPEED_RECOVERY_BUILD
+#define CONFIG_PREBOOT            "setenv autoload no; setenv verify yes; dhcp"
+#define CONFIG_UPDATE_TFTP
+#define CONFIG_UPDATE_LOAD_ADDR   (CONFIG_SYS_LOAD_ADDR + 0x60000)
+#endif
 
 /*
  * Basic boot command configuration based on flash
@@ -78,6 +88,7 @@
 #define CONFIG_EXTRA_ENV_SETTINGS                       \
     "verify=yes\0"                                      \
     "spi_dma=no\0"                                      \
+    "updatefile=" CONFIG_BOOTFILE ".fit"                \
     ""
 
 /*

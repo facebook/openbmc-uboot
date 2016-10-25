@@ -91,7 +91,8 @@
  *    CONFIG_DRAM_UART_38400 // set the UART baud rate to 38400, default is 115200
  */
 #define CONFIG_DRAM_UART_OUT
-#define CONFIG_DRAM_ECC_SIZE  0x10000000
+#define CONFIG_DRAM_ECC
+#define CONFIG_DRAM_ECC_SIZE  0x4000000
 #define CONFIG_NR_DRAM_BANKS  1
 
 /* additions for new relocation code, must added to all boards */

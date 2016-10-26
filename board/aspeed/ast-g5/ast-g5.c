@@ -16,8 +16,26 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+void watchdog_init()
+{
+#ifdef CONFIG_ASPEED_ENABLE_WATCHDOG
+#define AST_WDT_CLK (1*1000*1000) /* 1M clock source */
+    u32 reload = AST_WDT_CLK * CONFIG_ASPEED_WATCHDOG_TIMEOUT;
+    /* set the reload value */
+    __raw_writel(reload, AST_WDT_BASE + 0x04);
+    /* magic word to reload */
+    __raw_writel(0x4755, AST_WDT_BASE + 0x08);
+    /* start the watchdog with 1M clk src and reset whole chip */
+    __raw_writel(0x33, AST_WDT_BASE + 0x0c);
+    printf("Watchdog: %us\n", CONFIG_ASPEED_WATCHDOG_TIMEOUT);
+#endif
+}
+
 int board_init(void)
 {
+
+	watchdog_init();
+
 	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
 	gd->flags = 0;
 

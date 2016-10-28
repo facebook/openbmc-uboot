@@ -92,7 +92,7 @@
  */
 #define CONFIG_DRAM_UART_OUT
 #define CONFIG_DRAM_ECC
-#define CONFIG_DRAM_ECC_SIZE  0x4000000
+#define CONFIG_DRAM_ECC_SIZE  0x1B200000 // dram(512M) - vga(16M) - ECC used(62M) = 434M
 #define CONFIG_NR_DRAM_BANKS  1
 
 /* additions for new relocation code, must added to all boards */

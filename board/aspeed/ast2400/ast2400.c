@@ -97,8 +97,8 @@ enable this bit 0x1e6e2040 D[0]*/
     gd->bd->bi_arch_number = MACH_TYPE_ASPEED;
 
 #ifndef CONFIG_ASPEED_ENABLE_DUAL_BOOT_WATCHDOG
-    /* disable WDT2 */
-    *((volatile ulong*) 0x1e78502C) = 0x00;
+    /* set the clock source of WDT2 for 1MHz */
+    *((volatile ulong*) 0x1e78502C) |= 0x10;
 #endif
 
     /* adress of boot parameters */
@@ -213,7 +213,8 @@ static void watchdog_init()
   __raw_writel(0x4755, AST_WDT2_BASE + 0x08);
   printf("Dual boot watchdog: %us\n", CONFIG_ASPEED_WATCHDOG_DUAL_BOOT_TIMEOUT);
 #else
-  __raw_writel(0x0, AST_WDT2_BASE + 0x0c);
+  /* disable WDT2 */
+  *((volatile ulong*) 0x1e78502C) &= 0xFFFFFFFE;
 #endif
   reload = AST_WDT_CLK * CONFIG_ASPEED_WATCHDOG_TIMEOUT;
   /* set the reload value */

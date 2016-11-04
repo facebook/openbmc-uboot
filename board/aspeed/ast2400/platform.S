@@ -249,7 +249,23 @@ str r1, [r0]
   ldr r1, [r0]
   and r1, r1, r2
   str r1, [r0]
+  // Enable GPIOE[0-3] Tolerant
+  ldr r0, =0x1e78003c
+  ldr r1, [r0]
+  orr r1, r1, #0xF
+  str r1, [r0]
 
+  // Read debug card present
+  ldr r2, =0x1e780080
+  ldr r0, [r2]
+  and r0, r0, #0x00000200
+  ldr r1, =0x0200
+  cmp r0, r1
+  bne dbg_card_pres\@
+  console_bmc
+  b case_end\@
+
+dbg_card_pres\@:
   // Read key position
   ldr r2, =0x1e780080
   ldr r0, [r2]

@@ -166,6 +166,11 @@ config TARGET_FBTTN
 	select CPU_ARM1176
 	select SUPPORT_SPL
 
+config TARGET_FBY2
+	bool "Support Facebook's OpenBMC Y2"
+	select CPU_ARM1176
+	select SUPPORT_SPL
+
 config ARCH_DAVINCI
 	bool "TI DaVinci"
 	select CPU_ARM926EJS

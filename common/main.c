@@ -440,6 +440,9 @@ void main_loop(void)
 #ifdef CONFIG_CMD_MEMTEST2
 	char *mtest;
 #endif /* CONFIG_CMD_MEMTEST2 */
+#ifdef CONFIG_CMD_CS1TEST
+        char *cs1test;
+#endif /*CONFIG_CMD_CS1TEST*/
 #ifdef CONFIG_PREBOOT
 	char *p;
 #endif
@@ -464,6 +467,14 @@ void main_loop(void)
 		run_command(mtest,0);
 	}
 #endif /* CONFIG_CMD_MEMTEST2 */
+
+#ifdef CONFIG_CMD_CS1TEST
+   cs1test = getenv("do_cs1test");
+   if(!(strcmp(cs1test,"obcs1test")))
+   {
+        run_command(cs1test,0);
+   }
+#endif /*CONFIG_CMD_CS1TEST*/
 
 #ifdef CONFIG_VERSION_VARIABLE
 	{

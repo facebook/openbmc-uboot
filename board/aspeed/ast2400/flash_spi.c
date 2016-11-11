@@ -97,8 +97,8 @@ flash_info_t flash_info[CONFIG_SYS_MAX_FLASH_BANKS];		/* FLASH chips info */
 #define SCU_REVISION_REGISTER		0x1e6e207c
 #define SCU_CACHE_CTRL_REGISTER		0x1e6e2118
 
-#define SPICtrlRegOffset		0x10
-#define SPICtrlRegOffset2		0x14
+#define SPICtrlRegOffsetCE0		0x10
+#define SPICtrlRegOffsetCE1		0x14
 
 #define SPIMiscCtrlRegOffset		0x54
 
@@ -117,8 +117,8 @@ flash_info_t flash_info[CONFIG_SYS_MAX_FLASH_BANKS];		/* FLASH chips info */
 #else
 #define STCBaseAddress			0x16000000
 
-#define SPICtrlRegOffset		0x04
-#define SPICtrlRegOffset2		0x0C
+#define SPICtrlRegOffsetCE0		0x04
+#define SPICtrlRegOffsetCE1		0x0C
 #endif	/* CONFIG_FLASH_AST2300 */
 
 #define CMD_MASK		0xFFFFFFF8
@@ -285,13 +285,13 @@ static void reset_flash (flash_info_t * info)
 {
         ulong ulCtrlData, CtrlOffset, MiscCtrlOffset;
         
-        if (info->CE == 2)
+        if (info->CE == 1)
         {
-            CtrlOffset = SPICtrlRegOffset2;
+            CtrlOffset = SPICtrlRegOffsetCE1;
         }    
         else
         {
-            CtrlOffset = SPICtrlRegOffset;
+            CtrlOffset = SPICtrlRegOffsetCE0;
         }    
 
 #if    defined(CONFIG_FLASH_AST2300) || defined(CONFIG_AST1300)
@@ -320,13 +320,13 @@ static void enable_write (flash_info_t * info)
         ulong ulCtrlData, CtrlOffset;
         uchar jReg;
         
-        if (info->CE == 2)
+        if (info->CE == 1)
         {
-            CtrlOffset = SPICtrlRegOffset2;
+            CtrlOffset = SPICtrlRegOffsetCE1;
         }    
         else
         {
-            CtrlOffset = SPICtrlRegOffset;
+            CtrlOffset = SPICtrlRegOffsetCE0;
         }    
                   
 	//base = info->start[0];
@@ -365,13 +365,13 @@ static void write_status_register (flash_info_t * info, uchar data)
         ulong ulSMMBase, ulCtrlData, CtrlOffset;
         uchar jReg;
         
-        if (info->CE == 2)
+        if (info->CE == 1)
         {
-            CtrlOffset = SPICtrlRegOffset2;
+            CtrlOffset = SPICtrlRegOffsetCE1;
         }    
         else
         {
-            CtrlOffset = SPICtrlRegOffset;
+            CtrlOffset = SPICtrlRegOffsetCE0;
         }    
     
 	//base = info->start[0];
@@ -413,13 +413,13 @@ static void enable4b (flash_info_t * info)
         ulong ulSMMBase, ulCtrlData, CtrlOffset;
         uchar jReg;
         
-        if (info->CE == 2)
+        if (info->CE == 1)
         {
-            CtrlOffset = SPICtrlRegOffset2;
+            CtrlOffset = SPICtrlRegOffsetCE1;
         }    
         else
         {
-            CtrlOffset = SPICtrlRegOffset;
+            CtrlOffset = SPICtrlRegOffsetCE0;
         }    
     
 	//base = info->start[0];
@@ -443,13 +443,13 @@ static void enable4b_spansion (flash_info_t * info)
     	ulong ulSMMBase, ulCtrlData, CtrlOffset;
     	uchar jReg;
         
-    	if (info->CE == 2)
+    	if (info->CE == 1)
     	{
-            CtrlOffset = SPICtrlRegOffset2;
+            CtrlOffset = SPICtrlRegOffsetCE1;
     	}    
     	else
     	{
-            CtrlOffset = SPICtrlRegOffset;
+            CtrlOffset = SPICtrlRegOffsetCE0;
     	}    
     
 	//base = info->start[0];
@@ -490,13 +490,13 @@ static void enable4b_numonyx (flash_info_t * info)
     	ulong ulSMMBase, ulCtrlData, CtrlOffset;
     	uchar jReg;
         
-    	if (info->CE == 2)
+    	if (info->CE == 1)
     	{
-            CtrlOffset = SPICtrlRegOffset2;
+            CtrlOffset = SPICtrlRegOffsetCE1;
     	}    
     	else
     	{
-            CtrlOffset = SPICtrlRegOffset;
+            CtrlOffset = SPICtrlRegOffsetCE0;
     	}    
     
 	//base = info->start[0];
@@ -547,17 +547,27 @@ static ulong flash_get_size (ulong base, int banknum)
 	vbase = flash_make_addr (info, 0, 0);
 
 #if	defined(CONFIG_FLASH_AST2300) || defined(CONFIG_AST1300)
-        CtrlOffset = SPICtrlRegOffset;        	
-        info->CE = 0;                	
+        info->CE = banknum;
+        switch(info->CE) {
+                case 0:
+                    CtrlOffset = SPICtrlRegOffsetCE0;
+                    break;
+                case 1:
+                    CtrlOffset = SPICtrlRegOffsetCE1;
+                    break;
+                default:
+                     CtrlOffset = SPICtrlRegOffsetCE0;
+                    break;
+         }               	
 #else
         if (vbase == PHYS_FLASH_1)
         {
-            CtrlOffset = SPICtrlRegOffset2;
+            CtrlOffset = SPICtrlRegOffsetCE1;
             info->CE = 2;
         }    
         else
         {
-            CtrlOffset = SPICtrlRegOffset;        	
+            CtrlOffset = SPICtrlRegOffsetCE0;        	
             info->CE = 0;        	
         }    
 #endif
@@ -1304,13 +1314,13 @@ static int flash_write_buffer (flash_info_t *info, uchar *src, ulong addr, int l
         ulong ulSMMBase, ulCtrlData, CtrlOffset;
         uchar jReg;
 
-        if (info->CE == 2)
+        if (info->CE == 1)
         {
-            CtrlOffset = SPICtrlRegOffset2;
+            CtrlOffset = SPICtrlRegOffsetCE1;
         }    
         else
         {
-            CtrlOffset = SPICtrlRegOffset;
+            CtrlOffset = SPICtrlRegOffsetCE0;
         }    
             
 	base = info->start[0];
@@ -1468,13 +1478,13 @@ int flash_erase (flash_info_t * info, int s_first, int s_last)
         
         disable_cache();
         
-        if (info->CE == 2)
+        if (info->CE == 1)
         {
-            CtrlOffset = SPICtrlRegOffset2;
+            CtrlOffset = SPICtrlRegOffsetCE1;
         }    
         else
         {
-            CtrlOffset = SPICtrlRegOffset;
+            CtrlOffset = SPICtrlRegOffsetCE0;
         }    
                     
 	if ((s_first < 0) || (s_first > s_last)) {
@@ -1625,8 +1635,8 @@ void * memmove_dma(void * dest,const void *src,size_t count)
         poll_time = 100;			/* set 100 us as default */
 
         /* force end of burst read */
-	*(volatile ulong *) (STCBaseAddress + SPICtrlRegOffset) |= CE_HIGH;
-	*(volatile ulong *) (STCBaseAddress + SPICtrlRegOffset) &= ~CE_HIGH;
+	*(volatile ulong *) (STCBaseAddress + SPICtrlRegOffsetCE0) |= CE_HIGH;
+	*(volatile ulong *) (STCBaseAddress + SPICtrlRegOffsetCE0) &= ~CE_HIGH;
           
 	*(ulong *) (STCBaseAddress + REG_FLASH_DMA_CONTROL) = (ulong) (~FLASH_DMA_ENABLE);	
 	*(ulong *) (STCBaseAddress + REG_FLASH_DMA_FLASH_BASE) = (ulong *) (src);

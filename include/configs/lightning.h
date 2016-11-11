@@ -36,8 +36,8 @@
 //#define CONFIG_AST1070		1
 //#define CONFIG_SYS_FLASH_CFI			/* CONFIG_FLASH_CFI, CONFIG_FLASH_SPI is exclusive*/
 #define CONFIG_FLASH_SPI
-//#define CONFIG_2SPIFLASH			/* Boot SPI: CS2, 2nd SPI: CS0 */
-#undef CONFIG_2SPIFLASH
+#define CONFIG_2SPIFLASH			/* Boot SPI: CS0, 2nd SPI: CS1 */
+//#undef CONFIG_2SPIFLASH
 #undef CONFIG_ASPEED_SLT
 #define CONFIG_FLASH_AST2300
 //#define CONFIG_FLASH_AST2300_DMA
@@ -173,7 +173,7 @@
 #define CONFIG_SYS_FLASH_BASE		PHYS_FLASH_1
 #define CONFIG_FLASH_BANKS_LIST 	{ PHYS_FLASH_1 }
 
-#define CONFIG_SYS_MAX_FLASH_BANKS 	1
+#define CONFIG_SYS_MAX_FLASH_BANKS 	2
 #define CONFIG_SYS_MAX_FLASH_SECT	(256)		/* max number of sectors on one chip */
 
 #define CONFIG_ENV_IS_IN_FLASH	1
@@ -187,6 +187,8 @@
 
 #ifdef CONFIG_FLASH_AST2300
 #define PHYS_FLASH_1		0x20000000 	/* Flash Bank #1 */
+#define PHYS_FLASH_2        0x24000000  /* Flash Bank #2 */
+#define PHYS_FLASH_2_BASE   0x24000000
 #else
 #define PHYS_FLASH_1		0x14000000 	/* Flash Bank #1 */
 #define PHYS_FLASH_2		0x14800000 	/* Flash Bank #2 */
@@ -194,14 +196,15 @@
 #endif
 
 #ifdef CONFIG_2SPIFLASH
-#define CONFIG_SYS_FLASH_BASE		PHYS_FLASH_2_BASE
+#define CONFIG_SYS_FLASH_BASE		PHYS_FLASH_1
 #define CONFIG_FLASH_BANKS_LIST 	{ PHYS_FLASH_1, PHYS_FLASH_2 }
 #define CONFIG_SYS_MAX_FLASH_BANKS 	2
+#define CFG_MAX_FLASH_BANKS             2
 #define CONFIG_SYS_MAX_FLASH_SECT	(1024)		/* max number of sectors on one chip */
 
 #define CONFIG_ENV_IS_IN_FLASH		1
-#define CONFIG_ENV_OFFSET		0x7F0000 	/* environment starts here  */
-#define CONFIG_ENV_SIZE			0x010000 	/* Total Size of Environment Sector */
+#define CONFIG_ENV_OFFSET		0x60000 	/* environment starts here  */
+#define CONFIG_ENV_SIZE			0x20000 	/* Total Size of Environment Sector */
 #else
 #define CONFIG_SYS_FLASH_BASE		PHYS_FLASH_1
 #define CONFIG_FLASH_BANKS_LIST 	{ PHYS_FLASH_1 }
@@ -244,6 +247,9 @@
 #define CONFIG_CMD_MEMTEST
 #define CONFIG_CMD_MEMTEST2
 #define CONFIG_SYS_MEMTEST_ITERATION 10
+
+#define CONFIG_CMD_CS1TEST
+#define CONFIG_CS1TEST_CS0PATTERN_ADDR 0x40008000
 
 #define CONFIG_SYS_TIMERBASE		0x1E782000	/* use timer 1 */
 #define CONFIG_SYS_HZ			      1000

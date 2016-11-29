@@ -183,14 +183,19 @@ void load_fit(u32 from) {
   if (signature_store == 0x0) {
     /* It is possible the spl_init method did not find a fdt. */
     printf("No signature store was included in the SPL.\n");
-    hang();
+    if (verify_required(hw_verify, sw_verify)) {
+      spl_recovery();
+    }
   }
 
+#ifdef CONFIG_SPL_FIT_SUBORDINATE_KEYS
   /* Node path to subordinate keys. */
   int keys = fdt_path_offset(fit, FIT_KEYS_PATH);
   if (keys < 0) {
     debug("%s: Cannot find /keys node: %d\n", __func__, keys);
-    hang();
+    if (verify_required(hw_verify, sw_verify)) {
+      spl_recovery();
+    }
   }
 
   int subordinate_verified = 0;
@@ -198,6 +203,7 @@ void load_fit(u32 from) {
   int key_node = fdt_first_subnode(fit, keys);
   subordinate_verified = fit_config_verify(fit, key_node);
   debug("%s: Subordinate keys verified %d\n", __func__, subordinate_verified);
+#endif
 
   /*
    * Check that at least 1 image was verified.
@@ -218,7 +224,7 @@ void load_fit(u32 from) {
   if (fit_image_verify_required_sigs(fit, node, data, data_size,
              signature_store, &verified)) {
     printf("Unable to verify required signature.\n");
-    if (verify_required()) {
+    if (verify_required(hw_verify, sw_verify)) {
       spl_recovery();
     }
   }
@@ -226,7 +232,9 @@ void load_fit(u32 from) {
   if (verified != 0) {
     /* When verified is 0, then an image was verified. */
     printf("No images were verified.\n");
-    if (verify_required()) {
+    debug("Check that the 'required' field for each key- is set to 'image'.\n");
+    debug("Check the board configuration for supported hash algorithms.\n");
+    if (verify_required(hw_verify, sw_verify)) {
       spl_recovery();
     }
   } else {

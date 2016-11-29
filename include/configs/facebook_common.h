@@ -86,9 +86,9 @@
 #define CONFIG_ENV_OVERWRITE
 #define CONFIG_ENV_ADDR          (CONFIG_SYS_ENV_BASE + CONFIG_ENV_OFFSET)
 #define CONFIG_EXTRA_ENV_SETTINGS                       \
-    "verify=yes\0"                                      \
+    "verify=no\0"                                       \
     "spi_dma=no\0"                                      \
-    "updatefile=" CONFIG_BOOTFILE ".fit"                \
+    "updatefile=" CONFIG_BOOTFILE ".fit\0"              \
     ""
 
 /*

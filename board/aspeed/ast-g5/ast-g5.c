@@ -31,10 +31,19 @@ void watchdog_init()
 #endif
 }
 
+void fan_init()
+{
+  __raw_writel(0x43004300, 0x1e786008);
+}
+
 int board_init(void)
 {
 
 	watchdog_init();
+
+#ifdef CONFIG_FBTP
+  fan_init();
+#endif
 
 	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
 

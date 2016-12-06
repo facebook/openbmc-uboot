@@ -288,6 +288,15 @@
 #define CONFIG_SYS_MAX_I2C_BUS 14
 
 /*
+ * TPM configuration
+ */
+#define CONFIG_TPM
+#define CONFIG_CMD_TPM
+#define CONFIG_TPM_TIS_I2C
+#define CONFIG_TPM_TIS_I2C_BUS_NUMBER 0x9
+#define CONFIG_TPM_TIS_I2C_SLAVE_ADDRESS 0x20
+
+/*
 * EEPROM configuration
 */
 #define CONFIG_SYS_I2C_EEPROM_ADDR_LEN 	2

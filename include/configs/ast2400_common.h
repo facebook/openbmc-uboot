@@ -18,8 +18,12 @@
 #define CONFIG_ARM926EJS
 #define	CONFIG_ASPEED
 #define CONFIG_AST2400
-#define CONFIG_MISC_INIT_R
 
+#define CONFIG_ARCH_ASPEED
+#define CONFIG_ARCH_AST2400
+
+#define CONFIG_MISC_INIT_R
+#include <asm/arch/platform.h>
 /*
  * Flash type (mutex):
  *   CONFIG_SYS_FLASH_CFI
@@ -48,9 +52,14 @@
  *  CE1 = 0x24000000 - 0x25FFFFFF (32MB)
  *  CE2 = 0x26000000 - 0x27FFFFFF (32MB)
  *  CE3 = 0x28000000 - 0x29FFFFFF (32MB)
- *  CE4 = 0x2A000000 - 0x2BFFFFFF (32MB)
+ ONFIG_SYS_TEXT_BASEㄥ
  */
 #define CONFIG_FLASH_AST2300
+
+#define CONFIG_AST_SPI_NOR
+#define PHYS_FLASH_1                0x20000000 /* Flash Bank #1 */
+#define PHYS_FLASH_2                0x24000000 /* Flash Bank #2 */
+#define PHYS_FLASH_2_BASE           0x24000000 /* Base of Flash 1 */
 
 /*
  * DRAM Config
@@ -134,9 +143,16 @@
  * Additional flash configuration
  */
 #define CONFIG_SYS_TEXT_BASE		0x00000000
-#define CONFIG_SYS_FLASH_BASE		PHYS_FLASH_1
-#define CONFIG_FLASH_BANKS_LIST		{ PHYS_FLASH_1 }
-#define CONFIG_SYS_MAX_FLASH_BANKS	1
+#ifdef CONFIG_2SPIFLASH
+#define CONFIG_SYS_FLASH_BASE           PHYS_FLASH_1
+#define CONFIG_FLASH_BANKS_LIST     { PHYS_FLASH_1, PHYS_FLASH_2 }
+#define CONFIG_SYS_MAX_FLASH_BANKS      2
+#define CONFIG_FMC_CS                   2
+#else
+#define CONFIG_SYS_FLASH_BASE           PHYS_FLASH_1
+#define CONFIG_FLASH_BANKS_LIST         { PHYS_FLASH_1 }
+#define CONFIG_SYS_MAX_FLASH_BANKS      1
+#endif
 
 #define CONFIG_SYS_MONITOR_LEN		(192 << 10)
 #define CONFIG_SYS_FLASH_ERASE_TOUT	(20*CONFIG_SYS_HZ) 	/* Timeout for Flash Erase */
@@ -177,14 +193,13 @@
  */
 #define CONFIG_SYS_NS16550_SERIAL
 #define CONFIG_SYS_NS16550_CLK		24000000
-#define CONFIG_SYS_NS16550_COM1		0x1e783000
 #define CONFIG_SYS_NS16550_COM2		0x1e784000
 #define CONFIG_SYS_NS16550_COM3		0x1e78e000
 #define CONFIG_SYS_BAUDRATE_TABLE	{ 9600, 19200, 38400, 57600, 115200 }
 #define CONFIG_ASPEED_COM_IER (CONFIG_ASPEED_COM + 0x4)
 #define CONFIG_ASPEED_COM_IIR (CONFIG_ASPEED_COM + 0x8)
 #define CONFIG_ASPEED_COM_LCR (CONFIG_ASPEED_COM + 0xc)
-
+#define CONFIG_ASPEED_COM_LSR (CONFIG_ASPEED_COM + 0x14)
 /*
  * USB device configuration
  * To configure/enable USB:
@@ -199,10 +214,13 @@
 /*
  * I2C configuration
  */
+
+/*
 #define CONFIG_HARD_I2C
 #define CONFIG_SYS_I2C_SPEED		100000
 #define CONFIG_SYS_I2C_SLAVE		1
 #define CONFIG_SYS_I2C_ASPEED
+*/
 
 /*
  * EEPROM configuration

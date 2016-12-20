@@ -142,6 +142,7 @@ config TARGET_FBYOSEMITE
 config TARGET_FBLIGHTNING
 	bool "Support Facebook's OpenBMC Lightning"
 	select CPU_ARM926EJS
+        select SUPPORT_SPL
 
 config TARGET_FBWEDGE
 	bool "Support Facebook's OpenBMC Wedge TOR"

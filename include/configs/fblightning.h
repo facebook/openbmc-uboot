@@ -13,6 +13,9 @@
 #define CONFIG_BOOTCOMMAND 	"bootm 20080000"	/* Location of FIT */
 #define CONFIG_BOOTFILE		"all.bin"
 
+#define CONFIG_CMD_CS1TEST
+#define CONFIG_CS1TEST_CS0PATTERN_ADDR 0x40008000
+
 /*
  * Memory Configuration
  * Deprecating with v2016.03: CONFIG_ASPEED_WRITE_DEFAULT_ENV

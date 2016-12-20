@@ -898,7 +898,8 @@ init_fnc_t init_sequence_r[] = {
 	 */
 	initr_pci,
 #endif
-	stdio_add_devices,
+	//stdio_add_devices,
+        stdio_init,
 	initr_jumptable,
 #ifdef CONFIG_API
 	initr_api,

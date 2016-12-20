@@ -23,7 +23,7 @@
 #define AST_PLL_24MHZ			24000000
 #define AST_PLL_12MHZ			12000000
 
-#if defined(CONFIG_ARCH_AST2400)
+#if defined(AST_SOC_G4)
 #include <asm/arch/ast2400_platform.h>
 #elif defined(AST_SOC_G5)
 #include <asm/arch/ast_g5_platform.h>

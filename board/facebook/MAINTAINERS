@@ -1,0 +1,15 @@
+FACEBOOK OPENBMC BOARDS
+M:	Teddy Reed <reed@fb.com>
+S:	Maintained
+F:	board/facebook/
+F:	include/configs/facebook-common.h
+F:	include/configs/fbyosemite.h
+F:	include/configs/fblightning.h
+F:	include/configs/fbwedge100.h
+F:	include/configs/fbwedge.h
+F:	include/configs/fbttn.h
+F:	configs/fbyosemite_defconfig
+F:	configs/fblightning_defconfig
+F:	configs/fbwedge100_defconfig
+F:	configs/fbwedge_defconfig
+F:	configs/fbttn_defconfig

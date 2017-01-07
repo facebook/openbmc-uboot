@@ -1,0 +1,103 @@
+if TARGET_FBYOSEMITE
+config SYS_CPU
+	default "arm926ejs"
+config SYS_BOARD
+	default "ast2400"
+config SYS_VENDOR
+	default "aspeed"
+config SYS_SOC
+	default "aspeed"
+config SYS_CONFIG_NAME
+	default "fbyosemite"
+endif
+
+if TARGET_FBLIGHTNING
+config SYS_CPU
+  default "arm926ejs"
+config SYS_BOARD
+  default "ast-g4"
+config SYS_VENDOR
+  default "aspeed"
+config SYS_SOC
+  default "aspeed"
+config SYS_CONFIG_NAME
+  default "fblightning"
+endif
+
+if TARGET_FBWEDGE
+config SYS_CPU
+  default "arm926ejs"
+config SYS_BOARD
+  default "ast-g4"
+config SYS_VENDOR
+  default "aspeed"
+config SYS_SOC
+  default "aspeed"
+config SYS_CONFIG_NAME
+  default "fbwedge"
+endif
+
+if TARGET_FBWEDGE100
+config SYS_CPU
+  default "arm926ejs"
+config SYS_BOARD
+  default "ast-g4"
+config SYS_VENDOR
+  default "aspeed"
+config SYS_SOC
+  default "aspeed"
+config SYS_CONFIG_NAME
+  default "fbwedge100"
+endif
+
+if TARGET_FBCMM
+config SYS_CPU
+  default "arm1176"
+config SYS_BOARD
+  default "ast-g5"
+config SYS_VENDOR
+  default "aspeed"
+config SYS_SOC
+  default "aspeed"
+config SYS_CONFIG_NAME
+  default "fbcmm"
+endif
+
+if TARGET_FBTP
+config SYS_CPU
+  default "arm1176"
+config SYS_BOARD
+  default "ast-g5"
+config SYS_VENDOR
+  default "aspeed"
+config SYS_SOC
+  default "aspeed"
+config SYS_CONFIG_NAME
+  default "fbtp"
+endif
+
+if TARGET_FBTTN
+config SYS_CPU
+  default "arm1176"
+config SYS_BOARD
+  default "ast-g5"
+config SYS_VENDOR
+  default "aspeed"
+config SYS_SOC
+  default "aspeed"
+config SYS_CONFIG_NAME
+  default "fbttn"
+endif
+
+if TARGET_FBY2
+config SYS_CPU
+  default "arm1176"
+config SYS_BOARD
+  default "ast-g5"
+config SYS_VENDOR
+  default "aspeed"
+config SYS_SOC
+  default "aspeed"
+config SYS_CONFIG_NAME
+  default "fby2"
+endif

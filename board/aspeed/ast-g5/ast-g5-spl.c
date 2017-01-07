@@ -112,6 +112,9 @@ int verify_required(int hw_verify, int sw_verify) {
   } else if (sw_verify == 1) {
     return 1;
   }
+
+  debug("OpenBMC verified-boot is not enforcing in hardware or software.\n");
+  debug("Allowing execution to proceed into an unverified state.\n");
   return 0;
 }
 
@@ -125,8 +128,7 @@ void load_fit(u32 from) {
   }
 
   header = (struct image_header*)(from);
-  if (!IS_ENABLED(CONFIG_SPL_LOAD_FIT) ||
-      image_get_magic(header) != FDT_MAGIC) {
+  if (image_get_magic(header) != FDT_MAGIC) {
     /* FIT loading is not available or this U-Boot is not a FIT. */
     /* This will bypass signature checking */
     debug("%s: Cannot find FIT image header: 0x%08x\n", __func__, from);
@@ -137,7 +139,8 @@ void load_fit(u32 from) {
   u32 size = fdt_totalsize(fit);
   size = (size + 3) & ~3;
   u32 base_offset = (size + 3) & ~3;
-  debug("size=%x base_offset=%x\n", size, base_offset);
+  debug("%s: Parsed FIT: size=%x base_offset=%x\n", __func__,
+        size, base_offset);
 
   /* Node path to images */
   int images = fdt_path_offset(fit, FIT_IMAGES_PATH);
@@ -166,8 +169,10 @@ void load_fit(u32 from) {
   int hw_verify = 0;
   int sw_verify = spl_getenv_yesno("verify");
   int force_recovery = spl_getenv_yesno("force_recovery");
-  debug("%s: data_position=%x, data_size=%x load=%x hw/sw verify=%d/%d\n",
-    __func__, data_position, data_size, load, hw_verify, sw_verify);
+  printf("OpenBMC verified-boot enforcing [hw:%d sw:%d recovery: %d]\n",
+    hw_verify, sw_verify, force_recovery);
+  debug("%s: U-Boot: data_position=0x%08x, load=0x%08x hw/sw verify=%d/%d\n",
+        __func__, data_position, load, hw_verify, sw_verify);
   if (force_recovery == 1) {
     spl_recovery();
   }
@@ -177,8 +182,6 @@ void load_fit(u32 from) {
    * Later it will be possible to disable using a config similar to the U-Boot
    * verified boot bypass: verify=no
    */
-#ifdef CONFIG_SPL_FIT_SIGNATURE
-
   void *signature_store = (void*)gd_fdt_blob();
   if (signature_store == 0x0) {
     /* It is possible the spl_init method did not find a fdt. */
@@ -231,16 +234,15 @@ void load_fit(u32 from) {
 
   if (verified != 0) {
     /* When verified is 0, then an image was verified. */
-    printf("No images were verified.\n");
+    printf("U-Boot was not verified.\n");
     debug("Check that the 'required' field for each key- is set to 'image'.\n");
     debug("Check the board configuration for supported hash algorithms.\n");
     if (verify_required(hw_verify, sw_verify)) {
       spl_recovery();
     }
   } else {
-    printf("Images verified\n");
+    printf("U-Boot verified.\n");
   }
-#endif
   jump(load);
 }
 

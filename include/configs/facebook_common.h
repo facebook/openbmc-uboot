@@ -56,7 +56,7 @@
  * Recovery boot flow
  */
 #ifdef CONFIG_ASPEED_RECOVERY_BUILD
-#define CONFIG_PREBOOT            "setenv autoload no; setenv verify yes; dhcp"
+#define CONFIG_PREBOOT            "setenv autoload no; dhcp"
 #define CONFIG_UPDATE_TFTP
 #define CONFIG_UPDATE_LOAD_ADDR   (CONFIG_SYS_LOAD_ADDR + 0x60000)
 #endif
@@ -146,6 +146,11 @@
  *   CONFIG_CMD_EEPROM
  */
 
+/*
+ * Additional features configuration
+ */
+#define CONFIG_SHA256
+
 #ifdef CONFIG_SPL
 #ifdef CONFIG_SPL_BUILD
 /* This is an SPL build */
@@ -174,6 +179,7 @@
 /* Verified boot required features. */
 #define CONFIG_SPL_CRYPTO_SUPPORT
 #define CONFIG_SPL_HASH_SUPPORT
+#define CONFIG_SPL_SHA256_SUPPORT
 #define CONFIG_SPL_SHA256
 
 /* This will increase binary size by +10kB */

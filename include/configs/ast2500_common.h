@@ -86,11 +86,7 @@
  *    CONFIG_CRT_DISPLAY     // define to disable VGA function
  * 4. ECC Function enable
  *    CONFIG_DRAM_ECC        // define to enable ECC function
- * 5. UART Debug Message
- *    CONFIG_DRAM_UART_OUT   // enable output message at UART5
- *    CONFIG_DRAM_UART_38400 // set the UART baud rate to 38400, default is 115200
  */
-#define CONFIG_DRAM_UART_OUT
 #define CONFIG_DRAM_ECC
 #define CONFIG_DRAM_ECC_SIZE  0x1B200000 // dram(512M) - vga(16M) - ECC used(62M) = 434M
 #define CONFIG_NR_DRAM_BANKS  1
@@ -159,7 +155,6 @@
  * Serial configuration
  * The board configuration must set:
  *   CONFIG_SYS_NS16550_COM1
- *   CONFIG_SYS_NS16550_REG_SIZE
  *   CONFIG_CONS_INDEX
  *   CONFIG_BAUDRATE
  *   CONFIG_ASPEED_COM
@@ -168,6 +163,8 @@
  *   CONFIG_SYS_NS16550_MEM32
  */
 #define CONFIG_SYS_NS16550_SERIAL
+#define CONFIG_SYS_NS16550_MEM32
+#define CONFIG_SYS_NS16550_REG_SIZE -4
 #define CONFIG_SYS_NS16550_CLK    24000000
 #define CONFIG_SYS_BAUDRATE_TABLE { 9600, 19200, 38400, 57600, 115200 }
 #define CONFIG_ASPEED_COM_IER (CONFIG_ASPEED_COM + 0x4)

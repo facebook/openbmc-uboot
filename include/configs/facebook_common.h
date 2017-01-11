@@ -43,7 +43,7 @@
 #define CONFIG_SYS_REMAP_BASE     0x00000000
 #define CONFIG_SYS_UBOOT_START    0x00000000
 #define CONFIG_SYS_ENV_BASE       0x20000000
-#define CONFIG_KERNEL_LOAD         "20080000"
+#define CONFIG_KERNEL_LOAD         "20080000 20480000"
 #endif
 
 /*
@@ -65,10 +65,6 @@
  * Basic boot command configuration based on flash
  */
 #define CONFIG_BOOTCOMMAND        "bootm " CONFIG_KERNEL_LOAD /* Location of FIT */
-#define CONFIG_AUTOBOOT_PROMPT		"autoboot in %d seconds (stop with 'Delete' key)...\n"
-#define CONFIG_AUTOBOOT_STOP_STR	"\x1b\x5b\x33\x7e"	/* 'Delete', ESC[3~ */
-#define CONFIG_AUTOBOOT_KEYED
-#define CONFIG_ZERO_BOOTDELAY_CHECK
 
 /*
  * Environment configuration
@@ -97,12 +93,6 @@
  *   CONFIG_CMD_FLASH
  *   CONFIG_SYS_NO_FLASH
  */
-
-/*
- * Serial configuration
- */
-#define CONFIG_SYS_NS16550_MEM32
-#define CONFIG_SYS_NS16550_REG_SIZE -4
 
 /*
  * Watchdog timer configuration
@@ -193,5 +183,19 @@
 #define CONFIG_SYS_TEXT_BASE    CONFIG_SYS_UBOOT_START
 #endif
 #endif
+
+/*
+ * Console UART configuration
+ */
+#ifndef CONFIG_ASPEED_COM
+#define CONFIG_ASPEED_COM               AST_UART0_BASE // UART5
+#endif
+
+/*
+ * Autoboot configuration
+ */
+#define CONFIG_AUTOBOOT_PROMPT		"autoboot in %d seconds (stop with 'Delete' key)...\n"
+#define CONFIG_AUTOBOOT_STOP_STR	"\x1b\x5b\x33\x7e"	/* 'Delete', ESC[3~ */
+#define CONFIG_AUTOBOOT_KEYED
 
 #endif /* __FACEBOOK_CONFIG_H */

@@ -337,7 +337,7 @@ set_MPLL:
     str r1, [r0]
 
 /* Debug - UART console message */
-    ldr r0, =0x1e78400c
+    ldr r0, =CONFIG_ASPEED_COM_LCR
     mov r1, #0x83
     str r1, [r0]
 
@@ -345,7 +345,7 @@ set_MPLL:
     ldr r2, [r0]
     mov r2, r2, lsr #12
     tst r2, #0x01
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     moveq r1, #0x0D                              @ Baudrate 115200
     movne r1, #0x01                              @ Baudrate 115200, div13
 #if defined(CONFIG_DRAM_UART_38400)
@@ -354,19 +354,19 @@ set_MPLL:
 #endif
     str r1, [r0]
 
-    ldr r0, =0x1e784004
+    ldr r0, =CONFIG_ASPEED_COM_IER
     mov r1, #0x00
     str r1, [r0]
 
-    ldr r0, =0x1e78400c
+    ldr r0, =CONFIG_ASPEED_COM_LCR
     mov r1, #0x03
     str r1, [r0]
 
-    ldr r0, =0x1e784008
+    ldr r0, =CONFIG_ASPEED_COM_IIR
     mov r1, #0x07
     str r1, [r0]
 
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x0D                                @ '\r'
     str r1, [r0]
     mov r1, #0x0A                                @ '\n'
@@ -578,7 +578,7 @@ delay_2:
  ******************************************************************************/
 ddr3_init:
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x33                                @ '3'
     str r1, [r0]
     mov r1, #0x0D                                @ '\r'
@@ -767,7 +767,7 @@ delay3_4:
  ******************************************************************************/
 ddr2_init:
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x32                                @ '2'
     str r1, [r0]
     mov r1, #0x0D                                @ '\r'
@@ -1419,7 +1419,7 @@ init_sram_start3:
  *****************************************************************************/
 CBR0_START:
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x43                                @ 'C'
     str r1, [r0]
     mov r1, #0x42                                @ 'B'
@@ -1457,7 +1457,7 @@ cbr0_next_dqidly:
     bgt   CBR0_END
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     and   r1, r8, #0x07
     add   r1, r1, #0x30                          @ '0-7'
     str   r1, [r0]
@@ -1779,7 +1779,7 @@ delay_5:
  *****************************************************************************/
 CBR1_START:
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x0D                                @ '\r'
     str r1, [r0]
     mov r1, #0x0A                                @ '\n'
@@ -2060,7 +2060,7 @@ cbr1_set_result_end:
 
 CBR3_START:
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x33                                @ '3'
     str r1, [r0]
 /* Debug - UART console message */
@@ -2279,7 +2279,7 @@ CBR3_END:
  *****************************************************************************/
 CBR4_START:
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x34                                @ '4'
     str r1, [r0]
 /* Debug - UART console message */
@@ -2559,7 +2559,7 @@ set_scratch:
     str r1, [r0]
 
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x44                                @ 'D'
     str r1, [r0]
     mov r1, #0x6F                                @ 'o'

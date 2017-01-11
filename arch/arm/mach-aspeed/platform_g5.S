@@ -251,6 +251,51 @@ TIME_TABLE_DDR4_1600:
     ldr   r2, =0x00000800
     .endm
 
+    .macro enable_other_uarts
+	  /* SCU84: Multi-function Pin Control 1, for UART1 and UART2 */
+    ldr   r0, =0x1e6e2084
+    ldr   r1, [r0]
+#ifdef CONFIG_ASPEED_UART1_ENABLE
+    ldr   r2, =0x00c00000                        @ Enable UART1 TXD and RXD
+    orr   r1, r1, r2
+#endif
+#ifdef CONFIG_ASPEED_UART2_ENABLE
+    ldr   r2, =0xc0000000                        @ Enable UART2 TXD and RXD
+    orr   r1, r1, r2
+#endif
+    str   r1, [r0]
+
+	  /* SCU80: Multi-function Pin Control 1, for UART3 and UART4 */
+    ldr   r0, =0x1e6e2080
+    ldr   r1, [r0]
+#ifdef CONFIG_ASPEED_UART3_ENABLE
+    ldr   r2, =0x00c00000
+    orr   r1, r1, r2                             @ Enable UART3 TXD and RXD
+#endif
+#ifdef CONFIG_ASPEED_UART4_ENABLE
+    ldr   r2, =0xc0000000
+    orr   r1, r1, r2                             @ Enable UART4 TXD and RXD
+#endif
+    str   r1, [r0]
+
+    /* HICR9, IO6 mapping and UART1-4 source */
+    ldr   r0, =0x1e789098                        @ HICR9
+    ldr   r1, [r0]
+#ifdef CONFIG_ASPEED_UART5_MAP_IO6
+    ldr   r2, =#0x400                             @ UART5 to IO6
+    orr   r1, r1, r2
+#endif
+#ifdef CONFIG_ASPEED_UART1_BMC
+    ldr   r2, =#0xffffffef                        @ UART1 reset from BMC
+    and   r1, r1, r2
+#endif
+#ifdef CONFIG_ASPEED_UART2_BMC
+    ldr   r2, =#0xffffffdf                        @ UART2 reset from BMC
+    and   r1, r1, r2
+#endif
+    str   r1, [r0]
+    .endm
+
 #ifdef CONFIG_FBY2
 .macro console_bmc
 ldr r0, =0x1e780024
@@ -424,6 +469,49 @@ case_end\@:
 .endm
 #endif
 
+    .macro uart_console_setup
+    enable_other_uarts
+#ifdef CONFIG_FBY2
+    console_bmc
+#endif
+    /* setup UART console */
+    ldr   r0, =CONFIG_ASPEED_COM_LCR
+    mov   r1, #0x83
+    str   r1, [r0]
+
+    ldr   r0, =0x1e6e202c
+    ldr   r2, [r0]
+    mov   r2, r2, lsr #12
+    tst   r2, #0x01
+    ldr   r0, =CONFIG_ASPEED_COM
+#if CONFIG_BAUDRATE == 115200
+    moveq r1, #0x0D                              @ Baudrate 115200
+    movne r1, #0x01                              @ Baudrate 115200, div13
+#elif CONFIG_BAUDRATE == 57600
+    moveq r1, #0x1A                              @ Baudrate 57600
+    movne r1, #0x02                              @ Baudrate 57600, div13
+#elif CONFIG_BAUDRATE == 38400
+    moveq r1, #0x27                              @ Baudrate 38400
+    movne r1, #0x03                              @ Baudrate 38400 , div13
+#elif CONFIG_BAUDRATE == 9600
+    moveq r1, #0x9c                              @ Baudrate 9600
+    movne r1, #0x0C                              @ Baudrate 9600 , div13
+#endif
+    str   r1, [r0]
+
+    ldr   r0, =CONFIG_ASPEED_COM_IER
+    mov   r1, #0x00
+    str   r1, [r0]
+
+    ldr   r0, =CONFIG_ASPEED_COM_LCR
+    mov   r1, #0x03
+    str   r1, [r0]
+
+    ldr   r0, =CONFIG_ASPEED_COM_IIR
+    mov   r1, #0x07
+    str   r1, [r0]
+    .endm
+
     .macro print_hex_char
     and   r1, r1, #0xF
     cmp   r1, #9
@@ -446,49 +534,11 @@ init_dram:
     ldr r0, =0x1e720100 /* vbs.uboot_exec_address */
     str r4, [r0]
 
-#ifdef CONFIG_FBY2
-    console_bmc
-#endif
-/* Debug - UART console message */
-    ldr   r0, =0x1e78400c /* CONFIG_ASPEED_COM_LCR */
-    mov   r1, #0x83
-    str   r1, [r0]
-
-    ldr   r0, =0x1e6e202c
-    ldr   r2, [r0]
-    mov   r2, r2, lsr #12
-    tst   r2, #0x01
-    ldr   r0, =AST_UART0_BASE /* CONFIG_ASPEED_COM */
-#if CONFIG_BAUDRATE == 115200
-    moveq r1, #0x0D                              @ Baudrate 115200
-    movne r1, #0x01                              @ Baudrate 115200, div13
-#elif CONFIG_BAUDRATE == 57600
-    moveq r1, #0x1A                              @ Baudrate 57600
-    movne r1, #0x02                              @ Baudrate 57600, div13
-#elif CONFIG_BAUDRATE == 38400
-    moveq r1, #0x27                              @ Baudrate 38400
-    movne r1, #0x03                              @ Baudrate 38400 , div13
-#elif CONFIG_BAUDRATE == 9600
-    moveq r1, #0x9c                              @ Baudrate 9600
-    movne r1, #0x0C                              @ Baudrate 9600 , div13
-#endif
-    str   r1, [r0]
-
-    ldr   r0, =0x1e784004 /* CONFIG_ASPEED_COM_IER */
-    mov   r1, #0x00
-    str   r1, [r0]
-
-    ldr   r0, =0x1e78400c /* CONFIG_ASPEED_COM_LCR */
-    mov   r1, #0x03
-    str   r1, [r0]
-
-    ldr   r0, =0x1e784008 /* CONFIG_ASPEED_COM_IIR */
-    mov   r1, #0x07
-    str   r1, [r0]
+    uart_console_setup
 
 #if defined(CONFIG_SPL_BUILD) /* This is a ROM/SPL build */
     /* Debug - UART console message */
-    ldr r0, =AST_UART0_BASE
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x0D                                @ '\r'
     str r1, [r0]
     mov r1, #0x0A                                @ '\n'
@@ -785,7 +835,13 @@ wait_mmc_reset_done:
     ldr   r1, =0x00020000
     str   r1, [r0]
 
-/* Debug - UART console message */
+    uart_console_setup
+
+#ifdef CONFIG_FBY2
+    console_sel
+#endif
+
+  /* Debug - UART console message */
 #ifdef CONFIG_DRAM_UART_TO_UART1
     ldr   r0, =0x1e78909c                        @ route UART5 to UART Port1, 2016.08.29
     ldr   r1, =0x10000004
@@ -798,10 +854,7 @@ wait_mmc_reset_done:
     str   r1, [r0]
 #endif
 
-#ifdef CONFIG_FBY2
-    console_sel
-#endif
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x0D                              @ '\r'
     str   r1, [r0]
     mov   r1, #0x0A                              @ '\n'
@@ -835,12 +888,12 @@ wait_mmc_reset_done:
     print_hex_char
     mov   r1, #0x2D                              @ '-'
     str   r1, [r0]
-    ldr   r0, =0x1e784014
+    ldr   r0, =CONFIG_ASPEED_COM_LSR
 wait_print:
     ldr   r1, [r0]
     tst   r1, #0x40
     beq   wait_print
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x44                              @ 'D'
     str   r1, [r0]
     mov   r1, #0x44                              @ 'D'
@@ -930,7 +983,7 @@ wait_print:
  ******************************************************************************/
 ddr3_init:
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x33                              @ '3'
     str   r1, [r0]
     mov   r1, #0x0D                              @ '\r'
@@ -1055,7 +1108,7 @@ ddr3_init:
     str   r1, [r0]
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x30                              @ '0'
     str   r1, [r0]
 /* Debug - UART console message */
@@ -1068,7 +1121,7 @@ ddr3_init:
 ddr3_phyinit_done:
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x31                              @ '1'
     str   r1, [r0]
 /* Debug - UART console message */
@@ -1148,7 +1201,7 @@ ddr3_check_dllrdy:
  ******************************************************************************/
 ddr4_init:
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x34                              @ '4'
     str   r1, [r0]
     mov   r1, #0x0D                              @ '\r'
@@ -1268,7 +1321,7 @@ ddr4_init:
     str   r1, [r0]
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x30                              @ '0'
     str   r1, [r0]
 /* Debug - UART console message */
@@ -1344,7 +1397,7 @@ ddr4_vref_phy_cal_start:
     str   r1, [r0]
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x61                              @ 'a'
     str   r1, [r0]
 /* Debug - UART console message */
@@ -1431,7 +1484,7 @@ ddr4_vref_ddr_cal_start:
     str   r1, [r0]
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x62                              @ 'b'
     str   r1, [r0]
 /* Debug - UART console message */
@@ -1490,7 +1543,7 @@ ddr4_vref_ddr_loop_end:
     str   r1, [r0]
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x63                              @ 'c'
     str   r1, [r0]
 /* Debug - UART console message */
@@ -1507,7 +1560,7 @@ ddr4_vref_ddr_loop_end:
 ddr4_phyinit_done:
     /*******************************************/
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x31                              @ '1'
     str   r1, [r0]
 /* Debug - UART console message */
@@ -1566,7 +1619,7 @@ ddr_phy_init_timeout:
     str   r1, [r0]
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x2E                              @ '.'
     str   r1, [r0]
 /* Debug - UART console message */
@@ -1767,7 +1820,7 @@ check_dram_size_end:
     str   r1, [r0]
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x2D                              @ '-'
     str   r1, [r0]
     str   r3, [r0]
@@ -1848,7 +1901,7 @@ ddr_wait_engine_idle_1:
 
 ddr_test_fail:
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x46                              @ 'F'
     str   r1, [r0]
     mov   r1, #0x61                              @ 'a'
@@ -1861,7 +1914,7 @@ ddr_test_fail:
     str   r1, [r0]
     mov   r1, #0x0A                              @ '\n'
     str   r1, [r0]
-    ldr   r0, =0x1e784014
+    ldr   r0, =CONFIG_ASPEED_COM_LSR
 wait_print_0:
     ldr   r1, [r0]
     tst   r1, #0x40
@@ -1877,7 +1930,7 @@ set_scratch:
     str   r1, [r0]
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x44                              @ 'D'
     str   r1, [r0]
     mov   r1, #0x6F                              @ 'o'
@@ -1900,13 +1953,13 @@ set_scratch:
 
 /* Debug - UART console message */
    /* Print PHY timing information */
-    ldr   r0, =0x1e784014
+    ldr   r0, =CONFIG_ASPEED_COM_LSR
 wait_print_1:
     ldr   r1, [r0]
     tst   r1, #0x40
     beq   wait_print_1
 
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x52                              @ 'R'
     str   r1, [r0]
     mov   r1, #0x65                              @ 'e'
@@ -1938,7 +1991,7 @@ wait_print_1:
     mov   r1, #0x3A                              @ ':'
     str   r1, [r0]
 
-    ldr   r0, =0x1e784014
+    ldr   r0, =CONFIG_ASPEED_COM_LSR
 wait_print_2:
     ldr   r1, [r0]
     tst   r1, #0x40
@@ -1958,7 +2011,7 @@ print_DQL_eye_margin:
     and   r2, r2, #0xFF
     cmp   r2, r10                                @ check violation
     movlt r9, #1
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x30                              @ '0'
     str   r1, [r0]
     mov   r1, #0x2E                              @ '.'
@@ -2000,7 +2053,7 @@ print_DQH_eye_margin:
     mov   r1, #0x3A                              @ ':'
     str   r1, [r0]
 
-    ldr   r0, =0x1e784014
+    ldr   r0, =CONFIG_ASPEED_COM_LSR
 wait_print_3:
     ldr   r1, [r0]
     tst   r1, #0x40
@@ -2012,7 +2065,7 @@ wait_print_3:
     and   r2, r2, #0xFF
     cmp   r2, r10                                @ check violation
     movlt r9, #1
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x30                              @ '0'
     str   r1, [r0]
     mov   r1, #0x2E                              @ '.'
@@ -2058,13 +2111,13 @@ print_DQ_eye_margin_last:
     movne r10, #0x30                             @ DDR4 min = 0.30
     moveq r10, #0x35                             @ DDR4 min = 0.35
 
-    ldr   r0, =0x1e784014
+    ldr   r0, =CONFIG_ASPEED_COM_LSR
 wait_print_4:
     ldr   r1, [r0]
     tst   r1, #0x40
     beq   wait_print_4
 
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x20                              @ ' '
     str   r1, [r0]
     mov   r1, #0x28                              @ '('
@@ -2091,13 +2144,13 @@ wait_print_4:
     beq   print_DQ_margin_last
     mov   r1, #0x20                              @ ' '
     str   r1, [r0]
-    ldr   r0, =0x1e784014
+    ldr   r0, =CONFIG_ASPEED_COM_LSR
 wait_print_5:
     ldr   r1, [r0]
     tst   r1, #0x40
     beq   wait_print_5
 
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x57                              @ 'W'
     str   r1, [r0]
     mov   r1, #0x61                              @ 'a'
@@ -2128,12 +2181,12 @@ wait_print_5:
     str   r1, [r0]
     mov   r1, #0x6E                              @ 'n'
     str   r1, [r0]
-    ldr   r0, =0x1e784014
+    ldr   r0, =CONFIG_ASPEED_COM_LSR
 wait_print_6:
     ldr   r1, [r0]
     tst   r1, #0x40
     beq   wait_print_6
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     mov   r1, #0x20                              @ ' '
     str   r1, [r0]
     mov   r1, #0x74                              @ 't'

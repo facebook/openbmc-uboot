@@ -185,10 +185,26 @@ config PIC32_ETH
 
 config ASPEEDNIC
 	bool "Aspeed ethernet support"
-	depends on MACH_ARM
+	depends on ARM
 	select PHYLIB
 	help
 	  Network support for the Aspeed ast2400 and ast2500 series network
 	  devices including NC-SI support.
+
+if ASPEEDNIC
+
+choice
+	prompt "Network configuration"
+	help
+	  Select Aspeed network configuration
+
+  config ASPEED_NET_PHY
+	  bool "Use a direct attached PHY"
+
+  config ASPEED_NET_NCSI
+	  bool  "Use a network controller attached via NSCI"
+endchoice
+
+endif # ASPEEDNIC
 
 endif # NETDEVICES

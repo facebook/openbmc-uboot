@@ -31,10 +31,92 @@ void watchdog_init()
 #endif
 }
 
-void fan_init()
+#ifdef CONFIG_FBTP
+static void fan_init()
 {
   __raw_writel(0x43004300, 0x1e786008);
 }
+
+static int get_svr_pwr()
+{
+  // GPIOB6
+  return ((__raw_readl(AST_GPIO_BASE + 0x00) >> 14) & 1);
+}
+
+static int set_svr_pwr_btn(int level)
+{
+  long reg;
+  // GPIOE3
+  // output
+  reg = __raw_readl(AST_GPIO_BASE + 0x24);
+  __raw_writel(reg | (1 << 3), AST_GPIO_BASE + 0x24);
+
+  reg = __raw_readl(AST_GPIO_BASE + 0x20);
+  if (level) //high
+    reg |= (1<<3);
+  else // low
+    reg &= ~(1<<3);
+  __raw_writel(reg, AST_GPIO_BASE + 0x20);
+}
+
+static void policy_init()
+{
+  long reg;
+  char *policy=NULL, *last_state=NULL, *result;
+  int to_pwr_on = 0;
+
+  // BMC's SCU3C: System Reset Control/Status Register
+  reg = __raw_readl(AST_SCU_BASE + 0x3c);
+  // If BMC is reset by watch dog#1, #2(SCU3C[2:3]) or
+  // external reset pin(SCU3C[1])
+  if (!(reg & 0xe)) {
+    // getenv return the same buffer,
+    // duplicate result before call it again.
+    result = getenv("por_policy");
+    policy = (result)?strdup(result):NULL;
+    // printf("%X por_policy:%s\n", policy, policy?policy:"null");
+
+    result = getenv("por_ls");
+    last_state = (result)?strdup(result):NULL;
+    // printf("%X por_ls:%s\n", last_state, last_state?last_state:"null");
+
+    if (policy && last_state){
+      if ((!strcmp(policy, "on")) ||
+          (!strcmp(policy, "lps") && !strcmp(last_state, "on"))
+      ) {
+        to_pwr_on = 1;
+      }
+    } else {
+      // default power on if no por config
+      to_pwr_on = 1;
+    }
+  }
+  printf("to_pwr_on: %d, policy:%s, ls:%s, scu3c:%08X\n",
+    to_pwr_on,
+    policy?policy:"null",
+    last_state?last_state:"null",
+    reg);
+
+  // Host Server should power on
+  if (to_pwr_on == 1) {
+    // Host Server is not on
+    if (!get_svr_pwr()) {
+      set_svr_pwr_btn(0);
+      udelay(1000*1000);
+      set_svr_pwr_btn(1);
+      udelay(1000*1000);
+      if (!get_svr_pwr())
+        printf("!!!! Power On failed !!!!\n");
+    }
+  }
+
+  // free duplicated string buffer
+  if (policy)
+    free(policy);
+  if (last_state)
+    free(last_state);
+}
+#endif
 
 int board_init(void)
 {
@@ -43,6 +125,7 @@ int board_init(void)
 
 #ifdef CONFIG_FBTP
   fan_init();
+  policy_init();
 #endif
 
 	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;

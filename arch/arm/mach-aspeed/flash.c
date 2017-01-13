@@ -717,7 +717,7 @@ int write_buff (flash_info_t * info, uchar * src, ulong addr, ulong cnt)
 	return (0);
 }
 
-static ulong flash_get_size (ulong base, flash_info_t *info)
+static ulong flash_get_size (const char *id, ulong base, flash_info_t *info)
 {
 	int j;
 	unsigned long sector;
@@ -767,7 +767,7 @@ static ulong flash_get_size (ulong base, flash_info_t *info)
 	ulID = ((ulong)ch[0]) | ((ulong)ch[1] << 8) | ((ulong)ch[2] << 16) ;
 	info->flash_id = ulID;
 
-//	printf("SPI Flash ID: %x \n", ulID);
+	printf("\t%s flash ID: %lx\n", id, info->flash_id);
 
 	/* init default */
 	info->iomode = IOMODEx1;
@@ -1126,7 +1126,7 @@ static ulong flash_get_size (ulong base, flash_info_t *info)
 			break;
 
 		default:	/* use JEDEC ID */
-			printf("Unsupported SPI Flash!! 0x%08lx\n", info->flash_id);
+			printf("\t%s Unknown flash ID!\n", id);
 			erase_region_size  = 0x10000;
 			info->readcmd = 0x0b;
 			info->dualport  = 0;
@@ -1163,7 +1163,7 @@ static ulong flash_get_size (ulong base, flash_info_t *info)
 						info->size = 0x1000000;
 						break;
 					default:
-						printf("Can't support this SPI Flash!! \n");
+						printf("\t%s Skip unsupported flash!\n", id);
 						return 0;
 				}
 			} else {
@@ -1247,7 +1247,7 @@ static ulong flash_get_size (ulong base, flash_info_t *info)
 						break;
 
 					default:
-						printf("Can't support this SPI Flash!! \n");
+						printf("\t%s Skip unsupported flash!\n", id);
 						return 0;
 				}
 			} /* JDEC */
@@ -1317,10 +1317,12 @@ unsigned long flash_init (void)
 		flash_info[i].CE = i;
 		switch(i) {
 			case 0:
-				size += flash_info[i].size = flash_get_size(AST_FMC_CS0_BASE, &flash_info[i]);
+				size += flash_info[i].size =
+					flash_get_size("FMC-CS0:", AST_FMC_CS0_BASE, &flash_info[i]);
 				break;
 			case 1:
-				size += flash_info[i].size = flash_get_size(AST_FMC_CS1_BASE, &flash_info[i]);
+				size += flash_info[i].size =
+					flash_get_size("FMC-CS1:", AST_FMC_CS1_BASE, &flash_info[i]);
 				break;
 			default:
 				printf("TODO ~~~~ \n");
@@ -1341,7 +1343,8 @@ unsigned long flash_init (void)
 	flash_info[CONFIG_FMC_CS].reg_base = AST_FMC_SPI0_BASE;
 	flash_info[CONFIG_FMC_CS].flash_id = FLASH_UNKNOWN;
 	flash_info[CONFIG_FMC_CS].CE = 0;
-	size += flash_info[CONFIG_FMC_CS].size = flash_get_size(AST_SPI0_CS0_BASE, &flash_info[CONFIG_FMC_CS]);
+	size += flash_info[CONFIG_FMC_CS].size =
+		flash_get_size("SPI CS0:", AST_SPI0_CS0_BASE, &flash_info[CONFIG_FMC_CS]);
 	if (flash_info[2].flash_id == FLASH_UNKNOWN) {
 		printf ("## Unknown FLASH on Bank 2 SYS SPI - Size = 0x%08lx = %ld MB\n",
 			flash_info[CONFIG_FMC_CS].size, flash_info[CONFIG_FMC_CS].size << 20);

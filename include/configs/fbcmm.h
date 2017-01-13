@@ -8,23 +8,32 @@
 #ifndef __FBCMM_CONFIG_H
 #define __FBCMM_CONFIG_H
 
-#define CONFIG_IDENT_STRING " fbcmm-v0.0"
+#define CONFIG_IDENT_STRING "\nFacebook CMM OpenBMC"
 #define CONFIG_FBCMM 1
 
-#define CONFIG_SYS_LONGHELP     /* undef to save memory   */
-#define CONFIG_SYS_HUSH_PARSER  /* Use the HUSH parser */
+#define CONFIG_SYS_LONGHELP
+
 #define CONFIG_BOOTARGS   "debug console=ttyS1,9600n8 root=/dev/ram rw"
-#define CONFIG_UPDATE   "tftp 80800000 ast2500.scr; so 80800000'"
-#define CONFIG_BOOTCOMMAND  "bootm 20080000"  /* Location of FIT */
-#define CONFIG_BOOTFILE   "flash-wedge"
+#define CONFIG_BOOTFILE   "flash-cmm"
 
 /*
  * Serial configuration
  */
-#define CONFIG_SYS_NS16550_MEM32
-#define CONFIG_SYS_NS16550_COM1  AST_UART1_BASE
-#define CONFIG_CONS_INDEX 1
-#define CONFIG_BAUDRATE   9600
+#define CONFIG_SYS_NS16550_COM1 AST_UART1_BASE
+#define CONFIG_CONS_INDEX       1
+#define CONFIG_ASPEED_COM       AST_UART1_BASE
+#define CONFIG_BAUDRATE         9600
+
+/*
+ * UART configurtion
+ */
+#define CONFIG_ASPEED_UART1_ENABLE
+#define CONFIG_ASPEED_UART1_BMC // by default, src is LPC for UART1
+#define CONFIG_ASPEED_UART2_ENABLE
+#define CONFIG_ASPEED_UART2_BMC // by default, src is LPC for UART2
+#define CONFIG_ASPEED_UART3_ENABLE
+#define CONFIG_ASPEED_UART4_ENABLE
+#define CONFIG_ASPEED_UART5_MAP_IO6
 
 /*
  * NIC configuration

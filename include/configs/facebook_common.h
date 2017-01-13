@@ -43,7 +43,11 @@
 #define CONFIG_SYS_REMAP_BASE     0x00000000
 #define CONFIG_SYS_UBOOT_START    0x00000000
 #define CONFIG_SYS_ENV_BASE       0x20000000
-#define CONFIG_KERNEL_LOAD         "20080000 20480000"
+#ifdef CONFIG_FIT
+#define CONFIG_KERNEL_LOAD        "20080000"
+#else
+#define CONFIG_KERNEL_LOAD        "20080000 20480000"
+#endif
 #endif
 
 /*
@@ -81,10 +85,16 @@
 #define CONFIG_ENV_SIZE          0x20000 /* # of bytes of env, 128k */
 #define CONFIG_ENV_OVERWRITE
 #define CONFIG_ENV_ADDR          (CONFIG_SYS_ENV_BASE + CONFIG_ENV_OFFSET)
+#ifdef CONFIG_FIT
+#define ENV_INITRD_HIGH ""
+#else
+#define ENV_INITRD_HIGH "initrd_high=a0000000\0"
+#endif
 #define CONFIG_EXTRA_ENV_SETTINGS                       \
     "verify=no\0"                                       \
     "spi_dma=no\0"                                      \
     "updatefile=" CONFIG_BOOTFILE ".fit\0"              \
+    ENV_INITRD_HIGH                                     \
     ""
 
 /*
@@ -129,6 +139,7 @@
 #define CONFIG_CMD_MEMTEST
 #define CONFIG_CMD_MEMTEST2
 #define CONFIG_CMD_SDRAM
+#define CONFIG_CMD_TFTPPUT
 #define CONFIG_CMD_FLASH
 #define CONFIG_CMD_VBS
 

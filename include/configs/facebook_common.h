@@ -109,6 +109,7 @@
  */
 #define CONFIG_ASPEED_ENABLE_WATCHDOG
 #define CONFIG_ASPEED_WATCHDOG_TIMEOUT	(5*60) /* 5 minutes */
+#define CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
 
 /*
  * Miscellaneous configurable options

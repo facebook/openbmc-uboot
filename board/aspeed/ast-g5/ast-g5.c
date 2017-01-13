@@ -26,7 +26,14 @@ void watchdog_init()
     /* magic word to reload */
     __raw_writel(0x4755, AST_WDT_BASE + 0x08);
     /* start the watchdog with 1M clk src and reset whole chip */
-    __raw_writel(0x33, AST_WDT_BASE + 0x0c);
+    u32 val = 0x33; /* Full | Clear after | Enable */
+    /* Some boards may request the reset to trigger the EXT reset GPIO.
+     * On Linux this is defined as WDT_CTRL_B_EXT.
+     */
+#ifdef CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
+    val |= 0x08; /* Ext */
+#endif
+    __raw_writel(val, AST_WDT_BASE + 0x0c);
     printf("Watchdog: %us\n", CONFIG_ASPEED_WATCHDOG_TIMEOUT);
 #endif
 }

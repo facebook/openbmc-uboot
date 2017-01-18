@@ -140,6 +140,7 @@
 #define CONFIG_CMD_MEMTEST2
 #define CONFIG_CMD_SDRAM
 #define CONFIG_CMD_FLASH
+#define CONFIG_CMD_VBS
 
 /*
  * Additional command configuration

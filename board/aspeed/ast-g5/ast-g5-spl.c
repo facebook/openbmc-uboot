@@ -17,18 +17,26 @@
 #include <asm/arch/aspeed.h>
 #include <asm/io.h>
 
-#include "flash-spl.h"
+#include <asm/arch/vbs.h>
 
-/* Location in SRAM used for verified boot content/flags. */
-#define AST_SRAM_VBS_BASE   0x1E720100
-#define AST_SRAM_VBS_FLAGS  (AST_SRAM_VBS_BASE + 0x04)
+#include "flash-spl.h"
 
 /* Size of RW environment parsable by ROM. */
 #define AST_ROM_ENV_MAX     0x200
 
 DECLARE_GLOBAL_DATA_PTR;
 
-static ulong fdt_getprop_u32(const void *fdt, int node, const char *prop)
+static void vbs_status(u8 t, u8 c) {
+  /* Store an error condition in the VBS structure for reporting/testing. */
+  struct vbs *vbs = (struct vbs*)AST_SRAM_VBS_BASE;
+  if (vbs->error_code == VBS_SUCCESS) {
+    /* Only store the initial error code and type. */
+    vbs->error_code = c;
+    vbs->error_type = t;
+  }
+}
+
+static u32 fdt_getprop_u32(const void *fdt, int node, const char *prop)
 {
   const u32 *cell;
   int len;
@@ -61,14 +69,15 @@ void spl_display_print() {
 
 void spl_recovery(void) {
   /* Overwirte all of the verified boot flags we've defined. */
-  writeb(1, AST_SRAM_VBS_FLAGS);
+  struct vbs *vbs = (struct vbs*)AST_SRAM_VBS_BASE;
+  vbs->recovery_boot = 1;
 
   /* Jump to the well-known location of the Recovery U-Boot. */
   printf("Booting recovery U-Boot\n");
   jump(CONFIG_SYS_RECOVERY_BASE);
 }
 
-int spl_getenv_yesno(const char* var) {
+u8 spl_getenv_yesno(const char* var) {
   const char* n = 0;
   const char* v = 0;
   int size = strlen(var);
@@ -106,24 +115,39 @@ int spl_getenv_yesno(const char* var) {
   return 0;
 }
 
-int verify_required(int hw_verify, int sw_verify) {
-  if (hw_verify == 1) {
+u8 verify_required(u8* notified) {
+  struct vbs *vbs = (struct vbs*)AST_SRAM_VBS_BASE;
+  if (vbs->hardware_enforce == 1) {
     return 1;
-  } else if (sw_verify == 1) {
+  } else if (vbs->software_enforce == 1) {
     return 1;
   }
 
-  debug("OpenBMC verified-boot is not enforcing in hardware or software.\n");
-  debug("Allowing execution to proceed into an unverified state.\n");
+  if (*notified == 0) {
+    *notified = 1;
+    debug("OpenBMC verified-boot is not enforcing in hardware or software.\n");
+    debug("Allowing execution to proceed into an unverified state.\n");
+  }
   return 0;
 }
+
+#define CHECK_AND_RECOVER(n) \
+  if (verify_required(n)) { spl_recovery(); }
 
 void load_fit(u32 from) {
   struct image_header *header;
 
+  /* Set the VBS structure to the expected location in SRAM */
+  struct vbs *vbs = (struct vbs*)AST_SRAM_VBS_BASE;
+  u32 rom_address = vbs->uboot_exec_address;
+  memset((void*)AST_SRAM_VBS_BASE, 0, sizeof(struct vbs));
+  vbs->rom_exec_address = rom_address;
+  vbs->hardware_enforce = 0;
+
   /* Reset the target RW flash chip. */
   if (!ast_fmc_spi_cs1_reset()) {
     debug("%s: Cannot reset FMC/CS1 (SPI0.1) state", __func__);
+    vbs_status(VBS_ERROR_TYPE_SPI, VBS_ERROR_SPI_PROM);
     spl_recovery();
   }
 
@@ -132,6 +156,7 @@ void load_fit(u32 from) {
     /* FIT loading is not available or this U-Boot is not a FIT. */
     /* This will bypass signature checking */
     debug("%s: Cannot find FIT image header: 0x%08x\n", __func__, from);
+    vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_BAD_MAGIC);
     spl_recovery();
   }
 
@@ -146,74 +171,118 @@ void load_fit(u32 from) {
   int images = fdt_path_offset(fit, FIT_IMAGES_PATH);
   if (images < 0) {
     debug("%s: Cannot find /images node: %d\n", __func__, images);
+    vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_NO_IMAGES);
     spl_recovery();
   }
 
   /* Be simple, select the first image. */
-  int node = fdt_first_subnode(fit, images);
-  if (node < 0) {
-    debug("%s: Cannot find first image node: %d\n", __func__, node);
+  int uboot_node = fdt_first_subnode(fit, images);
+  if (uboot_node < 0) {
+    debug("%s: Cannot find first image (u-boot) node: %d\n", __func__,
+      uboot_node);
+    vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_NO_FW);
     spl_recovery();
   }
 
   /* Get its information and set up the spl_image structure */
-  int data_position = fdt_getprop_u32(fit, node, "data-position");
-  int data_size = fdt_getprop_u32(fit, node, "data-size");
+  u32 uboot_position = fdt_getprop_u32(fit, uboot_node, "data-position");
+  u32 uboot_size = fdt_getprop_u32(fit, uboot_node, "data-size");
 
   u32 load = from;
-  if (data_position > 0) {
+  if (uboot_position > 0) {
     /* Position will include the relative offset from the base of U-Boot's FIT */
-    load += data_position;
+    load += uboot_position;
   }
 
-  int hw_verify = 0;
-  int sw_verify = spl_getenv_yesno("verify");
-  int force_recovery = spl_getenv_yesno("force_recovery");
-  printf("OpenBMC verified-boot enforcing [hw:%d sw:%d recovery: %d]\n",
-    hw_verify, sw_verify, force_recovery);
+  vbs->software_enforce = spl_getenv_yesno("verify");
+  vbs->force_recovery = spl_getenv_yesno("force_recovery");
+  printf("OpenBMC verified-boot enforcing [hw:%d sw:%d recovery:%d]\n",
+    vbs->hardware_enforce, vbs->software_enforce, vbs->force_recovery);
   debug("%s: U-Boot: data_position=0x%08x, load=0x%08x hw/sw verify=%d/%d\n",
-        __func__, data_position, load, hw_verify, sw_verify);
-  if (force_recovery == 1) {
+        __func__, uboot_position, load,
+        vbs->hardware_enforce, vbs->software_enforce);
+  if (vbs->force_recovery == 1) {
+    vbs_status(VBS_ERROR_TYPE_FORCE, VBS_ERROR_FORCE_RECOVERY);
     spl_recovery();
   }
+
+  /* Be kind and do not print warnings more than once. */
+  u8 notified = 0;
 
   /*
    * It is possible to disabled verified boot at build-time.
    * Later it will be possible to disable using a config similar to the U-Boot
    * verified boot bypass: verify=no
    */
-  void *signature_store = (void*)gd_fdt_blob();
-  if (signature_store == 0x0) {
-    /* It is possible the spl_init method did not find a fdt. */
-    printf("No signature store was included in the SPL.\n");
-    if (verify_required(hw_verify, sw_verify)) {
-      spl_recovery();
-    }
+   const void *signature_store = (const void*)gd_fdt_blob();
+   vbs->rom_keys = (u32)signature_store;
+   if (signature_store == 0x0) {
+     /* It is possible the spl_init method did not find a fdt. */
+     printf("No signature store was included in the SPL.\n");
+     vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_NO_KEYS);
+     CHECK_AND_RECOVER(&notified);
+   }
+
+   /* After the first image (uboot) expect to find the subordinate store. */
+   int subordinate_node = fdt_next_subnode(fit, uboot_node);
+   if (subordinate_node < 0) {
+     debug("%s: Cannot find second image (fdt) node: %d\n", __func__,
+       subordinate_node);
+     vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_NO_FDT);
+     CHECK_AND_RECOVER(&notified);
   }
 
-#ifdef CONFIG_SPL_FIT_SUBORDINATE_KEYS
-  /* Node path to subordinate keys. */
-  int keys = fdt_path_offset(fit, FIT_KEYS_PATH);
-  if (keys < 0) {
-    debug("%s: Cannot find /keys node: %d\n", __func__, keys);
-    if (verify_required(hw_verify, sw_verify)) {
-      spl_recovery();
-    }
+  /* Access the data and data-size to call image verify directly. */
+  int subordinate_size = 0;
+  const char* subordinate_data = fdt_getprop(fit, subordinate_node, "data",
+    &subordinate_size);
+  if (subordinate_data == 0 || subordinate_size <= 0) {
+    debug("Cannot find subordinate certificate store.\n");
+    vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_BAD_FDT);
+    CHECK_AND_RECOVERY(&notified);
   }
 
+  /* This can return success if none of the keys were attempted. */
   int subordinate_verified = 0;
-  /* Be simple, select the first key. */
-  int key_node = fdt_first_subnode(fit, keys);
-  subordinate_verified = fit_config_verify(fit, key_node);
-  debug("%s: Subordinate keys verified %d\n", __func__, subordinate_verified);
-#endif
+  if (fit_image_verify_required_sigs(fit, subordinate_node, subordinate_data,
+             subordinate_size, signature_store, &subordinate_verified)) {
+    printf("Unable to verify required subordinate certificate store.\n");
+    debug("Check that a 'fdt' image was included alongside 'firmware'.\n");
+    vbs_status(VBS_ERROR_TYPE_FW, VBS_ERROR_FDT_INVALID);
+    CHECK_AND_RECOVER(&notified);
+  }
+
+  /* Check that at least 1 subordinate store was verified. */
+  if (subordinate_verified != 0) {
+    printf("Subordinate certificate store was not verified.\n");
+    vbs_status(VBS_ERROR_TYPE_FW, VBS_ERROR_FDT_UNVERIFIED);
+    CHECK_AND_RECOVER(&notified);
+  }
+
+  /*
+   * Change the certificate store to the subordinate after it is verified.
+   * This means the first image, 'firmware' is signed with a key that is NOT
+   * in ROM but rather signed by the verified subordinate key.
+   */
+  signature_store = subordinate_data;
+  vbs->subordainte_keys = (u32)signature_store;
+
+  /*
+   * Check the sanity of U-Boot position and size.
+   * If there is a problem force recovery.
+   */
+  if (uboot_size == 0 || uboot_position == 0) {
+    printf("Cannot find U-Boot firmware.\n");
+    vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_BAD_FW);
+    spl_recovery();
+  }
 
   /*
    * Check that at least 1 image was verified.
    * This is an interesting error state communication, but it is the API
    * given, so let's make it as clear as possible.
    */
-  int verified = 0;
+  int uboot_verified = 0;
 
   /*
    * The load and offset *should* be the same, we'll need to fix that
@@ -221,25 +290,23 @@ void load_fit(u32 from) {
    *
    * For now we can set this to the data.
    */
-  void *data = (void*)load;
+  void *uboot_data = (void*)load;
 
   /* Verify all required signatures, keys must be marked required. */
-  if (fit_image_verify_required_sigs(fit, node, data, data_size,
-             signature_store, &verified)) {
+  if (fit_image_verify_required_sigs(fit, uboot_node, uboot_data, uboot_size,
+             signature_store, &uboot_verified)) {
     printf("Unable to verify required signature.\n");
-    if (verify_required(hw_verify, sw_verify)) {
-      spl_recovery();
-    }
+    vbs_status(VBS_ERROR_TYPE_FW, VBS_ERROR_FW_INVALID);
+    CHECK_AND_RECOVER(&notified);
   }
 
-  if (verified != 0) {
+  if (uboot_verified != 0) {
     /* When verified is 0, then an image was verified. */
     printf("U-Boot was not verified.\n");
     debug("Check that the 'required' field for each key- is set to 'image'.\n");
     debug("Check the board configuration for supported hash algorithms.\n");
-    if (verify_required(hw_verify, sw_verify)) {
-      spl_recovery();
-    }
+    vbs_status(VBS_ERROR_TYPE_FW, VBS_ERROR_FW_UNVERIFIED);
+    CHECK_AND_RECOVER(&notified);
   } else {
     printf("U-Boot verified.\n");
   }
@@ -269,4 +336,3 @@ void board_init_f(ulong bootflag)
   load_fit(CONFIG_SYS_SPL_FIT_BASE);
   hang();
 }
-

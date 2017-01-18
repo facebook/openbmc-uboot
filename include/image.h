@@ -1095,6 +1095,7 @@ int fit_image_verify_required_sigs(const void *fit, int image_noffset,
  * @noffset:		Offset of signature node to check
  * @data:		Image data to check
  * @size:		Size of image data
+ * @sig_blob		FDT continaing public keys
  * @required_keynode:	Offset in the control FDT of the required key node,
  *			if any. If this is given, then the image wil not
  *			pass verification unless that key is used. If this is
@@ -1104,7 +1105,7 @@ int fit_image_verify_required_sigs(const void *fit, int image_noffset,
  * @return 0 if all verified ok, <0 on error
  */
 int fit_image_check_sig(const void *fit, int noffset, const void *data,
-		size_t size, int required_keynode, char **err_msgp);
+		size_t size, const void *sig_blob, int required_keynode, char **err_msgp);
 
 /**
  * fit_region_make_list() - Make a list of regions to hash

@@ -1043,7 +1043,7 @@ int fit_image_verify(const void *fit, int image_noffset)
 				!strncmp(name, FIT_SIG_NODENAME,
 					strlen(FIT_SIG_NODENAME))) {
 			ret = fit_image_check_sig(fit, noffset, data,
-							size, -1, &err_msg);
+							size, gd_fdt_blob(), -1, &err_msg);
 
 			/*
 			 * Show an indication on failure, but do not return

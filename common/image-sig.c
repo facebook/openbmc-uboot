@@ -146,7 +146,7 @@ struct image_region *fit_region_make_list(const void *fit,
 }
 
 static int fit_image_setup_verify(struct image_sign_info *info,
-		const void *fit, int noffset, int required_keynode,
+		const void *fit, int noffset, const void *sig_blob, int required_keynode,
 		char **err_msgp)
 {
 	char *algo_name;
@@ -160,7 +160,7 @@ static int fit_image_setup_verify(struct image_sign_info *info,
 	info->fit = (void *)fit;
 	info->node_offset = noffset;
 	info->algo = image_get_sig_algo(algo_name);
-	info->fdt_blob = gd_fdt_blob();
+	info->fdt_blob = sig_blob;
 	info->required_keynode = required_keynode;
 	printf("%s:%s", algo_name, info->keyname);
 
@@ -173,7 +173,7 @@ static int fit_image_setup_verify(struct image_sign_info *info,
 }
 
 int fit_image_check_sig(const void *fit, int noffset, const void *data,
-		size_t size, int required_keynode, char **err_msgp)
+		size_t size, const void *sig_blob, int required_keynode, char **err_msgp)
 {
 	struct image_sign_info info;
 	struct image_region region;
@@ -181,7 +181,7 @@ int fit_image_check_sig(const void *fit, int noffset, const void *data,
 	int fit_value_len;
 
 	*err_msgp = NULL;
-	if (fit_image_setup_verify(&info, fit, noffset, required_keynode,
+	if (fit_image_setup_verify(&info, fit, noffset, sig_blob, required_keynode,
 				   err_msgp))
 		return -1;
 
@@ -218,7 +218,7 @@ static int fit_image_verify_sig(const void *fit, int image_noffset,
 		if (!strncmp(name, FIT_SIG_NODENAME,
 			     strlen(FIT_SIG_NODENAME))) {
 			ret = fit_image_check_sig(fit, noffset, data,
-							size, -1, &err_msg);
+							size, sig_blob, -1, &err_msg);
 			if (ret) {
 				puts("- ");
 			} else {
@@ -283,8 +283,8 @@ int fit_image_verify_required_sigs(const void *fit, int image_noffset,
 	return 0;
 }
 
-int fit_config_check_sig(const void *fit, int noffset, int required_keynode,
-			 char **err_msgp)
+int fit_config_check_sig(const void *fit, int noffset,
+			 const void *sig_blob, int required_keynode, char **err_msgp)
 {
 	char * const exc_prop[] = {"data"};
 	const char *prop, *end, *name;
@@ -299,9 +299,9 @@ int fit_config_check_sig(const void *fit, int noffset, int required_keynode,
 
 	debug("%s: fdt=%p, conf='%s', sig='%s'\n", __func__, gd_fdt_blob(),
 	      fit_get_name(fit, noffset, NULL),
-	      fit_get_name(gd_fdt_blob(), required_keynode, NULL));
+	      fit_get_name(sig_blob, required_keynode, NULL));
 	*err_msgp = NULL;
-	if (fit_image_setup_verify(&info, fit, noffset, required_keynode,
+	if (fit_image_setup_verify(&info, fit, noffset, sig_blob, required_keynode,
 				   err_msgp))
 		return -1;
 
@@ -398,8 +398,7 @@ static int fit_config_verify_sig(const void *fit, int conf_noffset,
 
 		if (!strncmp(name, FIT_SIG_NODENAME,
 			     strlen(FIT_SIG_NODENAME))) {
-			ret = fit_config_check_sig(fit, noffset, sig_offset,
-						   &err_msg);
+			ret = fit_config_check_sig(fit, noffset, sig_blob, sig_offset, &err_msg);
 			if (ret) {
 				puts("- ");
 			} else {

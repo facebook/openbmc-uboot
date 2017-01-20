@@ -123,6 +123,20 @@ static void policy_init()
   if (last_state)
     free(last_state);
 }
+
+static int disable_bios_debug(void)
+{
+  long reg;
+  // Set GPIOD0's direction as Output
+  reg = __raw_readl(AST_GPIO_BASE + 0x4);
+  __raw_writel(reg | (1 << 24), AST_GPIO_BASE + 0x4);
+
+  // Set GPIOD0's value as HIGH
+  reg = __raw_readl(AST_GPIO_BASE + 0x0);
+  reg |= (1<<24);
+  __raw_writel(reg, AST_GPIO_BASE + 0x0);
+}
+
 #endif
 
 int board_init(void)
@@ -133,6 +147,7 @@ int board_init(void)
 #ifdef CONFIG_FBTP
   fan_init();
   policy_init();
+  disable_bios_debug();
 #endif
 
 	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;

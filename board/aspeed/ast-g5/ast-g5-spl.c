@@ -239,7 +239,7 @@ void load_fit(u32 from) {
   if (subordinate_data == 0 || subordinate_size <= 0) {
     debug("Cannot find subordinate certificate store.\n");
     vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_BAD_FDT);
-    CHECK_AND_RECOVERY(&notified);
+    CHECK_AND_RECOVER(&notified);
   }
 
   /* This can return success if none of the keys were attempted. */

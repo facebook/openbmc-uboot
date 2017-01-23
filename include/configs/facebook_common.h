@@ -56,7 +56,7 @@
  * Recovery boot flow
  */
 #ifdef CONFIG_ASPEED_RECOVERY_BUILD
-#define CONFIG_PREBOOT            "setenv autoload no; dhcp"
+#define CONFIG_PREBOOT            "setenv autoload no;"
 #define CONFIG_UPDATE_TFTP
 #define CONFIG_UPDATE_LOAD_ADDR   (CONFIG_SYS_LOAD_ADDR + 0x60000)
 #endif

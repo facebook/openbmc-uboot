@@ -166,6 +166,91 @@ PATTERN_TABLE:
     ldr r2, =0x00000800
     .endm
 
+    .macro enable_other_uarts
+    /* SCU84: Multi-function Pin Control 1, for UART1 and UART2 */
+    ldr   r0, =0x1e6e2084
+    ldr   r1, [r0]
+#ifdef CONFIG_ASPEED_UART1_ENABLE
+    ldr   r2, =0x00c00000                        @ Enable UART1 TXD and RXD
+    orr   r1, r1, r2
+#endif
+#ifdef CONFIG_ASPEED_UART2_ENABLE
+    ldr   r2, =0xc0000000                        @ Enable UART2 TXD and RXD
+    orr   r1, r1, r2
+#endif
+    str   r1, [r0]
+
+    /* SCU80: Multi-function Pin Control 1, for UART3 and UART4 */
+    ldr   r0, =0x1e6e2080
+    ldr   r1, [r0]
+#ifdef CONFIG_ASPEED_UART3_ENABLE
+    ldr   r2, =0x00c00000
+    orr   r1, r1, r2                             @ Enable UART3 TXD and RXD
+#endif
+#ifdef CONFIG_ASPEED_UART4_ENABLE
+    ldr   r2, =0xc0000000
+    orr   r1, r1, r2                             @ Enable UART4 TXD and RXD
+#endif
+    str   r1, [r0]
+
+    /* HICR9, IO6 mapping and UART1-4 source */
+    ldr   r0, =0x1e789098                        @ HICR9
+    ldr   r1, [r0]
+#ifdef CONFIG_ASPEED_UART5_MAP_IO6
+    ldr   r2, =#0x400                             @ UART5 to IO6
+    orr   r1, r1, r2
+#endif
+#ifdef CONFIG_ASPEED_UART1_BMC
+    ldr   r2, =#0xffffffef                        @ UART1 reset from BMC
+    and   r1, r1, r2
+#endif
+#ifdef CONFIG_ASPEED_UART2_BMC
+    ldr   r2, =#0xffffffdf                        @ UART2 reset from BMC
+    and   r1, r1, r2
+#endif
+    str   r1, [r0]
+    .endm
+
+    .macro uart_console_setup
+    enable_other_uarts
+    /* setup UART console */
+    ldr   r0, =CONFIG_ASPEED_COM_LCR
+    mov   r1, #0x83
+    str   r1, [r0]
+
+    ldr   r0, =0x1e6e202c
+    ldr   r2, [r0]
+    mov   r2, r2, lsr #12
+    tst   r2, #0x01
+    ldr   r0, =CONFIG_ASPEED_COM
+#if CONFIG_BAUDRATE == 115200
+    moveq r1, #0x0D                              @ Baudrate 115200
+    movne r1, #0x01                              @ Baudrate 115200, div13
+#elif CONFIG_BAUDRATE == 57600
+    moveq r1, #0x1A                              @ Baudrate 57600
+    movne r1, #0x02                              @ Baudrate 57600, div13
+#elif CONFIG_BAUDRATE == 38400
+    moveq r1, #0x27                              @ Baudrate 38400
+    movne r1, #0x03                              @ Baudrate 38400 , div13
+#elif CONFIG_BAUDRATE == 9600
+    moveq r1, #0x9c                              @ Baudrate 9600
+    movne r1, #0x0C                              @ Baudrate 9600 , div13
+#endif
+    str   r1, [r0]
+
+    ldr   r0, =CONFIG_ASPEED_COM_IER
+    mov   r1, #0x00
+    str   r1, [r0]
+
+    ldr   r0, =CONFIG_ASPEED_COM_LCR
+    mov   r1, #0x03
+    str   r1, [r0]
+
+    ldr   r0, =CONFIG_ASPEED_COM_IIR
+    mov   r1, #0x07
+    str   r1, [r0]
+    .endm
+
 /******************************************************************************
  Calibration Macro End
  ******************************************************************************/
@@ -337,34 +422,7 @@ set_MPLL:
     str r1, [r0]
 
 /* Debug - UART console message */
-    ldr r0, =CONFIG_ASPEED_COM_LCR
-    mov r1, #0x83
-    str r1, [r0]
-
-    ldr r0, =0x1e6e202c
-    ldr r2, [r0]
-    mov r2, r2, lsr #12
-    tst r2, #0x01
-    ldr r0, =CONFIG_ASPEED_COM
-    moveq r1, #0x0D                              @ Baudrate 115200
-    movne r1, #0x01                              @ Baudrate 115200, div13
-#if defined(CONFIG_DRAM_UART_38400)
-    moveq r1, #0x27                              @ Baudrate 38400
-    movne r1, #0x03                              @ Baudrate 38400 , div13
-#endif
-    str r1, [r0]
-
-    ldr r0, =CONFIG_ASPEED_COM_IER
-    mov r1, #0x00
-    str r1, [r0]
-
-    ldr r0, =CONFIG_ASPEED_COM_LCR
-    mov r1, #0x03
-    str r1, [r0]
-
-    ldr r0, =CONFIG_ASPEED_COM_IIR
-    mov r1, #0x07
-    str r1, [r0]
+    uart_console_setup
 
     ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x0D                                @ '\r'

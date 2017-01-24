@@ -15,14 +15,17 @@
 #include <libfdt.h>
 
 #include <asm/arch/aspeed.h>
+#include <asm/arch/vbs.h>
 #include <asm/io.h>
 
-#include <asm/arch/vbs.h>
 
 #include "flash-spl.h"
 
 /* Size of RW environment parsable by ROM. */
 #define AST_ROM_ENV_MAX     0x200
+
+/* Max size of U-Boot FIT */
+#define AST_MAX_UBOOT_FIT   0x4000
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -71,9 +74,11 @@ void spl_recovery(void) {
   /* Overwirte all of the verified boot flags we've defined. */
   struct vbs *vbs = (struct vbs*)AST_SRAM_VBS_BASE;
   vbs->recovery_boot = 1;
+  vbs->recovery_retries += 1;
+  vbs->rom_handoff = 0x0;
 
   /* Jump to the well-known location of the Recovery U-Boot. */
-  printf("Booting recovery U-Boot\n");
+  printf("Booting recovery U-Boot.\n");
   jump(CONFIG_SYS_RECOVERY_BASE);
 }
 
@@ -140,9 +145,20 @@ void load_fit(u32 from) {
   /* Set the VBS structure to the expected location in SRAM */
   struct vbs *vbs = (struct vbs*)AST_SRAM_VBS_BASE;
   u32 rom_address = vbs->uboot_exec_address;
+  u32 rom_handoff = vbs->rom_handoff;
+  u8 recovery_retries = vbs->recovery_retries;
+
+  /* Reset all data, then restore selected variables. */
   memset((void*)AST_SRAM_VBS_BASE, 0, sizeof(struct vbs));
   vbs->rom_exec_address = rom_address;
+  vbs->recovery_retries = recovery_retries;
   vbs->hardware_enforce = 0;
+
+  if (rom_handoff == 0xADEFAD8B) {
+    printf("U-Boot failed to execute.\n");
+    vbs_status(VBS_ERROR_TYPE_SPI, VBS_ERROR_EXECUTE_FAILURE);
+    spl_recovery();
+  }
 
   /* Reset the target RW flash chip. */
   if (!ast_fmc_spi_cs1_reset()) {
@@ -166,6 +182,10 @@ void load_fit(u32 from) {
   u32 base_offset = (size + 3) & ~3;
   debug("%s: Parsed FIT: size=%x base_offset=%x\n", __func__,
         size, base_offset);
+  if (size > AST_MAX_UBOOT_FIT) {
+    vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_INVALID_SIZE);
+    spl_recovery();
+  }
 
   /* Node path to images */
   int images = fdt_path_offset(fit, FIT_IMAGES_PATH);
@@ -271,7 +291,7 @@ void load_fit(u32 from) {
    * Check the sanity of U-Boot position and size.
    * If there is a problem force recovery.
    */
-  if (uboot_size == 0 || uboot_position == 0) {
+  if (uboot_size == 0 || uboot_position == 0 || uboot_position == 0xFFFFFFFF) {
     printf("Cannot find U-Boot firmware.\n");
     vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_BAD_FW);
     spl_recovery();
@@ -310,6 +330,10 @@ void load_fit(u32 from) {
   } else {
     printf("U-Boot verified.\n");
   }
+
+  /* Set a handoff and expect U-Boot to clear indicating a clean boot. */
+  vbs->recovery_retries = 0;
+  vbs->rom_handoff = 0xADEFAD8B;
   jump(load);
 }
 

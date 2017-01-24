@@ -16,6 +16,7 @@
 #define VBS_ERROR_TYPE_OS      6
 
 #define VBS_ERROR_MISSING_SPI      10
+#define VBS_ERROR_EXECUTE_FAILURE  11
 #define VBS_ERROR_SPI_PROM         20
 #define VBS_ERROR_BAD_MAGIC        30
 #define VBS_ERROR_NO_IMAGES        31
@@ -26,6 +27,7 @@
 #define VBS_ERROR_BAD_FDT          36
 #define VBS_ERROR_BAD_FDT_SIG      37
 #define VBS_ERROR_NO_KEYS          38
+#define VBS_ERROR_INVALID_SIZE     39
 #define VBS_ERROR_FDT_INVALID      40
 #define VBS_ERROR_FDT_UNVERIFIED   41
 #define VBS_ERROR_FW_INVALID       42
@@ -33,11 +35,14 @@
 #define VBS_ERROR_FORCE_RECOVERY   50
 #define VBS_ERROR_OS_INVALID       60
 
+#define VBS_HANDOFF               0xADEFAD8B
+
 struct vbs {
   u32 uboot_exec_address; /* Location in MMIO where U-Boot/Recovery U-Boot is execution */
   u32 rom_exec_address;   /* Location in MMIO where ROM is executing from */
   u32 rom_keys;           /* Location in MMIO where the ROM FDT is located */
   u32 subordainte_keys;   /* Location in MMIO where subordinate FDT is located */
+  u32 rom_handoff;        /* Marker set when ROM is handing execution to U-Boot. */
   u8 force_recovery;      /* Set by ROM when recovery is requested */
   u8 hardware_enforce;    /* Set by ROM when WP pin of SPI0.0 is active low */
   u8 software_enforce;    /* Set by ROM when RW environment uses verify=yes */

@@ -12,6 +12,7 @@
 
 #include <asm/arch/ast_scu.h>
 #include <asm/arch/ast-sdmc.h>
+#include <asm/arch/vbs.h>
 #include <asm/io.h>
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -36,6 +37,13 @@ void watchdog_init()
     __raw_writel(val, AST_WDT_BASE + 0x0c);
     printf("Watchdog: %us\n", CONFIG_ASPEED_WATCHDOG_TIMEOUT);
 #endif
+}
+
+static void vbs_handoff(void)
+{
+  /* Clean the handoff marker from ROM. */
+  struct vbs *vbs = (struct vbs*)AST_SRAM_VBS_BASE;
+  vbs->rom_handoff = 0x0;
 }
 
 #ifdef CONFIG_FBTP
@@ -143,6 +151,7 @@ int board_init(void)
 {
 
 	watchdog_init();
+	vbs_handoff();
 
 #ifdef CONFIG_FBTP
   fan_init();

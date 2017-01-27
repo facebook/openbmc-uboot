@@ -507,7 +507,11 @@ init_dram:
 #endif
 
 #if defined(CONFIG_SPL_BUILD) || !defined(CONFIG_SPL)
-    /* This is 'almost' the first code to execute (clear verified boot flags). */
+    /**
+     * This is 'almost' the first code to execute (clear verified boot flags).
+     * This code exists ONLY in the ROM if building a ROM (CONFIG_SPL).
+     * This code exists in U-Boot if not building a ROM.
+     */
     ldr   r0, =0x1E720104
     mov   r1, #0x0
     str   r1, [r0]
@@ -583,6 +587,30 @@ bypass_first_reset:
     mov   r1, #0xAE
     str   r1, [r0]
 
+/******************************************************************************
+ Disable WDT2 for 2nd boot function
+ ******************************************************************************/
+#ifndef CONFIG_FIRMWARE_2ND_BOOT
+    ldr   r0, =0x1e78502c
+    mov   r1, #0
+    str   r1, [r0]
+#endif
+/******************************************************************************
+ Disable WDT3 for SPI Address mode (3 or 4 bytes) detection function
+ ******************************************************************************/
+    ldr   r0, =0x1e78504c
+    mov   r1, #0
+    str   r1, [r0]
+
+#if defined(CONFIG_SPL_BUILD)
+    /* If building a ROM, the ROM code is finished platform initialization. */
+    b platform_exit_finish
+#endif
+#endif /* CONFIG_SPL_BUILD || !defined(CONFIG_SPL) */
+
+#if !defined(CONFIG_SPL_BUILD)
+    /* This code is not included in the ROM and is always included in U-Boot. */
+
 /* Test - DRAM initial time */
     ldr   r0, =0x1e78203c
     ldr   r1, =0x0000F000
@@ -654,21 +682,7 @@ bypass_USB_init:
     mrc   p15, 0, r1, c15, c2, 4
     mcr   p15, 0, r0, c15, c2, 4
 
-/******************************************************************************
- Disable WDT2 for 2nd boot function
- ******************************************************************************/
-#ifndef CONFIG_FIRMWARE_2ND_BOOT
-    ldr   r0, =0x1e78502c
-    mov   r1, #0
-    str   r1, [r0]
-#endif
-/******************************************************************************
- Disable WDT3 for SPI Address mode (3 or 4 bytes) detection function
- ******************************************************************************/
-    ldr   r0, =0x1e78504c
-    mov   r1, #0
-    str   r1, [r0]
-
+    /* JTAG */
     ldr   r0, =0x1e6e0000
     ldr   r1, =0xFC600309
     str   r1, [r0]
@@ -687,12 +701,6 @@ bypass_USB_init:
     orr   r1, r1, #0x40
     str   r1, [r0]
 
-#if defined(CONFIG_SPL_BUILD)
-    b platform_exit_finish
-#endif
-#endif /* CONFIG_SPL_BUILD || !defined(CONFIG_SPL) */
-
-#if !defined(CONFIG_SPL_BUILD)
     /* Set M-PLL */
 #if   defined (CONFIG_DRAM_1333)
     ldr   r2, =0xC48066C0                        @ load PLL parameter for 24Mhz CLKIN (330)
@@ -2403,4 +2411,3 @@ platform_exit_finish:
 
     /* back to arch calling code */
     mov   pc, lr
-

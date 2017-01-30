@@ -15,8 +15,4 @@ config SYS_VENDOR
 config SYS_SOC
 	default "aspeed"
 
-config SYS_CONFIG_NAME
-	default "ast-g4-phy" if ASPEED_NET_PHY
-	default "ast-g4-ncsi" if ASPEED_NET_NCSI
-
 endif

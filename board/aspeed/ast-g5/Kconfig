@@ -15,10 +15,6 @@ config SYS_VENDOR
 config SYS_SOC
 	default "aspeed"
 
-config SYS_CONFIG_NAME
-	default "ast-g5-phy" if ASPEED_NET_PHY
-	default "ast-g5-ncsi" if ASPEED_NET_NCSI
-
 endif
 
 config ASPEED_RECOVERY_BUILD

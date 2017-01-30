@@ -74,7 +74,9 @@ DECLARE_GLOBAL_DATA_PTR;
 extern int prom_init(void);
 #endif
 
-static u32 AST_FAN_BASE = 0x1E786000;
+#if defined(CONFIG_FBTTN)
+#define AST_FAN_BASE 0x1E786000
+#endif
 
 ulong monitor_flash_len;
 
@@ -740,6 +742,7 @@ static int initr_kbd(void)
 }
 #endif
 
+#ifdef CONFIG_FBTTN
 static int init_fan(void)
 {
   // Enable PWM0 and PWM1
@@ -753,6 +756,7 @@ static int init_fan(void)
 
 	return 0;
 }
+#endif
 
 static int run_main_loop(void)
 {

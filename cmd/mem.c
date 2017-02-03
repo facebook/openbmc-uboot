@@ -1152,6 +1152,13 @@ static int section_mem_test(ulong start, ulong end)
 	return ret;
 }
 
+#ifdef CONFIG_ENV_IS_NOWHERE
+int saveenv(void) {
+	/* There is no environment worth saving. */
+	return 0;
+}
+#endif
+
 static int do_openbmc_mem_mtest(cmd_tbl_t *cmdtp, int flag, int argc,
 				char * const argv[])
 {

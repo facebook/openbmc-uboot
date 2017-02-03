@@ -80,11 +80,16 @@
 #ifndef CONFIG_DEBUG_QEMU
 #define CONFIG_ASPEED_WRITE_DEFAULT_ENV
 #endif
+#ifdef CONFIG_ASPEED_RECOVERY_BUILD
+/* Prevent the Recovery build from using the RW environment. */
+#define CONFIG_ENV_IS_NOWHERE
+#else
 #define CONFIG_ENV_IS_IN_FLASH
-#define CONFIG_ENV_OFFSET        0x60000 /* environment starts here  */
-#define CONFIG_ENV_SIZE          0x20000 /* # of bytes of env, 128k */
 #define CONFIG_ENV_OVERWRITE
+#endif
+#define CONFIG_ENV_OFFSET        0x60000 /* environment starts here  */
 #define CONFIG_ENV_ADDR          (CONFIG_SYS_ENV_BASE + CONFIG_ENV_OFFSET)
+#define CONFIG_ENV_SIZE          0x20000 /* # of bytes of env, 128k */
 #ifdef CONFIG_FIT
 #define ENV_INITRD_HIGH ""
 #else

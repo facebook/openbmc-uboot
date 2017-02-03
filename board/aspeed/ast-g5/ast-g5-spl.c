@@ -147,6 +147,10 @@ void load_fit(u32 from) {
   u32 rom_address = vbs->uboot_exec_address;
   u32 rom_handoff = vbs->rom_handoff;
   u8 recovery_retries = vbs->recovery_retries;
+  if (recovery_retries >= 25) {
+    /* Retries has hit an impossible upper bound, reset to 0. */
+    recovery_retries = 0;
+  }
 
   /* Reset all data, then restore selected variables. */
   memset((void*)AST_SRAM_VBS_BASE, 0, sizeof(struct vbs));

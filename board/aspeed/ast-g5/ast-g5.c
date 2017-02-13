@@ -149,6 +149,19 @@ static void disable_bios_debug(void)
   __raw_writel(reg, AST_GPIO_BASE + 0x0);
 }
 
+static int disable_snoop_dma_interrupt(void)
+{
+  // Disable interrupt which will not be clearred by wdt reset
+  // to avoid interrupts triggered before linux kernel can handle it.
+  // PCCR0: Post Code Control Register 0
+#ifdef DEBUG
+  printf("pccr0: %08X\n", __raw_readl(AST_LPC_BASE + 0x130));
+#endif
+  __raw_writel(0x0, AST_LPC_BASE + 0x130);
+
+  return 0;
+}
+
 #endif
 
 int board_init(void)
@@ -160,6 +173,7 @@ int board_init(void)
   fan_init();
   policy_init();
   disable_bios_debug();
+  disable_snoop_dma_interrupt();
 #endif
 
 	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;

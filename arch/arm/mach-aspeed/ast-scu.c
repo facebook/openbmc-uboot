@@ -102,6 +102,15 @@ static struct soc_id soc_map_table[] = {
 	SOC_ID("AST2530-A1", 0x04010403),
 };
 
+void ast_wdt_reset(u32 timeout_micro, u32 reset_mask)
+{
+	/* set the reload value */
+	__raw_writel(timeout_micro, AST_WDT_BASE + 0x04);
+	/* magic word to reload */
+	__raw_writel(0x4755, AST_WDT_BASE + 0x08);
+	__raw_writel(reset_mask, AST_WDT_BASE + 0x0C);
+}
+
 void ast_scu_init_eth(u8 num)
 {
 /* Set MAC delay Timing */

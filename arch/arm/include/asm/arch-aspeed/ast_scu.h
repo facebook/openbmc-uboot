@@ -28,6 +28,8 @@
 #ifndef __AST_SCU_H
 #define __AST_SCU_H
 
+#define AST_WDT_CLK (1 * 1000 * 1000) /* 1M clock source */
+
 extern void ast_scu_show_system_info (void);
 extern void ast_scu_sys_rest_info(void);
 extern void ast_scu_security_info(void);
@@ -44,5 +46,7 @@ extern u32 ast_scu_get_vga_memsize(void);
 extern void ast_scu_init_eth(u8 num);
 extern void ast_scu_multi_func_eth(u8 num);
 extern void ast_scu_multi_func_romcs(u8 num);
+
+extern void ast_wdt_reset(u32 timeout_micro, u32 reset_mask);
 
 #endif

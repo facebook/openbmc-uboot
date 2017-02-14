@@ -15,6 +15,7 @@
 #include <libfdt.h>
 
 #include <asm/arch/aspeed.h>
+#include <asm/arch/ast_scu.h>
 #include <asm/arch/vbs.h>
 #include <asm/io.h>
 
@@ -348,15 +349,9 @@ void board_init_f(ulong bootflag)
   /* Must set up global data pointers for local device tree. */
   spl_init();
 
-  /*
-   * We are not relocated, use the simple malloc with the relocated
-   * malloc start and size configuration options.
-   *
-   * Malloc will forever count forward, there is no free, as state
-   * tracking does not mean anything.
-   */
-  /* gd->malloc_base = CONFIG_SYS_SPL_MALLOC_START; */
-  /* gd->malloc_limit = CONFIG_SYS_SPL_MALLOC_SIZE; */
+#ifdef CONFIG_ASPEED_ENABLE_WATCHDOG
+  ast_wdt_reset(60 * AST_WDT_CLK, 0x33 | 0x08);
+#endif
 
   /*
    * This will never be relocated, so jump directly to the U-boot.

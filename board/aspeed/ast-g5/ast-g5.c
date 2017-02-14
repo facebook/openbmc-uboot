@@ -16,27 +16,20 @@
 #include <asm/arch/vbs.h>
 #include <asm/io.h>
 
-#define AST_WDT_CLK (1*1000*1000) /* 1M clock source */
-
 DECLARE_GLOBAL_DATA_PTR;
 
 void watchdog_init(void)
 {
 #ifdef CONFIG_ASPEED_ENABLE_WATCHDOG
   u32 reload = AST_WDT_CLK * CONFIG_ASPEED_WATCHDOG_TIMEOUT;
-  /* set the reload value */
-  __raw_writel(reload, AST_WDT_BASE + 0x04);
-  /* magic word to reload */
-  __raw_writel(0x4755, AST_WDT_BASE + 0x08);
-  /* start the watchdog with 1M clk src and reset whole chip */
-  u32 val = 0x33; /* Full | Clear after | Enable */
+  u32 reset_mask = 0x33; /* Full | Clear after | Enable */
   /* Some boards may request the reset to trigger the EXT reset GPIO.
    * On Linux this is defined as WDT_CTRL_B_EXT.
    */
 #ifdef CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
-  val |= 0x08; /* Ext */
+  reset_mask |= 0x08; /* Ext */
 #endif
-  __raw_writel(val, AST_WDT_BASE + 0x0c);
+  ast_wdt_reset(reload, reset_mask);
   printf("Watchdog: %us\n", CONFIG_ASPEED_WATCHDOG_TIMEOUT);
 #endif
 }

@@ -6,19 +6,19 @@
 #include <common.h>
 #include <asm/io.h>
 #include <asm/arch/platform.h>
+#include <asm/arch/ast_scu.h>
 
 void reset_cpu(ulong addr)
 {
-	__raw_writel(0x10 , AST_WDT_BASE+0x04);
-	__raw_writel(0x4755, AST_WDT_BASE+0x08);
-	u32 val = 0x3; /* Clear after | Enable */
+	u32 reset_mask = 0x3; /* Clear after | Enable */
 	/* Some boards may request the reset to trigger the EXT reset GPIO.
 	 * On Linux this is defined as WDT_CTRL_B_EXT.
 	 */
 #ifdef CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
-	val |= 0x08; /* Ext */
+	reset_mask |= 0x08; /* Ext */
 #endif
-	__raw_writel(val, AST_WDT_BASE+0x0c); /* reset the full chip */
+
+	ast_wdt_reset(0x10, reset_mask);
 
 	while (1)
 	/*nothing*/;

@@ -30,6 +30,17 @@
 
 #define AST_WDT_CLK (1 * 1000 * 1000) /* 1M clock source */
 
+/*
+ * Return the frequency of APB clock
+ */
+extern u32 ast_get_apbclk(void);
+
+/*
+ * Enable I2C controller and pins for a particular device.
+ * Device numbering starts at 1
+ */
+extern void ast_scu_enable_i2c(u8 num);
+
 extern void ast_scu_show_system_info (void);
 extern void ast_scu_sys_rest_info(void);
 extern void ast_scu_security_info(void);

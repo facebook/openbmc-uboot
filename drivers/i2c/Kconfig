@@ -90,6 +90,13 @@ config SYS_I2C_DW_ENABLE_STATUS_UNSUPPORTED
 	  enable status register. This config option can be enabled in such
 	  cases.
 
+config SYS_I2C_AST
+	bool "Aspeed I2C Controller"
+	depends on DM_I2C
+	help
+	  Say yes here to select Aspeed I2C Host Controller. The driver
+	  supports AST2500 and AST2400 controllers.
+
 config SYS_I2C_INTEL
 	bool "Intel I2C/SMBUS driver"
 	depends on DM_I2C

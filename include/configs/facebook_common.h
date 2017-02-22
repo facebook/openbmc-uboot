@@ -143,7 +143,6 @@
 #define CONFIG_CMD_MEMINFO
 #define CONFIG_CMD_MEMTEST
 #define CONFIG_CMD_MEMTEST2
-#define CONFIG_CMD_SDRAM
 #define CONFIG_CMD_TFTPPUT
 #define CONFIG_CMD_FLASH
 #define CONFIG_CMD_VBS
@@ -164,7 +163,7 @@
 /* This is an SPL build */
 
 #define CONFIG_SPL_FRAMEWORK
-#define CONFIG_SPL_MAX_FOOTPRINT  0x100000
+#define CONFIG_SPL_MAX_FOOTPRINT  0x10000
 
 /* During an SPL build the base is 0x0. */
 #define CONFIG_SYS_TEXT_BASE      0x00000000
@@ -183,12 +182,14 @@
 #define CONFIG_SPL_LIBGENERIC_SUPPORT
 #define CONFIG_SPL_LIBCOMMON_SUPPORT
 #define CONFIG_SPL_SERIAL_SUPPORT
+#define CONFIG_SPL_I2C_SUPPORT
 
 /* Verified boot required features. */
 #define CONFIG_SPL_CRYPTO_SUPPORT
 #define CONFIG_SPL_HASH_SUPPORT
 #define CONFIG_SPL_SHA256_SUPPORT
 #define CONFIG_SPL_SHA256
+#define CONFIG_SPL_TPM
 
 /* This will increase binary size by +10kB */
 #define CONFIG_FIT_SPL_PRINT

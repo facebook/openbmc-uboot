@@ -1,0 +1,22 @@
+/dts-v1/;
+
+#include "aspeed-g5.dtsi"
+
+/ {
+	aliases {
+		i2c7 = &i2c7;
+	};
+
+	ahb {
+		apb {
+			i2c: i2c@1e78a000 {
+				i2c7: i2c-bus@1c0 {
+					tpm@20 {
+						compatible = "infineon,slb9645tt";
+						reg = <0x20>;
+					};
+				};
+			};
+	  };
+	};
+};

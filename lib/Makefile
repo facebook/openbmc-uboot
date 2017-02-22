@@ -37,7 +37,6 @@ obj-$(CONFIG_PHYSMEM) += physmem.o
 obj-y += qsort.o
 obj-y += rc4.o
 obj-$(CONFIG_SUPPORT_EMMC_RPMB) += sha256.o
-obj-$(CONFIG_TPM) += tpm.o
 obj-$(CONFIG_RBTREE)	+= rbtree.o
 obj-$(CONFIG_BITREVERSE) += bitrev.o
 obj-y += list_sort.o
@@ -46,6 +45,7 @@ endif
 obj-$(CONFIG_$(SPL_)RSA) += rsa/
 obj-$(CONFIG_$(SPL_)SHA1) += sha1.o
 obj-$(CONFIG_$(SPL_)SHA256) += sha256.o
+obj-$(CONFIG_$(SPL_)TPM) += tpm.o
 
 obj-$(CONFIG_$(SPL_)OF_LIBFDT) += libfdt/
 ifdef CONFIG_SPL_OF_CONTROL

@@ -1,0 +1,74 @@
+/* This device tree is copied from
+ * https://github.com/openbmc/linux/blob/c5682cb/arch/arm/boot/dts/aspeed-g5.dtsi
+ */
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+	model = "Aspeed G5 BMC";
+	compatible = "aspeed,ast2500";
+
+	chosen { };
+
+	aliases { };
+
+	ahb {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		apb {
+			compatible = "simple-bus";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges;
+
+			clk_clkin: clk_clkin@1e6e2070 {
+				#clock-cells = <0>;
+				compatible = "aspeed,g5-clkin-clock";
+				reg = <0x1e6e2070 0x04>;
+			};
+
+			clk_hpll: clk_hpll@1e6e2024 {
+				#clock-cells = <0>;
+				compatible = "aspeed,g5-hpll-clock";
+				reg = <0x1e6e2024 0x4>;
+				clocks = <&clk_clkin>;
+			};
+
+			clk_apb: clk_apb@1e6e2008 {
+				#clock-cells = <0>;
+				compatible = "aspeed,g5-apb-clock";
+				reg = <0x1e6e2008 0x4>;
+				clocks = <&clk_hpll>;
+			};
+
+			i2c: i2c@1e78a000 {
+				#address-cells = <1>;
+				#size-cells = <1>;
+				#interrupt-cells = <1>;
+
+				compatible = "aspeed,ast2400-i2c-controller";
+				reg = <0x1e78a000 0x40>;
+				ranges = <0 0x1e78a000 0x1000>;
+				interrupts = <12>;
+				clocks = <&clk_apb>;
+				clock-ranges;
+				interrupt-controller;
+
+				i2c7: i2c-bus@1c0 {
+					#address-cells = <1>;
+					#size-cells = <0>;
+					reg = <0x1C0 0x40>;
+					compatible = "aspeed,ast2400-i2c-bus";
+					bus = <6>;
+					clock-frequency = <100000>;
+					status = "okay";
+					interrupts = <6>;
+				};
+			};
+
+		};
+	};
+};

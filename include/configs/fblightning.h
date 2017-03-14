@@ -55,6 +55,8 @@
 
 #define CONFIG_ASPEED_ENABLE_WATCHDOG
 #define CONFIG_ASPEED_WATCHDOG_TIMEOUT (5*60) // 5m
+#define CONFIG_ASPEED_ENABLE_DUAL_BOOT_WATCHDOG
+#define CONFIG_ASPEED_WATCHDOG_DUAL_BOOT_TIMEOUT (5*60) // 5m
 
 #include "facebook_common.h"
 #include "ast2400_common.h"

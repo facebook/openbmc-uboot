@@ -763,12 +763,21 @@ int fit_image_get_data(const void *fit, int noffset,
 		const void **data, size_t *size)
 {
 	int len;
+	uint32_t *pos;
+	uint32_t *pos_size;
 
 	*data = fdt_getprop(fit, noffset, FIT_DATA_PROP, &len);
 	if (*data == NULL) {
-		fit_get_debug(fit, noffset, FIT_DATA_PROP, len);
-		*size = 0;
-		return -1;
+		/* Attempt to find an external image, built with the -E flag. */
+		pos = (uint32_t*)fdt_getprop(fit, noffset, "data-position", &len);
+		pos_size = (uint32_t*)fdt_getprop(fit, noffset, "data-size", &len);
+		if (pos == NULL || pos_size == NULL) {
+			fit_get_debug(fit, noffset, FIT_DATA_PROP, len);
+			*size = 0;
+			return -1;
+		}
+
+		len = (int)*pos_size;
 	}
 
 	*size = len;

@@ -1102,6 +1102,21 @@ int fit_image_check_sig(const void *fit, int noffset, const void *data,
 		size_t size, const void *sig_blob, int required_keynode, char **err_msgp);
 
 /**
+ * fit_config_verify_required_sigs() - Verify signatures marked as 'required'
+ *
+ * @fit:		FIT to check
+ * @conf_noffset:	Offset of conf node to check
+ * @sig_blob:		FDT containing public keys
+ * @no_sigsp:		Returns 1 if no signatures were required, and
+ *			therefore nothing was checked. The caller may wish
+ *			to fall back to other mechanisms, or refuse to
+ *			boot.
+ * @return 0 if all verified ok, <0 on error
+ */
+int fit_config_verify_required_sigs(const void *fit, int conf_noffset,
+		const void *sig_blob, int *no_sigsp);
+
+/**
  * fit_region_make_list() - Make a list of regions to hash
  *
  * Given a list of FIT regions (offset, size) provided by libfdt, create

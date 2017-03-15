@@ -19,7 +19,6 @@
 #include <asm/arch/vbs.h>
 #include <asm/io.h>
 
-
 #include "flash-spl.h"
 
 /* Size of RW environment parsable by ROM. */
@@ -209,6 +208,23 @@ void load_fit(u32 from) {
     spl_recovery();
   }
 
+  /* Node path to configurations */
+  int configs = fdt_path_offset(fit, FIT_CONFS_PATH);
+  if (configs < 0) {
+    debug("%s: Cannot find /configurations node: %d\n", __func__, configs);
+    vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_NO_CONFIG);
+    spl_recovery();
+  }
+
+  /* We only support a single configuration for U-Boot. */
+  int config_node = fdt_first_subnode(fit, configs);
+  if (config_node < 0) {
+    debug("%s: Cannot find first configuration (u-boot) node: %d\n", __func__,
+      config_node);
+    vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_NO_CONFIG);
+    spl_recovery();
+  }
+
   /* Get its information and set up the spl_image structure */
   u32 uboot_position = fdt_getprop_u32(fit, uboot_node, "data-position");
   u32 uboot_size = fdt_getprop_u32(fit, uboot_node, "data-size");
@@ -235,26 +251,34 @@ void load_fit(u32 from) {
   u8 notified = 0;
 
   /*
-   * It is possible to disabled verified boot at build-time.
+   * It is possible to disable verified boot at build-time.
    * Later it will be possible to disable using a config similar to the U-Boot
    * verified boot bypass: verify=no
    */
-   const void *signature_store = (const void*)gd_fdt_blob();
-   vbs->rom_keys = (u32)signature_store;
-   if (signature_store == 0x0) {
-     /* It is possible the spl_init method did not find a fdt. */
-     printf("No signature store was included in the SPL.\n");
-     vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_NO_KEYS);
-     CHECK_AND_RECOVER(&notified);
-   }
+  const void *signature_store = (const void*)gd_fdt_blob();
+  vbs->rom_keys = (u32)signature_store;
+  if (signature_store == 0x0) {
+    /* It is possible the spl_init method did not find a fdt. */
+    printf("No signature store was included in the SPL.\n");
+    vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_NO_KEK);
+    CHECK_AND_RECOVER(&notified);
+  }
 
-   /* After the first image (uboot) expect to find the subordinate store. */
-   int subordinate_node = fdt_next_subnode(fit, uboot_node);
-   if (subordinate_node < 0) {
-     debug("%s: Cannot find second image (fdt) node: %d\n", __func__,
-       subordinate_node);
-     vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_NO_FDT);
-     CHECK_AND_RECOVER(&notified);
+  /* Node path to keys */
+  int keys = fdt_path_offset(fit, VBS_KEYS_PATH);
+  if (keys < 0) {
+    debug("%s: Cannot find /keys node: %d\n", __func__, keys);
+    vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_NO_KEYS);
+    CHECK_AND_RECOVER(&notified);
+  }
+
+  /* After the first image (uboot) expect to find the subordinate store. */
+  int subordinate_node = fdt_first_subnode(fit, keys);
+  if (subordinate_node < 0) {
+    debug("%s: Cannot find first keys (fdt) node: %d\n", __func__,
+        subordinate_node);
+    vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_NO_KEYS);
+    CHECK_AND_RECOVER(&notified);
   }
 
   /* Access the data and data-size to call image verify directly. */
@@ -263,7 +287,7 @@ void load_fit(u32 from) {
     &subordinate_size);
   if (subordinate_data == 0 || subordinate_size <= 0) {
     debug("Cannot find subordinate certificate store.\n");
-    vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_BAD_FDT);
+    vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_BAD_KEYS);
     CHECK_AND_RECOVER(&notified);
   }
 
@@ -272,15 +296,15 @@ void load_fit(u32 from) {
   if (fit_image_verify_required_sigs(fit, subordinate_node, subordinate_data,
              subordinate_size, signature_store, &subordinate_verified)) {
     printf("Unable to verify required subordinate certificate store.\n");
-    debug("Check that a 'fdt' image was included alongside 'firmware'.\n");
-    vbs_status(VBS_ERROR_TYPE_FW, VBS_ERROR_FDT_INVALID);
+    debug("Check that a '/keys' node was included.\n");
+    vbs_status(VBS_ERROR_TYPE_FW, VBS_ERROR_KEYS_INVALID);
     CHECK_AND_RECOVER(&notified);
   }
 
   /* Check that at least 1 subordinate store was verified. */
   if (subordinate_verified != 0) {
     printf("Subordinate certificate store was not verified.\n");
-    vbs_status(VBS_ERROR_TYPE_FW, VBS_ERROR_FDT_UNVERIFIED);
+    vbs_status(VBS_ERROR_TYPE_FW, VBS_ERROR_KEYS_UNVERIFIED);
     CHECK_AND_RECOVER(&notified);
   }
 
@@ -303,24 +327,14 @@ void load_fit(u32 from) {
   }
 
   /*
-   * Check that at least 1 image was verified.
+   * Check that the first configuration was verified.
    * This is an interesting error state communication, but it is the API
    * given, so let's make it as clear as possible.
    */
   int uboot_verified = 0;
-
-  /*
-   * The load and offset *should* be the same, we'll need to fix that
-   * in the FIT generation + external movement.
-   *
-   * For now we can set this to the data.
-   */
-  void *uboot_data = (void*)load;
-
-  /* Verify all required signatures, keys must be marked required. */
-  if (fit_image_verify_required_sigs(fit, uboot_node, uboot_data, uboot_size,
-             signature_store, &uboot_verified)) {
-    printf("Unable to verify required signature.\n");
+  if (fit_config_verify_required_sigs(fit, config_node, signature_store,
+             &uboot_verified)) {
+    printf("Unable to verify required signature of U-Boot configuration.\n");
     vbs_status(VBS_ERROR_TYPE_FW, VBS_ERROR_FW_INVALID);
     CHECK_AND_RECOVER(&notified);
   }
@@ -328,7 +342,7 @@ void load_fit(u32 from) {
   if (uboot_verified != 0) {
     /* When verified is 0, then an image was verified. */
     printf("U-Boot was not verified.\n");
-    debug("Check that the 'required' field for each key- is set to 'image'.\n");
+    debug("Check that the 'required' field for each key- is set to 'conf'.\n");
     debug("Check the board configuration for supported hash algorithms.\n");
     vbs_status(VBS_ERROR_TYPE_FW, VBS_ERROR_FW_UNVERIFIED);
     CHECK_AND_RECOVER(&notified);

@@ -21,21 +21,22 @@
 #define VBS_ERROR_BAD_MAGIC        30
 #define VBS_ERROR_NO_IMAGES        31
 #define VBS_ERROR_NO_FW            32
-#define VBS_ERROR_BAD_FW           33
-#define VBS_ERROR_BAD_FW_SIG       34
-#define VBS_ERROR_NO_FDT           35
-#define VBS_ERROR_BAD_FDT          36
-#define VBS_ERROR_BAD_FDT_SIG      37
-#define VBS_ERROR_NO_KEYS          38
-#define VBS_ERROR_INVALID_SIZE     39
-#define VBS_ERROR_FDT_INVALID      40
-#define VBS_ERROR_FDT_UNVERIFIED   41
+#define VBS_ERROR_NO_CONFIG        33
+#define VBS_ERROR_NO_KEK           34
+#define VBS_ERROR_NO_KEYS          35
+#define VBS_ERROR_BAD_KEYS         36
+#define VBS_ERROR_BAD_FW           37
+#define VBS_ERROR_INVALID_SIZE     38
+#define VBS_ERROR_KEYS_INVALID     40
+#define VBS_ERROR_KEYS_UNVERIFIED  41
 #define VBS_ERROR_FW_INVALID       42
 #define VBS_ERROR_FW_UNVERIFIED    43
 #define VBS_ERROR_FORCE_RECOVERY   50
 #define VBS_ERROR_OS_INVALID       60
 
-#define VBS_HANDOFF               0xADEFAD8B
+#define VBS_HANDOFF     0xADEFAD8B
+
+#define VBS_KEYS_PATH   "/keys"
 
 struct vbs {
   u32 uboot_exec_address; /* Location in MMIO where U-Boot/Recovery U-Boot is execution */

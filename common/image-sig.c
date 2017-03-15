@@ -424,12 +424,14 @@ error:
 }
 
 int fit_config_verify_required_sigs(const void *fit, int conf_noffset,
-		const void *sig_blob)
+		const void *sig_blob, int *no_sigsp)
 {
+	int verify_count = 0;
 	int noffset;
 	int sig_node;
 
 	/* Work out what we need to verify */
+	*no_sigsp = 1;
 	sig_node = fdt_subnode_offset(sig_blob, 0, FIT_SIG_NODENAME);
 	if (sig_node < 0) {
 		debug("%s: No signature node found: %s\n", __func__,
@@ -451,13 +453,18 @@ int fit_config_verify_required_sigs(const void *fit, int conf_noffset,
 			       fit_get_name(sig_blob, noffset, NULL));
 			return ret;
 		}
+		verify_count++;
 	}
+
+	if (verify_count)
+		*no_sigsp = 0;
 
 	return 0;
 }
 
 int fit_config_verify(const void *fit, int conf_noffset)
 {
+	int no_sigsp;
 	return fit_config_verify_required_sigs(fit, conf_noffset,
-					       gd_fdt_blob());
+					       gd_fdt_blob(), &no_sigsp);
 }

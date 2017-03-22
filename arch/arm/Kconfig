@@ -152,6 +152,10 @@ config TARGET_FBWEDGE100
 	bool "Support Facebook's OpenBMC Wedge100 TOR"
 	select CPU_ARM926EJS
 
+config TARGET_FBBACKPACK
+	bool "Support Facebook's OpenBMC Backpack"
+	select CPU_ARM926EJS
+
 config TARGET_FBCMM
 	bool "Support Facebook's OpenBMC CMM"
 	select CPU_ARM1176

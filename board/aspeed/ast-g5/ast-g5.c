@@ -37,7 +37,7 @@ void watchdog_init(void)
 static void vbs_handoff(void)
 {
   /* Clean the handoff marker from ROM. */
-  struct vbs *vbs = (struct vbs*)AST_SRAM_VBS_BASE;
+  volatile struct vbs *vbs = (volatile struct vbs*)AST_SRAM_VBS_BASE;
   vbs->rom_handoff = 0x0;
 }
 

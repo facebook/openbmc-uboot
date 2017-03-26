@@ -51,13 +51,12 @@ static u32 fdt_getprop_u32(const void *fdt, int node, const char *prop)
   return fdt32_to_cpu(*cell);
 }
 
-void __noreturn jump(u32 to)
+void __noreturn jump(volatile void* to)
 {
-  debug("Blindly jumping to 0x%08x\n", to);
+  debug("Blindly jumping to 0x%08x\n", (u32)to);
   typedef void __noreturn (*image_entry_noargs_t)(void);
 
-  image_entry_noargs_t image_entry =
-    (image_entry_noargs_t)(unsigned long)to;
+  image_entry_noargs_t image_entry = (image_entry_noargs_t)to;
   image_entry();
 }
 
@@ -72,14 +71,14 @@ void spl_display_print() {
 
 void spl_recovery(void) {
   /* Overwirte all of the verified boot flags we've defined. */
-  struct vbs *vbs = (struct vbs*)AST_SRAM_VBS_BASE;
+  volatile struct vbs *vbs = (volatile struct vbs*)AST_SRAM_VBS_BASE;
   vbs->recovery_boot = 1;
   vbs->recovery_retries += 1;
   vbs->rom_handoff = 0x0;
 
   /* Jump to the well-known location of the Recovery U-Boot. */
   printf("Booting recovery U-Boot.\n");
-  jump(CONFIG_SYS_RECOVERY_BASE);
+  jump((volatile void*)CONFIG_SYS_RECOVERY_BASE);
 }
 
 u8 spl_getenv_yesno(const char* var) {
@@ -88,7 +87,7 @@ u8 spl_getenv_yesno(const char* var) {
   int size = strlen(var);
 
   /* Use a RW environment. */
-  env_t *env = (env_t*)CONFIG_ENV_ADDR;
+  volatile env_t *env = (volatile env_t*)CONFIG_ENV_ADDR;
 
   int offset;
   char last = 0;
@@ -121,7 +120,7 @@ u8 spl_getenv_yesno(const char* var) {
 }
 
 u8 verify_required(u8* notified) {
-  struct vbs *vbs = (struct vbs*)AST_SRAM_VBS_BASE;
+  volatile struct vbs *vbs = (volatile struct vbs*)AST_SRAM_VBS_BASE;
   if (vbs->hardware_enforce == 1) {
     return 1;
   } else if (vbs->software_enforce == 1) {
@@ -139,11 +138,9 @@ u8 verify_required(u8* notified) {
 #define CHECK_AND_RECOVER(n) \
   if (verify_required(n)) { spl_recovery(); }
 
-void load_fit(u32 from) {
-  struct image_header *header;
-
+void load_fit(volatile void* from) {
   /* Set the VBS structure to the expected location in SRAM */
-  struct vbs *vbs = (struct vbs*)AST_SRAM_VBS_BASE;
+  volatile struct vbs *vbs = (volatile struct vbs*)AST_SRAM_VBS_BASE;
   u32 rom_address = vbs->uboot_exec_address;
   u32 rom_handoff = vbs->rom_handoff;
   u8 recovery_retries = vbs->recovery_retries;
@@ -153,7 +150,7 @@ void load_fit(u32 from) {
   }
 
   /* Reset all data, then restore selected variables. */
-  memset((void*)AST_SRAM_VBS_BASE, 0, sizeof(struct vbs));
+  memset((void*)vbs, 0, sizeof(struct vbs));
   vbs->rom_exec_address = rom_address;
   vbs->recovery_retries = recovery_retries;
   vbs->hardware_enforce = 0;
@@ -171,16 +168,15 @@ void load_fit(u32 from) {
     spl_recovery();
   }
 
-  header = (struct image_header*)(from);
-  if (image_get_magic(header) != FDT_MAGIC) {
+  void* fit = (void*)from;
+  if (fdt_magic(fit) != FDT_MAGIC) {
     /* FIT loading is not available or this U-Boot is not a FIT. */
     /* This will bypass signature checking */
-    debug("%s: Cannot find FIT image header: 0x%08x\n", __func__, from);
+    debug("%s: Cannot find FIT image header: 0x%08x\n", __func__, (u32)from);
     vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_BAD_MAGIC);
     spl_recovery();
   }
 
-  void *fit = header;
   u32 size = fdt_totalsize(fit);
   size = (size + 3) & ~3;
   u32 base_offset = (size + 3) & ~3;
@@ -229,7 +225,7 @@ void load_fit(u32 from) {
   u32 uboot_position = fdt_getprop_u32(fit, uboot_node, "data-position");
   u32 uboot_size = fdt_getprop_u32(fit, uboot_node, "data-size");
 
-  u32 load = from;
+  u32 load = (u32)from;
   if (uboot_position > 0) {
     /* Position will include the relative offset from the base of U-Boot's FIT */
     load += uboot_position;
@@ -353,7 +349,7 @@ void load_fit(u32 from) {
   /* Set a handoff and expect U-Boot to clear indicating a clean boot. */
   vbs->recovery_retries = 0;
   vbs->rom_handoff = 0xADEFAD8B;
-  jump(load);
+  jump((volatile void*)load);
 }
 
 void board_init_f(ulong bootflag)
@@ -370,6 +366,6 @@ void board_init_f(ulong bootflag)
   /*
    * This will never be relocated, so jump directly to the U-boot.
    */
-  load_fit(CONFIG_SYS_SPL_FIT_BASE);
+  load_fit((volatile void*)CONFIG_SYS_SPL_FIT_BASE);
   hang();
 }

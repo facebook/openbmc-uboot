@@ -47,6 +47,11 @@
 #define CONFIG_MII_
 #define CONFIG_CMD_MII
 
+/*
+ * Enable DRAM ECC, going to lose 1/8 of memory
+ */
+#define CONFIG_DRAM_ECC
+
 #include "facebook_common.h"
 #include "ast2500_common.h"
 

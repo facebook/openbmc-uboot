@@ -73,22 +73,7 @@
 
 /*
  * DRAM Config
- *
- * 1. DRAM Size              //
- *    CONFIG_DRAM_512MBIT    // 512M bit
- *    CONFIG_DRAM_1GBIT      // 1G   bit (default)
- *    CONFIG_DRAM_2GBIT      // 2G   bit
- *    CONFIG_DRAM_4GBIT      // 4G   bit
- * 2. DRAM Speed             //
- *    CONFIG_DRAM_336        // 336MHz (DDR-667)
- *    CONFIG_DRAM_408        // 408MHz (DDR-800) (default)
- * 3. VGA Mode
- *    CONFIG_CRT_DISPLAY     // define to disable VGA function
- * 4. ECC Function enable
- *    CONFIG_DRAM_ECC        // define to enable ECC function
  */
-#define CONFIG_DRAM_ECC
-#define CONFIG_DRAM_ECC_SIZE  0x1B200000 // dram(512M) - vga(16M) - ECC used(62M) = 434M
 #define CONFIG_NR_DRAM_BANKS  1
 
 /* additions for new relocation code, must added to all boards */

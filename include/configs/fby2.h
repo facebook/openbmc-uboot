@@ -54,6 +54,11 @@
 #define CONFIG_ASPEED_MAC_NUMBER  1
 #define CONFIG_ASPEED_MAC_CONFIG  1 /* config MAC1 */
 
+/*
+ * Enable DRAM ECC, going to lose 1/8 of memory
+ */
+#define CONFIG_DRAM_ECC
+
 #include "facebook_common.h"
 #include "ast2500_common.h"
 

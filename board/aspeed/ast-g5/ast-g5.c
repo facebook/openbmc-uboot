@@ -178,8 +178,10 @@ int dram_init(void)
 {
 	u32 vga = ast_scu_get_vga_memsize();
 	u32 dram = ast_sdmc_get_mem_size();
-	gd->ram_size = dram - vga - (62*1024*1024); // ECC used = (dram(512) - vga(16M))/8 = 62M
-
+	gd->ram_size = dram - vga;
+#ifdef CONFIG_DRAM_ECC
+	gd->ram_size -= gd->ram_size >> 3; /* need 1/8 for ECC */
+#endif
 	return 0;
 }
 

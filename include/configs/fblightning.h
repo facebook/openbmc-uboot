@@ -14,15 +14,13 @@
 #define CONFIG_BOOTFILE		"all.bin"
 
 #define CONFIG_CMD_CS1TEST
-#define CONFIG_CS1TEST_CS0PATTERN_ADDR 0x48000000 
+#define CONFIG_CS1TEST_CS0PATTERN_ADDR 0x48000000
 
 /*
  * Memory Configuration
  * Deprecating with v2016.03: CONFIG_ASPEED_WRITE_DEFAULT_ENV
 */
 #define PHYS_SDRAM_1_SIZE	0x8000000	/* 128 MB */
-
-#define CONFIG_2SPIFLASH
 
 /*
  * Serial configuration
@@ -56,7 +54,13 @@
 #define CONFIG_ASPEED_ENABLE_WATCHDOG
 #define CONFIG_ASPEED_WATCHDOG_TIMEOUT (5*60) // 5m
 #define CONFIG_ASPEED_ENABLE_DUAL_BOOT_WATCHDOG
-#define CONFIG_ASPEED_WATCHDOG_DUAL_BOOT_TIMEOUT (5*60) // 5m
+#define CONFIG_ASPEED_WATCHDOG_DUAL_BOOT_TIMEOUT \
+  (CONFIG_ASPEED_WATCHDOG_TIMEOUT - 5)
+
+/*
+ * SPI flash configuration
+ */
+#define CONFIG_2SPIFLASH
 
 #include "facebook_common.h"
 #include "ast2400_common.h"

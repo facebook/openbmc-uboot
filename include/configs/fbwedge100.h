@@ -40,10 +40,28 @@
 #define CONFIG_MAC2_ENABLE
 #define CONFIG_MAC1_PHY_SETTING     0
 #define CONFIG_MAC2_PHY_SETTING     0
+#define CONFIG_MAC2_PHY_LINK_INTERRUPT
 #define CONFIG_ASPEED_MAC_NUMBER    2
 #define CONFIG_ASPEED_MAC_CONFIG    2
 
+/*
+ * Watchdog configuration
+ */
+#define CONFIG_ASPEED_ENABLE_WATCHDOG
+#define CONFIG_ASPEED_WATCHDOG_TIMEOUT (5*60) // 5m
+#define CONFIG_ASPEED_ENABLE_DUAL_BOOT_WATCHDOG
+#define CONFIG_ASPEED_WATCHDOG_DUAL_BOOT_TIMEOUT \
+  (CONFIG_ASPEED_WATCHDOG_TIMEOUT - 5)
+
+#define CONFIG_MII_
+#define CONFIG_CMD_MII
+
+/*
+ * SPI flash configuration
+ */
+#define CONFIG_2SPIFLASH
+
 #include "facebook_common.h"
-#include "ast2500_common.h"
+#include "ast2400_common.h"
 
 #endif  /* __FBWEDGE100_CONFIG_H */

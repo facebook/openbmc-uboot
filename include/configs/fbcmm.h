@@ -44,6 +44,9 @@
 #define CONFIG_ASPEED_MAC_NUMBER  2
 #define CONFIG_ASPEED_MAC_CONFIG  2
 
+#define CONFIG_MII_
+#define CONFIG_CMD_MII
+
 #include "facebook_common.h"
 #include "ast2500_common.h"
 

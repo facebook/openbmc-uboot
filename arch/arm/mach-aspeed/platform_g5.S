@@ -17,8 +17,8 @@
  *
  * Gary Hsu, <gary_hsu@aspeedtech.com>
  *
- * Version     : 13
- * Release date: 2016.09.06
+ * Version     : 14
+ * Release date: 2016.11.07
  *
  * Priority of fix item:
  * [P1] = critical
@@ -66,6 +66,8 @@
  * V13|2016.08.29 : 1.[P3] Add option to route debug message output port from UART5 to UART1
  *    |2016.09.02 : 3.[P2] Add range control for cache function when ECC enabled
  *    |2016.09.06 : 2.[P1] Enable full mask setting for first SOC reset, since the coverage of original default setting is not enough
+ * V14|2016.10.25 : 1.[P2] Change Ron manual calibration to default OFF, customer can enable it to do fine-tuning of the Vix issue
+ *    |2016.11.07 : 2.[P3] Add log information of DDR4 PHY Vref training
  *    |           :    Note: Read timing report is only a reference, it is not a solid rule for stability.
  *
  * Optional define variable
@@ -101,11 +103,21 @@
   Free registers:
   r0, r1, r2, r3, r6, r7, r8, r9, r10, r11
  ******************************************************************************/
-#define ASTMMC_INIT_VER      0x0D                @ 8bit verison number
-#define ASTMMC_INIT_DATE     0x20160906          @ Release date
+#define ASTMMC_INIT_VER      0x0E                @ 8bit verison number
+#define ASTMMC_INIT_DATE     0x20161107          @ Release date
 
-#define ASTMMC_DDR4_MANUAL_RPU 0x0               @ 0x0-0xF, default set to 0, larger value means weaker driving
-//#define ASTMMC_DDR4_MANUAL_RPD 0x0             @ 0x0-0xF, default not set, larger value means stronger driving
+/******************************************************************************
+  BMC side DDR IO driving manual mode fine-tuning, used to improve CK/CKN Vix violation.
+  Default disabled, the driver setting is hardware auto tuned.
+
+  ASTMMC_DDR4_MANUAL_RPU | ASTMMC_DDR4_MANUAL_RPD
+  -----------------------+-----------------------
+            No           |           x          : manual mode disabled
+            Yes          |          No          : enable Rpu     manual setting
+            Yes          |          Yes         : enable Rpu/Rpd manual setting
+ ******************************************************************************/
+//#define ASTMMC_DDR4_MANUAL_RPU 0x0             @ 0x0-0xF, larger value means weaker driving
+//#define ASTMMC_DDR4_MANUAL_RPD 0x0             @ 0x0-0xF, larger value means stronger driving
 
 #define ASTMMC_REGIDX_010    0x00
 #define ASTMMC_REGIDX_014    0x04
@@ -1327,10 +1339,11 @@ ddr4_init:
 /* Debug - UART console message */
 
     /********************************************
-    Set Ron value to manual mode
+     Set Ron value to manual mode
      Target to fix DDR CK Vix issue
      Set Ron_pu = 0, Ron_pd = trained value
      *******************************************/
+#ifdef ASTMMC_DDR4_MANUAL_RPU
     ldr   r0, =0x1e6e02c0
     ldr   r1, =0x00001806
     str   r1, [r0]
@@ -1367,9 +1380,8 @@ ddr4_ron_phyinit_done:
     ldr   r0, =0x1e6e0060                        @ Reset PHY
     mov   r1, #0x00
     str   r1, [r0]
-
+#endif
     /********************************************
-
      PHY Vref Scan
      r6 : recorded vref value
      r7 : max read eye pass window
@@ -1429,6 +1441,11 @@ ddr4_vref_phy_phyinit_done:
     b     cbr_test_start
 
 ddr4_vref_phy_cbrtest_done:
+    ldr   r0, =0x1e6e03d0                        @ read eye pass window
+    ldr   r1, [r0]
+    ldr   r0, =0x1e720000
+    add   r0, r0, r10, lsl #2
+    str   r1, [r0]
     cmp   r9, #0x01
     bne   ddr4_vref_phy_test_fail
     add   r8, r8, #0x01
@@ -1453,6 +1470,9 @@ ddr4_vref_phy_test_fail:
 ddr4_vref_phy_loop_end:
     ldr   r0, =0x1e6e02cc
     orr   r1, r6, r6, lsl #8
+    str   r1, [r0]
+    ldr   r0, =0x1e720010
+    orr   r1, r6, r7, lsl #8
     str   r1, [r0]
 
     /********************************************
@@ -1540,6 +1560,9 @@ ddr4_vref_ddr_loop_end:
     mov   r2, r1, lsr #1
     mov   r1, r2, lsl #8
     orr   r1, r1, #0x06
+    str   r1, [r0]
+    ldr   r0, =0x1e720014
+    orr   r1, r6, r7, lsl #8
     str   r1, [r0]
 
 /* Debug - UART console message */
@@ -1653,8 +1676,10 @@ ddr_phy_init_success:
     beq   ddr4_vref_phy_phyinit_done
     cmp   r1, #2
     beq   ddr4_vref_ddr_phyinit_done
+#ifdef ASTMMC_DDR4_MANUAL_RPU
     cmp   r1, #4
     beq   ddr4_ron_phyinit_done
+#endif
     b     ddr4_phyinit_done
 
     /********************************************
@@ -2069,7 +2094,6 @@ wait_print_3:
     ldr   r1, [r0]
     tst   r1, #0x40
     beq   wait_print_3
-
     ldr   r0, =0x1e6e03d0
     ldr   r2, [r0]
     mov   r2, r2, lsr #8

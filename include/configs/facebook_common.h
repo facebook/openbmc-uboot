@@ -27,8 +27,8 @@
  */
 #ifdef CONFIG_SPL
 #ifdef CONFIG_ASPEED_RECOVERY_BUILD
-#define CONFIG_SYS_REMAP_BASE     0x20010000
-#define CONFIG_SYS_UBOOT_START    0x20010000 /* Must be defined as-is */
+#define CONFIG_SYS_REMAP_BASE     0x20015000
+#define CONFIG_SYS_UBOOT_START    0x20015000 /* Must be defined as-is */
 #define CONFIG_KERNEL_LOAD         "200E0000"
 #else
 #define CONFIG_SYS_REMAP_BASE     0x28084000
@@ -36,7 +36,7 @@
 #define CONFIG_KERNEL_LOAD         "280E0000"
 #endif
 #define CONFIG_SYS_SPL_FIT_BASE   0x28080000
-#define CONFIG_SYS_RECOVERY_BASE  0x20010000
+#define CONFIG_SYS_RECOVERY_BASE  0x20015000
 #define CONFIG_SYS_ENV_BASE       0x28000000
 #else
 /* Legacy non-Verified boot configuration. */
@@ -61,8 +61,6 @@
  */
 #ifdef CONFIG_ASPEED_RECOVERY_BUILD
 #define CONFIG_PREBOOT            "setenv autoload no;"
-#define CONFIG_UPDATE_TFTP
-#define CONFIG_UPDATE_LOAD_ADDR   (CONFIG_SYS_LOAD_ADDR + 0x60000)
 #endif
 
 /*
@@ -136,10 +134,8 @@
 /*
  * Command configuration
  */
-#define CONFIG_CMD_MII
 #define CONFIG_CMD_PING
 #define CONFIG_CMD_DHCP
-#define CONFIG_CMD_DIAG
 #define CONFIG_CMD_MEMINFO
 #define CONFIG_CMD_MEMTEST
 #define CONFIG_CMD_MEMTEST2
@@ -163,7 +159,7 @@
 /* This is an SPL build */
 
 #define CONFIG_SPL_FRAMEWORK
-#define CONFIG_SPL_MAX_FOOTPRINT  0x10000
+#define CONFIG_SPL_MAX_FOOTPRINT  0x15000
 
 /* During an SPL build the base is 0x0. */
 #define CONFIG_SYS_TEXT_BASE      0x00000000
@@ -175,7 +171,7 @@
 
 /* Establish an 'arena' for heap from 0x1000 - 0x3000, 8k */
 #define CONFIG_SYS_SPL_MALLOC_START (CONFIG_SYS_SRAM_BASE + 0x1000)
-#define CONFIG_SYS_SPL_MALLOC_SIZE  0x2000 /* 8kB */
+#define CONFIG_SYS_SPL_MALLOC_SIZE  0x2000
 
 /* General SPL build feature includes. */
 #define CONFIG_SPL_DISPLAY_PRINT
@@ -191,8 +187,6 @@
 #define CONFIG_SPL_SHA256
 #define CONFIG_SPL_TPM
 
-/* This will increase binary size by +10kB */
-#define CONFIG_FIT_SPL_PRINT
 #else
 /* This is a U-Boot build */
 

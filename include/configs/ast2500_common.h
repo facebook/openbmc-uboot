@@ -101,9 +101,8 @@
 /*
  * SRAM configuration
  */
-#define CONFIG_SYS_SRAM_BASE    AST_SRAM_BASE
-#define CONFIG_SYS_SRAM_TOP   (CONFIG_SYS_SDRAM_BASE + 8000)
-
+#define CONFIG_SYS_SRAM_BASE        AST_SRAM_BASE
+#define CONFIG_SYS_SRAM_TOP         (CONFIG_SYS_SDRAM_BASE + 0x8000)
 #define CONFIG_SYS_MEMTEST_START    CONFIG_SYS_SDRAM_BASE + 0x300000
 #define CONFIG_SYS_MEMTEST_END      (CONFIG_SYS_MEMTEST_START + (80*1024*1024))
 
@@ -147,9 +146,11 @@
 /*
  * Environment Config
  */
+#ifndef CONFIG_SPL_BUILD
 #define CONFIG_CMDLINE_TAG
 #define CONFIG_SETUP_MEMORY_TAGS
 #define CONFIG_INITRD_TAG
+#endif
 
 /*
  * Serial configuration

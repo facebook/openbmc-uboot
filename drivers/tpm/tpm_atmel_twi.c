@@ -81,14 +81,14 @@ static int tpm_atmel_twi_xfer(struct udevice *dev,
 	print_buffer(0, (void *)sendbuf, 1, send_size, 0);
 #endif
 
-	res = i2c_write(0x29, 0, 0, (uchar *)sendbuf, send_size);
+	res = dm_i2c_write(dev, 0, (const u8*)sendbuf, send_size);
 	if (res) {
 		printf("i2c_write returned %d\n", res);
 		return -1;
 	}
 
 	start = get_timer(0);
-	while ((res = i2c_read(0x29, 0, 0, recvbuf, 10))) {
+	while((res = dm_i2c_read(dev, 0, recvbuf, 10))) {
 		/* TODO Use TIS_TIMEOUT from tpm_tis_infineon.h */
 		if (get_timer(start) > ATMEL_TPM_TIMEOUT_MS) {
 			puts("tpm timed out\n");
@@ -99,7 +99,7 @@ static int tpm_atmel_twi_xfer(struct udevice *dev,
 	if (!res) {
 		*recv_len = get_unaligned_be32(recvbuf + 2);
 		if (*recv_len > 10)
-			res = i2c_read(0x29, 0, 0, recvbuf, *recv_len);
+			res = dm_i2c_read(dev, 0, recvbuf, *recv_len);
 	}
 	if (res) {
 		printf("i2c_read returned %d (rlen=%d)\n", res, *recv_len);

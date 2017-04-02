@@ -234,6 +234,8 @@ static uint32_t tpm_sendrecv_command(const void *command,
 	uint8_t response_buffer[COMMAND_BUFFER_SIZE];
 	size_t response_length;
 	uint32_t err;
+	uint32_t response_code;
+	uint8_t retries;
 
 	if (response) {
 		response_length = *size_ptr;
@@ -245,15 +247,21 @@ static uint32_t tpm_sendrecv_command(const void *command,
 	ret = uclass_first_device_err(UCLASS_TPM, &dev);
 	if (ret)
 		return ret;
-	err = tpm_xfer(dev, command, tpm_command_size(command),
-		       response, &response_length);
 
-	if (err < 0)
-		return TPM_LIB_ERROR;
-	if (size_ptr)
-		*size_ptr = response_length;
+	for (retries = 0; retries < 3; retries++) {
+		err = tpm_xfer(dev, command, tpm_command_size(command),
+			       response, &response_length);
 
-	return tpm_return_code(response);
+		if (err < 0)
+			return TPM_LIB_ERROR;
+		if (size_ptr)
+			*size_ptr = response_length;
+		response_code = tpm_return_code(response);
+		if (response_code != 0x09)
+			break;
+	}
+
+	return response_code;
 }
 
 int tpm_init(void)
@@ -601,9 +609,9 @@ uint32_t tpm_get_permanent_flags(struct tpm_permanent_flags *pflags)
 		0x0, 0xc1,		/* TPM_TAG */
 		0x0, 0x0, 0x0, 0x16,	/* parameter size */
 		0x0, 0x0, 0x0, 0x65,	/* TPM_COMMAND_CODE */
-		0x0, 0x0, 0x0, 0x4,	/* TPM_CAP_FLAG_PERM */
+		0x0, 0x0, 0x0, 0x4,	/* TPM_CAP_FLAG */
 		0x0, 0x0, 0x0, 0x4,	/* subcap size */
-		0x0, 0x0, 0x1, 0x8,	/* subcap value */
+		0x0, 0x0, 0x1, 0x8,	/* TPM_CAP_FLAG_PERM */
 	};
 	uint8_t response[COMMAND_BUFFER_SIZE];
 	size_t response_length = sizeof(response);
@@ -612,7 +620,30 @@ uint32_t tpm_get_permanent_flags(struct tpm_permanent_flags *pflags)
 	err = tpm_sendrecv_command(command, response, &response_length);
 	if (err)
 		return err;
-	memcpy(pflags, response + TPM_HEADER_SIZE, sizeof(*pflags));
+	memcpy(pflags, response + TPM_HEADER_SIZE + 4, sizeof(*pflags));
+
+	return 0;
+}
+
+uint32_t tpm_get_volatile_flags(struct tpm_volatile_flags *vflags)
+{
+	const uint8_t command[22] = {
+		0x0, 0xc1,              /* TPM_TAG */
+		0x0, 0x0, 0x0, 0x16,    /* parameter size */
+		0x0, 0x0, 0x0, 0x65,    /* TPM_COMMAND_CODE */
+		0x0, 0x0, 0x0, 0x4,     /* TPM_CAP_FLAG */
+		0x0, 0x0, 0x0, 0x4,     /* subcap size */
+		0x0, 0x0, 0x1, 0x9,     /* TPM_CAP_FLAG_VOLATILE */
+	};
+
+	uint8_t response[COMMAND_BUFFER_SIZE];
+	size_t response_length = sizeof(response);
+	uint32_t err;
+
+	err = tpm_sendrecv_command(command, response, &response_length);
+	if (err)
+		return err;
+	memcpy(vflags, response + TPM_HEADER_SIZE + 4, sizeof(*vflags));
 
 	return 0;
 }

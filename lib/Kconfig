@@ -67,6 +67,12 @@ config TPM
 	  for the low-level TPM interface, but only one TPM is supported at
 	  a time by the TPM library.
 
+config SPL_TPM
+	bool "TPM Support in SPL"
+	depends on TPM
+	help
+	  Enable this if TPM support should be included in SPL
+
 menu "Hashing Support"
 
 config SHA1

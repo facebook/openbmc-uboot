@@ -194,6 +194,15 @@ struct tpm_permanent_flags {
 	u8	disable_full_da_logic_info;
 } __packed;
 
+struct tpm_volatile_flags {
+  __be16  tag;
+  u8      deactivated;
+  u8      disable_force_clear;
+  u8      physical_presence;
+  u8      physical_presence_lock;
+  u8      global_lock;
+} __packed;
+
 /* Max buffer size supported by our tpm */
 #define TPM_DEV_BUFSIZE		1260
 
@@ -585,6 +594,14 @@ uint32_t tpm_get_pub_key_oiap(uint32_t key_handle, const void *usage_auth,
  * @return return code of the operation
  */
 uint32_t tpm_get_permanent_flags(struct tpm_permanent_flags *pflags);
+
+/**
+ * Get the TPM volatile (startup) flags value
+ *
+ * @param stflags      Place to put startup flags
+ * @return return code of the operation
+ */
+uint32_t tpm_get_volatile_flags(struct tpm_volatile_flags *vflags);
 
 /**
  * Get the TPM permissions

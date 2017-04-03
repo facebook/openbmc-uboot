@@ -17,7 +17,7 @@
  *
  * Gary Hsu, <gary_hsu@aspeedtech.com>
  *
- * Release date: 2015.02.09 formal release for SDK0.61
+ * Release date: 2016.07.13 formal release for SDK0.62
  *
  * Modified list from v0.23
  * EC1. Modify DQIDLY and DQSI-MCLK2X calibration algorithm
@@ -47,6 +47,9 @@
  *
  * Modified list from v0.60
  * EC1. Modify DDR2 init preliminary size to 1Gbit, and BL=4.
+ *
+ * Modified list from v0.61
+ * EC1. Initialize USB2.0 port to Host mode, to fix FB firmware USB initial fail issue.
  *
  * Optional define variable
  * 1. DRAM Speed             //
@@ -165,6 +168,228 @@ PATTERN_TABLE:
     ldr r0, =0x1e620008
     ldr r2, =0x00000800
     .endm
+
+#ifdef CONFIG_YOSEMITE
+/* Use GPIOE[0-3] to select debug console */
+.macro console_bmc
+ldr r0, =0x1e780024
+ldr r1, [r0]
+orr r1, r1, #0xF
+str r1, [r0]
+
+ldr r0, =0x1e780020
+ldr r1, [r0]
+and r1, r1, #0xFFFFFFF0
+orr r1, r1, #0xC
+str r1, [r0]
+.endm
+
+.macro console_slot1
+ldr r0, =0x1e780024
+ldr r1, [r0]
+orr r1, r1, #0xF
+str r1, [r0]
+
+ldr r0, =0x1e780020
+ldr r1, [r0]
+and r1, r1, #0xFFFFFFF0
+orr r1, r1, #0x1
+str r1, [r0]
+.endm
+
+.macro console_slot2
+ldr r0, =0x1e780024
+ldr r1, [r0]
+orr r1, r1, #0xF
+str r1, [r0]
+
+ldr r0, =0x1e780020
+ldr r1, [r0]
+and r1, r1, #0xFFFFFFF0
+orr r1, r1, #0x0
+str r1, [r0]
+.endm
+
+.macro console_slot3
+ldr r0, =0x1e780024
+ldr r1, [r0]
+orr r1, r1, #0xF
+str r1, [r0]
+
+ldr r0, =0x1e780020
+ldr r1, [r0]
+and r1, r1, #0xFFFFFFF0
+orr r1, r1, #0x3
+str r1, [r0]
+.endm
+
+.macro console_slot4
+ldr r0, =0x1e780024
+ldr r1, [r0]
+orr r1, r1, #0xF
+str r1, [r0]
+
+ldr r0, =0x1e780020
+ldr r1, [r0]
+and r1, r1, #0xFFFFFFF0
+orr r1, r1, #0x2
+str r1, [r0]
+.endm
+
+.macro console_sel
+
+  // Disable SoL UARTs[1-4]
+  ldr r0, =0x1e6e2080
+  ldr r1, [r0]
+  ldr r2, =0xBFBFFFFF
+  and r1, r1, r2
+  str r1, [r0]
+
+  ldr r0, =0x1e6e2084
+  ldr r1, [r0]
+  and r1, r1, r2
+  str r1, [r0]
+  // Enable GPIOE[0-3] Tolerant
+  ldr r0, =0x1e78003c
+  ldr r1, [r0]
+  orr r1, r1, #0xF
+  str r1, [r0]
+
+  // Read debug card present
+  ldr r2, =0x1e780080
+  ldr r0, [r2]
+  and r0, r0, #0x00000200
+  ldr r1, =0x0200
+  cmp r0, r1
+  bne dbg_card_pres\@
+  console_bmc
+  b case_end\@
+
+dbg_card_pres\@:
+  // Read key position
+  ldr r2, =0x1e780080
+  ldr r0, [r2]
+  bic r0, r0, #0xFFFFC3FF
+  //Test for position#1
+  ldr r1, =0x0000
+  cmp r0, r1
+  bne case_pos2\@
+  console_slot1
+  b case_end\@
+case_pos2\@:
+  //Test for position#2
+  ldr r1, =0x0400
+  cmp r0, r1
+  bne case_pos3\@
+  console_slot2
+  b case_end\@
+case_pos3\@:
+  //Test for position#3
+  ldr r1, =0x0800
+  cmp r0, r1
+  bne case_pos4\@
+  console_slot3
+  b case_end\@
+case_pos4\@:
+  //Test for position#4
+  ldr r1, =0x0c00
+  cmp r0, r1
+  bne case_pos5\@
+  console_slot4
+  b case_end\@
+case_pos5\@:
+  //Test for position#5
+  ldr r1, =0x1000
+  cmp r0, r1
+  bne case_pos6\@
+  console_bmc
+  b case_end\@
+case_pos6\@:
+  //Test for position#6
+  ldr r1, =0x1400
+  cmp r0, r1
+  bne case_pos7\@
+  console_slot1
+  b case_end\@
+case_pos7\@:
+  //Test for position#7
+  ldr r1, =0x1800
+  cmp r0, r1
+  bne case_pos8\@
+  console_slot2
+  b case_end\@
+case_pos8\@:
+  //Test for position#8
+  ldr r1, =0x1c00
+  cmp r0, r1
+  bne case_pos9\@
+  console_slot3
+  b case_end\@
+case_pos9\@:
+  //Test for position#9
+  ldr r1, =0x2000
+  cmp r0, r1
+  bne case_pos10\@
+  console_slot4
+  b case_end\@
+case_pos10\@:
+  //Test for position#10
+  ldr r1, =0x2400
+  cmp r0, r1
+  bne case_end\@
+  console_bmc
+  b case_end\@
+case_end\@:
+.endm
+
+.macro heartbeat_led_on
+  /* Select GPIOQ7 for Heartbeat LED instead of USB Host Port H */
+  ldr r0, =0x1e6e2090
+  ldr r1, [r0]
+  ldr r2, =0xEFFFFFFF
+  and r1, r1, r2
+  str r1, [r0]
+
+  ldr r0, =0x1e780084
+  ldr r1, [r0]
+  ldr r2, =0x80
+  orr r1, r1, r2
+  str r1, [r0]
+
+  ldr r0, =0x1e780080
+  ldr r1, [r0]
+  ldr r2, =0xffffff7f
+  and r1, r1, r2
+  str r1, [r0]
+.endm
+
+.macro pwr_leds_on
+  /* Enable GPIOM0..4 for PWRx_LED */
+  ldr r0, =0x1e6e2084
+  ldr r1, [r0]
+  ldr r2, =0x0F000000
+  orr r1, r1, r2
+  str r1, [r0]
+
+  ldr r0, =0x1e6e2090
+  ldr r1, [r0]
+  ldr r2, =0xffffffcf
+  and r1, r1, r2
+  str r1, [r0]
+
+  ldr r0, =0x1e78007c
+  ldr r1, [r0]
+  ldr r2, =0x0F
+  orr r1, r1, r2
+  str r1, [r0]
+
+  ldr r0, =0x1e780078
+  ldr r1, [r0]
+  ldr r2, =0xfffffff0
+  and r1, r1, r2
+  str r1, [r0]
+.endm
+#endif
 
     .macro enable_other_uarts
     /* SCU84: Multi-function Pin Control 1, for UART1 and UART2 */
@@ -300,6 +525,12 @@ init_dram:
     orr r1, r1, #0x80
     str r1, [r0]
 
+    ldr r0, =0x1e6e2090                          @ set USB2.0 port as Host mode
+    ldr r2, =0x20000000
+    ldr r1, [r0]
+    orr r1, r1, r2
+    str r1, [r0]
+
     /* Fix LPC lock issue for AST2300 */
     ldr r0, =0x1e6e207c                          @ Check AST2300
     ldr r1, [r0]
@@ -421,7 +652,32 @@ set_MPLL:
     and r1, r2, r1
     str r1, [r0]
 
+/* Yosemite Platform specific Initialization */
+#ifdef CONFIG_YOSEMITE
+/*
+ * Disable WDT2 before the 2nd SPI flash is tried
+ * TODO: Need to detect booting from 2nd flash and recover
+ */
+    ldr r0, =0x1e78502c
+    ldr r1, [r0]
+    ldr r2, =0xFFFFFFFE
+    and r1, r1, r2
+    str r1, [r0]
+
+// Increase Fan speed to 70% PWM
+    ldr r0, =0x1e786008
+    ldr r1, =0x43004300                          @ Duty cycle for 70% PWM
+    str r1, [r0]
+
+    /* Heartbeat and PWR LED to indicate power ON during boot */
+    heartbeat_led_on
+    pwr_leds_on
+
+    console_sel
+#endif
+
 /* Debug - UART console message */
+
     uart_console_setup
 
     ldr r0, =CONFIG_ASPEED_COM
@@ -687,6 +943,9 @@ ddr3_init:
 #if defined(CONFIG_DRAM_336)
     ldr r1, =0x00002312
 #endif
+#if defined(CONFIG_YOSEMITE)
+    ldr r1, =0x00002310                          @ Crossing Voltage Criterion
+#endif
     tst r2, #0x01
     moveq r1, r1, lsr #8
     str r1, [r0]
@@ -835,7 +1094,7 @@ ddr2_init:
 /* Debug - UART console message */
 
     ldr r0, =0x1e6e0004
-    ldr r1, =0x00000521                          @ Default set to 1Gbit
+    ldr r1, =0x00000510                          @ Default set to 512Mbit
     str r1, [r0]
 
     ldr r0, =0x1e6e0010                          @ REG_AC1
@@ -871,6 +1130,9 @@ ddr2_init:
     ldr r1, =0x00002312                          @ 408 MHz
 #if defined(CONFIG_DRAM_336)
     ldr r1, =0x00002312
+#endif
+#if defined(CONFIG_YOSEMITE)
+    ldr r1, =0x00002310                          @ Crossing Voltage Criterion
 #endif
     tst r2, #0x01
     moveq r1, r1, lsr #8
@@ -2598,11 +2860,11 @@ check_dram_size_end:
  Version Number
  *****************************************************************************/
     ldr   r0, =0x1e7200a8
-    ldr   r1, =0x20150209                        @ released date
+    ldr   r1, =0x20160713                        @ released date
     str   r1, [r0]
 
     add   r0, r0, #4
-    ldr   r1, =0x00000061                        @ released SDK version
+    ldr   r1, =0x00000062                        @ released SDK version
     str   r1, [r0]
 
 /******************************************************************************
@@ -2735,6 +2997,29 @@ platform_exit2:
 .LTORG
 
 platform_exit:
+/*
+ * Fix for enabling BMC reset without hang using external reset pulse
+ * Need to disable WDT2 without which the reset will hang
+ */
+#ifdef CONFIG_YOSEMITE
+    ldr r0, =0x1e78502c
+    ldr r1, [r0]
+    ldr r2, =0xFFFFFFFE
+    and r1, r1, r2
+    str r1, [r0]
+
+// Increase Fan speed to 70% PWM
+    ldr r0, =0x1e786008
+    ldr r1, =0x43004300                          @ Duty cycle for 70% PWM
+    str r1, [r0]
+
+    /* Heartbeat and PWR LED to indicate power ON during boot */
+    heartbeat_led_on
+    pwr_leds_on
+
+    console_sel
+#endif
+
 #ifdef      CONFIG_DRAM_ECC
     ldr r0, =0x1e6e0004
     ldr r1, [r0]

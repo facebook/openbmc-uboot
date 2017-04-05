@@ -23,6 +23,13 @@
 #define CONFIG_ARCH_AST2400
 
 #define CONFIG_MISC_INIT_R
+
+/*
+ * Must disable dcache as the aspeednic.c does not flush and invalidate caches
+ * correctly during DMA.
+ */
+#define CONFIG_SYS_DCACHE_OFF
+
 #include <asm/arch/platform.h>
 /*
  * Flash type (mutex):

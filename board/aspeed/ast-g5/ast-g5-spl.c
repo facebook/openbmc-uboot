@@ -360,7 +360,7 @@ void board_init_f(ulong bootflag)
   spl_init();
 
 #ifdef CONFIG_ASPEED_ENABLE_WATCHDOG
-  ast_wdt_reset(60 * AST_WDT_CLK, 0x33 | 0x08);
+  ast_wdt_reset(120 * AST_WDT_CLK, 0x33 | 0x08);
 #endif
 
   /*

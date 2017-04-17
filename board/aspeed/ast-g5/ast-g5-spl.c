@@ -20,6 +20,7 @@
 #include <asm/io.h>
 
 #include "flash-spl.h"
+#include "tpm-spl.h"
 
 /* Size of RW environment parsable by ROM. */
 #define AST_ROM_ENV_MAX     0x200
@@ -129,8 +130,6 @@ u8 verify_required(u8* notified) {
 
   if (*notified == 0) {
     *notified = 1;
-    debug("OpenBMC verified-boot is not enforcing in hardware or software.\n");
-    debug("Allowing execution to proceed into an unverified state.\n");
   }
   return 0;
 }
@@ -155,7 +154,7 @@ void load_fit(volatile void* from) {
   vbs->recovery_retries = recovery_retries;
   vbs->hardware_enforce = 0;
 
-  if (rom_handoff == 0xADEFAD8B) {
+  if (rom_handoff == VBS_HANDOFF) {
     printf("U-Boot failed to execute.\n");
     vbs_status(VBS_ERROR_TYPE_SPI, VBS_ERROR_EXECUTE_FAILURE);
     spl_recovery();
@@ -163,7 +162,6 @@ void load_fit(volatile void* from) {
 
   /* Reset the target RW flash chip. */
   if (!ast_fmc_spi_cs1_reset()) {
-    debug("%s: Cannot reset FMC/CS1 (SPI0.1) state", __func__);
     vbs_status(VBS_ERROR_TYPE_SPI, VBS_ERROR_SPI_PROM);
     spl_recovery();
   }
@@ -172,16 +170,12 @@ void load_fit(volatile void* from) {
   if (fdt_magic(fit) != FDT_MAGIC) {
     /* FIT loading is not available or this U-Boot is not a FIT. */
     /* This will bypass signature checking */
-    debug("%s: Cannot find FIT image header: 0x%08x\n", __func__, (u32)from);
     vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_BAD_MAGIC);
     spl_recovery();
   }
 
   u32 size = fdt_totalsize(fit);
   size = (size + 3) & ~3;
-  u32 base_offset = (size + 3) & ~3;
-  debug("%s: Parsed FIT: size=%x base_offset=%x\n", __func__,
-        size, base_offset);
   if (size > AST_MAX_UBOOT_FIT) {
     vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_INVALID_SIZE);
     spl_recovery();
@@ -190,7 +184,6 @@ void load_fit(volatile void* from) {
   /* Node path to images */
   int images = fdt_path_offset(fit, FIT_IMAGES_PATH);
   if (images < 0) {
-    debug("%s: Cannot find /images node: %d\n", __func__, images);
     vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_NO_IMAGES);
     spl_recovery();
   }
@@ -198,8 +191,6 @@ void load_fit(volatile void* from) {
   /* Be simple, select the first image. */
   int uboot_node = fdt_first_subnode(fit, images);
   if (uboot_node < 0) {
-    debug("%s: Cannot find first image (u-boot) node: %d\n", __func__,
-      uboot_node);
     vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_NO_FW);
     spl_recovery();
   }
@@ -207,7 +198,6 @@ void load_fit(volatile void* from) {
   /* Node path to configurations */
   int configs = fdt_path_offset(fit, FIT_CONFS_PATH);
   if (configs < 0) {
-    debug("%s: Cannot find /configurations node: %d\n", __func__, configs);
     vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_NO_CONFIG);
     spl_recovery();
   }
@@ -215,8 +205,6 @@ void load_fit(volatile void* from) {
   /* We only support a single configuration for U-Boot. */
   int config_node = fdt_first_subnode(fit, configs);
   if (config_node < 0) {
-    debug("%s: Cannot find first configuration (u-boot) node: %d\n", __func__,
-      config_node);
     vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_NO_CONFIG);
     spl_recovery();
   }
@@ -235,9 +223,6 @@ void load_fit(volatile void* from) {
   vbs->force_recovery = spl_getenv_yesno("force_recovery");
   printf("OpenBMC verified-boot enforcing [hw:%d sw:%d recovery:%d]\n",
     vbs->hardware_enforce, vbs->software_enforce, vbs->force_recovery);
-  debug("%s: U-Boot: data_position=0x%08x, load=0x%08x hw/sw verify=%d/%d\n",
-        __func__, uboot_position, load,
-        vbs->hardware_enforce, vbs->software_enforce);
   if (vbs->force_recovery == 1) {
     vbs_status(VBS_ERROR_TYPE_FORCE, VBS_ERROR_FORCE_RECOVERY);
     spl_recovery();
@@ -260,10 +245,55 @@ void load_fit(volatile void* from) {
     CHECK_AND_RECOVER(&notified);
   }
 
+#ifdef CONFIG_ASPEED_TPM
+  int tpm_status = ast_tpm_provision();
+  if (tpm_status == VBS_ERROR_TPM_RESET_NEEDED) {
+    vbs_status(VBS_ERROR_TYPE_TPM, VBS_ERROR_TPM_RESET_NEEDED);
+
+    if (rom_handoff == VBS_HANDOFF - 1) {
+      // The TPM needed a reset before, and needs another, this is a problem.
+      printf("TPM was deactivated and remains so after a reset.\n");
+      CHECK_AND_RECOVER(&notified);
+    } else {
+      printf("TPM was deactivated and needs a reset.\n");
+      vbs->rom_handoff = (VBS_HANDOFF - 1);
+      reset_cpu(0);
+    }
+  } else if (tpm_status != VBS_SUCCESS) {
+    // The TPM could not be provisioned.
+    vbs_status(VBS_ERROR_TYPE_TPM, tpm_status);
+    CHECK_AND_RECOVER(&notified);
+  }
+
+  if (tpm_status == VBS_SUCCESS) {
+    // Only attempt to provision the NV space if the TPM was provisioned.
+    tpm_status = ast_tpm_nv_provision();
+    if (tpm_status != VBS_SUCCESS) {
+      vbs_status(VBS_ERROR_TYPE_NV, tpm_status);
+      CHECK_AND_RECOVER(&notified);
+    }
+  }
+
+  if (tpm_status == VBS_SUCCESS) {
+    // Only attempt to check and update timestamps if the TPM was provisioned.
+    int root = fdt_path_offset(fit, "/");
+    int timestamp = fdt_getprop_u32(fit, root, "timestamp");
+    if (root < 0 || timestamp <= 0) {
+      vbs_status(VBS_ERROR_TYPE_RB, VBS_ERROR_ROLLBACK_MISSING);
+      CHECK_AND_RECOVER(&notified);
+    }
+
+    tpm_status = ast_tpm_try_version(AST_TPM_ROLLBACK_UBOOT, timestamp);
+    if (tpm_status != VBS_SUCCESS) {
+      vbs_status(VBS_ERROR_TYPE_RB, tpm_status);
+      CHECK_AND_RECOVER(&notified);
+    }
+  }
+#endif
+
   /* Node path to keys */
   int keys = fdt_path_offset(fit, VBS_KEYS_PATH);
   if (keys < 0) {
-    debug("%s: Cannot find /keys node: %d\n", __func__, keys);
     vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_NO_KEYS);
     CHECK_AND_RECOVER(&notified);
   }
@@ -271,8 +301,6 @@ void load_fit(volatile void* from) {
   /* After the first image (uboot) expect to find the subordinate store. */
   int subordinate_node = fdt_first_subnode(fit, keys);
   if (subordinate_node < 0) {
-    debug("%s: Cannot find first keys (fdt) node: %d\n", __func__,
-        subordinate_node);
     vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_NO_KEYS);
     CHECK_AND_RECOVER(&notified);
   }
@@ -282,7 +310,6 @@ void load_fit(volatile void* from) {
   const char* subordinate_data = fdt_getprop(fit, subordinate_node, "data",
     &subordinate_size);
   if (subordinate_data == 0 || subordinate_size <= 0) {
-    debug("Cannot find subordinate certificate store.\n");
     vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_BAD_KEYS);
     CHECK_AND_RECOVER(&notified);
   }
@@ -292,7 +319,6 @@ void load_fit(volatile void* from) {
   if (fit_image_verify_required_sigs(fit, subordinate_node, subordinate_data,
              subordinate_size, signature_store, &subordinate_verified)) {
     printf("Unable to verify required subordinate certificate store.\n");
-    debug("Check that a '/keys' node was included.\n");
     vbs_status(VBS_ERROR_TYPE_FW, VBS_ERROR_KEYS_INVALID);
     CHECK_AND_RECOVER(&notified);
   }
@@ -358,6 +384,9 @@ void board_init_f(ulong bootflag)
   preloader_console_init();
   /* Must set up global data pointers for local device tree. */
   spl_init();
+
+  gd->malloc_base = CONFIG_SYS_SPL_MALLOC_START;
+  gd->malloc_limit = CONFIG_SYS_SPL_MALLOC_SIZE;
 
 #ifdef CONFIG_ASPEED_ENABLE_WATCHDOG
   ast_wdt_reset(120 * AST_WDT_CLK, 0x33 | 0x08);

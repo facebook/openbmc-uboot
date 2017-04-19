@@ -4,12 +4,13 @@
  * SPDX-License-Identifier: GPL-2.0+
  */
 
-#include <asm/arch/ast_g5_platform.h>
-
 #include "flash-spl.h"
 
-#define SPI_CK_USERMODE_LOW  0x00000603
-#define SPI_CK_USERMODE_HIGH 0x00000607
+#include <malloc.h>
+
+#include <asm/arch/ast_g5_platform.h>
+#include <asm/arch-aspeed/ast_scu.h>
+#include <asm/arch-aspeed/regs-scu.h>
 
 #define AST_FMC_WRITE_ENABLE 0x800f0000
 #define AST_FMC_STATUS_RESET 0x000b0641
@@ -17,170 +18,213 @@
 #define AST_FMC_CE0_CONTROL  0x10
 #define AST_FMC_CE_CONTROL   0x04
 
+#define SPI_CMD_ID 0x9f
 #define SPI_CMD_3B 0xe9
 #define SPI_CMD_4B 0xb7
 #define SPI_CMD_WE 0x06
 #define SPI_CMD_RS 0x05
 #define SPI_CMD_WS 0x01
 
-inline u32 read_reg(u32 reg) {
-  return *(volatile u32*)reg;
-}
+#define SPI_SRWD  (0x1 << 7)
+#define SPI_BP3   (0x1 << 5)
+#define SPI_BP2   (0x1 << 4)
+#define SPI_BP1   (0x1 << 3)
+#define SPI_BP0   (0x1 << 2)
 
-inline uchar read_byte(u32 reg) {
-  return *(volatile uchar*)reg;
-}
+#define SPI_HW_PROTECTIONS (SPI_SRWD | SPI_BP0 | SPI_BP1 | SPI_BP2 | SPI_BP3)
 
-inline void write_reg(u32 reg, u32 val) {
-  *((volatile u32*) reg) = val;
-}
+#define WRITEREG(r, v) *(volatile u32*)(r) = v
+#define WRITEB(r, b) *(volatile uchar*)(r) = (uchar)b
+#define READREG(r) *(volatile u32*)(r)
+#define READB(r) *(volatile uchar*)(r)
 
-inline void write_byte(u32 reg, uchar val) {
-  *((volatile uchar*) reg) = (uchar)val;
-}
+typedef int (*heaptimer_t)(unsigned ulong);
+typedef int (*heapstatus_t)(heaptimer_t, uchar);
 
-inline void spi_low(u32 ctrl) {
-  write_reg(AST_FMC_BASE + ctrl, SPI_CK_USERMODE_LOW);
-  udelay(200);
-}
-
-inline void spi_high(u32 ctrl) {
-  write_reg(AST_FMC_BASE + ctrl, SPI_CK_USERMODE_HIGH);
-  udelay(200);
-}
-
-inline void spi_cmd(u32 base, uchar cmd) {
-  write_byte(base, cmd);
-}
-
-inline void spi_enable_write(u32 base, u32 ctrl) {
-  spi_low(ctrl);
-  spi_cmd(base, SPI_CMD_WE);
-  udelay(10);
-  spi_high(ctrl);
-}
-
-inline int spi_wel(u32 base, u32 ctrl) {
-  spi_low(ctrl);
-  spi_cmd(base, SPI_CMD_RS);
-  udelay(10);
-
-  uchar ret = 1;
-  u32 timeout = 8000;
-  uchar r1;
-  do {
-    r1 = read_byte(base);
-    if (--timeout == 0) {
-      ret = 0;
-      break;
-    }
-  } while (r1 == 0xff || !(r1 & 0x02));
-
-  spi_high(ctrl);
-  return ret;
-}
-
-inline int spi_wip(u32 base, u32 ctrl) {
-  spi_low(ctrl);
-  spi_cmd(base, SPI_CMD_RS);
-  udelay(10);
-
-  uchar r1;
-  uchar ret = 1;
-  u32 timeout = 8000;
-  do {
-    r1 = read_byte(base);
-    if (--timeout == 0) {
-      ret = 0;
-      break;
-    }
-  } while (r1 == 0xff || (r1 & 0x01));
-
-  spi_high(ctrl);
-  return ret;
-}
-
-inline void spi_id(u32 base, u32 ctrl) {
-  char id[3];
-
-  spi_low(ctrl);
-  spi_cmd(base, 0x9f);
-  udelay(10);
-
-  id[0] = read_byte(base);
-  id[1] = read_byte(base);
-  id[2] = read_byte(base);
-  spi_high(ctrl);
-
-  debug("AST FMC SPI: 0x%08x ID %02x%02x%02x\n", base, id[0], id[1], id[2]);
-}
-
-inline void spi_write_status(u32 base, u32 ctrl, uchar cmd) {
-  spi_low(ctrl);
-  spi_cmd(base, SPI_CMD_WS);
-  udelay(10);
-  spi_cmd(base, cmd);
-  spi_high(ctrl);
-}
-
-inline void spi_enable4b(u32 base, u32 ctrl) {
-  spi_low(ctrl);
-  spi_cmd(base, SPI_CMD_4B);
-  spi_high(ctrl);
-}
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
 
 inline void fmc_enable_write(void) {
   /* If FMC00:{16, 17, 18} is 0 then it needs to be enabled with FMCA4. */
   /* Set FMCA4 to |= 2AA */
-  write_reg(AST_FMC_BASE, read_reg(AST_FMC_BASE) | AST_FMC_WRITE_ENABLE);
+  WRITEREG(AST_FMC_BASE, READREG(AST_FMC_BASE) | AST_FMC_WRITE_ENABLE);
 }
 
 inline void fmc_reset(u32 ctrl) {
-  write_reg(AST_FMC_BASE + ctrl, AST_FMC_STATUS_RESET);
+  WRITEREG(AST_FMC_BASE + ctrl, AST_FMC_STATUS_RESET);
 }
 
-inline void scu_multifunction(void) {
-  write_reg(AST_SCU_BASE + 0x88, read_reg(AST_SCU_BASE + 0x88) | 0x03000000);
+inline void fmc_enable4b(uchar cs) {
+  WRITEREG(AST_SCU_BASE + 0x70, READREG(AST_SCU_BASE + 0x70) | 0x10);
+  WRITEREG(AST_FMC_BASE + AST_FMC_CE_CONTROL,
+    READREG(AST_FMC_BASE + AST_FMC_CE_CONTROL) | (0x01 << cs));
 }
 
-inline void scu_enable4b(void) {
-  write_reg(AST_SCU_BASE + 0x70, read_reg(AST_SCU_BASE + 0x70) | 0x10);
-  write_reg(AST_FMC_BASE + AST_FMC_CE_CONTROL,
-    read_reg(AST_FMC_BASE + AST_FMC_CE_CONTROL) | (0x01 << 1));
+inline void fmc_romcs(uchar cs) {
+  u32 function_pin = READREG(AST_SCU_BASE + AST_SCU_FUN_PIN_CTRL3);
+  function_pin |= SCU_FUN_PIN_ROMCS(cs);
+  WRITEREG(AST_SCU_BASE, SCU_PROTECT_UNLOCK);
+  WRITEREG(AST_SCU_BASE + AST_SCU_FUN_PIN_CTRL3, function_pin);
 }
 
-int ast_fmc_spi_cs1_reset(void) {
-  timer_init();
+inline void spi_write_enable(heaptimer_t timer, u32 base, u32 ctrl) {
+  WRITEREG(AST_FMC_BASE + ctrl, 0x603);
+  timer(200);
+  WRITEB(base, SPI_CMD_WE);
+  timer(10);
+  WRITEREG(AST_FMC_BASE + ctrl, 0x07);
+  timer(200);
+}
 
-  fmc_enable_write();
-  udelay(100);
+inline uchar spi_status(heaptimer_t timer, u32 base, u32 ctrl, bool wel) {
+  uchar r1;
+  u32 timeout;
 
-  scu_multifunction();
-  spi_id(AST_FMC_CS1_BASE, AST_FMC_CE1_CONTROL);
-  udelay(100);
+  WRITEREG(AST_FMC_BASE + ctrl, 0x03);
+  timer(200);
+  WRITEB(base, SPI_CMD_RS);
+  timer(10);
+  timeout = 8000;
+  do {
+    if (--timeout == 0) {
+      r1 = 0xFF;
+      break;
+    }
+    r1 = READB(base);
+  } while ((wel && !(r1 & 0x2)) || (!wel && (r1 & 0x1)));
+  WRITEREG(AST_FMC_BASE + ctrl, 0x07);
+  timer(200);
+  return r1;
+}
 
-  /* Enable register changes for the FMC, then send write-enable to the SPI. */
-  scu_multifunction();
-  spi_enable_write(AST_FMC_CS1_BASE, AST_FMC_CE1_CONTROL);
-  if (!spi_wel(AST_FMC_CS1_BASE, AST_FMC_CE1_CONTROL)) {
-    debug("AST FMC CE1: Did not enable WEL (1)\n");
+inline void spi_write_status(heaptimer_t timer, u32 base, u32 ctrl, uchar p) {
+  WRITEREG(AST_FMC_BASE + ctrl, 0x603);
+  timer(200);
+  WRITEB(base, SPI_CMD_WS);
+  timer(10);
+  WRITEB(base, p);
+  WRITEREG(AST_FMC_BASE + ctrl, 0x07);
+  timer(200);
+}
+
+inline void spi_enable4b(heaptimer_t timer, u32 base, u32 ctrl) {
+  WRITEREG(AST_FMC_BASE + ctrl, 0x603);
+  timer(200);
+  WRITEB(base, SPI_CMD_4B);
+  WRITEREG(AST_FMC_BASE + ctrl, 0x07);
+  timer(200);
+}
+
+int heaptimer (unsigned long usec)
+{
+  ulong last;
+  ulong clks;
+  ulong elapsed;
+  ulong now;
+
+  /* translate usec to clocks */
+  clks = (usec / 1000) * (CONFIG_ASPEED_TIMER_CLK / CONFIG_SYS_HZ);
+  clks += (usec % 1000) * (CONFIG_ASPEED_TIMER_CLK / CONFIG_SYS_HZ) / 1000;
+
+  elapsed = 0;
+  now = 0;
+  last = READREG(AST_TIMER_BASE);
+  while (clks > elapsed) {
+    now = READREG(AST_TIMER_BASE);
+    if (now <= last) {
+      elapsed += last - now;
+    } else {
+      elapsed += 0xffffffff - (now - last);
+    }
+    last = now;
+  }
+  return 1;
+}
+
+int heaptimer_end(void) {
+  return 0;
+}
+
+int doheap(heaptimer_t timer, uchar cs) {
+  uchar status_set, status_check;
+  u32 base;
+  u32 ctrl;
+
+  if (cs == 0) {
+    base = AST_FMC_CS0_BASE;
+    ctrl = AST_FMC_CE0_CONTROL;
+  } else {
+    base = AST_FMC_CS1_BASE;
+    ctrl = AST_FMC_CE1_CONTROL;
   }
 
-  /* Write and clear the status register for the SPI chip. */
-  spi_write_status(AST_FMC_CS1_BASE, AST_FMC_CE1_CONTROL, 0x00);
-  if (!spi_wip(AST_FMC_CS1_BASE, AST_FMC_CE1_CONTROL)) {
-    debug("AST FMC CE1: Did not exit WIP (0)\n");
-    return 1;
-  }
+  fmc_romcs(cs);
 
-  scu_multifunction();
-  scu_enable4b();
-  spi_enable4b(AST_FMC_CS1_BASE, AST_FMC_CE1_CONTROL);
-  udelay(100);
+  /* Write enable for CS1 */
+  spi_write_enable(timer, base, ctrl);
+  spi_status(timer, base, ctrl, true);
+  spi_write_status(timer, base, ctrl, SPI_HW_PROTECTIONS);
+  status_set = spi_status(timer, base, ctrl, false);
+
+  /* Write enable for CS1 */
+  spi_write_enable(timer, base, ctrl);
+  spi_status(timer, base, ctrl, true);
+  spi_write_status(timer, base, ctrl, 0x0);
+  status_check = spi_status(timer, base, ctrl, false);
+
+  /* Set the SPI into 32bit addressing mode. */
+  fmc_enable4b(cs);
+  timer(200);
+
+  spi_enable4b(timer, base, ctrl);
 
   /* Reset the FMC state. */
-  fmc_reset(AST_FMC_CE1_CONTROL);
-  udelay(100);
+  fmc_reset(ctrl);
+  timer(200);
 
-  return 1;
+  if (status_set == 0xFF || status_check == 0xFF) {
+    return AST_FMC_ERROR;
+  } else if ((status_set & SPI_HW_PROTECTIONS) != SPI_HW_PROTECTIONS) {
+    return AST_FMC_ERROR;
+  } else if ((status_check & SPI_HW_PROTECTIONS) != SPI_HW_PROTECTIONS) {
+    return AST_FMC_WP_OFF;
+  }
+  return AST_FMC_WP_ON;
+}
+
+int doheap_end(void) {
+  return 0;
+}
+
+int ast_fmc_spi_check(void) {
+  u32 function_size;
+  uchar *buffer;
+  int cs0_status, cs1_status;
+
+  heaptimer_t timer_fp;
+  heapstatus_t spi_check;
+
+  timer_init();
+  fmc_enable_write();
+
+  /* Place a timer function into SRAM */
+  function_size = (u32) ((uchar*) heaptimer_end - (uchar*) heaptimer);
+  buffer = (uchar*) malloc(function_size);
+  memcpy(buffer, (uchar*)heaptimer, function_size);
+  timer_fp = (heaptimer_t)buffer;
+
+  /* Place our SPI inspections into SRAM */
+  function_size = (u32) ((uchar*) doheap_end - (uchar*) doheap);
+  buffer = (uchar*) malloc(function_size);
+  memcpy(buffer, (uchar*)doheap, function_size);
+  spi_check = (heapstatus_t)buffer;
+
+  /* Protect and unprotect CS1 (always check this first) */
+  cs1_status = spi_check(timer_fp, 1);
+
+  /* Protect and detect the hardware protection for CS0 */
+  cs0_status = spi_check(timer_fp, 0);
+
+  /* Return an ERROR indicating PROM status issues. */
+  return (cs1_status == AST_FMC_ERROR) ? AST_FMC_ERROR : cs0_status;
 }

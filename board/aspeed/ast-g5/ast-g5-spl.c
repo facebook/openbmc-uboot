@@ -152,7 +152,7 @@ void load_fit(volatile void* from) {
   memset((void*)vbs, 0, sizeof(struct vbs));
   vbs->rom_exec_address = rom_address;
   vbs->recovery_retries = recovery_retries;
-  vbs->hardware_enforce = 0;
+  vbs->hardware_enforce = 2;
 
   if (rom_handoff == VBS_HANDOFF) {
     printf("U-Boot failed to execute.\n");
@@ -160,10 +160,17 @@ void load_fit(volatile void* from) {
     spl_recovery();
   }
 
-  /* Reset the target RW flash chip. */
-  if (!ast_fmc_spi_cs1_reset()) {
+  /* Reset FMC SPI PROMs and check WP for SPI0.0. */
+  int spi_status = ast_fmc_spi_check();
+  /* The presence of WP# on SPI0.0 determines hardware enforcement. */
+  vbs->hardware_enforce = (spi_status == AST_FMC_WP_ON) ? 1 : 0;
+
+  if (spi_status == AST_FMC_ERROR) {
+    /* The QEMU models will always return SPI PROM errors. */
+#ifndef CONFIG_DEBUG_QEMU
     vbs_status(VBS_ERROR_TYPE_SPI, VBS_ERROR_SPI_PROM);
     spl_recovery();
+#endif
   }
 
   void* fit = (void*)from;

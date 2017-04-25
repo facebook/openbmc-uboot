@@ -763,21 +763,22 @@ int fit_image_get_data(const void *fit, int noffset,
 		const void **data, size_t *size)
 {
 	int len;
-	uint32_t *pos;
-	uint32_t *pos_size;
+	ulong pos = 0;
+	ulong pos_size = 0;
 
 	*data = fdt_getprop(fit, noffset, FIT_DATA_PROP, &len);
 	if (*data == NULL) {
 		/* Attempt to find an external image, built with the -E flag. */
-		pos = (uint32_t*)fdt_getprop(fit, noffset, "data-position", &len);
-		pos_size = (uint32_t*)fdt_getprop(fit, noffset, "data-size", &len);
-		if (pos == NULL || pos_size == NULL) {
+		fit_image_get_address(fit, noffset, "data-position", &pos);
+		fit_image_get_address(fit, noffset, "data-size", &pos_size);
+		if (pos == 0 || pos_size == 0) {
 			fit_get_debug(fit, noffset, FIT_DATA_PROP, len);
 			*size = 0;
 			return -1;
 		}
 
-		len = (int)*pos_size;
+		*data = (void*)((ulong)fit + pos);
+		len = pos_size;
 	}
 
 	*size = len;
@@ -949,7 +950,7 @@ int calculate_hash(const void *data, int data_len, const char *algo,
 	return 0;
 }
 
-static int fit_image_check_hash(const void *fit, int noffset, const void *data,
+int fit_image_check_hash(const void *fit, int noffset, const void *data,
 				size_t size, char **err_msgp)
 {
 	uint8_t value[FIT_MAX_HASH_LEN];

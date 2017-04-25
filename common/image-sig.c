@@ -220,9 +220,9 @@ static int fit_image_verify_sig(const void *fit, int image_noffset,
 			ret = fit_image_check_sig(fit, noffset, data,
 							size, sig_blob, -1, &err_msg);
 			if (ret) {
-				puts("- ");
+				puts("- \n");
 			} else {
-				puts("+ ");
+				puts("+ \n");
 				verified = 1;
 				break;
 			}
@@ -400,9 +400,9 @@ static int fit_config_verify_sig(const void *fit, int conf_noffset,
 			     strlen(FIT_SIG_NODENAME))) {
 			ret = fit_config_check_sig(fit, noffset, sig_blob, sig_offset, &err_msg);
 			if (ret) {
-				puts("- ");
+				puts("- \n");
 			} else {
-				puts("+ ");
+				puts("+ \n");
 				verified = 1;
 				break;
 			}

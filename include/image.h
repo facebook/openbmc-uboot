@@ -1102,6 +1102,20 @@ int fit_image_check_sig(const void *fit, int noffset, const void *data,
 		size_t size, const void *sig_blob, int required_keynode, char **err_msgp);
 
 /**
+ * fit_image_check_hash() - Check a single image hash node
+ *
+ * @fit:                FIT to check
+ * @noffset:            Offset of hash node to check
+ * @data:               Image data to check
+ * @size:               Size of image data
+ * @err_msgp:           In the event of an error, this will be pointed to a
+ *                      help error string to display to the user.
+ * @return 0 if hashes match ok, <0 on error
+ */
+int fit_image_check_hash(const void *fit, int noffset, const void *data,
+		size_t size, char **err_msgp);
+
+/**
  * fit_config_verify_required_sigs() - Verify signatures marked as 'required'
  *
  * @fit:		FIT to check

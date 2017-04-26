@@ -47,7 +47,7 @@ static u32 fdt_getprop_u32(const void *fdt, int node, const char *prop)
 
   cell = fdt_getprop(fdt, node, prop, &len);
   if (len != sizeof(*cell)) {
-    return -1U;
+    return 0;
   }
   return fdt32_to_cpu(*cell);
 }
@@ -316,40 +316,41 @@ void load_fit(volatile void* from) {
   int subordinate_size = 0;
   const char* subordinate_data = fdt_getprop(fit, subordinate_node, "data",
     &subordinate_size);
-  if (subordinate_data == 0 || subordinate_size <= 0) {
+  if (subordinate_data != 0 && subordinate_size > 0) {
+    /* This can return success if none of the keys were attempted. */
+    int subordinate_verified = 0;
+    if (fit_image_verify_required_sigs(fit, subordinate_node, subordinate_data,
+               subordinate_size, signature_store, &subordinate_verified)) {
+      printf("Unable to verify required subordinate certificate store.\n");
+      vbs_status(VBS_ERROR_TYPE_FW, VBS_ERROR_KEYS_INVALID);
+      CHECK_AND_RECOVER(&notified);
+    }
+
+    /* Check that at least 1 subordinate store was verified. */
+    if (subordinate_verified == 0) {
+      /*
+       * Change the certificate store to the subordinate after it is verified.
+       * This means the first image, 'firmware' is signed with a key that is NOT
+       * in ROM but rather signed by the verified subordinate key.
+       */
+      signature_store = subordinate_data;
+      vbs->subordainte_keys = (u32)signature_store;
+    } else {
+      printf("Subordinate certificate store was not verified.\n");
+      vbs_status(VBS_ERROR_TYPE_FW, VBS_ERROR_KEYS_UNVERIFIED);
+      CHECK_AND_RECOVER(&notified);
+    }
+  } else {
     vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_BAD_KEYS);
     CHECK_AND_RECOVER(&notified);
   }
-
-  /* This can return success if none of the keys were attempted. */
-  int subordinate_verified = 0;
-  if (fit_image_verify_required_sigs(fit, subordinate_node, subordinate_data,
-             subordinate_size, signature_store, &subordinate_verified)) {
-    printf("Unable to verify required subordinate certificate store.\n");
-    vbs_status(VBS_ERROR_TYPE_FW, VBS_ERROR_KEYS_INVALID);
-    CHECK_AND_RECOVER(&notified);
-  }
-
-  /* Check that at least 1 subordinate store was verified. */
-  if (subordinate_verified != 0) {
-    printf("Subordinate certificate store was not verified.\n");
-    vbs_status(VBS_ERROR_TYPE_FW, VBS_ERROR_KEYS_UNVERIFIED);
-    CHECK_AND_RECOVER(&notified);
-  }
-
-  /*
-   * Change the certificate store to the subordinate after it is verified.
-   * This means the first image, 'firmware' is signed with a key that is NOT
-   * in ROM but rather signed by the verified subordinate key.
-   */
-  signature_store = subordinate_data;
-  vbs->subordainte_keys = (u32)signature_store;
 
   /*
    * Check the sanity of U-Boot position and size.
    * If there is a problem force recovery.
    */
-  if (uboot_size == 0 || uboot_position == 0 || uboot_position == 0xFFFFFFFF) {
+  if (uboot_size == 0 || uboot_position == 0 ||
+      uboot_size > 0xE0000 || uboot_position > 0xE0000) {
     printf("Cannot find U-Boot firmware.\n");
     vbs_status(VBS_ERROR_TYPE_DATA, VBS_ERROR_BAD_FW);
     spl_recovery();
@@ -363,20 +364,28 @@ void load_fit(volatile void* from) {
   int uboot_verified = 0;
   if (fit_config_verify_required_sigs(fit, config_node, signature_store,
              &uboot_verified)) {
-    printf("Unable to verify required signature of U-Boot configuration.\n");
     vbs_status(VBS_ERROR_TYPE_FW, VBS_ERROR_FW_INVALID);
     CHECK_AND_RECOVER(&notified);
   }
 
   if (uboot_verified != 0) {
     /* When verified is 0, then an image was verified. */
-    printf("U-Boot was not verified.\n");
+    printf("U-Boot configuration was not verified.\n");
     debug("Check that the 'required' field for each key- is set to 'conf'.\n");
     debug("Check the board configuration for supported hash algorithms.\n");
     vbs_status(VBS_ERROR_TYPE_FW, VBS_ERROR_FW_UNVERIFIED);
     CHECK_AND_RECOVER(&notified);
   } else {
-    printf("U-Boot verified.\n");
+    /* Now verify the hash of the first image. */
+    char *error;
+    int hash = fdt_subnode_offset(fit, uboot_node, FIT_HASH_NODENAME);
+    if (fit_image_check_hash(fit, hash, (void*)load, uboot_size, &error)) {
+      printf("\nU-Boot was not verified.\n");
+      vbs_status(VBS_ERROR_TYPE_FW, VBS_ERROR_FW_UNVERIFIED);
+      CHECK_AND_RECOVER(&notified);
+    } else {
+      printf("\nU-Boot verified.\n");
+    }
   }
 
   /* Set a handoff and expect U-Boot to clear indicating a clean boot. */

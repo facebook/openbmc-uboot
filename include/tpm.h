@@ -493,6 +493,13 @@ uint32_t tpm_read_pubek(void *data, size_t count);
 uint32_t tpm_force_clear(void);
 
 /**
+ * Issue a TPM_DisableForceClear command.
+ *
+ * @return return code of the operation
+ */
+uint32_t tpm_disable_force_clear(void);
+
+/**
  * Issue a TPM_PhysicalEnable command.
  *
  * @return return code of the operation
@@ -586,6 +593,13 @@ uint32_t tpm_load_key2_oiap(uint32_t parent_handle,
  */
 uint32_t tpm_get_pub_key_oiap(uint32_t key_handle, const void *usage_auth,
 		void *pubkey, size_t *pubkey_len);
+
+/**
+ * Allow the TPM to set an owner.
+ *
+ * @return return code of the operation
+ */
+uint32_t tpm_set_owner_install(void);
 
 /**
  * Get the TPM permanent flags value

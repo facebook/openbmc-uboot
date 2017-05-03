@@ -309,6 +309,12 @@ void vboot_rollback_protection(void* fit, struct vbs *vbs) {
     return;
   }
 
+  tpm_status = ast_tpm_owner_provision();
+  if (tpm_status != VBS_SUCCESS) {
+    vboot_enforce(vbs, VBS_ERROR_TYPE_TPM, tpm_status);
+    return;
+  }
+
   /* Only attempt to provision the NV space if the TPM was provisioned. */
   tpm_status = ast_tpm_nv_provision();
   if (tpm_status != VBS_SUCCESS) {

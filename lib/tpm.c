@@ -248,7 +248,7 @@ static uint32_t tpm_sendrecv_command(const void *command,
 	if (ret)
 		return ret;
 
-	for (retries = 0; retries < 3; retries++) {
+	for (retries = 0; retries < 10; retries++) {
 		err = tpm_xfer(dev, command, tpm_command_size(command),
 			       response, &response_length);
 
@@ -259,6 +259,7 @@ static uint32_t tpm_sendrecv_command(const void *command,
 		response_code = tpm_return_code(response);
 		if (response_code != 0x09)
 			break;
+		udelay(100);
 	}
 
 	return response_code;
@@ -529,6 +530,15 @@ uint32_t tpm_force_clear(void)
 	return tpm_sendrecv_command(command, NULL, NULL);
 }
 
+uint32_t tpm_disable_force_clear(void)
+{
+	const uint8_t command[10] = {
+		0x0, 0xc1, 0x0, 0x0, 0x0, 0xa, 0x0, 0x0, 0x0, 0x5e,
+	};
+
+	return tpm_sendrecv_command(command, NULL, NULL);
+}
+
 uint32_t tpm_physical_enable(void)
 {
 	const uint8_t command[10] = {
@@ -601,6 +611,18 @@ uint32_t tpm_get_capability(uint32_t cap_area, uint32_t sub_cap,
 		return TPM_LIB_ERROR;
 
 	return 0;
+}
+
+uint32_t tpm_set_owner_install(void)
+{
+	const uint8_t command[11] = {
+		0x0, 0xc1,              /* TPM_TAG */
+		0x0, 0x0, 0x0, 0xb,     /* parameter size */
+		0x0, 0x0, 0x0, 0x71,    /* TPM_COMMAND_CODE */
+		0x1,                    /* true */
+	};
+
+	return tpm_sendrecv_command(command, NULL, NULL);
 }
 
 uint32_t tpm_get_permanent_flags(struct tpm_permanent_flags *pflags)

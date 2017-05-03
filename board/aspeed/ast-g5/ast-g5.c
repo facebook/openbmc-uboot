@@ -16,6 +16,8 @@
 #include <asm/arch/vbs.h>
 #include <asm/io.h>
 
+#include "tpm-spl.h"
+
 DECLARE_GLOBAL_DATA_PTR;
 
 void watchdog_init(void)
@@ -34,11 +36,29 @@ void watchdog_init(void)
 #endif
 }
 
-static void vbs_handoff(void)
+static void vboot_check_enforce(void)
+{
+  /* Clean the handoff marker from ROM. */
+  volatile struct vbs *vbs = (volatile struct vbs*)AST_SRAM_VBS_BASE;
+  if (vbs->hardware_enforce) {
+    /* If we are hardware-enforcing then this U-Boot is verified. */
+    setenv("verify", "yes");
+  }
+}
+
+static void vboot_finish(void)
 {
   /* Clean the handoff marker from ROM. */
   volatile struct vbs *vbs = (volatile struct vbs*)AST_SRAM_VBS_BASE;
   vbs->rom_handoff = 0x0;
+
+#ifdef CONFIG_ASPEED_TPM
+  ast_tpm_finish();
+#endif
+}
+
+void arch_preboot_os(void) {
+  vboot_finish();
 }
 
 #ifdef CONFIG_FBTP
@@ -160,7 +180,7 @@ static int disable_snoop_dma_interrupt(void)
 int board_init(void)
 {
 	watchdog_init();
-	vbs_handoff();
+	vboot_check_enforce();
 
 #ifdef CONFIG_FBTP
   fan_init();

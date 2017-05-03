@@ -16,7 +16,7 @@ static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
   printf("ROM KEK certificates:    0x%08x\n", vbs->rom_keys);
   printf("ROM handoff marker:      0x%08x\n", vbs->rom_handoff);
   printf("U-Boot executed from:    0x%08x\n", vbs->uboot_exec_address);
-  printf("U-Boot certificates:     0x%08x\n", vbs->subordainte_keys);
+  printf("U-Boot certificates:     0x%08x\n", vbs->subordinate_keys);
   printf("\n");
   printf("Flags force_recovery:    %d\n", (vbs->force_recovery) ? 1 : 0);
   printf("Flags hardware_enforce:  %d\n", (vbs->hardware_enforce) ? 1 : 0);

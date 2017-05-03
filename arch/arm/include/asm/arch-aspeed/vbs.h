@@ -5,7 +5,7 @@
  */
 
 /* Location in SRAM used for verified boot content/flags. */
-#define AST_SRAM_VBS_BASE   0x1E720100
+#define AST_SRAM_VBS_BASE   0x1E720200
 
 #define VBS_SUCCESS            0
 #define VBS_ERROR_TYPE_HW      1
@@ -74,7 +74,7 @@ struct vbs {
   u32 uboot_exec_address; /* Location in MMIO where U-Boot/Recovery U-Boot is execution */
   u32 rom_exec_address;   /* Location in MMIO where ROM is executing from */
   u32 rom_keys;           /* Location in MMIO where the ROM FDT is located */
-  u32 subordainte_keys;   /* Location in MMIO where subordinate FDT is located */
+  u32 subordinate_keys;   /* Location in MMIO where subordinate FDT is located */
   u32 rom_handoff;        /* Marker set when ROM is handing execution to U-Boot. */
   u8 force_recovery;      /* Set by ROM when recovery is requested */
   u8 hardware_enforce;    /* Set by ROM when WP pin of SPI0.0 is active low */

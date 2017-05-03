@@ -30,15 +30,15 @@ int ast_tpm_provision(void) {
 
   if (!pflags.physical_presence_cmd_enable &&
       pflags.physical_presence_lifetime_lock) {
-    // We cannot set physical presence so the board must be doing it.
+    /* We cannot set physical presence so the board must be doing it. */
     if (vflags.physical_presence != 0x0) {
-      // We do not have physical presence, so cannot configure anything.
+      /* We do not have physical presence, so cannot configure anything. */
       return VBS_ERROR_TPM_NO_PP;
     }
   }
 
   if (!pflags.physical_presence_lifetime_lock) {
-    // We have no locked PP yet.
+    /* We have not locked PP yet. */
     result = tpm_tsc_physical_presence(
       TPM_PHYSICAL_PRESENCE_HW_DISABLE | TPM_PHYSICAL_PRESENCE_CMD_ENABLE);
     if (result) {
@@ -53,13 +53,13 @@ int ast_tpm_provision(void) {
 #endif
   }
 
-  // Now asset physical presence.
+  /* Now asset physical presence. */
   result = tpm_tsc_physical_presence(TPM_PHYSICAL_PRESENCE_PRESENT);
   if (result) {
     return VBS_ERROR_TPM_PP_FAILED;
   }
 
-  // Set the permanent enabled flag (need physical presence).
+  /* Set the permanent enabled flag (need physical presence). */
   if (pflags.disable) {
     result = tpm_physical_enable();
     if (result) {
@@ -67,7 +67,7 @@ int ast_tpm_provision(void) {
     }
   }
 
-  // Set the persistent disabled flag to false.
+  /* Set the persistent disabled flag to false. */
   if (pflags.deactivated) {
     result = tpm_physical_set_deactivated(0x0);
     if (result) {
@@ -86,14 +86,14 @@ int ast_tpm_nv_provision(void) {
   struct tpm_volatile_flags vflags;
 
 #ifdef CONFIG_ASPEED_TPM_LOCK
-  // Lock the NV storage, request that ACLs are applied.
+  /* Lock the NV storage, request that ACLs are applied. */
   result = tpm_nv_define_space(TPM_NV_INDEX_LOCK, 0, 0);
   if (result) {
     return VBS_ERROR_TPM_NV_LOCK_FAILED;
   }
 #endif
 
-  // Request the flag values again.
+  /* Request the flag values again. */
   result = tpm_get_permanent_flags(&pflags);
   result = result | tpm_get_volatile_flags(&vflags);
   if (result) {
@@ -110,13 +110,15 @@ int ast_tpm_nv_provision(void) {
     return VBS_ERROR_TPM_NOT_ACTIVATED;
   }
 
-  // Need to own device with known or random password.
+  /* Need to own device with known or random password. */
 
-  // Need to set bGlobalLock.
+  /* Need to set bGlobalLock. */
 
-  // Define area for U-Boot version and Kernel version.
-  // Set that area's ACLs to TPM_NV_PER_GLOBALLOCK | TPM_NV_PER_PPWRITE.
-  // Set that area's size to 32 * 4.
+  /**
+   * Define area for U-Boot version and Kernel version.
+   * Set that area's ACLs to TPM_NV_PER_GLOBALLOCK | TPM_NV_PER_PPWRITE.
+   * Set that area's size to 32 * 4.
+   */
   result = tpm_nv_define_space(AST_TPM_ROLLBACK_INDEX,
       TPM_NV_PER_GLOBALLOCK | TPM_NV_PER_PPWRITE, AST_TPM_ROLLBACK_SIZE);
   if (result) {
@@ -138,7 +140,7 @@ int ast_tpm_try_version(uint8_t image, uint32_t version) {
   uint32_t *last_executed_target;
   struct tpm_rollback_t last_executed;
 
-  // Need to load the last-executed version of U-Boot.
+  /* Need to load the last-executed version of U-Boot. */
   last_executed.uboot = -1;
   last_executed.kernel = -1;
   if (image == AST_TPM_ROLLBACK_UBOOT) {
@@ -154,23 +156,23 @@ int ast_tpm_try_version(uint8_t image, uint32_t version) {
   }
 
   if (*last_executed_target == -1) {
-    // Content is still -1.
+    /* Content is still -1. */
     return VBS_ERROR_TPM_NV_NOTSET;
   }
 
   if (*last_executed_target > version) {
-    // This seems to be attempting a rollback.
+    /* This seems to be attempting a rollback. */
     return VBS_ERROR_ROLLBACK_FAILED;
   }
 
   if (*last_executed_target != 0 &&
       version > *last_executed_target + (86400 * 365 * 10)) {
-    // Do not allow fast-forwarding beyond 10 years.
+    /* Do not allow fast-forwarding beyond 10 years. */
     return VBS_ERROR_ROLLBACK_HUGE;
   }
 
   if (version > *last_executed_target) {
-    // Only update the NV space if this is a new version.
+    /* Only update the NV space if this is a new version. */
     *last_executed_target = version;
     result = tpm_nv_write_value(AST_TPM_ROLLBACK_INDEX,
         &last_executed, sizeof(last_executed));

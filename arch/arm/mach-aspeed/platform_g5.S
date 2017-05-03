@@ -543,7 +543,7 @@ init_dram:
     mov   r4, lr
 
     /* save into SRAM */
-    ldr r0, =0x1e720100 /* vbs.uboot_exec_address */
+    ldr r0, =0x1e720200 /* vbs.uboot_exec_address */
     str r4, [r0]
 
     uart_console_setup
@@ -574,7 +574,7 @@ init_dram:
      * This code exists ONLY in the ROM if building a ROM (CONFIG_SPL).
      * This code exists in U-Boot if not building a ROM.
      */
-    ldr   r0, =0x1E720104
+    ldr   r0, =0x1E720204
     mov   r1, #0x0
     str   r1, [r0]
 

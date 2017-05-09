@@ -8,6 +8,7 @@
 #include <spl.h>
 #include <asm/spl.h>
 #include <malloc.h>
+#include <crc.h>
 
 #include <environment.h>
 
@@ -101,6 +102,13 @@ static u8 vboot_getenv_yesno(const char* var) {
  */
 void __noreturn vboot_jump(volatile void* to, struct vbs* vbs)
 {
+  u32 rom_handoff;
+
+  rom_handoff = vbs->rom_handoff;
+  vbs->crc = 0;
+  vbs->rom_handoff = 0x0;
+  vbs->crc = crc16_ccitt(0, (uchar*)vbs, sizeof(struct vbs));
+  vbs->rom_handoff = rom_handoff;
   memcpy((void*)AST_SRAM_VBS_BASE, vbs, sizeof(struct vbs));
   if (to == 0x0) {
     debug("Resetting CPU0\n");
@@ -292,7 +300,7 @@ void vboot_verify_uboot(void* fit, struct vbs *vbs, void* load,
 }
 
 void vboot_rollback_protection(void* fit, struct vbs *vbs) {
-  int tpm_status = ast_tpm_provision();
+  int tpm_status = ast_tpm_provision(vbs);
   if (tpm_status == VBS_ERROR_TPM_RESET_NEEDED) {
     if (vbs->rom_handoff == VBS_HANDOFF - 1) {
       /* The TPM needed a reset before, and needs another, this is a problem. */
@@ -309,14 +317,14 @@ void vboot_rollback_protection(void* fit, struct vbs *vbs) {
     return;
   }
 
-  tpm_status = ast_tpm_owner_provision();
+  tpm_status = ast_tpm_owner_provision(vbs);
   if (tpm_status != VBS_SUCCESS) {
     vboot_enforce(vbs, VBS_ERROR_TYPE_TPM, tpm_status);
     return;
   }
 
   /* Only attempt to provision the NV space if the TPM was provisioned. */
-  tpm_status = ast_tpm_nv_provision();
+  tpm_status = ast_tpm_nv_provision(vbs);
   if (tpm_status != VBS_SUCCESS) {
     vboot_enforce(vbs, VBS_ERROR_TYPE_NV, tpm_status);
     return;
@@ -329,7 +337,7 @@ void vboot_rollback_protection(void* fit, struct vbs *vbs) {
     vboot_enforce(vbs, VBS_ERROR_TYPE_RB, VBS_ERROR_ROLLBACK_MISSING);
   }
 
-  tpm_status = ast_tpm_try_version(AST_TPM_ROLLBACK_UBOOT, timestamp);
+  tpm_status = ast_tpm_try_version(vbs, AST_TPM_ROLLBACK_UBOOT, timestamp);
   if (tpm_status != VBS_SUCCESS) {
     vboot_enforce(vbs, VBS_ERROR_TYPE_RB, tpm_status);
   }

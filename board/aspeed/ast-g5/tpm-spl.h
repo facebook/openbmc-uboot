@@ -8,6 +8,8 @@
 
 #include <tpm.h>
 
+#include <asm/arch/vbs.h>
+
 #define AST_TPM_ROLLBACK_INDEX 0x100
 #define AST_TPM_PROBE_INDEX    0x101
 
@@ -30,21 +32,21 @@ struct tpm_rollback_t {
  *
  * @return a status for vboot_status
  */
-int ast_tpm_provision(void);
+int ast_tpm_provision(struct vbs *vbs);
 
 /**
  * int ast_tpm_nv_provision() - Preform a 1-time NV provision.
  *
  * @return a status for vboot_status
  */
-int ast_tpm_nv_provision(void);
+int ast_tpm_nv_provision(struct vbs *vbs);
 
 /**
  * int ast_tpm_owner_provision() - Preform a 1-time owner provision.
  *
  * @return a status for vboot_status
  */
-int ast_tpm_owner_provision(void);
+int ast_tpm_owner_provision(struct vbs *vbs);
 
 /**
  * int ast_tpm_try_version() - Try to verify a version is not rolling back.
@@ -53,7 +55,7 @@ int ast_tpm_owner_provision(void);
  * @param version this is the version you are attempting to boot.
  * @return a status for vboot_status
  */
-int ast_tpm_try_version(uint8_t image, uint32_t version);
+int ast_tpm_try_version(struct vbs *vbs, uint8_t image, uint32_t version);
 
 /**
  * int ast_tpm_finish() - Lock the physical presence.

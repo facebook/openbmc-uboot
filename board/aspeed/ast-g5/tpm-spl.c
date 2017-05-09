@@ -6,28 +6,45 @@
 
 #include "tpm-spl.h"
 
-#include <asm/arch/vbs.h>
+static inline void set_tpm_error(struct vbs *vbs, uint32_t r) {
+  vbs->error_tpm = r;
+}
 
-int ast_tpm_provision(void) {
+int ast_tpm_provision(struct vbs *vbs) {
   uint32_t result;
   struct tpm_permanent_flags pflags;
   struct tpm_volatile_flags vflags;
 
   /* The SPL should init (software-only setup), startup-clear, and test. */
   tpm_init();
-  tpm_startup(TPM_ST_CLEAR);
+  result = tpm_startup(TPM_ST_CLEAR);
+  if (result) {
+    /* If this returns invalid postinit (38) then the TPM was not reset. */
+    set_tpm_error(vbs, result);
+    return VBS_ERROR_TPM_SETUP;
+  }
+
   tpm_self_test_full();
 
   /* Inspect the result of the TPM self-test. */
-  result = tpm_continue_self_test();
-  if (result) {
-    return VBS_ERROR_TPM_SETUP;
+  uint32_t retries;
+  for (retries = 0; retries < 10; retries++) {
+    result = tpm_continue_self_test();
+    if (result == TPM_SUCCESS) {
+      break;
+    }
+    /* The TPM could have asked for a retry or is still self-testing. */
+    if (result < TPM_NON_FATAL) {
+      set_tpm_error(vbs, result);
+      return VBS_ERROR_TPM_SETUP;
+    }
   }
 
   /* Inspect the permanent and volatile flags. */
   result = tpm_get_permanent_flags(&pflags);
   result = result | tpm_get_volatile_flags(&vflags);
   if (result) {
+    set_tpm_error(vbs, result);
     return VBS_ERROR_TPM_FAILURE;
   }
 
@@ -45,6 +62,7 @@ int ast_tpm_provision(void) {
     result = tpm_tsc_physical_presence(
         TPM_PHYSICAL_PRESENCE_HW_DISABLE | TPM_PHYSICAL_PRESENCE_CMD_ENABLE);
     if (result) {
+      set_tpm_error(vbs, result);
       return VBS_ERROR_TPM_INVALID_PP;
     }
 
@@ -52,21 +70,26 @@ int ast_tpm_provision(void) {
     /* After configuring, lock the physical presence mode. */
     result = tpm_tsc_physical_presence(TPM_PHYSICAL_PRESENCE_LIFETIME_LOCK);
     if (result) {
+      set_tpm_error(vbs, result);
       return VBS_ERROR_TPM_NO_PPLL;
     }
 #endif
   }
 
   /* Assert physical presence. */
-  result = tpm_tsc_physical_presence(TPM_PHYSICAL_PRESENCE_PRESENT);
-  if (result) {
-    return VBS_ERROR_TPM_PP_FAILED;
+  if (!vflags.physical_presence) {
+    result = tpm_tsc_physical_presence(TPM_PHYSICAL_PRESENCE_PRESENT);
+    if (result) {
+      set_tpm_error(vbs, result);
+      return VBS_ERROR_TPM_PP_FAILED;
+    }
   }
 
   /* Set the permanent enabled flag (need physical presence). */
   if (pflags.disable) {
     result = tpm_physical_enable();
     if (result) {
+      set_tpm_error(vbs, result);
       return VBS_ERROR_TPM_NOT_ENABLED;
     }
   }
@@ -75,6 +98,7 @@ int ast_tpm_provision(void) {
   if (pflags.deactivated) {
     result = tpm_physical_set_deactivated(0x0);
     if (result) {
+      set_tpm_error(vbs, result);
       return VBS_ERROR_TPM_ACTIVATE_FAILED;
     }
 
@@ -88,19 +112,20 @@ int ast_tpm_provision(void) {
   return VBS_SUCCESS;
 }
 
-int ast_tpm_owner_provision(void) {
+int ast_tpm_owner_provision(struct vbs *vbs) {
   uint32_t result;
 
   /* Allow the TPM to be owned. */
   result = tpm_set_owner_install();
   if (result) {
+    set_tpm_error(vbs, result);
     return VBS_ERROR_TPM_FAILURE;
   }
 
   return VBS_SUCCESS;
 }
 
-int ast_tpm_nv_provision(void) {
+int ast_tpm_nv_provision(struct vbs *vbs) {
   uint32_t result;
   struct tpm_permanent_flags pflags;
   struct tpm_volatile_flags vflags;
@@ -109,6 +134,7 @@ int ast_tpm_nv_provision(void) {
   /* Lock the NV storage, request that ACLs are applied. */
   result = tpm_nv_define_space(TPM_NV_INDEX_LOCK, 0, 0);
   if (result) {
+    set_tpm_error(vbs, result);
     return VBS_ERROR_TPM_NV_LOCK_FAILED;
   }
 #endif
@@ -117,6 +143,7 @@ int ast_tpm_nv_provision(void) {
   result = tpm_get_permanent_flags(&pflags);
   result = result | tpm_get_volatile_flags(&vflags);
   if (result) {
+    set_tpm_error(vbs, result);
     return VBS_ERROR_TPM_FAILURE;
   }
 
@@ -139,6 +166,7 @@ int ast_tpm_nv_provision(void) {
   result = tpm_nv_define_space(AST_TPM_PROBE_INDEX, acls, sizeof(probe));
   /* If there was an error and it was not max writes (no-owner), fail. */
   if (result && result != TPM_MAXNVWRITES) {
+    set_tpm_error(vbs, result);
     return VBS_ERROR_TPM_NV_SPACE;
   }
 
@@ -152,6 +180,7 @@ int ast_tpm_nv_provision(void) {
 
   /* If the write-value continues to fail. */
   if (result) {
+    set_tpm_error(vbs, result);
     return VBS_ERROR_TPM_NV_SPACE;
   }
 
@@ -169,6 +198,7 @@ int ast_tpm_nv_provision(void) {
   result = tpm_nv_define_space(AST_TPM_ROLLBACK_INDEX, acls,
       AST_TPM_ROLLBACK_SIZE);
   if (result) {
+    set_tpm_error(vbs, result);
     return VBS_ERROR_TPM_NV_SPACE;
   }
 
@@ -177,13 +207,14 @@ int ast_tpm_nv_provision(void) {
   result = tpm_nv_write_value(AST_TPM_ROLLBACK_INDEX, blank, sizeof(blank));
 
   if (result) {
+    set_tpm_error(vbs, result);
     return VBS_ERROR_TPM_NV_BLANK;
   }
 
   return VBS_SUCCESS;
 }
 
-int ast_tpm_try_version(uint8_t image, uint32_t version) {
+int ast_tpm_try_version(struct vbs *vbs, uint8_t image, uint32_t version) {
   uint32_t result;
   uint32_t *last_executed_target;
   struct tpm_rollback_t last_executed;
@@ -200,6 +231,7 @@ int ast_tpm_try_version(uint8_t image, uint32_t version) {
   result = tpm_nv_read_value(AST_TPM_ROLLBACK_INDEX,
       &last_executed, sizeof(last_executed));
   if (result) {
+    set_tpm_error(vbs, result);
     return VBS_ERROR_TPM_NV_READ_FAILED;
   }
 
@@ -225,6 +257,7 @@ int ast_tpm_try_version(uint8_t image, uint32_t version) {
     result = tpm_nv_write_value(AST_TPM_ROLLBACK_INDEX,
         &last_executed, sizeof(last_executed));
     if (result) {
+      set_tpm_error(vbs, result);
       return VBS_ERROR_TPM_NV_WRITE_FAILED;
     }
   }

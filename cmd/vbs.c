@@ -6,12 +6,26 @@
 
 #include <common.h>
 #include <command.h>
+#include <crc.h>
 
 #include <asm/arch/vbs.h>
 
 static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-  struct vbs *vbs = (struct vbs*)AST_SRAM_VBS_BASE;
+  volatile struct vbs *vbs = (volatile struct vbs*)AST_SRAM_VBS_BASE;
+  uint16_t crc = vbs->crc;
+  uint32_t handoff = vbs->rom_handoff;
+  bool crc_valid = false;
+
+  /* Check CRC value */
+  vbs->crc = 0;
+  vbs->rom_handoff = 0x0;
+  if (crc == crc16_ccitt(0, (uchar*)vbs, sizeof(struct vbs))) {
+    crc_valid = true;
+  }
+  vbs->crc = crc;
+  vbs->rom_handoff = handoff;
+
   printf("ROM executed from:       0x%08x\n", vbs->rom_exec_address);
   printf("ROM KEK certificates:    0x%08x\n", vbs->rom_keys);
   printf("ROM handoff marker:      0x%08x\n", vbs->rom_handoff);
@@ -24,6 +38,8 @@ static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
   printf("Flags recovery_boot:     %d\n", (vbs->recovery_boot) ? 1 : 0);
   printf("Flags recovery_retries:  %u\n", vbs->recovery_retries);
   printf("\n");
+  printf("TPM status:  %u\n", vbs->error_tpm);
+  printf("CRC valid:   %d (%hu)\n", (crc_valid) ? 1 : 0, crc);
   printf("Status: type (%d) code (%d)\n", vbs->error_type, vbs->error_code);
 
 	return 0;

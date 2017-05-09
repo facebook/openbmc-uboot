@@ -4,6 +4,9 @@
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
+#ifndef _VBS_H_
+#define _VBS_H_
+
 /* Location in SRAM used for verified boot content/flags. */
 #define AST_SRAM_VBS_BASE   0x1E720200
 
@@ -83,4 +86,8 @@ struct vbs {
   u8 recovery_retries;    /* Number of attempts to recovery from verification failure */
   u8 error_type;          /* Type of error, or 0 for success */
   u8 error_code;          /* Unique error code, or 0 for success */
+  u8 error_tpm;           /* The last-most-recent error from the TPM. */
+  u16 crc;                 /* A CRC of the vbs structure */
 };
+
+#endif /* _VBS_H_ */

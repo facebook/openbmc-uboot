@@ -21,7 +21,6 @@ obj-$(CONFIG_AES) += aes.o
 obj-$(CONFIG_USB_TTY) += circbuf.o
 obj-y += crc7.o
 obj-y += crc8.o
-obj-y += crc16.o
 obj-$(CONFIG_ERRNO_STR) += errno_str.o
 obj-$(CONFIG_FIT) += fdtdec_common.o
 obj-$(CONFIG_TEST_FDTDEC) += fdtdec_test.o
@@ -55,10 +54,10 @@ obj-$(CONFIG_$(SPL_)OF_CONTROL) += fdtdec_common.o
 obj-$(CONFIG_$(SPL_)OF_CONTROL) += fdtdec.o
 
 ifdef CONFIG_SPL_BUILD
-obj-$(CONFIG_SPL_YMODEM_SUPPORT) += crc16.o
 obj-$(CONFIG_SPL_NET_SUPPORT) += net_utils.o
 endif
 obj-$(CONFIG_ADDR_MAP) += addr_map.o
+obj-y += crc16.o
 obj-y += hashtable.o
 obj-y += errno.o
 obj-y += display_options.o

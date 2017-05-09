@@ -257,7 +257,7 @@ static uint32_t tpm_sendrecv_command(const void *command,
 		if (size_ptr)
 			*size_ptr = response_length;
 		response_code = tpm_return_code(response);
-		if (response_code != 0x09)
+		if (response_code != TPM_FAIL && response_code != TPM_RETRY)
 			break;
 		udelay(100);
 	}

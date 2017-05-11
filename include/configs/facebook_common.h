@@ -60,13 +60,34 @@
  * Recovery boot flow
  */
 #ifdef CONFIG_ASPEED_RECOVERY_BUILD
-#define CONFIG_PREBOOT            "setenv autoload no;"
+#define CONFIG_PREBOOT            "setenv verify no;"
+#endif
+
+#if defined(CONFIG_DEBUG_QEMU) && !defined(CONFIG_ASPEED_RECOVERY_BUILD)
+/*
+ * Debug/testing software enforced verified-boot
+ * The QEMU-model does not persist environment data.
+ */
+#define CONFIG_DEBUG_ENFORCE_VERIFY "setenv verify yes; "
+#else
+#define CONFIG_DEBUG_ENFORCE_VERIFY " "
+#endif
+
+/* Configure the rare, boot-fail aftermath. */
+#ifdef CONFIG_CMD_VBS
+/* If this runs then verified-boot failed */
+#define CONFIG_POSTBOOT "vbs 6 60; "
+#else
+#define CONFIG_POSTBOOT " "
 #endif
 
 /*
  * Basic boot command configuration based on flash
  */
-#define CONFIG_BOOTCOMMAND        "bootm " CONFIG_KERNEL_LOAD /* Location of FIT */
+#define CONFIG_BOOTCOMMAND                                \
+  CONFIG_DEBUG_ENFORCE_VERIFY                             \
+  "bootm " CONFIG_KERNEL_LOAD "; " /* Location of FIT */  \
+  CONFIG_POSTBOOT
 
 /*
  * Environment configuration

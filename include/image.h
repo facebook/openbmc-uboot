@@ -823,6 +823,12 @@ void fit_print_contents(const void *fit);
 void fit_image_print(const void *fit, int noffset, const char *p);
 
 /**
+ * fit_cert_store - return the location of the FIT certificate store
+ * This allows boards/arch to define a custom pub-key storage.
+ */
+char* fit_cert_store(void);
+
+/**
  * fit_get_end - get FIT image size
  * @fit: pointer to the FIT format image header
  *
@@ -955,7 +961,7 @@ void *image_get_host_blob(void);
 void image_set_host_blob(void *host_blob);
 # define gd_fdt_blob()		image_get_host_blob()
 #else
-# define gd_fdt_blob()		(gd->fdt_blob)
+# define gd_fdt_blob()		fit_cert_store()
 #endif
 
 #ifdef CONFIG_FIT_BEST_MATCH

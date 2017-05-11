@@ -28,6 +28,11 @@ void *image_get_host_blob(void)
 {
 	return host_blob;
 }
+#else
+__weak char* fit_cert_store(void)
+{
+	return (char*)(gd->fdt_blob);
+}
 #endif
 
 struct checksum_algo checksum_algos[] = {

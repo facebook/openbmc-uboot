@@ -13,6 +13,14 @@
 static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
   volatile struct vbs *vbs = (volatile struct vbs*)AST_SRAM_VBS_BASE;
+  if (argc == 3) {
+    ulong t = simple_strtoul(argv[1], NULL, 10);
+    ulong c = simple_strtoul(argv[2], NULL, 10);
+    vbs->error_type = t;
+    vbs->error_code = c;
+    return 0;
+  }
+
   uint16_t crc = vbs->crc;
   uint32_t handoff = vbs->rom_handoff;
   bool crc_valid = false;
@@ -46,7 +54,7 @@ static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 }
 
 U_BOOT_CMD(
-	vbs,	1,	1,	do_vbs,
+	vbs,	3,	1,	do_vbs,
 	"print verified-boot status",
-	""
+	"type code - set the vbs error type and code\n"
 );

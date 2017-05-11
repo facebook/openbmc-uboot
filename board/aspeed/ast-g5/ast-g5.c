@@ -10,6 +10,7 @@
 #include <common.h>
 #include <netdev.h>
 #include <malloc.h>
+#include <image.h>
 
 #include <asm/arch/ast_scu.h>
 #include <asm/arch/ast-sdmc.h>
@@ -55,6 +56,12 @@ static void vboot_finish(void)
 #ifdef CONFIG_ASPEED_TPM
   ast_tpm_finish();
 #endif
+}
+
+char* fit_cert_store(void)
+{
+  volatile struct vbs *vbs = (volatile struct vbs*)AST_SRAM_VBS_BASE;
+  return (char*)(vbs->subordinate_keys);
 }
 
 void arch_preboot_os(void) {

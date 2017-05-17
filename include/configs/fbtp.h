@@ -21,7 +21,7 @@
 #ifndef __FBTP_CONFIG_H
 #define __FBTP_CONFIG_H
 
-#define CONFIG_IDENT_STRING " fbtp-v0.4"
+#define CONFIG_IDENT_STRING " fbtp-v1.9"
 #define CONFIG_FBTP 1
 
 #define CONFIG_SYS_LONGHELP     /* undef to save memory   */

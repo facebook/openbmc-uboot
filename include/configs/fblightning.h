@@ -62,6 +62,11 @@
  */
 #define CONFIG_2SPIFLASH
 
+/*
+ * Enable DRAM ECC, going to lose 1/8 of memory
+ */
+#define CONFIG_DRAM_ECC
+
 #include "facebook_common.h"
 #include "ast2400_common.h"
 

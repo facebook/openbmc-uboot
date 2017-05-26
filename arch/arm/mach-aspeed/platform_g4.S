@@ -3026,8 +3026,46 @@ platform_exit:
     orr r1, r1, #0x80
     str r1, [r0]
 
-    ldr r0, =0x1e6e0054
-    ldr r1, =0x05000000                          /* ECC protected memory size, default set at 80M   */
+    /* get the DRAM size */
+    and   r1, r1, #0x3
+    cmp   r1, #0x3
+    moveq r2, #0x20000000                        @ 512GB DRAM
+    beq   get_dram_size_done
+    cmp   r1, #0x2
+    moveq r2, #0x10000000                        @ 256MB DRAM
+    beq   get_dram_size_done
+    cmp   r1, #0x1
+    moveq r2, #0x08000000                        @ 128MB DRAM
+    beq   get_dram_size_done
+    mov   r2, #0x04000000                        @  64MB DRAM
+get_dram_size_done:
+
+    /* get VGA size */
+    ldr   r0, =0x1e6e2070
+    ldr   r1, [r0]
+    and   r1, r1, #0xc
+    cmp   r1, #0xc
+    moveq r3, #0x04000000                        @ 64MB VGA
+    beq   get_vga_size_done
+    cmp   r1, #0x8
+    moveq r3, #0x02000000                        @ 32MB VGA
+    beq   get_vga_size_done
+    cmp   r1, #0x4
+    moveq r3, #0x01000000                        @ 16MB VGA
+    beq   get_vga_size_done
+    mov   r3, #0x00800000                        @  8MB VGA
+get_vga_size_done:
+
+    /*
+     * Calculate ECC memory size
+     * r2: total memory size
+     * r3: total vga size
+     * ECC memory size: r2 - r3 - (r2 - r3) / 8  (1/8) is required for ECC
+     */
+    ldr r0, =0x1e6e0054                        @ ECC protected memory size
+    sub r2, r2, r3
+    mov r3, r2, lsr #3
+    sub r1, r2, r3
     str r1, [r0]
 
     ldr r0, =0x1e6e007C

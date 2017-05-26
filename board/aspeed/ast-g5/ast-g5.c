@@ -184,6 +184,48 @@ static int disable_snoop_dma_interrupt(void)
 
 #endif
 
+#ifdef CONFIG_FBY2
+static int slot_12V_init(void)
+{
+  u32 slot_present_reg;
+  u32 slot_12v_reg;
+  u32 dir_reg;
+  uint8_t val_prim[MAX_NODES+1];
+  uint8_t val_ext[MAX_NODES+1];
+  uint8_t val;
+  int i = 0;
+ 
+   
+  //Read GPIOZ0~Z3 and AA0~AA3
+  slot_present_reg = __raw_readl(AST_GPIO_BASE + 0x1E0);
+  //Set GPIOO4~O7 as output pin
+  dir_reg = __raw_readl(AST_GPIO_BASE + 0x07C);
+  dir_reg |= 0xF00000;
+  __raw_writel(dir_reg, AST_GPIO_BASE + 0x07C);  
+  //Read GPIOO4~O7
+  slot_12v_reg = __raw_readl(AST_GPIO_BASE + 0x078);
+   
+  for(i = 1 ; i < MAX_NODES + 1; i++)  
+  {
+    val_ext[i] = (slot_present_reg >> (2*MAX_NODES+i-1)) & 0x1;
+    val_prim[i] =(slot_present_reg >> (4*MAX_NODES+i-1)) & 0x1;
+    
+    val = (val_prim[i] || val_ext[i]);
+    if(val == 0x00)
+    {
+       slot_12v_reg |= (1<<(5*MAX_NODES+i-1));
+       __raw_writel(slot_12v_reg, AST_GPIO_BASE + 0x078);
+    }
+    else
+    {
+       slot_12v_reg &= ~(1<<(5*MAX_NODES+i-1));
+       __raw_writel(slot_12v_reg, AST_GPIO_BASE + 0x078);
+    }
+  }
+  return 0;  
+}
+#endif
+
 int board_init(void)
 {
 	watchdog_init();
@@ -196,9 +238,13 @@ int board_init(void)
   disable_snoop_dma_interrupt();
 #endif
 
-	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
+#ifdef CONFIG_FBY2
+  slot_12V_init();
+#endif
 
-	return 0;
+  gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
+
+  return 0;
 }
 
 int dram_init(void)

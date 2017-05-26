@@ -30,7 +30,7 @@
 #define CONFIG_UPDATE            "tftp 80800000 ast2500.scr; so 80800000'"
 #define CONFIG_BOOTCOMMAND       "bootm 20080000" /* Location of FIT */
 #define CONFIG_BOOTFILE          "flash-fby2"
-
+#define MAX_NODES 4
 /*
  * Serial configuration
  */

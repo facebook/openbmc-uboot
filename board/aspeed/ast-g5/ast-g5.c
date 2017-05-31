@@ -30,6 +30,7 @@ void watchdog_init(void)
    * On Linux this is defined as WDT_CTRL_B_EXT.
    */
 #ifdef CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
+  __raw_writel(AST_SCU_BASE + 0xA8, __raw_readl(AST_SCU_BASE + 0xA8) | 0x4);
   reset_mask |= 0x08; /* Ext */
 #endif
   ast_wdt_reset(reload, reset_mask);

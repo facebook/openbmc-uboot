@@ -191,6 +191,7 @@ static int slot_12V_init(void)
   u32 slot_present_reg;
   u32 slot_12v_reg;
   u32 dir_reg;
+  u32 toler_reg;
   uint8_t val_prim[MAX_NODES+1];
   uint8_t val_ext[MAX_NODES+1];
   uint8_t val;
@@ -199,6 +200,10 @@ static int slot_12V_init(void)
    
   //Read GPIOZ0~Z3 and AA0~AA3
   slot_present_reg = __raw_readl(AST_GPIO_BASE + 0x1E0);
+  //Set GPIOO4~O7 Watchdog reset tolerance
+  toler_reg = __raw_readl(AST_GPIO_BASE + 0x0FC);
+  toler_reg |= 0xF00000;
+  __raw_writel(toler_reg, AST_GPIO_BASE + 0x0FC);
   //Set GPIOO4~O7 as output pin
   dir_reg = __raw_readl(AST_GPIO_BASE + 0x07C);
   dir_reg |= 0xF00000;

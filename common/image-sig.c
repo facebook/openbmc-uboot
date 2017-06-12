@@ -298,9 +298,16 @@ int fit_config_check_sig(const void *fit, int noffset,
 	uint8_t *fit_value;
 	int fit_value_len;
 	int max_regions;
-	int i, prop_len;
+	int i, prop_len, name_len;
 	char path[200];
 	int count;
+
+	/* Compare "name" to "key-name" where fdt_getprop returns +1 for \0 */
+	prop = fdt_getprop(fit, noffset, "key-name-hint", &prop_len);
+	name = fit_get_name(sig_blob, required_keynode, &name_len);
+	if ((prop_len + 3) != name_len || strncmp(prop, name + 4, prop_len)) {
+		return -1;
+	}
 
 	debug("%s: fdt=%p, conf='%s', sig='%s'\n", __func__, gd_fdt_blob(),
 	      fit_get_name(fit, noffset, NULL),
@@ -446,19 +453,15 @@ int fit_config_verify_required_sigs(const void *fit, int conf_noffset,
 
 	fdt_for_each_subnode(sig_blob, noffset, sig_node) {
 		const char *required;
-		int ret;
 
 		required = fdt_getprop(sig_blob, noffset, "required", NULL);
 		if (!required || strcmp(required, "conf"))
 			continue;
-		ret = fit_config_verify_sig(fit, conf_noffset, sig_blob,
-					    noffset);
-		if (ret) {
-			printf("Failed to verify required signature '%s'\n",
-			       fit_get_name(sig_blob, noffset, NULL));
-			return ret;
+		if (!fit_config_verify_sig(fit, conf_noffset, sig_blob, noffset)) {
+			verify_count++;
+			/* Verifying additional signatures is a waste of time. */
+			break;
 		}
-		verify_count++;
 	}
 
 	if (verify_count)

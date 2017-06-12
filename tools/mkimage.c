@@ -93,14 +93,15 @@ static void usage(const char *msg)
 		"          -f => input filename for FIT source\n");
 #ifdef CONFIG_FIT_SIGNATURE
 	fprintf(stderr,
-		"Signing / verified boot options: [-E] [-k keydir] [-K dtb] [ -c <comment>] [-p addr] [-r]\n"
+		"Signing / verified boot options: [-E] [-k keydir] [-K dtb] [ -c <comment>] [-p addr] [-r] [-N engine]\n"
 		"          -E => place data outside of the FIT structure\n"
 		"          -k => set directory containing private keys\n"
 		"          -K => write public keys to this .dtb file\n"
 		"          -c => add comment in signature node\n"
 		"          -F => re-sign existing FIT image\n"
 		"          -p => place external data at a static position\n"
-		"          -r => mark keys used as 'required' in dtb\n");
+		"          -r => mark keys used as 'required' in dtb\n"
+		"          -N => engine to use for signing (pkcs11)\n");
 #else
 	fprintf(stderr,
 		"Signing / verified boot not supported (CONFIG_FIT_SIGNATURE undefined)\n");
@@ -138,7 +139,7 @@ static void process_args(int argc, char **argv)
 	int opt;
 
 	while ((opt = getopt(argc, argv,
-			     "a:A:b:cC:d:D:e:Ef:Fk:K:ln:p:O:rR:qsT:vVx")) != -1) {
+			     "a:A:b:cC:d:D:e:Ef:Fk:K:ln:N:p:O:rR:qsT:vVx")) != -1) {
 		switch (opt) {
 		case 'a':
 			params.addr = strtoull(optarg, &ptr, 16);
@@ -212,6 +213,9 @@ static void process_args(int argc, char **argv)
 			break;
 		case 'n':
 			params.imagename = optarg;
+			break;
+		case 'N':
+			params.engine_id = optarg;
 			break;
 		case 'O':
 			params.os = genimg_get_os_id(optarg);

@@ -222,6 +222,11 @@ void vboot_check_fit(void* fit, struct vbs *vbs,
     printf("Cannot find U-Boot firmware.\n");
     vboot_recovery(vbs, VBS_ERROR_TYPE_DATA, VBS_ERROR_BAD_FW);
   }
+
+#ifdef CONFIG_ASPEED_TPM
+  /* Measure the U-Boot FIT into PCR1 */
+  ast_tpm_extend(AST_TPM_PCR_FIT, (unsigned char*)fit, AST_MAX_UBOOT_FIT);
+#endif
 }
 
 void vboot_verify_subordinate(void* fit, struct vbs *vbs) {
@@ -286,45 +291,32 @@ void vboot_verify_uboot(void* fit, struct vbs *vbs, void* load,
     debug("Check that the 'required' field for each key- is set to 'conf'.\n");
     debug("Check the board configuration for supported hash algorithms.\n");
     vboot_enforce(vbs, VBS_ERROR_TYPE_FW, VBS_ERROR_FW_UNVERIFIED);
-  } else {
-    /* Now verify the hash of the first image. */
-    char *error;
-    int hash = fdt_subnode_offset(fit, uboot, FIT_HASH_NODENAME);
-    if (fit_image_check_hash(fit, hash, load, uboot_size, &error)) {
-      printf("\nU-Boot was not verified.\n");
-      vboot_enforce(vbs, VBS_ERROR_TYPE_FW, VBS_ERROR_FW_UNVERIFIED);
-    } else {
-      printf("\nU-Boot verified.\n");
-    }
+    return;
   }
+
+  /* Now verify the hash of the first image. */
+  char *error;
+  uint8_t hash_value[FIT_MAX_HASH_LEN];
+  int hash = fdt_subnode_offset(fit, uboot, FIT_HASH_NODENAME);
+  if (fit_image_check_hash(fit, hash, load, uboot_size, hash_value, &error)) {
+    printf("\nU-Boot was not verified.\n");
+    vboot_enforce(vbs, VBS_ERROR_TYPE_FW, VBS_ERROR_FW_UNVERIFIED);
+    return;
+  }
+
+  printf("\nU-Boot verified.\n");
+#ifdef CONFIG_ASPEED_TPM
+  /* Hash the SHA256 hash of U-boot firmware, avoid recalculating the hash. */
+  ast_tpm_extend(AST_TPM_PCR_UBOOT, hash_value, FIT_MAX_HASH_LEN);
+  /* Hash the contents of the environment before passing execution to U-Boot. */
+  ast_tpm_extend(AST_TPM_PCR_ENV, (unsigned char*)CONFIG_ENV_ADDR,
+      CONFIG_ENV_SIZE);
+#endif
 }
 
 void vboot_rollback_protection(void* fit, struct vbs *vbs) {
-  int tpm_status = ast_tpm_provision(vbs);
-  if (tpm_status == VBS_ERROR_TPM_RESET_NEEDED) {
-    if (vbs->rom_handoff == VBS_HANDOFF - 1) {
-      /* The TPM needed a reset before, and needs another, this is a problem. */
-      printf("TPM was deactivated and remains so after a reset.\n");
-      vboot_enforce(vbs, VBS_ERROR_TYPE_TPM, VBS_ERROR_TPM_RESET_NEEDED);
-    } else {
-      printf("TPM was deactivated and needs a reset.\n");
-      vbs->rom_handoff = (VBS_HANDOFF - 1);
-      vboot_jump(0x0, vbs);
-    }
-  } else if (tpm_status != VBS_SUCCESS) {
-    /* The TPM could not be provisioned. */
-    vboot_enforce(vbs, VBS_ERROR_TYPE_TPM, tpm_status);
-    return;
-  }
-
-  tpm_status = ast_tpm_owner_provision(vbs);
-  if (tpm_status != VBS_SUCCESS) {
-    vboot_enforce(vbs, VBS_ERROR_TYPE_TPM, tpm_status);
-    return;
-  }
-
   /* Only attempt to provision the NV space if the TPM was provisioned. */
-  tpm_status = ast_tpm_nv_provision(vbs);
+  int tpm_status = ast_tpm_nv_provision(vbs);
   if (tpm_status != VBS_SUCCESS) {
     vboot_enforce(vbs, VBS_ERROR_TYPE_NV, tpm_status);
     return;
@@ -379,6 +371,35 @@ void vboot_reset(struct vbs *vbs) {
     vboot_recovery(vbs, VBS_ERROR_TYPE_SPI, VBS_ERROR_SPI_PROM);
 #endif
   }
+
+#ifdef CONFIG_ASPEED_TPM
+  int tpm_status = ast_tpm_provision(vbs);
+  if (tpm_status == VBS_ERROR_TPM_RESET_NEEDED) {
+    if (vbs->rom_handoff == VBS_HANDOFF - 1) {
+      /* The TPM needed a reset before, and needs another, this is a problem. */
+      printf("TPM was deactivated and remains so after a reset.\n");
+      vboot_enforce(vbs, VBS_ERROR_TYPE_TPM, VBS_ERROR_TPM_RESET_NEEDED);
+    } else {
+      printf("TPM was deactivated and needs a reset.\n");
+      vbs->rom_handoff = (VBS_HANDOFF - 1);
+      vboot_jump(0x0, vbs);
+    }
+  } else if (tpm_status != VBS_SUCCESS) {
+    /* The TPM could not be provisioned. */
+    vboot_enforce(vbs, VBS_ERROR_TYPE_TPM, tpm_status);
+    return;
+  }
+
+  tpm_status = ast_tpm_owner_provision(vbs);
+  if (tpm_status != VBS_SUCCESS) {
+    vboot_enforce(vbs, VBS_ERROR_TYPE_TPM, tpm_status);
+    return;
+  }
+
+  /* Measure the SPL into PCR0 */
+  ast_tpm_extend(AST_TPM_PCR_SPL, (unsigned char*)0x0,
+      CONFIG_SPL_MAX_FOOTPRINT);
+#endif
 }
 
 void vboot_load_fit(volatile void* from) {

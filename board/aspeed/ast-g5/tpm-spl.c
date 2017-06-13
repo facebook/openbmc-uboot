@@ -214,6 +214,12 @@ int ast_tpm_nv_provision(struct vbs *vbs) {
   return VBS_SUCCESS;
 }
 
+int ast_tpm_extend(uint32_t index, unsigned char* data, uint32_t data_len) {
+  unsigned char value[20];
+  sha1_csum_wd(data, data_len, value, CHUNKSZ_SHA1);
+  return tpm_extend(index, data, data);
+}
+
 int ast_tpm_try_version(struct vbs *vbs, uint8_t image, uint32_t version) {
   uint32_t result;
   uint32_t *last_executed_target;

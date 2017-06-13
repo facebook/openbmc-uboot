@@ -27,6 +27,14 @@ struct tpm_rollback_t {
   uint32_t kernel;
 };
 
+enum ast_tpm_pcrs {
+  AST_TPM_PCR_SPL = 0,
+  AST_TPM_PCR_FIT = 1,
+  AST_TPM_PCR_UBOOT = 2,
+  AST_TPM_PCR_ENV = 3,
+};
+
+
 /**
  * int ast_tpm_provision() - Perform a 1-time provision of the TPM.
  *
@@ -47,6 +55,13 @@ int ast_tpm_nv_provision(struct vbs *vbs);
  * @return a status for vboot_status
  */
 int ast_tpm_owner_provision(struct vbs *vbs);
+
+/**
+ * int ast_tpm_extend() - Hash and extend into a PCR
+ *
+ * @return a status for tpm_status
+ */
+int ast_tpm_extend(uint32_t index, unsigned char* data, uint32_t data_len);
 
 /**
  * int ast_tpm_try_version() - Try to verify a version is not rolling back.

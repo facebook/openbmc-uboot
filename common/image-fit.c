@@ -951,9 +951,8 @@ int calculate_hash(const void *data, int data_len, const char *algo,
 }
 
 int fit_image_check_hash(const void *fit, int noffset, const void *data,
-				size_t size, char **err_msgp)
+				size_t size, uint8_t *value, char **err_msgp)
 {
-	uint8_t value[FIT_MAX_HASH_LEN];
 	int value_len;
 	char *algo;
 	uint8_t *fit_value;
@@ -1013,6 +1012,7 @@ int fit_image_check_hash(const void *fit, int noffset, const void *data,
  */
 int fit_image_verify(const void *fit, int image_noffset)
 {
+	uint8_t hash_value[FIT_MAX_HASH_LEN];
 	const void	*data;
 	size_t		size;
 	int		noffset = 0;
@@ -1046,7 +1046,7 @@ int fit_image_verify(const void *fit, int image_noffset)
 		if (!strncmp(name, FIT_HASH_NODENAME,
 			     strlen(FIT_HASH_NODENAME))) {
 			if (fit_image_check_hash(fit, noffset, data, size,
-						 &err_msg))
+						 hash_value, &err_msg))
 				goto error;
 			puts("+ ");
 		} else if (IMAGE_ENABLE_VERIFY && verify_all &&

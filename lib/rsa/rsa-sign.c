@@ -119,14 +119,9 @@ static int rsa_engine_get_pub_key(const char *keydir, const char *name,
 	engine_id = ENGINE_get_id(engine);
 
 	if (engine_id && !strcmp(engine_id, "pkcs11")) {
-		if (keydir)
-			snprintf(key_id, sizeof(key_id),
-				 "pkcs11:%s;object=%s;type=public",
-				 keydir, name);
-		else
-			snprintf(key_id, sizeof(key_id),
-				 "pkcs11:object=%s;type=public",
-				 name);
+		snprintf(key_id, sizeof(key_id),
+			 "pkcs11:%s;type=public",
+			 keydir);
 	} else {
 		fprintf(stderr, "Engine not supported\n");
 		return -ENOTSUP;
@@ -297,6 +292,7 @@ static int rsa_init(void)
 
 static int rsa_engine_init(const char *engine_id, ENGINE **pe)
 {
+	char* module;
 	ENGINE *e;
 	int ret;
 
@@ -307,6 +303,13 @@ static int rsa_engine_init(const char *engine_id, ENGINE **pe)
 		fprintf(stderr, "Engine isn't available\n");
 		ret = -1;
 		goto err_engine_by_id;
+	}
+
+	module = getenv("PKCS11_MODULE");
+	if (!ENGINE_ctrl_cmd(e, "MODULE_PATH", 0, module, NULL, 1)) {
+		fprintf(stderr, "Cannot open PKCS#11 module\n");
+		ret = -1;
+		goto err_engine_init;
 	}
 
 	if (!ENGINE_init(e)) {
@@ -697,7 +700,7 @@ int rsa_add_verify_data(struct image_sign_info *info, void *keydest)
 		ret = node;
 	}
 
-	if (!ret) {
+	if (!ret && !info->engine_id) {
 		ret = fdt_setprop_string(keydest, node, "key-name-hint",
 				 info->keyname);
 	}

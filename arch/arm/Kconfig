@@ -138,6 +138,7 @@ config TARGET_AST2400
 config TARGET_FBYOSEMITE
 	bool "Support Facebook's OpenBMC Yosemite"
 	select CPU_ARM926EJS
+  select SUPPORT_SPL
 
 config TARGET_FBLIGHTNING
 	bool "Support Facebook's OpenBMC Lightning"

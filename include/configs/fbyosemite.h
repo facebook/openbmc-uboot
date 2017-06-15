@@ -8,6 +8,9 @@
 #ifndef __FBYOSEMITE_CONFIG_H
 #define __FBYOSEMITE_CONFIG_H
 
+#define CONFIG_IDENT_STRING " fbyosemite-v0.1"
+#define CONFIG_YOSEMITE 1
+
 #define CONFIG_BOOTARGS		"debug console=ttyS0,57600n8 root=/dev/ram rw"
 #define CONFIG_UPDATE		"tftp 40800000 ast2400.scr; so 40800000'"
 #define CONFIG_BOOTCOMMAND 	"bootm 20080000"	/* Location of FIT */

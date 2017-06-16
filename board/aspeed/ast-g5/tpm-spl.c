@@ -165,7 +165,9 @@ int ast_tpm_nv_provision(struct vbs *vbs) {
   /* Define a probe index to check for max write errors. */
   result = tpm_nv_define_space(AST_TPM_PROBE_INDEX, acls, sizeof(probe));
   /* If there was an error and it was not max writes (no-owner), fail. */
-  if (result && result != TPM_MAXNVWRITES) {
+  if (result == TPM_MAXNVWRITES) {
+    tpm_force_clear();
+  } else if (result) {
     set_tpm_error(vbs, result);
     return VBS_ERROR_TPM_NV_SPACE;
   }
@@ -184,8 +186,9 @@ int ast_tpm_nv_provision(struct vbs *vbs) {
     return VBS_ERROR_TPM_NV_SPACE;
   }
 
-  result = tpm_nv_read_value(AST_TPM_ROLLBACK_INDEX, &probe, sizeof(probe));
-  if (result != TPM_BADINDEX) {
+  char blank[AST_TPM_ROLLBACK_SIZE];
+  result = tpm_nv_read_value(AST_TPM_ROLLBACK_INDEX, &blank, sizeof(blank));
+  if (result != TPM_BADINDEX && result != TPM_NOSPACE) {
     /* The index already exists. */
     return VBS_SUCCESS;
   }
@@ -202,7 +205,6 @@ int ast_tpm_nv_provision(struct vbs *vbs) {
     return VBS_ERROR_TPM_NV_SPACE;
   }
 
-  char blank[AST_TPM_ROLLBACK_SIZE];
   memset(blank, 0x0, AST_TPM_ROLLBACK_SIZE);
   result = tpm_nv_write_value(AST_TPM_ROLLBACK_INDEX, blank, sizeof(blank));
 
@@ -220,48 +222,61 @@ int ast_tpm_extend(uint32_t index, unsigned char* data, uint32_t data_len) {
   return tpm_extend(index, data, data);
 }
 
-int ast_tpm_try_version(struct vbs *vbs, uint8_t image, uint32_t version) {
+
+int ast_tpm_try_version(struct vbs *vbs, uint8_t image, uint32_t version,
+    bool no_fallback) {
   uint32_t result;
-  uint32_t *last_executed_target;
-  struct tpm_rollback_t last_executed;
+  uint32_t *rb_target;
+  uint32_t *rb_fallback_target;
+  struct tpm_rollback_t rb;
 
   /* Need to load the last-executed version of U-Boot. */
-  last_executed.uboot = -1;
-  last_executed.kernel = -1;
+  rb.subordinate = -1;
+  rb.uboot = -1;
+  rb.kernel = -1;
+  rb.fallback_subordinate = -1;
+  rb.fallback_uboot = -1;
+  rb.fallback_kernel = -1;
   if (image == AST_TPM_ROLLBACK_UBOOT) {
-    last_executed_target = &last_executed.uboot;
+    rb_target = &rb.uboot;
+    rb_fallback_target = &rb.fallback_uboot;
+  } else if (image == AST_TPM_ROLLBACK_SUBORDINATE) {
+    rb_target = &rb.subordinate;
+    rb_fallback_target = &rb.fallback_subordinate;
   } else {
-    last_executed_target = &last_executed.kernel;
+    rb_target = &rb.kernel;
+    rb_fallback_target = &rb.fallback_kernel;
   }
 
-  result = tpm_nv_read_value(AST_TPM_ROLLBACK_INDEX,
-      &last_executed, sizeof(last_executed));
+  result = tpm_nv_read_value(AST_TPM_ROLLBACK_INDEX, &rb, sizeof(rb));
   if (result) {
     set_tpm_error(vbs, result);
     return VBS_ERROR_TPM_NV_READ_FAILED;
   }
 
-  if (*last_executed_target == -1) {
+  if (*rb_target == -1) {
     /* Content is still -1. */
     return VBS_ERROR_TPM_NV_NOTSET;
   }
 
-  if (*last_executed_target > version) {
-    /* This seems to be attempting a rollback. */
-    return VBS_ERROR_ROLLBACK_FAILED;
+  if (*rb_target > version) {
+    if (no_fallback || *rb_fallback_target != version) {
+      /* This seems to be attempting a rollback. */
+      return VBS_ERROR_ROLLBACK_FAILED;
+    }
   }
 
-  if (*last_executed_target != 0 &&
-      version > *last_executed_target + (86400 * 365 * AST_TPM_MAX_YEARS)) {
+  if (*rb_target != 0 &&
+      version > *rb_target + (86400 * 365 * AST_TPM_MAX_YEARS)) {
     /* Do not allow fast-forwarding beyond 10 years. */
     return VBS_ERROR_ROLLBACK_HUGE;
   }
 
-  if (version > *last_executed_target) {
+  if (version > *rb_target) {
     /* Only update the NV space if this is a new version. */
-    *last_executed_target = version;
-    result = tpm_nv_write_value(AST_TPM_ROLLBACK_INDEX,
-        &last_executed, sizeof(last_executed));
+    *rb_fallback_target = (no_fallback) ? version : *rb_target;
+    *rb_target = version;
+    result = tpm_nv_write_value(AST_TPM_ROLLBACK_INDEX, &rb, sizeof(rb));
     if (result) {
       set_tpm_error(vbs, result);
       return VBS_ERROR_TPM_NV_WRITE_FAILED;

@@ -229,6 +229,21 @@ void vboot_check_fit(void* fit, struct vbs *vbs,
 #endif
 }
 
+void vboot_rollback_protection(const void* fit, uint8_t image, struct vbs *vbs) {
+  /* Only attempt to update timestamps if the TPM was provisioned. */
+  int root = fdt_path_offset(fit, "/");
+  int timestamp = fdt_getprop_u32(fit, root, "timestamp");
+  bool no_fallback = (fdt_getprop(fit, root, "no-fallback", NULL) != NULL);
+  if (root < 0 || timestamp <= 0) {
+    vboot_enforce(vbs, VBS_ERROR_TYPE_RB, VBS_ERROR_ROLLBACK_MISSING);
+  }
+
+  int tpm_status = ast_tpm_try_version(vbs, image, timestamp, no_fallback);
+  if (tpm_status != VBS_SUCCESS) {
+    vboot_enforce(vbs, VBS_ERROR_TYPE_RB, tpm_status);
+  }
+}
+
 void vboot_verify_subordinate(void* fit, struct vbs *vbs) {
   /* Node path to keys */
   int keys_path = fdt_path_offset(fit, VBS_KEYS_PATH);
@@ -244,12 +259,11 @@ void vboot_verify_subordinate(void* fit, struct vbs *vbs) {
 
   /* Access the data and data-size to call image verify directly. */
   int subordinate_size = 0;
-  const char* subordinate_data = fdt_getprop(fit, subordinate, "data",
-    &subordinate_size);
-  if (subordinate_data != 0 && subordinate_size > 0) {
+  const char* data = fdt_getprop(fit, subordinate, "data", &subordinate_size);
+  if (data != 0 && subordinate_size > 0) {
     /* This can return success if none of the keys were attempted. */
     int verified = 0;
-    if (fit_image_verify_required_sigs(fit, subordinate, subordinate_data,
+    if (fit_image_verify_required_sigs(fit, subordinate, data,
                subordinate_size, (const char*)vbs->rom_keys, &verified)) {
       printf("Unable to verify required subordinate certificate store.\n");
       vboot_enforce(vbs, VBS_ERROR_TYPE_FW, VBS_ERROR_KEYS_INVALID);
@@ -257,12 +271,16 @@ void vboot_verify_subordinate(void* fit, struct vbs *vbs) {
 
     /* Check that at least 1 subordinate store was verified. */
     if (verified == 0) {
+#ifdef CONFIG_ASPEED_TPM
+      vboot_rollback_protection(data, AST_TPM_ROLLBACK_SUBORDINATE, vbs);
+#endif
+
       /*
        * Change the certificate store to the subordinate after it is verified.
        * This means the first image, 'firmware' is signed with a key that is NOT
        * in ROM but rather signed by the verified subordinate key.
        */
-      vbs->subordinate_keys = (u32)subordinate_data;
+      vbs->subordinate_keys = (u32)data;
     } else {
       printf("Subordinate certificate store was not verified.\n");
       vboot_enforce(vbs, VBS_ERROR_TYPE_FW, VBS_ERROR_KEYS_UNVERIFIED);
@@ -312,27 +330,6 @@ void vboot_verify_uboot(void* fit, struct vbs *vbs, void* load,
   ast_tpm_extend(AST_TPM_PCR_ENV, (unsigned char*)CONFIG_ENV_ADDR,
       CONFIG_ENV_SIZE);
 #endif
-}
-
-void vboot_rollback_protection(void* fit, struct vbs *vbs) {
-  /* Only attempt to provision the NV space if the TPM was provisioned. */
-  int tpm_status = ast_tpm_nv_provision(vbs);
-  if (tpm_status != VBS_SUCCESS) {
-    vboot_enforce(vbs, VBS_ERROR_TYPE_NV, tpm_status);
-    return;
-  }
-
-  /* Only attempt to update timestamps if the TPM was provisioned. */
-  int root = fdt_path_offset(fit, "/");
-  int timestamp = fdt_getprop_u32(fit, root, "timestamp");
-  if (root < 0 || timestamp <= 0) {
-    vboot_enforce(vbs, VBS_ERROR_TYPE_RB, VBS_ERROR_ROLLBACK_MISSING);
-  }
-
-  tpm_status = ast_tpm_try_version(vbs, AST_TPM_ROLLBACK_UBOOT, timestamp);
-  if (tpm_status != VBS_SUCCESS) {
-    vboot_enforce(vbs, VBS_ERROR_TYPE_RB, tpm_status);
-  }
 }
 
 void vboot_reset(struct vbs *vbs) {
@@ -396,6 +393,13 @@ void vboot_reset(struct vbs *vbs) {
     return;
   }
 
+  /* Only attempt to provision the NV space if the TPM was provisioned. */
+  tpm_status = ast_tpm_nv_provision(vbs);
+  if (tpm_status != VBS_SUCCESS) {
+    vboot_enforce(vbs, VBS_ERROR_TYPE_NV, tpm_status);
+    return;
+  }
+
   /* Measure the SPL into PCR0 */
   ast_tpm_extend(AST_TPM_PCR_SPL, (unsigned char*)0x0,
       CONFIG_SPL_MAX_FOOTPRINT);
@@ -440,7 +444,7 @@ void vboot_load_fit(volatile void* from) {
   vboot_verify_uboot(fit, vbs, load, config, uboot, uboot_size);
 
 #ifdef CONFIG_ASPEED_TPM
-  vboot_rollback_protection(fit, vbs);
+  vboot_rollback_protection(fit, AST_TPM_ROLLBACK_UBOOT, vbs);
 #endif
 
   /* Set a handoff and expect U-Boot to clear indicating a clean boot. */

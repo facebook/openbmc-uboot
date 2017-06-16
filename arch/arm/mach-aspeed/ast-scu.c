@@ -108,6 +108,7 @@ void ast_wdt_reset(u32 timeout_micro, u32 reset_mask)
 	__raw_writel(timeout_micro, AST_WDT_BASE + 0x04);
 	/* magic word to reload */
 	__raw_writel(0x4755, AST_WDT_BASE + 0x08);
+	__raw_writel(0xA50000FF, AST_WDT_BASE + 0x18);
 	__raw_writel(reset_mask, AST_WDT_BASE + 0x0C);
 }
 

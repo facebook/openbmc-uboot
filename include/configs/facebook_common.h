@@ -99,7 +99,7 @@
 #ifndef CONFIG_DEBUG_QEMU
 #define CONFIG_ASPEED_WRITE_DEFAULT_ENV
 #endif
-#ifdef CONFIG_ASPEED_RECOVERY_BUILD
+#if defined(CONFIG_ASPEED_RECOVERY_BUILD) || defined(CONFIG_SPL_BUILD)
 /* Prevent the Recovery build from using the RW environment. */
 #define CONFIG_ENV_IS_NOWHERE
 #else
@@ -179,6 +179,13 @@
 #ifdef CONFIG_SPL_BUILD
 /* This is an SPL build */
 
+#ifndef DEBUG
+/* The SPL has size constraints, the debug build may overflow. */
+#define CONFIG_USE_TINY_PRINTF
+#else
+#define CONFIG_SPL_DISPLAY_PRINT
+#endif
+
 #define CONFIG_SPL_FRAMEWORK
 #define CONFIG_SPL_MAX_FOOTPRINT  0x15000
 
@@ -195,7 +202,6 @@
 #define CONFIG_SYS_SPL_MALLOC_SIZE  0x2000
 
 /* General SPL build feature includes. */
-#define CONFIG_SPL_DISPLAY_PRINT
 #define CONFIG_SPL_LIBGENERIC_SUPPORT
 #define CONFIG_SPL_LIBCOMMON_SUPPORT
 #define CONFIG_SPL_SERIAL_SUPPORT

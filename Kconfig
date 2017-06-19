@@ -205,6 +205,11 @@ config SPL_FIT
 	depends on FIT
 	depends on SPL
 
+config SPL_TINY_FIT
+	bool "Only only basic FIT library functions within SPL"
+	depends on FIT
+	depends on SPL
+
 config FIT_VERBOSE
 	bool "Display verbose messages on FIT boot"
 	depends on FIT

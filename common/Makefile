@@ -112,13 +112,16 @@ obj-$(CONFIG_ENV_IS_IN_EXT4) += env_ext4.o
 obj-$(CONFIG_ENV_IS_IN_NAND) += env_nand.o
 obj-$(CONFIG_ENV_IS_IN_SPI_FLASH) += env_sf.o
 obj-$(CONFIG_ENV_IS_IN_FLASH) += env_flash.o
+obj-y += env_common.o
 endif
 ifdef CONFIG_SPL_SATA_SUPPORT
 obj-$(CONFIG_SCSI) += scsi.o
 endif
-endif
+else
 #environment
 obj-y += env_common.o
+endif
+
 #others
 obj-$(CONFIG_DDR_SPD) += ddr_spd.o
 obj-$(CONFIG_SPD_EEPROM) += ddr_spd.o
@@ -135,10 +138,20 @@ ifdef CONFIG_SYS_MALLOC_F_LEN
 obj-y += malloc_simple.o
 endif
 obj-$(CONFIG_CMD_IDE) += ide.o
+ifndef CONFIG_SPL_BUILD
 obj-y += image.o
+endif
 obj-$(CONFIG_ANDROID_BOOT_IMAGE) += image-android.o
-obj-$(CONFIG_$(SPL_)OF_LIBFDT) += image-fdt.o
-obj-$(CONFIG_$(SPL_)FIT) += image-fit.o
+ifdef CONFIG_SPL_BUILD
+ifndef CONFIG_SPL_TINY_FIT
+obj-$(CONFIG_SPL_OF_LIBFDT) += image-fdt.o
+obj-$(CONFIG_SPL_FIT) += image-fit.o
+endif
+else
+obj-$(CONFIG_OF_LIBFDT) += image-fdt.o
+obj-$(CONFIG_FIT) += image-fit.o
+endif
+obj-$(CONFIG_$(SPL_)FIT) += image-hash.o
 obj-$(CONFIG_$(SPL_)FIT_SIGNATURE) += image-sig.o
 obj-$(CONFIG_IO_TRACE) += iotrace.o
 obj-y += memsize.o
@@ -159,12 +172,13 @@ ifdef CONFIG_CMD_EEPROM_LAYOUT
 obj-y += eeprom/eeprom_field.o eeprom/eeprom_layout.o
 endif
 # We always have this since drivers/ddr/fs/interactive.c needs it
-obj-$(CONFIG_CMDLINE) += cli_simple.o
-
 obj-y += cli.o
+ifndef CONFIG_SPL_BUILD
+obj-$(CONFIG_CMDLINE) += cli_simple.o
 obj-$(CONFIG_CMDLINE) += cli_readline.o
 obj-y += command.o
 obj-y += s_record.o
 obj-y += xyzModem.o
+endif
 
 CFLAGS_env_embedded.o := -Wa,--no-warn -DENV_CRC=$(shell tools/envcrc 2>/dev/null)

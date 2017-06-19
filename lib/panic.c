@@ -43,3 +43,11 @@ void panic(const char *fmt, ...)
 	va_end(args);
 	panic_finish();
 }
+
+void __assert_fail(const char *assertion, const char *file, unsigned line,
+                   const char *function)
+{
+        /* This will not return */
+        panic("%s:%u: %s: Assertion `%s' failed.", file, line, function,
+              assertion);
+}

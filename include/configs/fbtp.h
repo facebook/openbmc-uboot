@@ -24,11 +24,13 @@
 #define CONFIG_IDENT_STRING " fbtp-v2.0"
 #define CONFIG_FBTP 1
 
-#define CONFIG_SYS_LONGHELP     /* undef to save memory   */
-#define CONFIG_SYS_HUSH_PARSER  /* Use the HUSH parser */
 #define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw"
 #define CONFIG_UPDATE            "tftp 80800000 ast2500.scr; so 80800000'"
 #define CONFIG_BOOTFILE          "flash-fbtp"
+#ifndef CONFIG_SPL_BUILD
+#define CONFIG_SYS_LONGHELP     /* undef to save memory   */
+#define CONFIG_SYS_HUSH_PARSER  /* Use the HUSH parser */
+#endif
 
 /*
  * Serial configuration

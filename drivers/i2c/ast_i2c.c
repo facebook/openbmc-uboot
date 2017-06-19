@@ -72,7 +72,6 @@ static void ast_i2c_init_bus(struct ast_i2c *i2c_bus)
 
 static int ast_i2c_probe(struct udevice *dev)
 {
-	printf("================= ast_i2c_probe\n");
 	struct ast_i2c *i2c_bus = dev_get_priv(dev);
 
 	debug("Enabling I2C%u\n", dev->seq);

@@ -371,6 +371,14 @@ void vboot_reset(struct vbs *vbs) {
 
 #ifdef CONFIG_ASPEED_TPM
   int tpm_status = ast_tpm_provision(vbs);
+  if (vbs->error_tpm == TPM_INVALID_POSTINIT) {
+    /* The TPM was not reset correctly */
+    if (vbs->rom_handoff != VBS_HANDOFF - 2) {
+      vbs->rom_handoff = (VBS_HANDOFF - 2);
+      reset_cpu(0);
+    }
+  }
+
   if (tpm_status == VBS_ERROR_TPM_RESET_NEEDED) {
     if (vbs->rom_handoff == VBS_HANDOFF - 1) {
       /* The TPM needed a reset before, and needs another, this is a problem. */
@@ -415,6 +423,10 @@ void vboot_load_fit(volatile void* from) {
   /* The AST comes out of reset so we check the previous state and SPI PROMs. */
   vboot_reset(vbs);
 
+  /* Set a handoff and expect U-Boot to clear indicating a clean boot. */
+  vbs->recovery_retries = 0;
+  vbs->rom_handoff = VBS_HANDOFF;
+
   /* The offset into the FIT containing signed configuration. */
   int config;
   /* The offset into the FIT containing U-Boot information. */
@@ -447,9 +459,6 @@ void vboot_load_fit(volatile void* from) {
   vboot_rollback_protection(fit, AST_TPM_ROLLBACK_UBOOT, vbs);
 #endif
 
-  /* Set a handoff and expect U-Boot to clear indicating a clean boot. */
-  vbs->recovery_retries = 0;
-  vbs->rom_handoff = 0xADEFAD8B;
   vboot_jump((volatile void*)load, vbs);
 }
 

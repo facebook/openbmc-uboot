@@ -181,7 +181,8 @@
 
 #ifndef DEBUG
 /* The SPL has size constraints, the debug build may overflow. */
-#define CONFIG_USE_TINY_PRINTF
+/* The Tiny-printf works in theory, but has side effects in the SPL. */
+/* #define CONFIG_USE_TINY_PRINTF */
 #else
 #define CONFIG_SPL_DISPLAY_PRINT
 #endif

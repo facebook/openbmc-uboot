@@ -8,7 +8,6 @@
 #ifndef __FBWEDGE_CONFIG_H
 #define __FBWEDGE_CONFIG_H
 
-#define CONFIG_IDENT_STRING "\nFacebook Wedge OpenBMC"
 #define CONFIG_FBWEDGE 1
 
 #define CONFIG_SYS_LONGHELP

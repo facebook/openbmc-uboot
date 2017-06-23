@@ -8,7 +8,6 @@
 #ifndef __FBBACKPACK_CONFIG_H
 #define __FBBACKPACK_CONFIG_H
 
-#define CONFIG_IDENT_STRING "\nFacebook Backpack OpenBMC"
 #define CONFIG_FBBACKPACK 1
 
 #define CONFIG_SYS_LONGHELP

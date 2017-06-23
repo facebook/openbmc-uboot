@@ -21,7 +21,6 @@
 #ifndef __FBTTN_CONFIG_H
 #define __FBTTN_CONFIG_H
 
-#define CONFIG_IDENT_STRING " fbttn-v0.1"
 #define CONFIG_FBTTN 1
 
 #define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw"

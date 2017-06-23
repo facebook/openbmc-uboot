@@ -8,7 +8,6 @@
 #ifndef __FBCMM_CONFIG_H
 #define __FBCMM_CONFIG_H
 
-#define CONFIG_IDENT_STRING "\nFacebook CMM OpenBMC"
 #define CONFIG_FBCMM 1
 
 #define CONFIG_SYS_LONGHELP

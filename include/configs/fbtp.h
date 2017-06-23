@@ -21,7 +21,6 @@
 #ifndef __FBTP_CONFIG_H
 #define __FBTP_CONFIG_H
 
-#define CONFIG_IDENT_STRING " fbtp-v2.1.1"
 #define CONFIG_FBTP 1
 
 #define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw"

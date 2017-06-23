@@ -21,7 +21,6 @@
 #ifndef __FBY2_CONFIG_H
 #define __FBY2_CONFIG_H
 
-#define CONFIG_IDENT_STRING " fby2-v0.1"
 #define CONFIG_FBY2 1
 
 #define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw"

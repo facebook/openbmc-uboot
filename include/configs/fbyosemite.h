@@ -8,7 +8,6 @@
 #ifndef __FBYOSEMITE_CONFIG_H
 #define __FBYOSEMITE_CONFIG_H
 
-#define CONFIG_IDENT_STRING " fbyosemite-v0.1"
 #define CONFIG_YOSEMITE 1
 
 #define CONFIG_BOOTARGS		"debug console=ttyS0,57600n8 root=/dev/ram rw"

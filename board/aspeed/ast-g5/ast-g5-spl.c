@@ -371,11 +371,11 @@ void vboot_reset(struct vbs *vbs) {
 
 #ifdef CONFIG_ASPEED_TPM
   int tpm_status = ast_tpm_provision(vbs);
-  if (vbs->error_tpm == TPM_INVALID_POSTINIT) {
+  if (tpm_status == VBS_ERROR_TPM_SETUP) {
     /* The TPM was not reset correctly */
     if (vbs->rom_handoff != VBS_HANDOFF - 2) {
       vbs->rom_handoff = (VBS_HANDOFF - 2);
-      reset_cpu(0);
+      vboot_jump(0x0, vbs);
     }
   }
 

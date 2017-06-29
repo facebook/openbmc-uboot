@@ -4,16 +4,21 @@
  * SPDX-License-Identifier: GPL-2.0+
  */
 
+#include <common.h>
+
 #include "tpm-spl.h"
 
 static inline void set_tpm_error(struct vbs *vbs, uint32_t r) {
-  vbs->error_tpm = r;
+  vbs->error_tpm = (r > 0xFF) ? 0xFF : r;
 }
 
 int ast_tpm_provision(struct vbs *vbs) {
   uint32_t result;
   struct tpm_permanent_flags pflags;
   struct tpm_volatile_flags vflags;
+
+  /* The TPM lib may need to retry commands. */
+  timer_init();
 
   /* The SPL should init (software-only setup), startup-clear, and test. */
   tpm_init();
@@ -269,8 +274,14 @@ int ast_tpm_try_version(struct vbs *vbs, uint8_t image, uint32_t version,
 
   ast_tpm_update_vbs_times(&rb, vbs);
   if (*rb_target == -1) {
-    /* Content is still -1. */
-    return VBS_ERROR_TPM_NV_NOTSET;
+    /**
+     * Content is still -1.
+     * Alternatively someone had booted a payload signed at time UINT_MAX.
+     * This is huge issue and will brick the system from future updates.
+     * To save the system and put security/safety pressure on the signer, this
+     * causes an intentional wrap-around.
+     */
+    *rb_target = 0x0;
   }
 
   if (*rb_target > version) {

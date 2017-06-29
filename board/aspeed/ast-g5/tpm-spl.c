@@ -163,13 +163,16 @@ int ast_tpm_nv_provision(struct vbs *vbs) {
   u32 acls = TPM_NV_PER_GLOBALLOCK | TPM_NV_PER_PPWRITE;
 
   /* Define a probe index to check for max write errors. */
-  result = tpm_nv_define_space(AST_TPM_PROBE_INDEX, acls, sizeof(probe));
-  /* If there was an error and it was not max writes (no-owner), fail. */
-  if (result == TPM_MAXNVWRITES) {
-    tpm_force_clear();
-  } else if (result) {
-    set_tpm_error(vbs, result);
-    return VBS_ERROR_TPM_NV_SPACE;
+  result = tpm_nv_read_value(AST_TPM_PROBE_INDEX, &probe, sizeof(probe));
+  if (result == TPM_BADINDEX) {
+    result = tpm_nv_define_space(AST_TPM_PROBE_INDEX, acls, sizeof(probe));
+    /* If there was an error and it was not max writes (no-owner), fail. */
+    if (result == TPM_MAXNVWRITES) {
+      tpm_force_clear();
+    } else if (result) {
+      set_tpm_error(vbs, result);
+      return VBS_ERROR_TPM_NV_SPACE;
+    }
   }
 
   /* Attempt a define-space and write-value and catch a max writes error. */
@@ -222,6 +225,16 @@ int ast_tpm_extend(uint32_t index, unsigned char* data, uint32_t data_len) {
   return tpm_extend(index, data, data);
 }
 
+static void ast_tpm_update_vbs_times(struct tpm_rollback_t *rb,
+    struct vbs *vbs) {
+  /* This copies the TPM NV data into the verified-boot status structure. */
+  vbs->subordinate_last = rb->fallback_subordinate;
+  vbs->subordinate_current = rb->subordinate;
+  vbs->uboot_last = rb->fallback_uboot;
+  vbs->uboot_current = rb->uboot;
+  vbs->kernel_last = rb->fallback_kernel;
+  vbs->kernel_current = rb->kernel;
+}
 
 int ast_tpm_try_version(struct vbs *vbs, uint8_t image, uint32_t version,
     bool no_fallback) {
@@ -254,6 +267,7 @@ int ast_tpm_try_version(struct vbs *vbs, uint8_t image, uint32_t version,
     return VBS_ERROR_TPM_NV_READ_FAILED;
   }
 
+  ast_tpm_update_vbs_times(&rb, vbs);
   if (*rb_target == -1) {
     /* Content is still -1. */
     return VBS_ERROR_TPM_NV_NOTSET;
@@ -281,6 +295,9 @@ int ast_tpm_try_version(struct vbs *vbs, uint8_t image, uint32_t version,
       set_tpm_error(vbs, result);
       return VBS_ERROR_TPM_NV_WRITE_FAILED;
     }
+
+    /* The times have changed. */
+    ast_tpm_update_vbs_times(&rb, vbs);
   }
 
   return VBS_SUCCESS;

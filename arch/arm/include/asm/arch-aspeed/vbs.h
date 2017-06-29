@@ -74,20 +74,26 @@
 #define VBS_KEYS_PATH   "/keys"
 
 struct vbs {
-  u32 uboot_exec_address; /* Location in MMIO where U-Boot/Recovery U-Boot is execution */
-  u32 rom_exec_address;   /* Location in MMIO where ROM is executing from */
-  u32 rom_keys;           /* Location in MMIO where the ROM FDT is located */
-  u32 subordinate_keys;   /* Location in MMIO where subordinate FDT is located */
-  u32 rom_handoff;        /* Marker set when ROM is handing execution to U-Boot. */
-  u8 force_recovery;      /* Set by ROM when recovery is requested */
-  u8 hardware_enforce;    /* Set by ROM when WP pin of SPI0.0 is active low */
-  u8 software_enforce;    /* Set by ROM when RW environment uses verify=yes */
-  u8 recovery_boot;       /* Set by ROM when recovery is used */
-  u8 recovery_retries;    /* Number of attempts to recovery from verification failure */
-  u8 error_type;          /* Type of error, or 0 for success */
-  u8 error_code;          /* Unique error code, or 0 for success */
-  u8 error_tpm;           /* The last-most-recent error from the TPM. */
-  u16 crc;                 /* A CRC of the vbs structure */
+  /* 00 */ u32 uboot_exec_address; /* Location in MMIO where U-Boot/Recovery U-Boot is execution */
+  /* 04 */ u32 rom_exec_address;   /* Location in MMIO where ROM is executing from */
+  /* 08 */ u32 rom_keys;           /* Location in MMIO where the ROM FDT is located */
+  /* 0C */ u32 subordinate_keys;   /* Location in MMIO where subordinate FDT is located */
+  /* 10 */ u32 rom_handoff;        /* Marker set when ROM is handing execution to U-Boot. */
+  /* 14 */ u8 force_recovery;      /* Set by ROM when recovery is requested */
+  /* 15 */ u8 hardware_enforce;    /* Set by ROM when WP pin of SPI0.0 is active low */
+  /* 16 */ u8 software_enforce;    /* Set by ROM when RW environment uses verify=yes */
+  /* 17 */ u8 recovery_boot;       /* Set by ROM when recovery is used */
+  /* 18 */ u8 recovery_retries;    /* Number of attempts to recovery from verification failure */
+  /* 19 */ u8 error_type;          /* Type of error, or 0 for success */
+  /* 1A */ u8 error_code;          /* Unique error code, or 0 for success */
+  /* 1B */ u8 error_tpm;           /* The last-most-recent error from the TPM. */
+  /* 1C */ u16 crc;                /* A CRC of the vbs structure */
+  /* 1E */ u32 subordinate_last;   /* Status reporting only: the last booted subordinate. */
+  /* 22 */ u32 uboot_last;         /* Status reporting only: the last booted U-Boot. */
+  /* 26 */ u32 kernel_last;        /* Status reporting only: the last booted kernel. */
+  /* 2A */ u32 subordinate_current;/* Status reporting only: the current booted subordinate. */
+  /* 2E */ u32 uboot_current;      /* Status reporting only: the current booted U-Boot. */
+  /* 32 */ u32 kernel_current;     /* Status reporting only: the current booted kernel. */
 };
 
 #endif /* _VBS_H_ */

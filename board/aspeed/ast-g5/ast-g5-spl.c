@@ -473,7 +473,7 @@ void board_init_f(ulong bootflag)
   gd->malloc_limit = CONFIG_SYS_SPL_MALLOC_SIZE;
 
 #ifdef CONFIG_ASPEED_ENABLE_WATCHDOG
-  ast_wdt_reset(120 * AST_WDT_CLK, 0x33 | 0x08);
+  ast_wdt_reset(120 * AST_WDT_CLK, 0x3 | 0x08);
 #endif
 
   /*

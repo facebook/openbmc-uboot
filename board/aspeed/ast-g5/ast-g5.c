@@ -25,7 +25,7 @@ void watchdog_init(void)
 {
 #ifdef CONFIG_ASPEED_ENABLE_WATCHDOG
   u32 reload = AST_WDT_CLK * CONFIG_ASPEED_WATCHDOG_TIMEOUT;
-  u32 reset_mask = 0x33; /* Full | Clear after | Enable */
+  u32 reset_mask = 0x3; /* SoC | Clear after | Enable */
   /* Some boards may request the reset to trigger the EXT reset GPIO.
    * On Linux this is defined as WDT_CTRL_B_EXT.
    */
@@ -196,8 +196,8 @@ static int slot_12V_init(void)
   uint8_t val_ext[MAX_NODES+1];
   uint8_t val;
   int i = 0;
- 
-   
+
+
   //Read GPIOZ0~Z3 and AA0~AA3
   slot_present_reg = __raw_readl(AST_GPIO_BASE + 0x1E0);
   //Set GPIOO4~O7 Watchdog reset tolerance
@@ -207,15 +207,15 @@ static int slot_12V_init(void)
   //Set GPIOO4~O7 as output pin
   dir_reg = __raw_readl(AST_GPIO_BASE + 0x07C);
   dir_reg |= 0xF00000;
-  __raw_writel(dir_reg, AST_GPIO_BASE + 0x07C);  
+  __raw_writel(dir_reg, AST_GPIO_BASE + 0x07C);
   //Read GPIOO4~O7
   slot_12v_reg = __raw_readl(AST_GPIO_BASE + 0x078);
-   
-  for(i = 1 ; i < MAX_NODES + 1; i++)  
+
+  for(i = 1 ; i < MAX_NODES + 1; i++)
   {
     val_ext[i] = (slot_present_reg >> (2*MAX_NODES+i-1)) & 0x1;
     val_prim[i] =(slot_present_reg >> (4*MAX_NODES+i-1)) & 0x1;
-    
+
     val = (val_prim[i] || val_ext[i]);
     if(val == 0x00)
     {
@@ -228,7 +228,7 @@ static int slot_12V_init(void)
        __raw_writel(slot_12v_reg, AST_GPIO_BASE + 0x078);
     }
   }
-  return 0;  
+  return 0;
 }
 #endif
 

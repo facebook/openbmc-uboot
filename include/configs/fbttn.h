@@ -25,7 +25,6 @@
 
 #define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw"
 #define CONFIG_UPDATE            "tftp 80800000 ast2500.scr; so 80800000'"
-#define CONFIG_BOOTCOMMAND       "bootm 20080000" /* Location of FIT */
 #define CONFIG_BOOTFILE          "flash-fbttn"
 #ifndef CONFIG_SPL_BUILD
 #define CONFIG_SYS_LONGHELP     /* undef to save memory   */
@@ -59,6 +58,12 @@
  * Enable DRAM ECC, going to lose 1/8 of memory
  */
 #define CONFIG_DRAM_ECC
+
+/*
+ * Watchdog configuration, needed for TPM hardware reset
+ * This will trigger GPIOAB2 output high when the CPU is reset
+ */
+#define CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
 
 #include "facebook_common.h"
 #include "ast2500_common.h"

@@ -6,6 +6,8 @@
 
 #include <common.h>
 
+#include <asm/arch/vbs.h>
+
 #include "tpm-spl.h"
 
 static inline void set_tpm_error(struct vbs *vbs, uint32_t r) {
@@ -194,8 +196,8 @@ int ast_tpm_nv_provision(struct vbs *vbs) {
     return VBS_ERROR_TPM_NV_SPACE;
   }
 
-  char blank[AST_TPM_ROLLBACK_SIZE];
-  result = tpm_nv_read_value(AST_TPM_ROLLBACK_INDEX, &blank, sizeof(blank));
+  char blank[VBS_TPM_ROLLBACK_SIZE];
+  result = tpm_nv_read_value(VBS_TPM_ROLLBACK_INDEX, &blank, sizeof(blank));
   if (result != TPM_BADINDEX && result != TPM_NOSPACE) {
     /* The index already exists. */
     return VBS_SUCCESS;
@@ -206,15 +208,15 @@ int ast_tpm_nv_provision(struct vbs *vbs) {
    * Set that area's ACLs to TPM_NV_PER_GLOBALLOCK | TPM_NV_PER_PPWRITE.
    * Set that area's size to 32 * 4.
    */
-  result = tpm_nv_define_space(AST_TPM_ROLLBACK_INDEX, acls,
-      AST_TPM_ROLLBACK_SIZE);
+  result = tpm_nv_define_space(VBS_TPM_ROLLBACK_INDEX, acls,
+      VBS_TPM_ROLLBACK_SIZE);
   if (result) {
     set_tpm_error(vbs, result);
     return VBS_ERROR_TPM_NV_SPACE;
   }
 
-  memset(blank, 0x0, AST_TPM_ROLLBACK_SIZE);
-  result = tpm_nv_write_value(AST_TPM_ROLLBACK_INDEX, blank, sizeof(blank));
+  memset(blank, 0x0, VBS_TPM_ROLLBACK_SIZE);
+  result = tpm_nv_write_value(VBS_TPM_ROLLBACK_INDEX, blank, sizeof(blank));
 
   if (result) {
     set_tpm_error(vbs, result);
@@ -266,7 +268,7 @@ int ast_tpm_try_version(struct vbs *vbs, uint8_t image, uint32_t version,
     rb_fallback_target = &rb.fallback_kernel;
   }
 
-  result = tpm_nv_read_value(AST_TPM_ROLLBACK_INDEX, &rb, sizeof(rb));
+  result = tpm_nv_read_value(VBS_TPM_ROLLBACK_INDEX, &rb, sizeof(rb));
   if (result) {
     set_tpm_error(vbs, result);
     return VBS_ERROR_TPM_NV_READ_FAILED;
@@ -301,7 +303,7 @@ int ast_tpm_try_version(struct vbs *vbs, uint8_t image, uint32_t version,
     /* Only update the NV space if this is a new version. */
     *rb_fallback_target = (no_fallback) ? version : *rb_target;
     *rb_target = version;
-    result = tpm_nv_write_value(AST_TPM_ROLLBACK_INDEX, &rb, sizeof(rb));
+    result = tpm_nv_write_value(VBS_TPM_ROLLBACK_INDEX, &rb, sizeof(rb));
     if (result) {
       set_tpm_error(vbs, result);
       return VBS_ERROR_TPM_NV_WRITE_FAILED;

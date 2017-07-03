@@ -10,11 +10,8 @@
 
 #include <asm/arch/vbs.h>
 
-#define AST_TPM_ROLLBACK_INDEX 0x100
+/* Define a TPM NVram index probe for provision tests. */
 #define AST_TPM_PROBE_INDEX    0x101
-
-/* Size of the rollback index space, allow for some reserved bytes. */
-#define AST_TPM_ROLLBACK_SIZE  192
 
 /* Years the next upgrade must occur, protect against timestamp DoS */
 #define AST_TPM_MAX_YEARS 1

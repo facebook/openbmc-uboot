@@ -73,14 +73,6 @@
 #define CONFIG_DEBUG_ENFORCE_VERIFY " "
 #endif
 
-/* Configure the rare, boot-fail aftermath. */
-#ifdef CONFIG_CMD_VBS
-/* If this runs then verified-boot failed */
-#define CONFIG_POSTBOOT "vbs 6 60; "
-#else
-#define CONFIG_POSTBOOT " "
-#endif
-
 /*
  * Basic boot command configuration based on flash
  */
@@ -174,6 +166,21 @@
  * Additional features configuration
  */
 #define CONFIG_SHA256
+
+/* Configure the rare, boot-fail aftermath. */
+#ifdef CONFIG_CMD_VBS
+/* If this runs then verified-boot failed */
+#define CONFIG_POSTBOOT "vbs 6 60; "
+#else
+#define CONFIG_POSTBOOT " "
+#endif
+
+/*
+ * Command to run in if CLI is used.
+ */
+#if defined(CONFIG_CMD_VBS) && defined(CONFIG_SPL)
+#define CONFIG_PRECLICOMMAND "vbs disable; "
+#endif
 
 #ifdef CONFIG_SPL
 #ifdef CONFIG_SPL_BUILD

@@ -7,7 +7,10 @@
 #include <common.h>
 #include <command.h>
 #include <crc.h>
+#include <tpm.h>
 
+#include <asm/io.h>
+#include <asm/arch/ast_scu.h>
 #include <asm/arch/vbs.h>
 
 static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -19,6 +22,24 @@ static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
     vbs->error_type = t;
     vbs->error_code = c;
     return 0;
+  }
+
+  if (argc == 2) {
+    if (strncmp(argv[1], "disable", sizeof("disable")) == 0) {
+#ifdef CONFIG_ASPEED_ENABLE_WATCHDOG
+      /* This will disable the WTD1. */
+      writel(readl(AST_WDT_BASE + 0x0C) & ~1, AST_WDT_BASE + 0x0C);
+#endif
+      vbs->rom_handoff = 0x0;
+      return 0;
+    } else if (strncmp(argv[1], "clear", sizeof("clear")) == 0) {
+#ifdef CONFIG_ASPEED_TPM
+      return tpm_nv_define_space(VBS_TPM_ROLLBACK_INDEX,
+          TPM_NV_PER_GLOBALLOCK | TPM_NV_PER_PPWRITE, 0);
+#endif
+    } else {
+      printf("Unknown vbs command\n");
+    }
   }
 
   uint16_t crc = vbs->crc;
@@ -64,4 +85,5 @@ U_BOOT_CMD(
 	vbs,	3,	1,	do_vbs,
 	"print verified-boot status",
 	"type code - set the vbs error type and code\n"
+	"disable - disable the watchdog timer and ROM handoff check"
 );

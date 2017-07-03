@@ -96,4 +96,10 @@ struct vbs {
   /* 32 */ u32 kernel_current;     /* Status reporting only: the current booted kernel. */
 };
 
+/* TPM NVram index used for rollback protection data. */
+#define VBS_TPM_ROLLBACK_INDEX 0x100
+
+/* Size of the rollback index space, allow for some reserved bytes. */
+#define VBS_TPM_ROLLBACK_SIZE  192
+
 #endif /* _VBS_H_ */

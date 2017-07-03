@@ -43,6 +43,7 @@ static void run_preboot_environment_command(void)
 /* We come here after U-Boot is initialised and ready to process commands */
 void main_loop(void)
 {
+	int ret;
 	const char *s;
 #ifdef CONFIG_CMD_MEMTEST2
 	char *mtest;
@@ -86,7 +87,14 @@ void main_loop(void)
 	if (cli_process_fdt(&s))
 		cli_secure_boot_cmd(s);
 
-	autoboot_command(s);
+	ret = autoboot_command(s);
+
+#if defined(CONFIG_PRECLICOMMAND)
+	if (!ret) {
+		s = CONFIG_PRECLICOMMAND;
+		run_command_list(s, -1, 0);
+	}
+#endif
 
 	cli_loop();
 	panic("No CLI available");

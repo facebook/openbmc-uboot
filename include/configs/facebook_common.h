@@ -182,6 +182,11 @@
 #define CONFIG_PRECLICOMMAND "vbs disable; "
 #endif
 
+/*
+ * Lock the BMC TPM during provisioning (perform 1-time operations)
+ */
+#define CONFIG_ASPEED_TPM_LOCK
+
 #ifdef CONFIG_SPL
 #ifdef CONFIG_SPL_BUILD
 /* This is an SPL build */

@@ -137,12 +137,20 @@ int ast_tpm_nv_provision(struct vbs *vbs) {
   struct tpm_permanent_flags pflags;
   struct tpm_volatile_flags vflags;
 
-#ifdef CONFIG_ASPEED_TPM_LOCK
-  /* Lock the NV storage, request that ACLs are applied. */
-  result = tpm_nv_define_space(TPM_NV_INDEX_LOCK, 0, 0);
+  result = tpm_get_permanent_flags(&pflags);
   if (result) {
     set_tpm_error(vbs, result);
-    return VBS_ERROR_TPM_NV_LOCK_FAILED;
+    return VBS_ERROR_TPM_FAILURE;
+  }
+
+#ifdef CONFIG_ASPEED_TPM_LOCK
+  /* Lock the NV storage, request that ACLs are applied. */
+  if (!pflags.nv_locked) {
+    result = tpm_nv_define_space(TPM_NV_INDEX_LOCK, 0, 0);
+    if (result) {
+      set_tpm_error(vbs, result);
+      return VBS_ERROR_TPM_NV_LOCK_FAILED;
+    }
   }
 #endif
 

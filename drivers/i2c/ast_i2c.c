@@ -72,10 +72,17 @@ static void ast_i2c_init_bus(struct ast_i2c *i2c_bus)
 
 static int ast_i2c_probe(struct udevice *dev)
 {
-	struct ast_i2c *i2c_bus = dev_get_priv(dev);
+	u8 bus_num;
+	u32 bus_addr;
 
-	debug("Enabling I2C%u\n", dev->seq);
-	ast_scu_enable_i2c(dev->seq);
+	struct ast_i2c *i2c_bus = dev_get_priv(dev);
+	bus_addr = dev_get_addr(dev);
+
+	/* Regardless of labels, enable the correct AST bus. */
+	bus_num = (bus_addr - AST_I2C_BASE) / 0x40;
+
+	debug("Enabling I2C (bus %u) %u\n", bus_num, dev->seq);
+	ast_scu_enable_i2c(bus_num);
 
 	i2c_bus->id = dev->seq;
 	struct ast_i2c_regs *i2c_base =

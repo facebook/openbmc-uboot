@@ -60,6 +60,7 @@ void main_loop(void)
 	if(!(strcmp(mtest,"obmtest")))
    	{
 		run_command(mtest,0);
+		watchdog_init(); // Cover the time consumed by mtest
 	}
 #endif /* CONFIG_CMD_MEMTEST2 */
 

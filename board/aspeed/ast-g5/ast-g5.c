@@ -107,9 +107,9 @@ static void policy_init(void)
 
   // BMC's SCU3C: System Reset Control/Status Register
   reg = __raw_readl(AST_SCU_BASE + 0x3c);
-  // If BMC is reset by watch dog#1, #2(SCU3C[2:3]) or
-  // external reset pin(SCU3C[1])
-  if (!(reg & 0xe)) {
+  // Power on reset flag(SCU3C[0])
+  // POR flag bit will be cleared at Linux init
+  if (reg & 0x1) {
     // getenv return the same buffer,
     // duplicate result before call it again.
     result = getenv("por_policy");

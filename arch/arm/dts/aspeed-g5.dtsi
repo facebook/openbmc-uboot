@@ -74,6 +74,18 @@
 					interrupts = <6>;
 					u-boot,dm-pre-reloc;
 				};
+
+				i2c14: i2c-bus@480 {
+					#address-cells = <1>;
+					#size-cells = <0>;
+					reg = <0x480 0x40>;
+					compatible = "aspeed,ast2400-i2c-bus";
+					bus = <13>;
+					clock-frequency = <100000>;
+					status = "okay";
+					interrupts = <6>;
+					u-boot,dm-pre-reloc;
+				};
 			};
 
 		};

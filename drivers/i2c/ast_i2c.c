@@ -80,6 +80,11 @@ static int ast_i2c_probe(struct udevice *dev)
 
 	/* Regardless of labels, enable the correct AST bus. */
 	bus_num = (bus_addr - AST_I2C_BASE) / 0x40;
+	// The register of I2C device is not continuous.
+	// I2C device 8-14 (1-base) need to subtract 4;
+	if (bus_num > 7) {
+		bus_num = bus_num - 4;
+	}
 
 	debug("Enabling I2C (bus %u) %u\n", bus_num, dev->seq);
 	ast_scu_enable_i2c(bus_num);

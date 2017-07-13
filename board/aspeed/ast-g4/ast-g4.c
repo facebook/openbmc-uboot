@@ -20,7 +20,7 @@
 DECLARE_GLOBAL_DATA_PTR;
 
 // Add for watchdog init
-static void watchdog_init()
+void watchdog_init()
 {
 #ifdef CONFIG_ASPEED_ENABLE_WATCHDOG
   	#define AST_WDT1_BASE 0x1e785000

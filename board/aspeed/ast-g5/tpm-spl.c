@@ -22,6 +22,19 @@ int ast_tpm_provision(struct vbs *vbs) {
   /* The TPM lib may need to retry commands. */
   timer_init();
 
+  /* The Infineon TPM needs 30ms */
+  udelay(35 * 1000);
+
+  /* The SPL should init (software-only setup), startup-clear, and test. */
+  result = tpm_init();
+  if (result) {
+    set_tpm_error(vbs, result);
+    return VBS_ERROR_TPM_NOT_ENABLED;
+  }
+
+  /* delay post tpm_init as well just to be safe. Technically not required */
+  udelay(35 * 1000);
+
   /* The SPL should init (software-only setup), startup-clear, and test. */
   tpm_init();
   result = tpm_startup(TPM_ST_CLEAR);

@@ -17,8 +17,8 @@
  *
  * Gary Hsu, <gary_hsu@aspeedtech.com>
  *
- * Version     : 14
- * Release date: 2016.11.07
+ * Version     : 16
+ * Release date: 2017.06.19
  *
  * Priority of fix item:
  * [P1] = critical
@@ -64,16 +64,23 @@
  *    |           : 3.[P1] Modify DDR4 Ron calibration to manual mode to fix Vix issue, set Ron_pu = 0
  *    |           : 4.[P2] Modify read timing margin report policy, change DDR4 min value from 0.35 to 0.3. Add "Warning" while violated.
  * V13|2016.08.29 : 1.[P3] Add option to route debug message output port from UART5 to UART1
- *    |2016.09.02 : 3.[P2] Add range control for cache function when ECC enabled
- *    |2016.09.06 : 2.[P1] Enable full mask setting for first SOC reset, since the coverage of original default setting is not enough
+ *    |2016.09.02 : 2.[P2] Add range control for cache function when ECC enabled
+ *    |2016.09.06 : 3.[P1] Enable full mask setting for first SOC reset, since the coverage of original default setting is not enough
  * V14|2016.10.25 : 1.[P2] Change Ron manual calibration to default OFF, customer can enable it to do fine-tuning of the Vix issue
  *    |2016.11.07 : 2.[P3] Add log information of DDR4 PHY Vref training
- *    |           :    Note: Read timing report is only a reference, it is not a solid rule for stability.
+ * V15|2017.04.06 : 1.[P1] Modify USB portA initial sequence, this is to prevent DMA lock condition of USB Virtual Hub device for some chips.
+ *    |2017.04.13 : 2.[P2] Add initial sequence for LPC controller
+ * V16|2017.06.15 : 1.[P1] Add margin check/retry for DDR4 Vref training margin.
+ *    |2017.06.15 : 2.[P1] Add margin check/retry for DDR3/DDR4 read timing training margin.
+ *    |2017.06.19 : 3.[P2] Add initial sequence for LPC controller
+ *    |2017.06.19 : 4.[P2] Add initial full-chip reset option
+ *    |2017.06.19 : 5.[P3] Add 10ms delay after DDR reset
+ * Note: Read timing report is only a reference, it is not a solid rule for stability.
  *
  * Optional define variable
- * 1. DRAM Speed             //
- *    CONFIG_DRAM_1333       //
- *    CONFIG_DRAM_1600       // (default)
+ * 1. DRAM Speed                  //
+ *    CONFIG_DRAM_1333            //
+ *    CONFIG_DRAM_1600            // (default)
  * 2. ECC Function enable
  *    CONFIG_DRAM_ECC             // define to enable ECC function
  *    CONFIG_DRAM_ECC_SIZE        // define the ECC protected memory size
@@ -81,8 +88,8 @@
  *    CONFIG_DRAM_UART_38400      // set the UART baud rate to 38400, default is 115200
  *    CONFIG_DRAM_UART_TO_UART1   // route UART5 to UART port1
  * 4. DRAM Type
- *    CONFIG_DDR3_8GSTACK    // DDR3 8Gbit Stack die
- *    CONFIG_DDR4_4GX8       // DDR4 4Gbit X8 dual part
+ *    CONFIG_DDR3_8GSTACK         // DDR3 8Gbit Stack die
+ *    CONFIG_DDR4_4GX8            // DDR4 4Gbit X8 dual part
  * 5. Firmware 2nd boot flash
  *    CONFIG_FIRMWARE_2ND_BOOT (Removed)
  * 6. Enable DRAM extended temperature range mode
@@ -103,8 +110,8 @@
   Free registers:
   r0, r1, r2, r3, r6, r7, r8, r9, r10, r11
  ******************************************************************************/
-#define ASTMMC_INIT_VER      0x0E                @ 8bit verison number
-#define ASTMMC_INIT_DATE     0x20161107          @ Release date
+#define ASTMMC_INIT_VER      0x10                @ 8bit verison number
+#define ASTMMC_INIT_DATE     0x20170619          @ Release date
 
 /******************************************************************************
   BMC side DDR IO driving manual mode fine-tuning, used to improve CK/CKN Vix violation.
@@ -118,6 +125,14 @@
  ******************************************************************************/
 //#define ASTMMC_DDR4_MANUAL_RPU 0x0             @ 0x0-0xF, larger value means weaker driving
 //#define ASTMMC_DDR4_MANUAL_RPD 0x0             @ 0x0-0xF, larger value means stronger driving
+
+/******************************************************************************
+  Select initial reset mode as WDT_Full
+  WDT_Full is a more complete reset mode than WDT_SOC.
+  But if FW has other initial code executed before platform.S, then it should use WDT_SOC mode.
+  Use WDT_Full may clear the initial result of prior initial code.
+ ******************************************************************************/
+//#define ASTMMC_INIT_RESET_MODE_FULL
 
 #define ASTMMC_REGIDX_010    0x00
 #define ASTMMC_REGIDX_014    0x04
@@ -538,10 +553,14 @@ case_end\@:
 
 .globl lowlevel_init
 lowlevel_init:
+
 init_dram:
     /* save lr */
     mov   r4, lr
 
+    /********************************************
+       Initial Reset Procedure : Begin
+     *******************************************/
     /* save into SRAM */
     ldr r0, =0x1e720200 /* vbs.uboot_exec_address */
     str r4, [r0]
@@ -607,11 +626,11 @@ init_dram:
     add   r0, r0, #0x04
     mov   r3, #0x77
     str   r3, [r0]
-    ldr   r0, =0x1e720004
+    ldr   r0, =0x1e720004                        @ Copy initial strap register to 0x1e720004
     str   r1, [r0]
-    add   r0, r0, #0x04
+    add   r0, r0, #0x04                          @ Copy initial strap register to 0x1e720008
     str   r1, [r0]
-    add   r0, r0, #0x04
+    add   r0, r0, #0x04                          @ Copy initial strap register to 0x1e72000c
     str   r1, [r0]
     ldr   r0, =0x1e6e207c                        @ clear fast reset flag
     str   r2, [r0]
@@ -625,6 +644,166 @@ init_dram:
     b     bypass_first_reset
 
 start_first_reset:
+#ifdef ASTMMC_INIT_RESET_MODE_FULL
+    ldr   r0, =0x1e785004
+    ldr   r1, =0x00000001
+    str   r1, [r0]
+    ldr   r0, =0x1e785008
+    ldr   r1, =0x00004755
+    str   r1, [r0]
+    ldr   r0, =0x1e78500c                        @ enable Full reset
+    ldr   r1, =0x00000033
+    str   r1, [r0]
+#else
+    /***** Clear LPC status : Begin *****/
+    mov   r2, #0                                 @ set r2 = 0, freezed
+    ldr   r0, =0x1e787008
+    mov   r1, #0x7
+    str   r1, [r0]
+    ldr   r0, =0x1e78700c
+    mov   r1, #0x3
+    str   r1, [r0]
+    ldr   r0, =0x1e787020
+    str   r2, [r0]
+    ldr   r0, =0x1e787034
+    str   r2, [r0]
+    ldr   r0, =0x1e787004
+    str   r2, [r0]
+    ldr   r0, =0x1e787010
+    str   r2, [r0]
+    ldr   r0, =0x1e78701c
+    str   r2, [r0]
+    ldr   r0, =0x1e787014                        @ read clear
+    ldr   r1, [r0]
+    ldr   r0, =0x1e787018                        @ read clear
+    ldr   r1, [r0]
+    ldr   r0, =0x1e787008                        @ read clear
+    ldr   r1, [r0]
+    ldr   r0, =0x1e788020
+    str   r2, [r0]
+    ldr   r0, =0x1e788034
+    str   r2, [r0]
+    ldr   r0, =0x1e78800c
+    str   r2, [r0]
+    ldr   r0, =0x1e789008
+    str   r2, [r0]
+    ldr   r0, =0x1e789010
+    mov   r1, #0x40
+    str   r1, [r0]
+    ldr   r0, =0x1e789024                        @ read clear
+    ldr   r1, [r0]
+    ldr   r0, =0x1e789028                        @ read clear
+    ldr   r1, [r0]
+    ldr   r0, =0x1e78902c                        @ read clear
+    ldr   r1, [r0]
+    ldr   r0, =0x1e789114                        @ read clear
+    ldr   r1, [r0]
+    ldr   r0, =0x1e789124                        @ read clear
+    ldr   r1, [r0]
+    ldr   r0, =0x1e78903c
+    str   r2, [r0]
+    ldr   r0, =0x1e789040
+    str   r2, [r0]
+    ldr   r0, =0x1e789044
+    str   r2, [r0]
+    ldr   r0, =0x1e78911c
+    str   r2, [r0]
+    ldr   r0, =0x1e78912c
+    ldr   r1, =0x200
+    str   r1, [r0]
+    ldr   r0, =0x1e789104
+    ldr   r1, =0xcc00
+    str   r1, [r0]
+    ldr   r0, =0x1e789108
+    str   r2, [r0]
+    ldr   r0, =0x1e78910c
+    ldr   r1, =0x1f0
+    str   r1, [r0]
+    ldr   r0, =0x1e789170
+    str   r2, [r0]
+    ldr   r0, =0x1e789174
+    str   r2, [r0]
+    ldr   r0, =0x1e7890a0
+    ldr   r1, =0xff00
+    str   r1, [r0]
+    ldr   r0, =0x1e7890a4
+    str   r2, [r0]
+    ldr   r0, =0x1e789080
+    ldr   r1, =0x400
+    str   r1, [r0]
+    ldr   r0, =0x1e789084
+    ldr   r1, =0x0001000f
+    str   r1, [r0]
+    ldr   r0, =0x1e789088
+    ldr   r1, =0x3000fff8
+    str   r1, [r0]
+    ldr   r0, =0x1e78908c
+    ldr   r1, =0xfff8f007
+    str   r1, [r0]
+    ldr   r0, =0x1e789098
+    ldr   r1, =0x00000a30
+    str   r1, [r0]
+    ldr   r0, =0x1e78909c
+    str   r2, [r0]
+    ldr   r0, =0x1e789100
+    str   r2, [r0]
+    ldr   r0, =0x1e789130
+    ldr   r1, =0x00000080
+    str   r1, [r0]
+    ldr   r0, =0x1e789138
+    ldr   r1, =0x00010198
+    str   r1, [r0]
+    ldr   r0, =0x1e789140
+    ldr   r1, =0x0000a000
+    str   r1, [r0]
+    ldr   r0, =0x1e789158
+    ldr   r1, =0x00000080
+    str   r1, [r0]
+    ldr   r0, =0x1e789180
+    ldr   r1, =0xb6db1bff
+    str   r1, [r0]
+    ldr   r0, =0x1e789184
+    str   r2, [r0]
+    ldr   r0, =0x1e789188
+    str   r2, [r0]
+    ldr   r0, =0x1e78918c
+    str   r2, [r0]
+    ldr   r0, =0x1e789190
+    ldr   r1, =0x05020100
+    str   r1, [r0]
+    ldr   r0, =0x1e789194
+    ldr   r1, =0x07000706
+    str   r1, [r0]
+    ldr   r0, =0x1e789198
+    str   r2, [r0]
+    ldr   r0, =0x1e78919c
+    ldr   r1, =0x30
+    str   r1, [r0]
+    ldr   r0, =0x1e7891a0
+    ldr   r1, =0x00008100
+    str   r1, [r0]
+    ldr   r0, =0x1e7891a4
+    ldr   r1, =0x2000
+    str   r1, [r0]
+    ldr   r0, =0x1e7891a8
+    ldr   r1, =0x3ff
+    str   r1, [r0]
+    ldr   r0, =0x1e7891ac
+    str   r2, [r0]
+    ldr   r0, =0x1e789240
+    mov   r1, #0xff
+    str   r1, [r0]
+    ldr   r0, =0x1e789244
+    str   r1, [r0]
+    ldr   r0, =0x1e789248
+    mov   r1, #0x80
+    str   r1, [r0]
+    ldr   r0, =0x1e789250
+    str   r2, [r0]
+    ldr   r0, =0x1e789254
+    str   r2, [r0]
+    /***** Clear LPC status : End *****/
+
     ldr   r0, =0x1e62009c                        @ clear software strap flag for doing again after reset
     ldr   r1, =0xAEEDFC20
     str   r1, [r0]
@@ -637,11 +816,16 @@ start_first_reset:
     ldr   r0, =0x1e78501c                        @ enable full mask of SOC reset
     ldr   r1, =0x03FFFFFF                        @ added 2016.09.06
     str   r1, [r0]
-    ldr   r0, =0x1e78500c                        @ enable soc reset
+    ldr   r0, =0x1e78500c                        @ enable SOC reset
     ldr   r1, =0x00000013
     str   r1, [r0]
+#endif
 wait_first_reset:
     b     wait_first_reset
+
+    /********************************************
+       Initial Reset Procedure : End
+     *******************************************/
 
 bypass_first_reset:
     /* Enable Timer separate clear mode */
@@ -698,7 +882,7 @@ bypass_first_reset:
     orr   r1, r1, #0x80
     str   r1, [r0]
 
-/* Change LPC reset source to PERST# when eSPI mode enabled */
+    /* Change LPC reset source to PERST# when eSPI mode enabled */
     ldr   r0, =0x1e6e2070
     ldr   r1, [r0]
     ldr   r0, =0x1e6e207c
@@ -712,6 +896,9 @@ bypass_first_reset:
     ldr   r2, =0x00004000
     ldr   r1, [r0]
     orr   r1, r1, r2
+    str   r1, [r0]
+    ldr   r0, =0x1e6e2090                        @ set portA as host mode
+    ldr   r1, =0x2000A000
     str   r1, [r0]
     ldr   r0, =0x1e6e2094                        @ set portB as host mode
     ldr   r1, =0x00004000
@@ -846,6 +1033,15 @@ wait_mmc_reset_done:
     ldr   r0, =0x1e6e0034                        @ disable MMC request
     ldr   r1, =0x00020000
     str   r1, [r0]
+
+    /* Delay about 10ms */
+    ldr   r2, =0x00002710                        @ Set Timer3 Reload = 10 ms
+    init_delay_timer
+wait_ddr_reset:
+    check_delay_timer
+    bne   wait_ddr_reset
+    clear_delay_timer
+    /* end delay 10ms */
 
     uart_console_setup
 
@@ -1131,6 +1327,31 @@ ddr3_init:
     b     ddr_phy_init_process
 
 ddr3_phyinit_done:
+
+    /********************************************
+     Check Read training margin
+    ********************************************/
+    ldr   r0, =0x1e6e03a0                        @ check Gate Training Pass Window
+    ldr   r1, [r0]
+    ldr   r2, =0x150
+    bic   r0, r1, #0xFF000000
+    bic   r0, r0, #0x00FF0000
+    cmp   r0, r2
+    blt   ddr_test_fail
+    mov   r0, r1, lsr #16
+    cmp   r0, r2
+    blt   ddr_test_fail
+
+    ldr   r0, =0x1e6e03d0                        @ check Read Data Eye Training Pass Window
+    ldr   r1, [r0]
+    ldr   r2, =0x90
+    bic   r0, r1, #0x0000FF00
+    cmp   r0, r2
+    blt   ddr_test_fail
+    mov   r0, r1, lsr #8
+    cmp   r0, r2
+    blt   ddr_test_fail
+    /*******************************************/
 
 /* Debug - UART console message */
     ldr   r0, =CONFIG_ASPEED_COM
@@ -1468,11 +1689,14 @@ ddr4_vref_phy_test_fail:
     b     ddr4_vref_phy_loop
 
 ddr4_vref_phy_loop_end:
+    cmp   r8, #16                                @ check phyvref margin >= 16
+    blt   ddr_test_fail
     ldr   r0, =0x1e6e02cc
     orr   r1, r6, r6, lsl #8
     str   r1, [r0]
     ldr   r0, =0x1e720010
     orr   r1, r6, r7, lsl #8
+    orr   r1, r1, r8, lsl #16
     str   r1, [r0]
 
     /********************************************
@@ -1554,6 +1778,8 @@ ddr4_vref_ddr_loop_end:
     ldr   r1, =0x00000000
     str   r1, [r0]
 
+    cmp   r8, #16                                @ check ddrvref margin >= 16
+    blt   ddr_test_fail
     ldr   r0, =0x1e6e02c0
     add   r1, r6, r7
     add   r1, r1, #0x01
@@ -1563,6 +1789,7 @@ ddr4_vref_ddr_loop_end:
     str   r1, [r0]
     ldr   r0, =0x1e720014
     orr   r1, r6, r7, lsl #8
+    orr   r1, r1, r8, lsl #16
     str   r1, [r0]
 
 /* Debug - UART console message */
@@ -1581,6 +1808,32 @@ ddr4_vref_ddr_loop_end:
     b     ddr_phy_init_process
 
 ddr4_phyinit_done:
+
+    /********************************************
+     Check Read training margin
+    ********************************************/
+    ldr   r0, =0x1e6e03a0                        @ check Gate Training Pass Window
+    ldr   r1, [r0]
+    ldr   r2, =0x150
+    bic   r0, r1, #0xFF000000
+    bic   r0, r0, #0x00FF0000
+    cmp   r0, r2
+    blt   ddr_test_fail
+    mov   r0, r1, lsr #16
+    cmp   r0, r2
+    blt   ddr_test_fail
+
+    ldr   r0, =0x1e6e03d0                        @ check Read Data Eye Training Pass Window
+    ldr   r1, [r0]
+    ldr   r2, =0x90
+    bic   r0, r1, #0x0000FF00
+    cmp   r0, r2
+    blt   ddr_test_fail
+    mov   r0, r1, lsr #8
+    cmp   r0, r2
+    blt   ddr_test_fail
+    /*******************************************/
+
     /*******************************************/
 /* Debug - UART console message */
     ldr   r0, =CONFIG_ASPEED_COM
@@ -2094,6 +2347,7 @@ wait_print_3:
     ldr   r1, [r0]
     tst   r1, #0x40
     beq   wait_print_3
+
     ldr   r0, =0x1e6e03d0
     ldr   r2, [r0]
     mov   r2, r2, lsr #8
@@ -2507,6 +2761,7 @@ set_D2PLL:
     ldr   r0, =0x1e6e2090                        @ Enable MAC interface pull low
     ldr   r1, [r0]
     bic   r1, r1, #0x0000F000
+    bic   r1, r1, #0x20000000                    @ Set USB portA as Device mode
     str   r1, [r0]
 
 /* Test - DRAM initial time */
@@ -2537,3 +2792,4 @@ platform_exit_finish:
 
     /* back to arch calling code */
     mov   pc, lr
+

@@ -187,6 +187,14 @@
  */
 #define CONFIG_ASPEED_TPM_LOCK
 
+/*
+ * Lock the FMC SPI flashes, warning, this is more or less 1-time!
+ * Enable this option, build, and flash. On the next reboot the FMC SPIs
+ * Will have their ROM and SPL regions locked.
+ *
+ * CONFIG_ASPEED_FMC_SPI_LOCK
+ */
+
 #ifdef CONFIG_SPL
 #ifdef CONFIG_SPL_BUILD
 /* This is an SPL build */

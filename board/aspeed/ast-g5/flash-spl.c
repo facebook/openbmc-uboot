@@ -31,7 +31,8 @@
 #define SPI_BP1   (0x1 << 3)
 #define SPI_BP0   (0x1 << 2)
 
-#define SPI_HW_PROTECTIONS (SPI_SRWD | SPI_BP0 | SPI_BP1 | SPI_BP2 | SPI_BP3)
+#define SPI_CS0_HW_PROTECTIONS (SPI_BP0 | SPI_BP1 | SPI_BP2 | SPI_BP3)
+#define SPI_CS1_HW_PROTECTIONS (SPI_BP0)
 
 #define WRITEREG(r, v) *(volatile u32*)(r) = v
 #define WRITEB(r, b) *(volatile uchar*)(r) = (uchar)b
@@ -149,24 +150,32 @@ int doheap(heaptimer_t timer, uchar cs) {
   uchar status_set, status_check;
   u32 base;
   u32 ctrl;
+  u32 prot;
 
   if (cs == 0) {
     base = AST_FMC_CS0_BASE;
     ctrl = AST_FMC_CE0_CONTROL;
+    prot = SPI_CS0_HW_PROTECTIONS;
   } else {
     base = AST_FMC_CS1_BASE;
     ctrl = AST_FMC_CE1_CONTROL;
+    prot = SPI_CS1_HW_PROTECTIONS;
   }
+
+#ifdef CONFIG_ASPEED_FMC_SPI_LOCK
+  /* Set the status register write disable. Only effective if WP# is low. */
+  prot |= SPI_SRWD;
+#endif
 
   fmc_romcs(cs);
 
-  /* Write enable for CS1 */
+  /* Write enable for CSn */
   spi_write_enable(timer, base, ctrl);
   spi_status(timer, base, ctrl, true);
-  spi_write_status(timer, base, ctrl, SPI_HW_PROTECTIONS);
+  spi_write_status(timer, base, ctrl, prot);
   status_set = spi_status(timer, base, ctrl, false);
 
-  /* Write enable for CS1 */
+  /* Write enable for CSn */
   spi_write_enable(timer, base, ctrl);
   spi_status(timer, base, ctrl, true);
   spi_write_status(timer, base, ctrl, 0x0);
@@ -184,9 +193,9 @@ int doheap(heaptimer_t timer, uchar cs) {
 
   if (status_set == 0xFF || status_check == 0xFF) {
     return AST_FMC_ERROR;
-  } else if ((status_set & SPI_HW_PROTECTIONS) != SPI_HW_PROTECTIONS) {
+  } else if ((status_set & prot) != prot) {
     return AST_FMC_ERROR;
-  } else if ((status_check & SPI_HW_PROTECTIONS) != SPI_HW_PROTECTIONS) {
+  } else if ((status_check & prot) != prot) {
     return AST_FMC_WP_OFF;
   }
   return AST_FMC_WP_ON;

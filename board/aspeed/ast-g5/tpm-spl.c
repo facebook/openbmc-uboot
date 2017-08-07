@@ -145,6 +145,17 @@ int ast_tpm_owner_provision(struct vbs *vbs) {
   return VBS_SUCCESS;
 }
 
+static uint32_t ast_tpm_write(uint32_t index, const void *data, uint32_t length) {
+  uint32_t result;
+
+  result = tpm_nv_write_value(index, data, length);
+  if (result == TPM_MAXNVWRITES) {
+    tpm_force_clear();
+    result = tpm_nv_write_value(index, data, length);
+  }
+  return result;
+}
+
 int ast_tpm_nv_provision(struct vbs *vbs) {
   uint32_t result;
   struct tpm_permanent_flags pflags;
@@ -185,37 +196,8 @@ int ast_tpm_nv_provision(struct vbs *vbs) {
     return VBS_ERROR_TPM_NOT_ACTIVATED;
   }
 
-  /* Probe is used to test the index existence. */
-  u32 probe = 1;
   /* ACLs will be applied to our probe index and fallback index. */
   u32 acls = TPM_NV_PER_GLOBALLOCK | TPM_NV_PER_PPWRITE;
-
-  /* Define a probe index to check for max write errors. */
-  result = tpm_nv_read_value(AST_TPM_PROBE_INDEX, &probe, sizeof(probe));
-  if (result == TPM_BADINDEX) {
-    result = tpm_nv_define_space(AST_TPM_PROBE_INDEX, acls, sizeof(probe));
-    /* If there was an error and it was not max writes (no-owner), fail. */
-    if (result == TPM_MAXNVWRITES) {
-      tpm_force_clear();
-    } else if (result) {
-      set_tpm_error(vbs, result);
-      return VBS_ERROR_TPM_NV_SPACE;
-    }
-  }
-
-  /* Attempt a define-space and write-value and catch a max writes error. */
-  result = tpm_nv_write_value(AST_TPM_PROBE_INDEX, &probe, sizeof(probe));
-  if (result == TPM_MAXNVWRITES) {
-    /* The TPM is not owned and we have exhausted the write attempts. */
-    tpm_force_clear();
-    result = tpm_nv_write_value(AST_TPM_PROBE_INDEX, &probe, sizeof(probe));
-  }
-
-  /* If the write-value continues to fail. */
-  if (result) {
-    set_tpm_error(vbs, result);
-    return VBS_ERROR_TPM_NV_SPACE;
-  }
 
   char blank[VBS_TPM_ROLLBACK_SIZE];
   result = tpm_nv_read_value(VBS_TPM_ROLLBACK_INDEX, &blank, sizeof(blank));
@@ -231,13 +213,18 @@ int ast_tpm_nv_provision(struct vbs *vbs) {
    */
   result = tpm_nv_define_space(VBS_TPM_ROLLBACK_INDEX, acls,
       VBS_TPM_ROLLBACK_SIZE);
+  if (result == TPM_MAXNVWRITES) {
+    tpm_force_clear();
+    result = tpm_nv_define_space(VBS_TPM_ROLLBACK_INDEX, acls,
+        VBS_TPM_ROLLBACK_SIZE);
+  }
   if (result) {
     set_tpm_error(vbs, result);
     return VBS_ERROR_TPM_NV_SPACE;
   }
 
   memset(blank, 0x0, VBS_TPM_ROLLBACK_SIZE);
-  result = tpm_nv_write_value(VBS_TPM_ROLLBACK_INDEX, blank, sizeof(blank));
+  result = ast_tpm_write(VBS_TPM_ROLLBACK_INDEX, blank, sizeof(blank));
 
   if (result) {
     set_tpm_error(vbs, result);
@@ -324,7 +311,7 @@ int ast_tpm_try_version(struct vbs *vbs, uint8_t image, uint32_t version,
     /* Only update the NV space if this is a new version. */
     *rb_fallback_target = (no_fallback) ? version : *rb_target;
     *rb_target = version;
-    result = tpm_nv_write_value(VBS_TPM_ROLLBACK_INDEX, &rb, sizeof(rb));
+    result = ast_tpm_write(VBS_TPM_ROLLBACK_INDEX, &rb, sizeof(rb));
     if (result) {
       set_tpm_error(vbs, result);
       return VBS_ERROR_TPM_NV_WRITE_FAILED;

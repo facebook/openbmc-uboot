@@ -10,9 +10,6 @@
 
 #include <asm/arch/vbs.h>
 
-/* Define a TPM NVram index probe for provision tests. */
-#define AST_TPM_PROBE_INDEX    0x101
-
 /* Years the next upgrade must occur, protect against timestamp DoS */
 #define AST_TPM_MAX_YEARS 1
 
@@ -37,7 +34,6 @@ enum ast_tpm_pcrs {
   AST_TPM_PCR_UBOOT = 2,
   AST_TPM_PCR_ENV = 3,
 };
-
 
 /**
  * int ast_tpm_provision() - Perform a 1-time provision of the TPM.

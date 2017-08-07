@@ -346,7 +346,7 @@ str r1, [r0]
 ldr r0, =0x1e780020
 ldr r1, [r0]
 and r1, r1, #0xFFFFFFF0
-orr r1, r1, #0x1
+orr r1, r1, #0x0
 str r1, [r0]
 .endm
 
@@ -359,7 +359,7 @@ str r1, [r0]
 ldr r0, =0x1e780020
 ldr r1, [r0]
 and r1, r1, #0xFFFFFFF0
-orr r1, r1, #0x0
+orr r1, r1, #0x1
 str r1, [r0]
 .endm
 
@@ -372,7 +372,7 @@ str r1, [r0]
 ldr r0, =0x1e780020
 ldr r1, [r0]
 and r1, r1, #0xFFFFFFF0
-orr r1, r1, #0x3
+orr r1, r1, #0x2
 str r1, [r0]
 .endm
 
@@ -385,7 +385,7 @@ str r1, [r0]
 ldr r0, =0x1e780020
 ldr r1, [r0]
 and r1, r1, #0xFFFFFFF0
-orr r1, r1, #0x2
+orr r1, r1, #0x3
 str r1, [r0]
 .endm
 
@@ -411,8 +411,8 @@ str r1, [r0]
   // Read debug card present
   ldr r2, =0x1e780080
   ldr r0, [r2]
-  and r0, r0, #0x00000200
-  ldr r1, =0x0200
+  and r0, r0, #0x00000800
+  ldr r1, =0x0800
   cmp r0, r1
   bne dbg_card_pres\@
   console_bmc
@@ -420,74 +420,75 @@ str r1, [r0]
 
 dbg_card_pres\@:
   // Read key position
-  ldr r2, =0x1e780080
+  ldr r2, =0x1e7801e0
   ldr r0, [r2]
-  bic r0, r0, #0xFFFFC3FF
+  bic r1, r0, #0xFF0FFFFF
+  mov r0, r1, lsr #20
   //Test for position#1
-  ldr r1, =0x0000
+  ldr r1, =0x00
   cmp r0, r1
   bne case_pos2\@
   console_slot1
   b case_end\@
 case_pos2\@:
   //Test for position#2
-  ldr r1, =0x0400
+  ldr r1, =0x01
   cmp r0, r1
   bne case_pos3\@
   console_slot2
   b case_end\@
 case_pos3\@:
  //Test for position#3
-  ldr r1, =0x0800
+  ldr r1, =0x02
   cmp r0, r1
   bne case_pos4\@
   console_slot3
   b case_end\@
 case_pos4\@:
-//Test for position#3
-  ldr r1, =0x0c00
+//Test for position#4
+  ldr r1, =0x03
   cmp r0, r1
   bne case_pos5\@
   console_slot4
   b case_end\@
 case_pos5\@:
   //Test for position#5
-  ldr r1, =0x1000
+  ldr r1, =0x04
   cmp r0, r1
   bne case_pos6\@
   console_bmc
   b case_end\@
 case_pos6\@:
   //Test for position#6
-  ldr r1, =0x1400
+  ldr r1, =0x05
   cmp r0, r1
   bne case_pos7\@
   console_slot1
   b case_end\@
 case_pos7\@:
  //Test for position#7
-   ldr r1, =0x1800
+   ldr r1, =0x06
    cmp r0, r1
    bne case_pos8\@
    console_slot2
    b case_end\@
 case_pos8\@:
   //Test for position#8
-   ldr r1, =0x1c00
+   ldr r1, =0x07
    cmp r0, r1
    bne case_pos9\@
    console_slot3
    b case_end\@
 case_pos9\@:
     //Test for position#9
-   ldr r1, =0x2000
+   ldr r1, =0x08
    cmp r0, r1
    bne case_pos10\@
    console_slot4
    b case_end\@
 case_pos10\@:
    //Test for position#10
-   ldr r1, =0x2400
+   ldr r1, =0x09
    cmp r0, r1
    bne case_end\@
    console_bmc
@@ -499,7 +500,7 @@ case_end\@:
     .macro uart_console_setup
     enable_other_uarts
 #ifdef CONFIG_FBY2
-    console_bmc
+    console_sel
 #endif
     /* setup UART console */
     ldr   r0, =CONFIG_ASPEED_COM_LCR
@@ -1044,10 +1045,6 @@ wait_ddr_reset:
     /* end delay 10ms */
 
     uart_console_setup
-
-#ifdef CONFIG_FBY2
-    console_sel
-#endif
 
   /* Debug - UART console message */
 #ifdef CONFIG_DRAM_UART_TO_UART1

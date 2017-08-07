@@ -186,6 +186,76 @@ static int disable_snoop_dma_interrupt(void)
 #endif
 
 #ifdef CONFIG_FBY2
+static int mux_init(void)
+{
+  u8 loc;
+  u32 reg;
+
+  reg = __raw_readl(AST_GPIO_BASE + 0x1E0);
+  loc = ((reg >> 20) & 0x0F) % 5;
+
+  // USB MUX, P3V3 enable
+  // enable GPIOAB3,AB1 WDT reset tolerance
+  reg = __raw_readl(AST_GPIO_BASE + 0x18C);
+  reg |= 0xA000000;
+  __raw_writel(reg, AST_GPIO_BASE + 0x18C);
+  // set USB MUX, P3V3 enable
+  reg = __raw_readl(AST_GPIO_BASE + 0x1E0);
+  reg = (reg & ~0xA000000) | (loc < MAX_NODES)?0x2000000:0xA000000;
+  __raw_writel(reg, AST_GPIO_BASE + 0x1E0);
+  // set GPIOAB3,AB1 as output
+  reg = __raw_readl(AST_GPIO_BASE + 0x1E4);
+  reg |= 0xA000000;
+  __raw_writel(reg, AST_GPIO_BASE + 0x1E4);
+
+  // USB MUX
+  // enable GPIOE[5:4] WDT reset tolerance
+  reg = __raw_readl(AST_GPIO_BASE + 0x3C);
+  reg |= 0x30;
+  __raw_writel(reg, AST_GPIO_BASE + 0x3C);
+  // set USB MUX location
+  if (loc < MAX_NODES) {
+    reg = __raw_readl(AST_GPIO_BASE + 0x20);
+    reg = (reg & ~0x30) | (loc << 4);
+    __raw_writel(reg, AST_GPIO_BASE + 0x20);
+  }
+  // set GPIOE[5:4] as output
+  reg = __raw_readl(AST_GPIO_BASE + 0x24);
+  reg |= 0x30;
+  __raw_writel(reg, AST_GPIO_BASE + 0x24);
+
+  // VGA MUX
+  // enable GPIOJ[3:2] WDT reset tolerance
+  reg = __raw_readl(AST_GPIO_BASE + 0xAC);
+  reg |= 0xC00;
+  __raw_writel(reg, AST_GPIO_BASE + 0xAC);
+  // set VGA MUX location
+  if (loc < MAX_NODES) {
+    reg = __raw_readl(AST_GPIO_BASE + 0x70);
+    reg = (reg & ~0xC00) | (loc << 10);
+    __raw_writel(reg, AST_GPIO_BASE + 0x70);
+  }
+  // set GPIOJ[3:2] as output
+  reg = __raw_readl(AST_GPIO_BASE + 0x74);
+  reg |= 0xC00;
+  __raw_writel(reg, AST_GPIO_BASE + 0x74);
+
+  // PCIe Clk/Rst buffer
+  // enable GPIOB[7:4] WDT reset tolerance
+  reg = __raw_readl(AST_GPIO_BASE + 0x1C);
+  reg |= 0xF000;
+  __raw_writel(reg, AST_GPIO_BASE + 0x1C);
+  // set PCIe Clk/Rst buffer
+  reg = __raw_readl(AST_GPIO_BASE + 0x00);
+  __raw_writel(reg, AST_GPIO_BASE + 0x00);
+  // set GPIOB[7:4] as output
+  reg = __raw_readl(AST_GPIO_BASE + 0x04);
+  reg |= 0xF000;
+  __raw_writel(reg, AST_GPIO_BASE + 0x04);
+
+  return 0;
+}
+
 static int slot_12V_init(void)
 {
   u32 slot_present_reg;
@@ -245,6 +315,7 @@ int board_init(void)
 #endif
 
 #ifdef CONFIG_FBY2
+  mux_init();
   slot_12V_init();
 #endif
 

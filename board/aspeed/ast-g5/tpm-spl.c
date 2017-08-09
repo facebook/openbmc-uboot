@@ -311,10 +311,13 @@ int ast_tpm_try_version(struct vbs *vbs, uint8_t image, uint32_t version,
     /* Only update the NV space if this is a new version. */
     *rb_fallback_target = (no_fallback) ? version : *rb_target;
     *rb_target = version;
-    result = ast_tpm_write(VBS_TPM_ROLLBACK_INDEX, &rb, sizeof(rb));
-    if (result) {
-      set_tpm_error(vbs, result);
-      return VBS_ERROR_TPM_NV_WRITE_FAILED;
+    if (vbs->error_code == VBS_SUCCESS) {
+      /* Only update times if verification has not yet failed. */
+      result = ast_tpm_write(VBS_TPM_ROLLBACK_INDEX, &rb, sizeof(rb));
+      if (result) {
+        set_tpm_error(vbs, result);
+        return VBS_ERROR_TPM_NV_WRITE_FAILED;
+      }
     }
 
     /* The times have changed. */

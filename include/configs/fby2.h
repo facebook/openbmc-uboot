@@ -23,6 +23,11 @@
 
 #define CONFIG_FBY2 1
 
+#define CONFIG_ASPEED_UART1_ENABLE
+#define CONFIG_ASPEED_UART2_ENABLE
+#define CONFIG_ASPEED_UART3_ENABLE
+#define CONFIG_ASPEED_UART4_ENABLE
+
 #define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw"
 #define CONFIG_UPDATE            "tftp 80800000 ast2500.scr; so 80800000'"
 #define CONFIG_BOOTCOMMAND       "bootm 20080000" /* Location of FIT */

@@ -20,12 +20,12 @@
 DECLARE_GLOBAL_DATA_PTR;
 
 // Add for watchdog init
-void watchdog_init()
+void watchdog_init(void)
 {
 #ifdef CONFIG_ASPEED_ENABLE_WATCHDOG
   	#define AST_WDT1_BASE 0x1e785000
   	#define AST_WDT2_BASE 0x1e785020
-  	#define AST_WDT_CLK (1*1000*1000) /* 1M clock source */
+
   	u32 reload = AST_WDT_CLK * CONFIG_ASPEED_WATCHDOG_TIMEOUT;
 #ifdef CONFIG_ASPEED_ENABLE_DUAL_BOOT_WATCHDOG
   	/* dual boot watchdog is enabled */
@@ -50,11 +50,9 @@ void watchdog_init()
   	printf("Watchdog: %us\n", CONFIG_ASPEED_WATCHDOG_TIMEOUT);
 #endif
 }
+
 int board_init(void)
 {
-    DECLARE_GLOBAL_DATA_PTR;
-    unsigned char data;
-    unsigned long gpio;
     unsigned long reg;
 
     /* AHB Controller */
@@ -74,6 +72,8 @@ int board_init(void)
         reg &= 0x1c0fffff;
         reg |= 0x61800000;                              /* PCLK  = HPLL/8 */
 #ifdef CONFIG_AST1070
+        unsigned long gpio;
+
         //check lpc or lpc+ mode
         gpio = *((volatile ulong*) 0x1e780070);         /* mode check */
         if(gpio & 0x2)
@@ -196,5 +196,3 @@ int board_eth_init(bd_t *bd)
 	return aspeednic_initialize(bd);
 }
 #endif
-
-

@@ -11,6 +11,7 @@
 
 #include <common.h>
 #include <net.h>
+#include <miiphy.h>
 #include <asm/io.h>
 
 //#if defined(CONFIG_CMD_NET) && defined(CONFIG_NET_MULTI) && defined(CONFIG_ASPEEDNIC)
@@ -1129,7 +1130,7 @@ static void aspeednic_probe_phy(struct eth_device *dev)
 
 static int aspeednic_init(struct eth_device* dev, bd_t* bis)
 {
-	unsigned long i, Package_Found = 0, Channel_Found = 0, Re_Send = 0, Link_Status;
+	unsigned long i;
 
 	RESET_DE4X5(dev);
 

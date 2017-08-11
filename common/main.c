@@ -20,6 +20,11 @@ DECLARE_GLOBAL_DATA_PTR;
  */
 __weak void show_boot_progress(int val) {}
 
+/*
+ * Custom tests need the watchdog re-initialized.
+ */
+void watchdog_init(void);
+
 static void run_preboot_environment_command(void)
 {
 #ifdef CONFIG_PREBOOT
@@ -90,12 +95,12 @@ void main_loop(void)
 
 	ret = autoboot_command(s);
 
-#if defined(CONFIG_PRECLICOMMAND)
 	if (!ret) {
+#if defined(CONFIG_PRECLICOMMAND)
 		s = CONFIG_PRECLICOMMAND;
 		run_command_list(s, -1, 0);
-	}
 #endif
+	}
 
 	cli_loop();
 	panic("No CLI available");

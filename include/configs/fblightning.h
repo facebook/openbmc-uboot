@@ -8,9 +8,10 @@
 #ifndef __FBLIGHTNING_CONFIG_H
 #define __FBLIGHTNING_CONFIG_H
 
+#define CONFIG_FBLIGHTNING 1
+
 #define CONFIG_BOOTARGS		"debug console=ttyS0,57600n8 root=/dev/ram rw printk.time=1"
 #define CONFIG_UPDATE		"tftp 40800000 ast2400.scr; so 40800000'"
-#define CONFIG_BOOTCOMMAND 	"bootm 20080000"	/* Location of FIT */
 #define CONFIG_BOOTFILE		"all.bin"
 
 #define CONFIG_CMD_CS1TEST
@@ -26,10 +27,9 @@
  * Serial configuration
  */
 #define CONFIG_SYS_LOADS_BAUD_CHANGE
-#define CONFIG_CONS_INDEX	2
 #define CONFIG_BAUDRATE		57600
 #define CONFIG_ASPEED_COM	0x1e784000	/* COM2(UART5) */
-#define  CONFIG_FBLIGHTNING
+
 /*
  * Serial configuration
  */
@@ -52,7 +52,6 @@
 #define CONFIG_ARCH_AST2400
 
 #define CONFIG_ASPEED_ENABLE_WATCHDOG
-#define CONFIG_ASPEED_WATCHDOG_TIMEOUT (5*60) // 5m
 #define CONFIG_ASPEED_ENABLE_DUAL_BOOT_WATCHDOG
 #define CONFIG_ASPEED_WATCHDOG_DUAL_BOOT_TIMEOUT \
   (CONFIG_ASPEED_WATCHDOG_TIMEOUT - 5)

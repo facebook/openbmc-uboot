@@ -12,7 +12,6 @@
 
 #define CONFIG_BOOTARGS		"debug console=ttyS0,57600n8 root=/dev/ram rw"
 #define CONFIG_UPDATE		"tftp 40800000 ast2400.scr; so 40800000'"
-#define CONFIG_BOOTCOMMAND 	"bootm 20080000"	/* Location of FIT */
 #define CONFIG_BOOTFILE		"all.bin"
 
 /*
@@ -24,7 +23,6 @@
 /*
  * Serial configuration
  */
-#define CONFIG_SYS_NS16550
 #define CONFIG_SYS_NS16550_COM1		0x1e783000
 #define CONFIG_SYS_NS16550_COM2		0x1e784000
 #define CONFIG_SYS_NS16550_COM3		0x1e78e000

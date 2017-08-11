@@ -515,7 +515,8 @@ static void flash_write_buffer (flash_info_t *info, uchar *src, ulong addr, int 
 
 
 
-#if defined(CFG_ENV_IS_IN_FLASH) || defined(CFG_ENV_ADDR_REDUND) || (CFG_MONITOR_BASE >= CFG_FLASH_BASE)
+#if defined(CONFIG_ENV_IS_IN_FLASH) || defined(CONFIG_ENV_ADDR_REDUND) || \
+		(CONFIG_MONITOR_BASE >= AST_FMC_CS0_BASE)
 static flash_info_t *flash_get_info(ulong base)
 {
 	int i;

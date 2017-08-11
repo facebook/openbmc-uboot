@@ -30,7 +30,6 @@
 
 #define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw"
 #define CONFIG_UPDATE            "tftp 80800000 ast2500.scr; so 80800000'"
-#define CONFIG_BOOTCOMMAND       "bootm 20080000" /* Location of FIT */
 #define CONFIG_BOOTFILE          "flash-fby2"
 #ifndef CONFIG_SPL_BUILD
 #define CONFIG_SYS_LONGHELP     /* undef to save memory   */

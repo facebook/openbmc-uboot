@@ -1396,7 +1396,6 @@ static int do_mem_crc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
                                  char * const argv[])
  {
      char cmd[100];
-     int i=0;
      uint32_t next_pattern_addr = CONFIG_CS1TEST_CS0PATTERN_ADDR;
      uint32_t store_data_in_cs1_start,store_data_in_cs1_index;
      uint32_t rand_value, test_addr_boundary;
@@ -1405,65 +1404,64 @@ static int do_mem_crc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
      bool flag_cs_result = 0;
      int cs1test_start_sect, cs1test_total_sects;
      uint32_t CS1_test_start_addr, CS1_test_end_addr, CS1_sector_size;
-     uint32_t testing_mem_size, erase_range, index_address;
-     uint32_t boundary_end_addr;
+     uint32_t testing_mem_size, index_address;
      const void *buf1, *buf2, *buf3;
      ulong word1, word2, word3;
- 
+
      cs1test_start_sect = getenv_ulong("cs1test_start_sect", 10, 0);
      cs1test_total_sects = getenv_ulong("cs1test_total_sects", 10, 0);
- 
+
      // Clear the last test result
      setenv("cs1test_result", "");
- 
+
      // Calculate the testing range
      CS1_sector_size     = (flash_info[1].size/flash_info[1].sector_count);
      CS1_test_start_addr = PHYS_FLASH_2 + CS1_sector_size*(cs1test_start_sect);
      CS1_test_end_addr   = CS1_test_start_addr + ( CS1_sector_size * cs1test_total_sects )-1;
- 
+
      // Check if the testing range is valid
      test_addr_boundary = PHYS_FLASH_2 + flash_info[1].size;
- 
+
      if(((CS1_test_end_addr-CS1_test_start_addr+1)<=flash_info[1].size)
          && ((CS1_test_end_addr-CS1_test_start_addr+1)>0)
          && (CS1_test_start_addr < test_addr_boundary)
          && (CS1_test_end_addr < test_addr_boundary)){
-         
+
  		/*Read, Store and Disable WDT1 and WDT2 register
  		WDT1 0Ch - WDT1 control register
  		WDT2 2Ch - WDT2 control register
  		*/
  		wdt1_register_index = WDT_REGISTER_BASE + 0x0C;
  		wdt2_register_index = WDT_REGISTER_BASE + 0x2C;
- 
- 		wdt1_register_back = readl(wdt1_register_index);		
+
+ 		wdt1_register_back = readl(wdt1_register_index);
  		wdt2_register_back = readl(wdt2_register_index);
  		disable_wdt1 = (wdt1_register_back&(~(0x1)));
  		disable_wdt2 = (wdt2_register_back&(~(0x1)));
  		writel( disable_wdt1, wdt1_register_index);
  		writel( disable_wdt2, wdt2_register_index);
 
- 		//Reading original data from CS1 and store it in SDRAM 
+ 		//Reading original data from CS1 and store it in SDRAM
  		testing_mem_size = (CS1_sector_size * cs1test_total_sects);
  		store_data_in_cs1_start = (CONFIG_CS1TEST_CS0PATTERN_ADDR+testing_mem_size+4);
         	store_data_in_cs1_index = store_data_in_cs1_start;
-        
+
         	buf3 = map_sysmem(CS1_test_start_addr, testing_mem_size);
-        	while(buf3<CS1_test_end_addr){
+        	while((uint32_t)buf3 < CS1_test_end_addr){
         		word3 = *(u32 *)buf3;
         		writel(word3, store_data_in_cs1_index);
         		store_data_in_cs1_index +=4;
         		buf3 +=4;
         	}
-        	unmap_sysmem(buf3);	
+        	unmap_sysmem(buf3);
 
         	// Protect off CS1
  		run_command("protect off all",0);
- 
+
  		// Erasing CS1
  		sprintf(cmd, "erase %x %x",CS1_test_start_addr,CS1_test_end_addr);
  		run_command(cmd,0);
- 
+
  		// Make the writing pattern and store in SDRAM
  		index_address = CS1_test_start_addr;
  		while(index_address<=CS1_test_end_addr){
@@ -1474,21 +1472,22 @@ static int do_mem_crc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
  		}
 
  		// Back to pattern start address
- 		next_pattern_addr = CONFIG_CS1TEST_CS0PATTERN_ADDR; 
- 
+ 		next_pattern_addr = CONFIG_CS1TEST_CS0PATTERN_ADDR;
+
  		// Writing to CS1
  		sprintf(cmd, "cp.b %x %x %x",next_pattern_addr,CS1_test_start_addr,testing_mem_size);
  		run_command(cmd,0);
- 
+
  		// Check CS1 and Pattern
  		buf1 = map_sysmem(next_pattern_addr, testing_mem_size);
  		buf2 = map_sysmem(CS1_test_start_addr, testing_mem_size);
- 		while(buf2<CS1_test_end_addr)
+ 		while((uint32_t)buf2 < CS1_test_end_addr)
  		{
  		   word1 = *(u32 *)buf1;
  		   word2 = *(u32 *)buf2;
  		   if (word1 != word2) {
- 		      printf("word1(%x) at buf1(%x) != word2(%x) at buf2(%x)\n",word1,buf1,word2,buf2);
+ 		      printf("word1(%x) at buf1(%x) != word2(%x) at buf2(%x)\n",
+		         (uint)word1, (uint)word1, (uint)word2, (uint)buf2);
  		      flag_cs_result=1;
  		      break;
  		   }
@@ -1500,16 +1499,16 @@ static int do_mem_crc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
         	// Protect off CS1
  		run_command("protect off all",0);
- 
+
  		// Erasing CS1
  		sprintf(cmd, "erase %x %x",CS1_test_start_addr,CS1_test_end_addr);
  		run_command(cmd,0);
- 
+
         	//Writing store image data back to cs1
  		sprintf(cmd, "cp.b %x %x %x",store_data_in_cs1_start,CS1_test_start_addr,testing_mem_size);
  		run_command(cmd,0);
 
- 
+
  		// Save the testing result and reset the env variable
  		if(flag_cs_result==0){
  		 setenv("cs1test_result", "pass");
@@ -1517,12 +1516,12 @@ static int do_mem_crc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
  		else{
  		 setenv("cs1test_result", "fail");
  		}
- 
+
  		setenv("do_cs1test", "");
  		setenv("cs1test_start_sect", "");
  		setenv("cs1test_total_sects", "");
  		saveenv();
- 
+
  		// If the platform need to enable WDT, Restart the WDT
  		writel(wdt1_register_back, wdt1_register_index);
  		writel(wdt2_register_back, wdt2_register_index);
@@ -1534,6 +1533,7 @@ static int do_mem_crc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
  		setenv("cs1test_total_sects", "");
  		saveenv();
      }
+	return 0;
  }
 #endif /*CONFIG_CMD_CS1TEST*/
 /**************************************************/

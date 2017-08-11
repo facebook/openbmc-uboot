@@ -473,6 +473,9 @@ int fit_config_verify_required_sigs(const void *fit, int conf_noffset,
 int fit_config_verify(const void *fit, int conf_noffset)
 {
 	int no_sigsp;
-	return fit_config_verify_required_sigs(fit, conf_noffset,
-					       gd_fdt_blob(), &no_sigsp);
+	int ret;
+
+	ret = fit_config_verify_required_sigs(fit, conf_noffset,
+					      gd_fdt_blob(), &no_sigsp);
+	return (no_sigsp || ret) ? 1 : 0;
 }

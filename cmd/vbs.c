@@ -25,7 +25,7 @@ static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
   }
 
   if (argc == 2) {
-    if (strncmp(argv[1], "disable", sizeof("disable")) == 0) {
+    if (strncmp(argv[1], "interrupt", sizeof("interrupt")) == 0) {
 #ifdef CONFIG_ASPEED_ENABLE_WATCHDOG
       /* This will disable the WTD1. */
       writel(readl(AST_WDT_BASE + 0x0C) & ~1, AST_WDT_BASE + 0x0C);
@@ -37,9 +37,20 @@ static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
       return tpm_nv_define_space(VBS_TPM_ROLLBACK_INDEX,
           TPM_NV_PER_GLOBALLOCK | TPM_NV_PER_PPWRITE, 0);
 #endif
+    } else if (strncmp(argv[1], "oscheck", sizeof("oscheck")) == 0) {
+      if (vbs->error_type == VBS_SUCCESS) {
+        /**
+         * Verify the OS if vboot has been successful.
+         *
+         * Verified-boot will enforce from here on.
+         * If it was previously enforcing then it would not reach this point.
+         */
+        setenv("verify", "yes");
+      }
     } else {
       printf("Unknown vbs command\n");
     }
+    return 0;
   }
 
   uint16_t crc = vbs->crc;
@@ -78,12 +89,14 @@ static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
   printf("CRC valid:   %d (%hu)\n", (crc_valid) ? 1 : 0, crc);
   printf("Status: type (%d) code (%d)\n", vbs->error_type, vbs->error_code);
 
-	return 0;
+  return 0;
 }
 
 U_BOOT_CMD(
 	vbs,	3,	1,	do_vbs,
 	"print verified-boot status",
 	"type code - set the vbs error type and code\n"
-	"disable - disable the watchdog timer and ROM handoff check"
+	"interrupt - disable the watchdog timer and clear ROM handoff check"
+	"clear - remove all fallback timestamps"
+	"oscheck - check the vboot status and soft-enable verification on success"
 );

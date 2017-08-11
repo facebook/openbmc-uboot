@@ -25,15 +25,18 @@
  *   CONFIG_SYS_RECOVERY_BASE: The known location of the Recovery U-Boot.
  *   CONFIG_ASPEED_RECOVERY_BUILD: Defined when the compilation is for the Recovery.
  */
+#define CONFIG_CS0_SPL_KERNEL_LOAD    "200E0000"
+#define CONFIG_CS1_SPL_KERNEL_LOAD    "280E0000"
+
 #ifdef CONFIG_SPL
 #ifdef CONFIG_ASPEED_RECOVERY_BUILD
 #define CONFIG_SYS_REMAP_BASE     0x20015000
 #define CONFIG_SYS_UBOOT_START    0x20015000 /* Must be defined as-is */
-#define CONFIG_KERNEL_LOAD         "200E0000"
+#define CONFIG_KERNEL_LOAD        CONFIG_CS0_SPL_KERNEL_LOAD
 #else
 #define CONFIG_SYS_REMAP_BASE     0x28084000
 #define CONFIG_SYS_UBOOT_START    0x28084000 /* Must be defined as-is */
-#define CONFIG_KERNEL_LOAD         "280E0000"
+#define CONFIG_KERNEL_LOAD        CONFIG_CS1_SPL_KERNEL_LOAD
 #endif
 #define CONFIG_SYS_SPL_FIT_BASE   0x28080000
 #define CONFIG_SYS_RECOVERY_BASE  0x20015000
@@ -55,31 +58,6 @@
  * Before including this common configuration, the board must include
  * the CPU/arch platform configuration.
  */
-
-/*
- * Recovery boot flow
- */
-#ifdef CONFIG_ASPEED_RECOVERY_BUILD
-#define CONFIG_PREBOOT            "setenv verify no;"
-#endif
-
-#if defined(CONFIG_DEBUG_QEMU) && !defined(CONFIG_ASPEED_RECOVERY_BUILD)
-/*
- * Debug/testing software enforced verified-boot
- * The QEMU-model does not persist environment data.
- */
-#define CONFIG_DEBUG_ENFORCE_VERIFY "setenv verify yes; "
-#else
-#define CONFIG_DEBUG_ENFORCE_VERIFY " "
-#endif
-
-/*
- * Basic boot command configuration based on flash
- */
-#define CONFIG_BOOTCOMMAND                                \
-  CONFIG_DEBUG_ENFORCE_VERIFY                             \
-  "bootm " CONFIG_KERNEL_LOAD "; " /* Location of FIT */  \
-  CONFIG_POSTBOOT
 
 /*
  * Environment configuration
@@ -170,16 +148,36 @@
 /* Configure the rare, boot-fail aftermath. */
 #ifdef CONFIG_CMD_VBS
 /* If this runs then verified-boot failed */
-#define CONFIG_POSTBOOT "vbs 6 60; "
+#define CONFIG_POSTBOOT "vbs 6 60; bootm " CONFIG_CS0_SPL_KERNEL_LOAD "; "
 #else
 #define CONFIG_POSTBOOT " "
 #endif
 
 /*
+ * Recovery boot flow
+ */
+#ifdef CONFIG_ASPEED_RECOVERY_BUILD
+#define CONFIG_PREBOOT "setenv verify no; "
+#else
+#ifdef CONFIG_CMD_VBS
+#define CONFIG_PREBOOT "vbs oscheck; "
+#else
+#define CONFIG_PREBOOT " "
+#endif
+#endif
+
+/*
+ * Basic boot command configuration based on flash
+ */
+#define CONFIG_BOOTCOMMAND                                \
+  "bootm " CONFIG_KERNEL_LOAD "; " /* Location of FIT */  \
+  CONFIG_POSTBOOT
+
+/*
  * Command to run in if CLI is used.
  */
 #if defined(CONFIG_CMD_VBS) && defined(CONFIG_SPL)
-#define CONFIG_PRECLICOMMAND "vbs disable; "
+#define CONFIG_PRECLICOMMAND "vbs interrupt; "
 #endif
 
 /*

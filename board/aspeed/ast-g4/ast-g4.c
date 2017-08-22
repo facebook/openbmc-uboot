@@ -35,6 +35,10 @@ void watchdog_init(void)
   	__raw_writel(reload, AST_WDT2_BASE + 0x04);
   	/* magic word to reload */
   	__raw_writel(0x4755, AST_WDT2_BASE + 0x08);
+        /* init the WDT2 clock source to 1MHz.
+           set WDT2 reset type to SOC reset.
+           enable 2nd flash boot whenever WDT2 reset.*/
+        __raw_writel(0x93, AST_WDT2_BASE + 0x0c);
   	printf("Dual boot watchdog: %us\n", CONFIG_ASPEED_WATCHDOG_DUAL_BOOT_TIMEOUT);
 #else
   	/* disable WDT2 */

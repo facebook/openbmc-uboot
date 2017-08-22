@@ -498,6 +498,15 @@ LPC_Patch_E:
 .globl lowlevel_init
 lowlevel_init:
 
+/*
+ * Set Clock source of WDT2 as 1MHz.
+ */
+    ldr r0, =0x1e78502c
+    ldr r1, [r0]
+    orr r1, r1, #0x10
+    str r1, [r0]
+
+
 init_dram:
     /* save lr */
     mov r4, lr

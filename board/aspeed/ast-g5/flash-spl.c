@@ -24,12 +24,18 @@
 #define SPI_CMD_WE 0x06
 #define SPI_CMD_RS 0x05
 #define SPI_CMD_WS 0x01
+#define SPI_CMD_RC 0x15
 
 #define SPI_SRWD  (0x1 << 7)
 #define SPI_BP3   (0x1 << 5)
 #define SPI_BP2   (0x1 << 4)
 #define SPI_BP1   (0x1 << 3)
 #define SPI_BP0   (0x1 << 2)
+#define SPI_WEL   (0x1 << 1)
+#define SPI_WIP   (0x1 << 0)
+
+/* Status register Top/Bottom bit select */
+#define SPI_TB (0x1 << 6)
 
 #define SPI_CS0_HW_PROTECTIONS (SPI_BP0 | SPI_BP1 | SPI_BP2 | SPI_BP3)
 #define SPI_CS1_HW_PROTECTIONS (SPI_BP0)
@@ -92,7 +98,37 @@ inline uchar spi_status(heaptimer_t timer, u32 base, u32 ctrl, bool wel) {
       break;
     }
     r1 = READB(base);
-  } while ((wel && !(r1 & 0x2)) || (!wel && (r1 & 0x1)));
+  } while ((wel && !(r1 & SPI_WEL)) || (!wel && (r1 & SPI_WIP)));
+  WRITEREG(AST_FMC_BASE + ctrl, 0x07);
+  timer(200);
+  return r1;
+}
+
+inline void spi_write_config(heaptimer_t timer, u32 base, u32 ctrl, uchar p) {
+  uchar r1;
+
+  /* The 'configuration' register on MXIC chips is the second status byte. */
+  r1 = spi_status(timer, base, ctrl, false);
+
+  WRITEREG(AST_FMC_BASE + ctrl, 0x603);
+  timer(200);
+  WRITEB(base, SPI_CMD_WS);
+  timer(10);
+  /* Must write the status register first. */
+  WRITEB(base, r1);
+  WRITEB(base, p);
+  WRITEREG(AST_FMC_BASE + ctrl, 0x07);
+  timer(200);
+}
+
+inline uchar spi_config(heaptimer_t timer, u32 base, u32 ctrl) {
+  uchar r1;
+
+  WRITEREG(AST_FMC_BASE + ctrl, 0x03);
+  timer(200);
+  WRITEB(base, SPI_CMD_RC);
+  timer(10);
+  r1 = READB(base);
   WRITEREG(AST_FMC_BASE + ctrl, 0x07);
   timer(200);
   return r1;
@@ -116,8 +152,31 @@ inline void spi_enable4b(heaptimer_t timer, u32 base, u32 ctrl) {
   timer(200);
 }
 
-int heaptimer (unsigned long usec)
-{
+inline void spi_id(heaptimer_t timer, u32 base, u32 ctrl, uchar* ch) {
+  WRITEREG(AST_FMC_BASE + ctrl, 0x03);
+  timer(200);
+  WRITEB(base, SPI_CMD_ID);
+  timer(10);
+  ch[0] = READB(base);
+  timer(10);
+  ch[1] = READB(base);
+  timer(10);
+  ch[2] = READB(base);
+  WRITEREG(AST_FMC_BASE + ctrl, 0x07);
+  timer(200);
+}
+
+inline void set_topbottom_mxic(heaptimer_t timer, u32 base, u32 ctrl) {
+  uchar r1;
+
+  r1 = spi_config(timer, base, ctrl);
+  spi_write_config(timer, base, ctrl, r1 | (0x1 << 3));
+
+  /* Wait for the WIP/Busy to clear */
+  (void)spi_status(timer, base, ctrl, false);
+}
+
+int heaptimer(unsigned long usec) {
   ulong last;
   ulong clks;
   ulong elapsed;
@@ -169,9 +228,28 @@ int doheap(heaptimer_t timer, uchar cs) {
 
   fmc_romcs(cs);
 
+  if (cs == 1) {
+    /* Set the T/B bit based on the chip vendor. */
+    uchar id[3];
+    spi_id(timer, base, ctrl, id);
+
+    if (id[0] == 0xC2) {
+      /* This is MX */
+      spi_write_enable(timer, base, ctrl);
+      spi_status(timer, base, ctrl, true);
+      set_topbottom_mxic(timer, base, ctrl);
+    } else if (id[0] == 0xEF || id[0] == 0xC8) {
+      /* WB or GD */
+      prot |= SPI_TB;
+    } else {
+      return AST_FMC_ERROR;
+    }
+  }
+
   /* Write enable for CSn */
   spi_write_enable(timer, base, ctrl);
   spi_status(timer, base, ctrl, true);
+
   spi_write_status(timer, base, ctrl, prot);
   status_set = spi_status(timer, base, ctrl, false);
 

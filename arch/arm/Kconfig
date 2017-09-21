@@ -967,7 +967,7 @@ source "arch/arm/cpu/armv8/Kconfig"
 source "arch/arm/imx-common/Kconfig"
 
 source "board/aspeed/Kconfig"
-source "board/fb/Kconfig"
+source "board/fb-obmc/Kconfig"
 
 source "board/bosch/shc/Kconfig"
 source "board/BuR/brxre1/Kconfig"

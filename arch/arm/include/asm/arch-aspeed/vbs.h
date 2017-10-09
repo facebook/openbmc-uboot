@@ -25,6 +25,7 @@
 #define VBS_ERROR_EXECUTE_FAILURE  11
 
 #define VBS_ERROR_SPI_PROM         20
+#define VBS_ERROR_SPI_SWAP         21
 
 #define VBS_ERROR_BAD_MAGIC        30
 #define VBS_ERROR_NO_IMAGES        31
@@ -69,7 +70,10 @@
 #define VBS_ERROR_ROLLBACK_HUGE     92
 #define VBS_ERROR_ROLLBACK_FINISH   99
 
-#define VBS_HANDOFF     0xADEFAD8B
+#define VBS_HANDOFF                 0xADEFAD8B
+#define VBS_HANDOFF_TPM_RST         (VBS_HANDOFF - 1)
+#define VBS_HANDOFF_TPM_SETUP       (VBS_HANDOFF - 2)
+#define VBS_HANDOFF_SWAP            (VBS_HANDOFF - 3)
 
 #define VBS_KEYS_PATH   "/keys"
 

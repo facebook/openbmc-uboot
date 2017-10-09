@@ -166,6 +166,41 @@ static void vboot_enforce(struct vbs *vbs, u8 t, u8 c) {
   }
 }
 
+void vboot_check_source(struct vbs *vbs) {
+  /* Address of Timeout Reset register if a boot source swap is needed. */
+  u32 source_swap = 0;
+
+  /* WDT1 Timeout Status Register's bit[1] indicates alternate boot source. */
+  u32 wdt_tsr = __raw_readl(AST_WDT_BASE + 0x10);
+  if (wdt_tsr & (0x1 << 1)) {
+    /* Bit 1 is set. WDT1 was triggered with alternate boot source. */
+    source_swap = AST_WDT_BASE + 0x14;
+  }
+
+  /* Repeat for WDT2. */
+  wdt_tsr = __raw_readl(AST_WDT_BASE + 0x30);
+  if (wdt_tsr & (0x1 << 1)) {
+    source_swap = AST_WDT_BASE + 0x34;
+  }
+
+  /* Repeat for WDT3. */
+  wdt_tsr = __raw_readl(AST_WDT_BASE + 0x50);
+  if (wdt_tsr & (0x1 << 1)) {
+    source_swap = AST_WDT_BASE + 0x54;
+  }
+
+  if (source_swap) {
+    __raw_writel(0x1, source_swap);
+    printf("Alternate boot source detected swapping CS0.\n");
+    if (vbs->rom_handoff != VBS_HANDOFF_SWAP) {
+      vbs->rom_handoff = VBS_HANDOFF_SWAP;
+      vboot_jump(0x0, vbs);
+    } else {
+      vboot_recovery(vbs, VBS_ERROR_TYPE_SPI, VBS_ERROR_SPI_SWAP);
+    }
+  }
+}
+
 void vboot_check_fit(void* fit, struct vbs *vbs,
                      int* uboot, int* config,
                      u32* uboot_position, u32* uboot_size) {
@@ -349,6 +384,13 @@ void vboot_reset(struct vbs *vbs) {
     vboot_recovery(vbs, VBS_ERROR_TYPE_SPI, VBS_ERROR_EXECUTE_FAILURE);
   }
 
+  /*
+   * Enforce booting from FMCCS0.
+   * This enforcement can only repeat once. This restriction protects against
+   * an infinite reset.
+   */
+  vboot_check_source(vbs);
+
   /* Verified boot is not possible if the SPL does not include a KEK. */
   const void *sig_store = (const void*)gd_fdt_blob();
   vbs->rom_keys = (u32)sig_store;
@@ -373,20 +415,20 @@ void vboot_reset(struct vbs *vbs) {
   int tpm_status = ast_tpm_provision(vbs);
   if (tpm_status == VBS_ERROR_TPM_SETUP) {
     /* The TPM was not reset correctly */
-    if (vbs->rom_handoff != VBS_HANDOFF - 2) {
-      vbs->rom_handoff = (VBS_HANDOFF - 2);
+    if (vbs->rom_handoff != VBS_HANDOFF_TPM_SETUP) {
+      vbs->rom_handoff = VBS_HANDOFF_TPM_SETUP;
       vboot_jump(0x0, vbs);
     }
   }
 
   if (tpm_status == VBS_ERROR_TPM_RESET_NEEDED) {
-    if (vbs->rom_handoff == VBS_HANDOFF - 1) {
+    if (vbs->rom_handoff == VBS_HANDOFF_TPM_RST) {
       /* The TPM needed a reset before, and needs another, this is a problem. */
       printf("TPM was deactivated and remains so after a reset.\n");
       vboot_enforce(vbs, VBS_ERROR_TYPE_TPM, VBS_ERROR_TPM_RESET_NEEDED);
     } else {
       printf("TPM was deactivated and needs a reset.\n");
-      vbs->rom_handoff = (VBS_HANDOFF - 1);
+      vbs->rom_handoff = VBS_HANDOFF_TPM_RST;
       vboot_jump(0x0, vbs);
     }
   } else if (tpm_status != VBS_SUCCESS) {

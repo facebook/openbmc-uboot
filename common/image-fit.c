@@ -873,6 +873,7 @@ int fit_image_verify(const void *fit, int image_noffset)
 						 hash_value, &err_msg))
 				goto error;
 			puts("+ ");
+			break;
 		} else if (IMAGE_ENABLE_VERIFY && verify_all &&
 				!strncmp(name, FIT_SIG_NODENAME,
 					strlen(FIT_SIG_NODENAME))) {
@@ -885,10 +886,12 @@ int fit_image_verify(const void *fit, int image_noffset)
 			 * an image validation failure. See the call to
 			 * fit_image_verify_required_sigs() above.
 			 */
-			if (ret)
+			if (ret) {
 				puts("- ");
-			else
+			} else {
 				puts("+ ");
+				break;
+			}
 		}
 	}
 

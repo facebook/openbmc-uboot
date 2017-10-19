@@ -224,9 +224,7 @@ static int fit_image_verify_sig(const void *fit, int image_noffset,
 			     strlen(FIT_SIG_NODENAME))) {
 			ret = fit_image_check_sig(fit, noffset, data,
 							size, sig_blob, -1, &err_msg);
-			if (ret) {
-				puts("- \n");
-			} else {
+			if (!ret) {
 				puts("+ \n");
 				verified = 1;
 				break;
@@ -280,6 +278,7 @@ int fit_image_verify_required_sigs(const void *fit, int image_noffset,
 			return ret;
 		}
 		verify_count++;
+		break;
 	}
 
 	if (verify_count)
@@ -411,9 +410,7 @@ static int fit_config_verify_sig(const void *fit, int conf_noffset,
 		if (!strncmp(name, FIT_SIG_NODENAME,
 			     strlen(FIT_SIG_NODENAME))) {
 			ret = fit_config_check_sig(fit, noffset, sig_blob, sig_offset, &err_msg);
-			if (ret) {
-				puts("- \n");
-			} else {
+			if (!ret) {
 				puts("+ \n");
 				verified = 1;
 				break;

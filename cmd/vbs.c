@@ -34,8 +34,11 @@ static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
       return 0;
     } else if (strncmp(argv[1], "clear", sizeof("clear")) == 0) {
 #ifdef CONFIG_ASPEED_TPM
-      return tpm_nv_define_space(VBS_TPM_ROLLBACK_INDEX,
+      tpm_nv_define_space(VBS_TPM_ROLLBACK_INDEX,
           TPM_NV_PER_GLOBALLOCK | TPM_NV_PER_PPWRITE, 0);
+      char blank[VBS_TPM_ROLLBACK_SIZE];
+      memset(blank, 0x0, sizeof(blank));
+      return tpm_nv_write_value(VBS_TPM_ROLLBACK_INDEX, blank, sizeof(blank));
 #endif
     } else if (strncmp(argv[1], "oscheck", sizeof("oscheck")) == 0) {
       if (vbs->error_type == VBS_SUCCESS) {

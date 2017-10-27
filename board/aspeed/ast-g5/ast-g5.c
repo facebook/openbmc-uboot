@@ -186,6 +186,25 @@ static int disable_snoop_dma_interrupt(void)
 #endif
 
 #ifdef CONFIG_FBY2
+static void fan_init(void)
+{
+  u32 reg;
+
+  // enable PWM0 and PWM1 function pin
+  reg = __raw_readl(AST_SCU_BASE + 0x88);
+  reg |= 0x03;
+  __raw_writel(reg, AST_SCU_BASE + 0x88);
+
+  reg = __raw_readl(AST_SCU_BASE + 0x04);
+  reg &= ~0x200;
+  __raw_writel(reg, AST_SCU_BASE + 0x04);
+
+  // set PWM0 and PWM1 to 70%
+  __raw_writel(0x09435F05, AST_PWM_BASE + 0x04);
+  __raw_writel(0x43004300, AST_PWM_BASE + 0x08);
+  __raw_writel(0x00000301, AST_PWM_BASE + 0x00);
+}
+
 static int mux_init(void)
 {
   u8 loc;
@@ -315,6 +334,7 @@ int board_init(void)
 #endif
 
 #ifdef CONFIG_FBY2
+  fan_init();
   mux_init();
   slot_12V_init();
 #endif

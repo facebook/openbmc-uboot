@@ -284,12 +284,14 @@ void vboot_verify_subordinate(void* fit, struct vbs *vbs) {
   int keys_path = fdt_path_offset(fit, VBS_KEYS_PATH);
   if (keys_path < 0) {
     vboot_enforce(vbs, VBS_ERROR_TYPE_DATA, VBS_ERROR_NO_KEYS);
+    return;
   }
 
   /* After the first image (uboot) expect to find the subordinate store. */
   int subordinate = fdt_first_subnode(fit, keys_path);
   if (subordinate < 0) {
     vboot_enforce(vbs, VBS_ERROR_TYPE_DATA, VBS_ERROR_NO_KEYS);
+    return;
   }
 
   /* Access the data and data-size to call image verify directly. */
@@ -486,6 +488,11 @@ void vboot_load_fit(volatile void* from) {
   vbs->force_recovery = vboot_getenv_yesno("force_recovery");
   if (vbs->force_recovery == 1) {
     vboot_recovery(vbs, VBS_ERROR_TYPE_FORCE, VBS_ERROR_FORCE_RECOVERY);
+  }
+
+  if (fdt_subnode_offset((const void*)vbs->rom_keys, 0, FIT_SIG_NODENAME) >= 0) {
+    /* If the SPL contains a KEK then verification is enforced. */
+    vbs->software_enforce = 1;
   }
 
   /* Verify subordinate keys kept in the FIT */

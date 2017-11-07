@@ -65,6 +65,14 @@
  */
 #define CONFIG_DRAM_ECC
 
+/*
+ * Lock the FMC SPI flashes, warning, this is more or less 1-time!
+ * Enable this option, build, and flash. On the next reboot the FMC SPIs
+ * Will have their ROM and SPL regions locked.
+ *
+ * #define CONFIG_ASPEED_FMC_SPI_LOCK
+ */
+
 #include "facebook_common.h"
 #include "ast2500_common.h"
 

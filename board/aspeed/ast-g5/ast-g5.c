@@ -281,42 +281,38 @@ static int slot_12V_init(void)
   u32 slot_12v_reg;
   u32 dir_reg;
   u32 toler_reg;
-  uint8_t val_prim[MAX_NODES+1];
-  uint8_t val_ext[MAX_NODES+1];
-  uint8_t val;
-  int i = 0;
-
+  uint8_t val_prim;
+  uint8_t val_ext;
+  int i;
 
   //Read GPIOZ0~Z3 and AA0~AA3
   slot_present_reg = __raw_readl(AST_GPIO_BASE + 0x1E0);
+  //Read GPIOO4~O7
+  slot_12v_reg = __raw_readl(AST_GPIO_BASE + 0x078);
+
+  for (i = 0; i < MAX_NODES; i++) {
+    val_ext = (slot_present_reg >> (2*MAX_NODES+i)) & 0x1;
+    val_prim = (slot_present_reg >> (4*MAX_NODES+i)) & 0x1;
+
+    if (val_prim || val_ext) {
+      slot_12v_reg &= ~(1<<(5*MAX_NODES+i));
+    } else {
+      slot_12v_reg |= (1<<(5*MAX_NODES+i));
+    }
+  }
+
   //Set GPIOO4~O7 Watchdog reset tolerance
   toler_reg = __raw_readl(AST_GPIO_BASE + 0x0FC);
   toler_reg |= 0xF00000;
   __raw_writel(toler_reg, AST_GPIO_BASE + 0x0FC);
-  //Set GPIOO4~O7 as output pin
+
+  //Configure GPIOO4~O7
+  __raw_writel(slot_12v_reg, AST_GPIO_BASE + 0x078);
   dir_reg = __raw_readl(AST_GPIO_BASE + 0x07C);
   dir_reg |= 0xF00000;
   __raw_writel(dir_reg, AST_GPIO_BASE + 0x07C);
-  //Read GPIOO4~O7
-  slot_12v_reg = __raw_readl(AST_GPIO_BASE + 0x078);
+  __raw_writel(slot_12v_reg, AST_GPIO_BASE + 0x078);
 
-  for(i = 1 ; i < MAX_NODES + 1; i++)
-  {
-    val_ext[i] = (slot_present_reg >> (2*MAX_NODES+i-1)) & 0x1;
-    val_prim[i] =(slot_present_reg >> (4*MAX_NODES+i-1)) & 0x1;
-
-    val = (val_prim[i] || val_ext[i]);
-    if(val == 0x00)
-    {
-       slot_12v_reg |= (1<<(5*MAX_NODES+i-1));
-       __raw_writel(slot_12v_reg, AST_GPIO_BASE + 0x078);
-    }
-    else
-    {
-       slot_12v_reg &= ~(1<<(5*MAX_NODES+i-1));
-       __raw_writel(slot_12v_reg, AST_GPIO_BASE + 0x078);
-    }
-  }
   return 0;
 }
 #endif

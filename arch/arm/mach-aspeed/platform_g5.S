@@ -17,8 +17,8 @@
  *
  * Gary Hsu, <gary_hsu@aspeedtech.com>
  *
- * Version     : 17
- * Release date: 2017.09.25
+ * Version     : 18
+ * Release date: 2017.10.27
  *
  * Priority of fix item:
  * [P1] = critical
@@ -77,6 +77,8 @@
  *    |2017.06.19 : 5.[P3] Add 10ms delay after DDR reset
  * V17|2017.09.25 : 1.[P1] Modify DDR4 side ODT value from 60ohm to 48ohm.
  *    |2017.09.25 : 2.[P1] Add Hynix DDR4 frequency slow down option.
+ * V18|2017.10.26 : 1.[P3] Include the modification of DDR4 side ODT value in V17 into the option of Hynix DDR4 configuration.
+ *    |2017.10.26 : 2.[P2] Enhance initial sequence for LPC controller
  * Note: Read timing report is only a reference, it is not a solid rule for stability.
  *
  * Optional define variable
@@ -234,7 +236,11 @@ TIME_TABLE_DDR4_1600:
     .word   0x08000000       @ 0x020
     .word   0x00000400       @ 0x024
     .word   0x00000410       @ 0x02C
-    .word   0x00000501       @ 0x030
+#ifdef CONFIG_DDR4_SUPPORT_HYNIX
+    .word   0x00000501       @ 0x030             @ ODT = 48 ohm
+#else
+    .word   0x00000101       @ 0x030             @ ODT = 60 ohm
+#endif
     .word   0x00000024       @ 0x214
     .word   0x03002900       @ 0x2E0
     .word   0x0E0000A0       @ 0x2E4
@@ -699,6 +705,14 @@ start_first_reset:
     ldr   r0, =0x1e787018                        @ read clear
     ldr   r1, [r0]
     ldr   r0, =0x1e787008                        @ read clear
+    ldr   r1, [r0]
+    ldr   r0, =0x1e78301c                        @ read clear
+    ldr   r1, [r0]
+    ldr   r0, =0x1e78d01c                        @ read clear
+    ldr   r1, [r0]
+    ldr   r0, =0x1e78e01c                        @ read clear
+    ldr   r1, [r0]
+    ldr   r0, =0x1e78f01c                        @ read clear
     ldr   r1, [r0]
     ldr   r0, =0x1e788020
     str   r2, [r0]

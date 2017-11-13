@@ -32,11 +32,6 @@ int ast_tpm_provision(struct vbs *vbs) {
     return VBS_ERROR_TPM_NOT_ENABLED;
   }
 
-  /* delay post tpm_init as well just to be safe. Technically not required */
-  udelay(35 * 1000);
-
-  /* The SPL should init (software-only setup), startup-clear, and test. */
-  tpm_init();
   result = tpm_startup(TPM_ST_CLEAR);
   if (result) {
     /* If this returns invalid postinit (38) then the TPM was not reset. */

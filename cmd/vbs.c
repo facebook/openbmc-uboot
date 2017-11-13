@@ -99,7 +99,7 @@ U_BOOT_CMD(
 	vbs,	3,	1,	do_vbs,
 	"print verified-boot status",
 	"type code - set the vbs error type and code\n"
-	"interrupt - disable the watchdog timer and clear ROM handoff check"
-	"clear - remove all fallback timestamps"
+	"interrupt - disable the watchdog timer and clear ROM handoff check\n"
+	"clear - remove all fallback timestamps\n"
 	"oscheck - check the vboot status and soft-enable verification on success"
 );

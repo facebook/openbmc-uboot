@@ -166,7 +166,7 @@ static void vboot_enforce(struct vbs *vbs, u8 t, u8 c) {
   }
 }
 
-void vboot_check_source(struct vbs *vbs) {
+void vboot_check_source(struct vbs *vbs, u32 current_rom_handoff) {
   /* Address of Timeout Reset register if a boot source swap is needed. */
   u32 source_swap = 0;
 
@@ -192,7 +192,7 @@ void vboot_check_source(struct vbs *vbs) {
   if (source_swap) {
     __raw_writel(0x1, source_swap);
     printf("Alternate boot source detected swapping CS0.\n");
-    if (vbs->rom_handoff != VBS_HANDOFF_SWAP) {
+    if (current_rom_handoff != VBS_HANDOFF_SWAP) {
       vbs->rom_handoff = VBS_HANDOFF_SWAP;
       vboot_jump(0x0, vbs);
     } else {
@@ -391,7 +391,7 @@ void vboot_reset(struct vbs *vbs) {
    * This enforcement can only repeat once. This restriction protects against
    * an infinite reset.
    */
-  vboot_check_source(vbs);
+  vboot_check_source(vbs, current->rom_handoff);
 
   /* Verified boot is not possible if the SPL does not include a KEK. */
   const void *sig_store = (const void*)gd_fdt_blob();
@@ -413,18 +413,22 @@ void vboot_reset(struct vbs *vbs) {
 #endif
   }
 
+  /* Set a handoff and expect U-Boot to clear indicating a clean boot. */
+  vbs->recovery_retries = 0;
+  vbs->rom_handoff = VBS_HANDOFF;
+
 #ifdef CONFIG_ASPEED_TPM
   int tpm_status = ast_tpm_provision(vbs);
   if (tpm_status == VBS_ERROR_TPM_SETUP) {
     /* The TPM was not reset correctly */
-    if (vbs->rom_handoff != VBS_HANDOFF_TPM_SETUP) {
+    if (current->rom_handoff != VBS_HANDOFF_TPM_SETUP) {
       vbs->rom_handoff = VBS_HANDOFF_TPM_SETUP;
       vboot_jump(0x0, vbs);
     }
   }
 
   if (tpm_status == VBS_ERROR_TPM_RESET_NEEDED) {
-    if (vbs->rom_handoff == VBS_HANDOFF_TPM_RST) {
+    if (current->rom_handoff == VBS_HANDOFF_TPM_RST) {
       /* The TPM needed a reset before, and needs another, this is a problem. */
       printf("TPM was deactivated and remains so after a reset.\n");
       vboot_enforce(vbs, VBS_ERROR_TYPE_TPM, VBS_ERROR_TPM_RESET_NEEDED);
@@ -466,10 +470,6 @@ void vboot_load_fit(volatile void* from) {
 
   /* The AST comes out of reset so we check the previous state and SPI PROMs. */
   vboot_reset(vbs);
-
-  /* Set a handoff and expect U-Boot to clear indicating a clean boot. */
-  vbs->recovery_retries = 0;
-  vbs->rom_handoff = VBS_HANDOFF;
 
   /* The offset into the FIT containing signed configuration. */
   int config;

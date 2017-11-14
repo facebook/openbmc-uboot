@@ -96,11 +96,11 @@ static u8 vboot_getenv_yesno(const char* var) {
 }
 
 /**
- * vboot_jump() - Jump, or set the PC, to an address.
+ * vboot_store() - Store the VBS state into SRAM
  *
- * @param to an address
+ * @param pointer to vbs state
  */
-void __noreturn vboot_jump(volatile void* to, struct vbs* vbs)
+void vboot_store(struct vbs *vbs)
 {
   u32 rom_handoff;
 
@@ -110,6 +110,17 @@ void __noreturn vboot_jump(volatile void* to, struct vbs* vbs)
   vbs->crc = crc16_ccitt(0, (uchar*)vbs, sizeof(struct vbs));
   vbs->rom_handoff = rom_handoff;
   memcpy((void*)AST_SRAM_VBS_BASE, vbs, sizeof(struct vbs));
+}
+
+/**
+ * vboot_jump() - Jump, or set the PC, to an address.
+ *
+ * @param to an address
+ */
+void __noreturn vboot_jump(volatile void* to, struct vbs* vbs)
+{
+  vboot_store(vbs);
+
   if (to == 0x0) {
     debug("Resetting CPU0\n");
     reset_cpu(0);
@@ -416,6 +427,8 @@ void vboot_reset(struct vbs *vbs) {
   /* Set a handoff and expect U-Boot to clear indicating a clean boot. */
   vbs->recovery_retries = 0;
   vbs->rom_handoff = VBS_HANDOFF;
+  /* Store to SRAM in case watchdog kicks before we jump to u-boot */
+  vboot_store(vbs);
 
 #ifdef CONFIG_ASPEED_TPM
   int tpm_status = ast_tpm_provision(vbs);

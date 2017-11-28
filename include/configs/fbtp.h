@@ -23,7 +23,11 @@
 
 #define CONFIG_FBTP 1
 
-#define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw"
+#ifdef CONFIG_SPL
+#define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw printk.time=1 dual_flash=1"
+#else
+#define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw printk.time=1"
+#endif
 #define CONFIG_UPDATE            "tftp 80800000 ast2500.scr; so 80800000'"
 #define CONFIG_BOOTFILE          "flash-fbtp"
 #ifndef CONFIG_SPL_BUILD

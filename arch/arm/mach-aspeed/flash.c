@@ -83,6 +83,7 @@ flash_info_t flash_info[CONFIG_SYS_MAX_FLASH_BANKS];		/* FLASH chips info */
 #define SST25VF040B		0x8d25bf
 #define AT25DF161		0x02461F
 #define AT25DF321		0x01471F
+#define GD25Q256		0X1940c8
 
 /* SPI Define */
 #define CS0_CTRL			0x10
@@ -1126,6 +1127,21 @@ static ulong flash_get_size (const char *id, ulong base, flash_info_t *info)
 			ReadClk  = 50;
 			break;
 
+		case GD25Q256:
+			info->sector_count = 256;
+			info->size = 0x1000000;
+			erase_region_size  = 0x10000;
+			info->readcmd = 0x0b;
+			info->dualport = 0;
+			info->dummybyte = 1;
+			info->buffersize = 256;
+			WriteClk = 50;
+			EraseClk = 20;
+			ReadClk  = 50;
+			info->sector_count = 512;
+			info->size = 0x2000000;
+			info->address32 = 1;
+			break;
 		default:	/* use JEDEC ID */
 			printf("\t%s Unknown flash ID!\n", id);
 			erase_region_size  = 0x10000;

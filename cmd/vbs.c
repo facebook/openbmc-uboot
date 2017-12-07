@@ -19,6 +19,10 @@ static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
   if (argc == 3) {
     ulong t = simple_strtoul(argv[1], NULL, 10);
     ulong c = simple_strtoul(argv[2], NULL, 10);
+    if (t != VBS_SUCCESS && (vbs->software_enforce || vbs->hardware_enforce)) {
+      vbs->recovery_boot = 1;
+      vbs->recovery_retries += 1;
+    }
     vbs->error_type = t;
     vbs->error_code = c;
     return 0;

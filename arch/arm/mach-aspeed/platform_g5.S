@@ -119,7 +119,7 @@
   Free registers:
   r0, r1, r2, r3, r6, r7, r8, r9, r10, r11
  ******************************************************************************/
-#define ASTMMC_INIT_VER      0x11                @ 8bit verison number
+#define ASTMMC_INIT_VER      0x12                @ 8bit verison number
 #define ASTMMC_INIT_DATE     0x20170925          @ Release date
 
 /******************************************************************************
@@ -151,8 +151,10 @@
   on the MB layout. Customer can find the appropriate frequency for their products.
   Below are the new defined parameters for the Hynix DDR4 supporting.
  ******************************************************************************/
+#ifdef CONFIG_FBTP
 #define CONFIG_DDR4_SUPPORT_HYNIX              @ Enable this when Hynix DDR4 included in the BOM
 #define CONFIG_DDR4_HYNIX_SET_1536
+#endif
 //#define CONFIG_DDR4_HYNIX_SET_1488
 //#define CONFIG_DDR4_HYNIX_SET_1440
 
@@ -236,11 +238,25 @@ TIME_TABLE_DDR4_1600:
     .word   0x08000000       @ 0x020
     .word   0x00000400       @ 0x024
     .word   0x00000410       @ 0x02C
-#ifdef CONFIG_DDR4_SUPPORT_HYNIX
-    .word   0x00000501       @ 0x030             @ ODT = 48 ohm
-#else
     .word   0x00000101       @ 0x030             @ ODT = 60 ohm
-#endif
+    .word   0x00000024       @ 0x214
+    .word   0x03002900       @ 0x2E0
+    .word   0x0E0000A0       @ 0x2E4
+    .word   0x000E001C       @ 0x2E8
+    .word   0x35B8C106       @ 0x2EC
+    .word   0x08080607       @ 0x2F0
+    .word   0x9B000900       @ 0x2F4
+    .word   0x0E400A00       @ 0x2F8
+    .word   0x99714545       @ tRFC
+    .word   0x000071C1       @ PLL
+TIME_TABLE_DDR4_1600_HYNIX_WORKAROUND:
+    .word   0x63604E37       @ 0x010
+    .word   0xE97AFA99       @ 0x014
+    .word   0x00019000       @ 0x018
+    .word   0x08000000       @ 0x020
+    .word   0x00000400       @ 0x024
+    .word   0x00000410       @ 0x02C
+    .word   0x00000501       @ 0x030             @ ODT = 48 ohm
     .word   0x00000024       @ 0x214
     .word   0x03002900       @ 0x2E0
     .word   0x0E0000A0       @ 0x2E4
@@ -574,6 +590,33 @@ case_end\@:
     str   r1, [r0]
     .endm
 
+.macro init_board_gpio
+#ifdef CONFIG_FBTP
+    /* Set GPIOP0 (GPIO_BOARD_SKU_ID0) multi-function pin as GPIO */
+    ldr r0, =0x002e2088
+    ldr r1, [r0]
+    and r1, r1, #0xFFFEFFFF
+    str r1, [r0]
+#endif
+.endm
+
+/* If Hynix is supported, this macro returns if the specific
+   board needs the hynix workaround.
+   Assumes the caller is guarded on CONFIG_DDR4_SUPPORT_HYNIX */
+.macro check_hynix_support
+#ifdef CONFIG_FBTP
+    /* FBTP needs the workaround only when run on SKU0 */
+    ldr r0, =0x1E780078
+    ldr r1, [r0]
+    and r1, r1, #0x1000000
+    cmp r1, #0x0
+#else
+    /* Board always needs the workaround */
+    mov r1, #0x0
+    cmp r1, #0x0
+#endif
+.endm
+
 /******************************************************************************
  Calibration Macro End
  ******************************************************************************/
@@ -891,6 +934,7 @@ bypass_first_reset:
 
 #if !defined(CONFIG_SPL_BUILD)
     /* This code is not included in the ROM and is always included in U-Boot. */
+    init_board_gpio
 
 /* Test - DRAM initial time */
     ldr   r0, =0x1e78203c
@@ -997,6 +1041,8 @@ bypass_USB_init:
     mov   r1, r3, lsr #24                        @ Check DDR4
     tst   r1, #0x01
     beq   bypass_mpll_hynix_mode_1
+    check_hynix_support
+    bne   bypass_mpll_hynix_mode_1
 #if   defined (CONFIG_DDR4_HYNIX_SET_1536)
     ldr   r2, =0x930023E0                        @ load PLL parameter for 24Mhz CLKIN (384)
 #elif defined (CONFIG_DDR4_HYNIX_SET_1488)
@@ -1019,6 +1065,8 @@ bypass_mpll_hynix_mode_1:
     mov   r1, r3, lsr #24                        @ Check DDR4
     tst   r1, #0x01
     beq   bypass_mpll_hynix_mode_2
+    check_hynix_support
+    bne   bypass_mpll_hynix_mode_2
 #if   defined (CONFIG_DDR4_HYNIX_SET_1536)
     ldr   r2, =0x930023C0                        @ load PLL parameter for 24Mhz CLKIN (387.5)
 #elif defined (CONFIG_DDR4_HYNIX_SET_1488)
@@ -1503,6 +1551,16 @@ ddr4_init:
 
 #if   defined (CONFIG_DRAM_1333)
     adrl  r5, TIME_TABLE_DDR4_1333               @ Init DRAM parameter table
+#elif defined(CONFIG_DDR4_SUPPORT_HYNIX)
+#ifdef CONFIG_FBTP
+    adrl  r5, TIME_TABLE_DDR4_1600
+    check_hynix_support
+    bne skip_odt_workaround
+    adrl  r5, TIME_TABLE_DDR4_1600_HYNIX_WORKAROUND
+skip_odt_workaround:
+#else
+    adrl  r5, TIME_TABLE_DDR4_1600_HYNIX_WORKAROUND
+#endif
 #else
     adrl  r5, TIME_TABLE_DDR4_1600
 #endif

@@ -221,12 +221,10 @@ int doheap(heaptimer_t timer, uchar cs, bool should_lock) {
     prot = SPI_CS1_HW_PROTECTIONS;
   }
 
-#ifdef CONFIG_ASPEED_FMC_SPI_LOCK
   /* Set the status register write disable. Only effective if WP# is low. */
   if (should_lock) {
     prot |= SPI_SRWD;
   }
-#endif
 
   fmc_romcs(cs);
 

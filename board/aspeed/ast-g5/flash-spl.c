@@ -46,7 +46,7 @@
 #define READB(r) *(volatile uchar*)(r)
 
 typedef int (*heaptimer_t)(unsigned ulong);
-typedef int (*heapstatus_t)(heaptimer_t, uchar);
+typedef int (*heapstatus_t)(heaptimer_t, uchar, bool);
 
 #pragma GCC push_options
 #pragma GCC optimize ("O0")
@@ -205,7 +205,7 @@ int heaptimer_end(void) {
   return 0;
 }
 
-int doheap(heaptimer_t timer, uchar cs) {
+int doheap(heaptimer_t timer, uchar cs, bool should_lock) {
   uchar status_set, status_check;
   u32 base;
   u32 ctrl;
@@ -223,7 +223,9 @@ int doheap(heaptimer_t timer, uchar cs) {
 
 #ifdef CONFIG_ASPEED_FMC_SPI_LOCK
   /* Set the status register write disable. Only effective if WP# is low. */
-  prot |= SPI_SRWD;
+  if (should_lock) {
+    prot |= SPI_SRWD;
+  }
 #endif
 
   fmc_romcs(cs);
@@ -283,7 +285,7 @@ int doheap_end(void) {
   return 0;
 }
 
-int ast_fmc_spi_check(void) {
+int ast_fmc_spi_check(bool should_lock) {
   u32 function_size;
   uchar *buffer;
   int cs0_status, cs1_status;
@@ -311,10 +313,10 @@ int ast_fmc_spi_check(void) {
   WRITEREG(0x1E780024, READREG(0x1E780024) | 0x200);
 
   /* Protect and unprotect CS1 (always check this first) */
-  cs1_status = spi_check(timer_fp, 1);
+  cs1_status = spi_check(timer_fp, 1, should_lock);
 
   /* Protect and detect the hardware protection for CS0 */
-  cs0_status = spi_check(timer_fp, 0);
+  cs0_status = spi_check(timer_fp, 0, should_lock);
 
   /* Return an ERROR indicating PROM status issues. */
   return (cs1_status == AST_FMC_ERROR) ? AST_FMC_ERROR : cs0_status;

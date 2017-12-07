@@ -405,16 +405,21 @@ void vboot_reset(struct vbs *vbs) {
   vboot_check_source(vbs, current->rom_handoff);
 
   /* Verified boot is not possible if the SPL does not include a KEK. */
+  bool rom_sig = false;
   const void *sig_store = (const void*)gd_fdt_blob();
   vbs->rom_keys = (u32)sig_store;
   if (sig_store == 0x0) {
     /* It is possible the spl_init method did not find a fdt. */
     printf("No signature store (KEK) was included in the SPL.\n");
     vboot_enforce(vbs, VBS_ERROR_TYPE_DATA, VBS_ERROR_NO_KEK);
+  } else {
+    if (fdt_subnode_offset(sig_store, 0, FIT_SIG_NODENAME) >= 0) {
+      rom_sig = true;
+    }
   }
 
   /* Reset FMC SPI PROMs and check WP# for FMC SPI CS0. */
-  int spi_status = ast_fmc_spi_check();
+  int spi_status = ast_fmc_spi_check(rom_sig);
   /* The presence of WP# on FMC SPI CS0 determines hardware enforcement. */
   vbs->hardware_enforce = (spi_status == AST_FMC_WP_ON) ? 1 : 0;
   if (spi_status == AST_FMC_ERROR) {

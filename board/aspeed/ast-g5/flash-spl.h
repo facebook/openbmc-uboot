@@ -17,6 +17,9 @@
  * be reset. The FMC does not auto-detect and set the CS1 "status register"
  * based on the mode of the part, like it does for SPI0.0.
  *
+ * should_lock - If hardware enforcement is enabled this instructs
+ * the spi flashes to be locked.
+ *
  * This will return 0 on success (CS1 was reset and CS0 is protected).
  * This will return 1 if CS0 cannot set protections (critical error).
  * This will return 2 if CS0 is not pulling WP# active low.
@@ -26,4 +29,4 @@
  *   AST_FMC_BASE     - the MMIO base of the FMC register group.
  *
  */
-int ast_fmc_spi_check(void);
+int ast_fmc_spi_check(bool should_lock);

@@ -177,41 +177,6 @@ static void vboot_enforce(struct vbs *vbs, u8 t, u8 c) {
   }
 }
 
-void vboot_check_source(struct vbs *vbs, u32 current_rom_handoff) {
-  /* Address of Timeout Reset register if a boot source swap is needed. */
-  u32 source_swap = 0;
-
-  /* WDT1 Timeout Status Register's bit[1] indicates alternate boot source. */
-  u32 wdt_tsr = __raw_readl(AST_WDT_BASE + 0x10);
-  if (wdt_tsr & (0x1 << 1)) {
-    /* Bit 1 is set. WDT1 was triggered with alternate boot source. */
-    source_swap = AST_WDT_BASE + 0x14;
-  }
-
-  /* Repeat for WDT2. */
-  wdt_tsr = __raw_readl(AST_WDT_BASE + 0x30);
-  if (wdt_tsr & (0x1 << 1)) {
-    source_swap = AST_WDT_BASE + 0x34;
-  }
-
-  /* Repeat for WDT3. */
-  wdt_tsr = __raw_readl(AST_WDT_BASE + 0x50);
-  if (wdt_tsr & (0x1 << 1)) {
-    source_swap = AST_WDT_BASE + 0x54;
-  }
-
-  if (source_swap) {
-    __raw_writel(0x1, source_swap);
-    printf("Alternate boot source detected swapping CS0.\n");
-    if (current_rom_handoff != VBS_HANDOFF_SWAP) {
-      vbs->rom_handoff = VBS_HANDOFF_SWAP;
-      vboot_jump(0x0, vbs);
-    } else {
-      vboot_recovery(vbs, VBS_ERROR_TYPE_SPI, VBS_ERROR_SPI_SWAP);
-    }
-  }
-}
-
 void vboot_check_fit(void* fit, struct vbs *vbs,
                      int* uboot, int* config,
                      u32* uboot_position, u32* uboot_size) {
@@ -396,13 +361,6 @@ void vboot_reset(struct vbs *vbs) {
     printf("U-Boot failed to execute.\n");
     vboot_recovery(vbs, VBS_ERROR_TYPE_SPI, VBS_ERROR_EXECUTE_FAILURE);
   }
-
-  /*
-   * Enforce booting from FMCCS0.
-   * This enforcement can only repeat once. This restriction protects against
-   * an infinite reset.
-   */
-  vboot_check_source(vbs, current->rom_handoff);
 
   /* Keep track of requested and valid H/W enforce enable scenario. */
   bool should_lock = false;

@@ -682,6 +682,51 @@ init_dram:
     ldr   r1, =0x1688a8a8
     str   r1, [r0]
 
+#if defined(CONFIG_SPL_BUILD)
+    /* Reset the WDT alt-boot sources */
+    ldr   r0, =0x1e785010
+    ldr   r1, [r0]
+    and   r1, r1, #0x2
+    cmp   r1, #0x2
+    beq   wdt_reset_source
+    ldr   r0, =0x1e785030
+    ldr   r1, [r0]
+    and   r1, r1, #0x2
+    cmp   r1, #0x2
+    beq   wdt_reset_source
+    ldr   r0, =0x1e785050
+    ldr   r1, [r0]
+    and   r1, r1, #0x2
+    cmp   r1, #0x2
+    beq   wdt_reset_source
+    b fast_reset
+
+wdt_reset_source:
+    /* Clear timeout status register */
+    add   r0, #0x4
+    ldr   r2, [r0]
+    ldr   r1, =0x00000001
+    orr   r1, r1, r2
+    str   r1, [r0]
+    ldr   r0, =0x1e785024
+    ldr   r1, =0x00000001
+    str   r1, [r0]
+    /* Write magic to counter restart register */
+    ldr   r0, =0x1e785028
+    ldr   r1, =0x00004755
+    str   r1, [r0]
+    /* Write Control Register */
+    ldr   r0, =0x1e78502C
+    ldr   r1, =0x00000033
+    str   r1, [r0]
+
+wait_source_reset:
+    ldr   r1, [r0]
+    tst   r1, #0x02
+    bne   wait_source_reset
+#endif
+
+fast_reset:
     /* Reset again */
     ldr   r0, =0x1e6e2070                        @ check fast reset flag
     ldr   r2, =0x08000000
@@ -2908,4 +2953,3 @@ platform_exit_finish:
 
     /* back to arch calling code */
     mov   pc, lr
-

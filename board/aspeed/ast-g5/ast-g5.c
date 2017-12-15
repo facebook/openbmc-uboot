@@ -315,6 +315,29 @@ static int slot_12V_init(void)
 
   return 0;
 }
+
+static int slot_led_init(void)
+{
+  u32 reg, dir_reg;
+  u32 fan_latch;
+
+  // enable GPIOAC0~AC3, and AC7
+  reg = __raw_readl(AST_SCU_BASE + 0xAC);
+  reg &= ~0x8F;
+  __raw_writel(reg, AST_SCU_BASE + 0xAC);
+
+  // read GPIOH5
+  fan_latch = __raw_readl(AST_GPIO_BASE + 0x020) & 0x20000000;
+
+  // configure GPIOAC0~AC3, and AC7
+  reg = __raw_readl(AST_GPIO_BASE + 0x1E8);
+  reg = (fan_latch) ? (reg | 0x8F) : (reg & ~0x8F);
+  dir_reg = __raw_readl(AST_GPIO_BASE + 0x1EC) | 0x8F;
+  __raw_writel(dir_reg, AST_GPIO_BASE + 0x1EC);
+  __raw_writel(reg, AST_GPIO_BASE + 0x1E8);
+
+  return 0;
+}
 #endif
 
 int board_init(void)
@@ -333,6 +356,7 @@ int board_init(void)
   fan_init();
   mux_init();
   slot_12V_init();
+  slot_led_init();
 #endif
 
   gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;

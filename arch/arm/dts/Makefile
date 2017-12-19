@@ -263,7 +263,7 @@ dtb-$(CONFIG_SOC_KEYSTONE) += k2hk-evm.dtb \
 	k2g-evm.dtb
 
 dtb-$(CONFIG_TARGET_FBTP) += aspeed-g5-tpm.dtb
-dtb-$(CONFIG_TARGET_FBY2) += aspeed-g5-tpm.dtb
+dtb-$(CONFIG_TARGET_FBY2) += aspeed-g5-fby2-tpm.dtb
 dtb-$(CONFIG_TARGET_FBTTN) += aspeed-g5-fbttn-tpm.dtb
 
 targets += $(dtb-y)

@@ -69,7 +69,7 @@ void arch_preboot_os(void) {
   vboot_finish();
 }
 
-#ifdef CONFIG_FBTP
+#if defined(CONFIG_FBTP) || defined(CONFIG_PWNEPTUNE)
 static void fan_init(void)
 {
   __raw_writel(0x43004300, 0x1e786008);
@@ -345,7 +345,7 @@ int board_init(void)
 	watchdog_init();
 	vboot_check_enforce();
 
-#ifdef CONFIG_FBTP
+#if defined(CONFIG_FBTP) || defined(CONFIG_PWNEPTUNE)
   fan_init();
   policy_init();
   disable_bios_debug();

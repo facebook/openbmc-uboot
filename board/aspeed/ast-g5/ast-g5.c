@@ -233,30 +233,30 @@ static int mux_init(void)
   reg |= 0x30;
   __raw_writel(reg, AST_GPIO_BASE + 0x3C);
   // set USB MUX location
+  reg = __raw_readl(AST_GPIO_BASE + 0x20);
   if (loc < MAX_NODES) {
-    reg = __raw_readl(AST_GPIO_BASE + 0x20);
     reg = (reg & ~0x30) | (loc << 4);
-    __raw_writel(reg, AST_GPIO_BASE + 0x20);
   }
+  __raw_writel(reg, AST_GPIO_BASE + 0x20);
   // set GPIOE[5:4] as output
   reg = __raw_readl(AST_GPIO_BASE + 0x24);
   reg |= 0x30;
   __raw_writel(reg, AST_GPIO_BASE + 0x24);
 
   // VGA MUX
-  // enable GPIOJ[3:2] WDT reset tolerance
+  // enable GPIOJ[3:0] WDT reset tolerance
   reg = __raw_readl(AST_GPIO_BASE + 0xAC);
-  reg |= 0xC00;
+  reg |= 0xF00;
   __raw_writel(reg, AST_GPIO_BASE + 0xAC);
   // set VGA MUX location
+  reg = __raw_readl(AST_GPIO_BASE + 0x70);
   if (loc < MAX_NODES) {
-    reg = __raw_readl(AST_GPIO_BASE + 0x70);
     reg = (reg & ~0xC00) | (loc << 10);
-    __raw_writel(reg, AST_GPIO_BASE + 0x70);
   }
-  // set GPIOJ[3:2] as output
+  __raw_writel(reg, AST_GPIO_BASE + 0x70);
+  // set GPIOJ[3:0] as output
   reg = __raw_readl(AST_GPIO_BASE + 0x74);
-  reg |= 0xC00;
+  reg |= 0xF00;
   __raw_writel(reg, AST_GPIO_BASE + 0x74);
 
   // PCIe Clk/Rst buffer

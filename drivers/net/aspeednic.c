@@ -30,7 +30,6 @@
 #include <pci.h>
 #include <linux/mii.h>
 
-
 /*
   SCU88 D[31]: MAC1 MDIO
   SCU88 D[30]: MAC1 MDC
@@ -1131,7 +1130,9 @@ static void aspeednic_probe_phy(struct eth_device *dev)
 static int aspeednic_init(struct eth_device* dev, bd_t* bis)
 {
 	unsigned long i;
-
+#ifdef CONFIG_ASPEED_NET_NCSI
+  unsigned long Package_Found = 0, Channel_Found = 0, Re_Send = 0, Link_Status = 0;
+#endif
 	RESET_DE4X5(dev);
 
 	aspeednic_probe_phy(dev);
@@ -1167,7 +1168,7 @@ static int aspeednic_init(struct eth_device* dev, bd_t* bis)
 	tx_new = 0;
 	rx_new = 0;
 
-#ifdef CONFIG_ASPEED_NCSI_ENABLE
+#ifdef CONFIG_ASPEED_NET_NCSI
 	if (!(CONFIG_ASPEED_MAC_PHY_SETTING >= 1))
 		return 1;
 
@@ -1233,7 +1234,6 @@ static int aspeednic_send(struct eth_device* dev, void *packet, int length)
 {
 	int   status = -1, oldlength = 0, fail = 0;
 	int   i;
-
 	if (length <= 0) {
 		printf("%s: bad packet size: %d\n", dev->name, length);
 		goto Done;

@@ -539,9 +539,94 @@ case_end\@:
 .endm
 #endif
 
+#ifdef CONFIG_MINILAKETB
+.macro console_bmc
+ldr r0, =0x1e780024
+ldr r1, [r0]
+orr r1, r1, #0xF
+str r1, [r0]
+
+ldr r0, =0x1e780020
+ldr r1, [r0]
+and r1, r1, #0xFFFFFFF0
+orr r1, r1, #0xC
+str r1, [r0]
+.endm
+
+.macro console_slot1
+ldr r0, =0x1e780024
+ldr r1, [r0]
+orr r1, r1, #0xF
+str r1, [r0]
+
+ldr r0, =0x1e780020
+ldr r1, [r0]
+and r1, r1, #0xFFFFFFF0
+orr r1, r1, #0x0
+str r1, [r0]
+.endm
+
+
+.macro console_sel
+
+// Disable SoL UARTs[1-4]
+//  ldr r0, =0x1e6e2080
+//  ldr r1, [r0]
+//  ldr r2, =0xBFBFFFFF
+//  and r1, r1, r2
+//  str r1, [r0]
+
+  ldr r0, =0x1e6e2084
+  ldr r1, [r0]
+  ldr r2, =0x0FFFFFFF
+  and r1, r1, r2
+  str r1, [r0]
+  // Enable GPIOE[0-3] Tolerant
+  ldr r0, =0x1e78003c
+  ldr r1, [r0]
+  orr r1, r1, #0xF
+  str r1, [r0]
+
+  // Read debug card present
+  ldr r2, =0x1e780080
+  ldr r0, [r2]
+  and r0, r0, #0x00000800
+  ldr r1, =0x0800
+  cmp r0, r1
+  bne dbg_card_pres\@
+  console_bmc
+  b case_end\@
+
+dbg_card_pres\@:
+  // Read key position
+  ldr r2, =0x1e7801e0
+  ldr r0, [r2]
+  bic r1, r0, #0xFF0FFFFF
+  mov r0, r1, lsr #20
+  //Test for position#1
+  ldr r1, =0x00
+  cmp r0, r1
+  bne case_pos2\@
+  console_slot1
+  b case_end\@
+case_pos2\@:
+  //Test for position#2
+  ldr r1, =0x01
+  cmp r0, r1
+  bne case_end\@
+  console_bmc
+  b case_end\@
+case_end\@:
+.endm
+#endif
+
     .macro uart_console_setup
     enable_other_uarts
 #ifdef CONFIG_FBY2
+    console_sel
+#endif
+
+#ifdef CONFIG_MINILAKETB
     console_sel
 #endif
     /* setup UART console */

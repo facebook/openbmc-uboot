@@ -343,7 +343,7 @@ static int slot_led_init(void)
     val_ext = (slot_present_reg >> (2*MAX_NODES+i)) & 0x1;
     val_prim = (slot_present_reg >> (4*MAX_NODES+i)) & 0x1;
 
-    if (val_prim || val_ext) 
+    if (val_prim || val_ext)
       reg &= ~(1 << i);
     else
       reg |= (1 << i);
@@ -354,6 +354,227 @@ static int slot_led_init(void)
   dir_reg = __raw_readl(AST_GPIO_BASE + 0x1EC) | 0x8F;
   __raw_writel(dir_reg, AST_GPIO_BASE + 0x1EC);
   __raw_writel(reg, AST_GPIO_BASE + 0x1E8);
+
+  return 0;
+}
+#endif
+
+
+#ifdef CONFIG_MINILAKETB
+static void fan_init(void)
+{
+  u32 reg;
+
+  // enable PWM0 and PWM1 function pin
+  reg = __raw_readl(AST_SCU_BASE + 0x88);
+  reg |= 0x03;
+  __raw_writel(reg, AST_SCU_BASE + 0x88);
+
+  reg = __raw_readl(AST_SCU_BASE + 0x04);
+  reg &= ~0x200;
+  __raw_writel(reg, AST_SCU_BASE + 0x04);
+
+  // set PWM0 and PWM1 to 70%
+  __raw_writel(0x09435F05, AST_PWM_BASE + 0x04);
+  __raw_writel(0x43004300, AST_PWM_BASE + 0x08);
+  __raw_writel(0x00000301, AST_PWM_BASE + 0x00);
+}
+
+static int mux_init(void)
+{
+  u8 loc;
+  u32 reg;
+
+  reg = __raw_readl(AST_GPIO_BASE + 0x1E0);
+  loc = ((reg >> 20) & 0x0F) % 5;
+
+  // USB MUX, P3V3 enable
+  // enable GPIOAB3,AB1 WDT reset tolerance
+  reg = __raw_readl(AST_GPIO_BASE + 0x18C);
+  reg |= 0xA000000;
+  __raw_writel(reg, AST_GPIO_BASE + 0x18C);
+  // set USB MUX, P3V3 enable
+  reg = __raw_readl(AST_GPIO_BASE + 0x1E0);
+  reg = (reg & ~0xA000000) | (loc < MAX_NODES)?0x2000000:0xA000000;
+  __raw_writel(reg, AST_GPIO_BASE + 0x1E0);
+  // set GPIOAB3,AB1 as output
+  reg = __raw_readl(AST_GPIO_BASE + 0x1E4);
+  reg |= 0xA000000;
+  __raw_writel(reg, AST_GPIO_BASE + 0x1E4);
+
+  /*T6A : use GPIOE[4] as input gpio*/
+  reg = __raw_readl(AST_GPIO_BASE + 0x24);
+  reg &= ~0x10;
+  __raw_writel(reg, AST_GPIO_BASE + 0x24);
+
+  // USB MUX
+  // enable GPIOE[5:4] WDT reset tolerance
+  // reg = __raw_readl(AST_GPIO_BASE + 0x3C);
+  // reg |= 0x30;
+  // __raw_writel(reg, AST_GPIO_BASE + 0x3C);
+  // set USB MUX location
+  // reg = __raw_readl(AST_GPIO_BASE + 0x20);
+  // if (loc < MAX_NODES) {
+  //   reg = (reg & ~0x30) | (loc << 4);
+  // }
+  // __raw_writel(reg, AST_GPIO_BASE + 0x20);
+  // set GPIOE[5:4] as output
+  // reg = __raw_readl(AST_GPIO_BASE + 0x24);
+  // reg |= 0x30;
+  // __raw_writel(reg, AST_GPIO_BASE + 0x24);
+
+  // VGA MUX
+  // enable GPIOJ[3:0] WDT reset tolerance
+  reg = __raw_readl(AST_GPIO_BASE + 0xAC);
+  reg |= 0xF00;
+  __raw_writel(reg, AST_GPIO_BASE + 0xAC);
+  // set VGA MUX location
+  reg = __raw_readl(AST_GPIO_BASE + 0x70);
+  if (loc < MAX_NODES) {
+    reg = (reg & ~0xC00) | (loc << 10);
+  }
+  __raw_writel(reg, AST_GPIO_BASE + 0x70);
+  // set GPIOJ[3:0] as output
+  reg = __raw_readl(AST_GPIO_BASE + 0x74);
+  reg |= 0xF00;
+  __raw_writel(reg, AST_GPIO_BASE + 0x74);
+
+  // PCIe Clk/Rst buffer
+  // enable GPIOB[7:4] WDT reset tolerance
+  reg = __raw_readl(AST_GPIO_BASE + 0x1C);
+  reg |= 0xF000;
+  __raw_writel(reg, AST_GPIO_BASE + 0x1C);
+  // set PCIe Clk/Rst buffer
+  reg = __raw_readl(AST_GPIO_BASE + 0x00);
+  __raw_writel(reg, AST_GPIO_BASE + 0x00);
+  // set GPIOB[7:4] as output
+  reg = __raw_readl(AST_GPIO_BASE + 0x04);
+  reg |= 0xF000;
+  __raw_writel(reg, AST_GPIO_BASE + 0x04);
+
+  // BIOS mux
+  // enable GPIOM[5:3:2] WDT reset tolerance
+  reg = __raw_readl(AST_GPIO_BASE + 0x0FC);
+  reg |= 0x2C;
+  __raw_writel(reg, AST_GPIO_BASE + 0x0FC);
+
+  reg = __raw_readl(AST_GPIO_BASE + 0x7C);
+  reg &= 0x0C;
+  if (reg != 0x0C){
+      //set GPIOM[3:2] to output
+      reg = __raw_readl(AST_GPIO_BASE + 0x7C);
+      reg |= 0x0C;
+      __raw_writel(reg, AST_GPIO_BASE + 0x7C);
+  }
+
+  //change GPIOM5:P12V_EN to output
+  reg = __raw_readl(AST_GPIO_BASE + 0x7C);
+  reg &= 0x20;
+  if (reg != 0x20){
+      reg = __raw_readl(AST_GPIO_BASE + 0x7C);
+      reg |= 0x20;
+      __raw_writel(reg, AST_GPIO_BASE + 0x7C);
+  }
+
+  return 0;
+}
+
+static int slot_12V_init(void)
+{
+  u32 slot_present_reg;
+  u32 slot_12v_reg;
+  u32 dir_reg;
+  u32 toler_reg;
+  uint8_t val_prim;
+  uint8_t val_ext;
+  int i;
+
+  //Read GPIOZ0~Z3 and AA0~AA3
+  slot_present_reg = __raw_readl(AST_GPIO_BASE + 0x1E0);
+  //Read GPIOO4~O7
+  slot_12v_reg = __raw_readl(AST_GPIO_BASE + 0x078);
+
+  for (i = 0; i < MAX_NODES; i++) {
+    val_ext = (slot_present_reg >> (2*MAX_NODES+i)) & 0x1;
+    val_prim = (slot_present_reg >> (4*MAX_NODES+i)) & 0x1;
+
+    if (val_prim || val_ext) {
+      slot_12v_reg &= ~(1<<(5*MAX_NODES+i));
+    } else {
+      slot_12v_reg |= (1<<(5*MAX_NODES+i));
+    }
+  }
+
+  //Set GPIOO4~O7 Watchdog reset tolerance
+  toler_reg = __raw_readl(AST_GPIO_BASE + 0x0FC);
+  toler_reg |= 0xF00000;
+  __raw_writel(toler_reg, AST_GPIO_BASE + 0x0FC);
+
+  //Configure GPIOO4~O7
+  __raw_writel(slot_12v_reg, AST_GPIO_BASE + 0x078);
+  dir_reg = __raw_readl(AST_GPIO_BASE + 0x07C);
+  dir_reg |= 0xF00000;
+  __raw_writel(dir_reg, AST_GPIO_BASE + 0x07C);
+  __raw_writel(slot_12v_reg, AST_GPIO_BASE + 0x078);
+
+
+  /*Copy GPIOO4 behavior to GPIOZ0*/
+  // read GPIOZ0 value
+  slot_12v_reg = __raw_readl(AST_GPIO_BASE + 0x1E0);
+  slot_12v_reg &= ~0x100; //GPIOZ0 value low , XG1 P12V_STBY_MB_EN_N is low enable
+  __raw_writel(slot_12v_reg, AST_GPIO_BASE + 0x1E0);
+
+  // read GPIOZ0 direction
+  dir_reg = __raw_readl(AST_GPIO_BASE + 0x1E4);
+  dir_reg |= 0x100; //GPIOZ0  output direction
+  __raw_writel(dir_reg, AST_GPIO_BASE + 0x1E4);
+
+  // set GPIOZ0 Watchdog reset tolerance
+  toler_reg = __raw_readl(AST_GPIO_BASE + 0x18C);
+  toler_reg |= 0x100;
+  __raw_writel(toler_reg, AST_GPIO_BASE + 0x18C);
+
+  return 0;
+}
+
+static int slot_led_init(void)
+{
+  u32 reg;
+  //u32 fan_latch;
+  // u32 slot_present_reg;
+  // uint8_t val_prim;
+  // uint8_t val_ext;
+  // int i;
+
+  // disable GPIOAC0-7
+  reg = __raw_readl(AST_SCU_BASE + 0xAC);
+  reg &= ~0xFF;
+  __raw_writel(reg, AST_SCU_BASE + 0xAC);
+
+  // // read GPIOH5
+  // fan_latch = __raw_readl(AST_GPIO_BASE + 0x020) & 0x20000000;
+  //
+  // //Read GPIOZ0~Z3 and AA0~AA3
+  // slot_present_reg = __raw_readl(AST_GPIO_BASE + 0x1E0);
+  //
+  // // configure GPIOAC0~AC3, and AC7
+  // reg = __raw_readl(AST_GPIO_BASE + 0x1E8);
+  //
+  // for (i = 0; i < MAX_NODES; i++) {
+  //   val_ext = (slot_present_reg >> (2*MAX_NODES+i)) & 0x1;
+  //   val_prim = (slot_present_reg >> (4*MAX_NODES+i)) & 0x1;
+  //
+  //   if (val_prim || val_ext)
+  //     reg &= ~(1 << i);
+  //   else
+  //     reg |= (1 << i);
+  // }
+  //
+  // reg = (fan_latch) ? (reg | 0x80) : (reg & ~0x8F);
+  //
+  // dir_reg = __raw_readl(AST_GPIO_BASE + 0x1EC) | 0x8F;
+  // __raw_writel(dir_reg, AST_GPIO_BASE + 0x1EC);
+  // __raw_writel(reg, AST_GPIO_BASE + 0x1E8);
 
   return 0;
 }
@@ -372,6 +593,13 @@ int board_init(void)
 #endif
 
 #ifdef CONFIG_FBY2
+  fan_init();
+  mux_init();
+  slot_12V_init();
+  slot_led_init();
+#endif
+
+#ifdef CONFIG_MINILAKETB
   fan_init();
   mux_init();
   slot_12V_init();

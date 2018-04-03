@@ -1056,6 +1056,13 @@ bypass_first_reset:
     mov   r1, #0
     str   r1, [r0]
 
+#if defined(CONFIG_GPIOD_PT_DISABLE)
+    /* Disable GPIOD pass-through */
+    ldr r0, =0x1e6e207c
+    ldr r1, =0x00200000
+    str r1, [r0]
+#endif
+
 #if defined(CONFIG_SPL_BUILD)
     /* If building a ROM, the ROM code is finished platform initialization. */
     b platform_exit_finish

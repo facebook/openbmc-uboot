@@ -75,6 +75,7 @@
  */
 #define CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
 
+#include "fby2_ext.h"
 #include "facebook_common.h"
 #include "ast2500_common.h"
 

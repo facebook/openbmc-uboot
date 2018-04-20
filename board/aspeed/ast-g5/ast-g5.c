@@ -208,10 +208,10 @@ static void fan_init(void)
 static int mux_init(void)
 {
   u8 loc;
-  u32 reg;
+  u32 reg, pwr_en;
 
   reg = __raw_readl(AST_GPIO_BASE + 0x1E0);
-  loc = ((reg >> 20) & 0x0F) % 5;
+  loc = ((reg >> 20) & 0xF) % 5;
 
   // USB MUX, P3V3 enable
   // enable GPIOAB3,AB1 WDT reset tolerance
@@ -220,7 +220,12 @@ static int mux_init(void)
   __raw_writel(reg, AST_GPIO_BASE + 0x18C);
   // set USB MUX, P3V3 enable
   reg = __raw_readl(AST_GPIO_BASE + 0x1E0);
-  reg = (reg & ~0xA000000) | (loc < MAX_NODES)?0x2000000:0xA000000;
+  if (loc < MAX_NODES) {
+    pwr_en = __raw_readl(AST_GPIO_BASE + 0x70);
+    reg = (reg & ~0x8000000) | ((pwr_en & (1 << loc)) ? 0x2000000 : 0xA000000);
+  } else {
+    reg |= 0xA000000;
+  }
   __raw_writel(reg, AST_GPIO_BASE + 0x1E0);
   // set GPIOAB3,AB1 as output
   reg = __raw_readl(AST_GPIO_BASE + 0x1E4);
@@ -251,7 +256,7 @@ static int mux_init(void)
   // set VGA MUX location
   reg = __raw_readl(AST_GPIO_BASE + 0x70);
   if (loc < MAX_NODES) {
-    reg = (reg & ~0xC00) | (loc << 10);
+    reg = (reg & ~0xC00);
   }
   __raw_writel(reg, AST_GPIO_BASE + 0x70);
   // set GPIOJ[3:0] as output

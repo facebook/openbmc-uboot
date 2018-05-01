@@ -290,8 +290,8 @@ int ast_tpm_try_version(struct vbs *vbs, uint8_t image, uint32_t version,
   }
 
   if (*rb_target > version) {
+    /* This seems to be attempting a rollback. */
     if (no_fallback || *rb_fallback_target != version) {
-      /* This seems to be attempting a rollback. */
       return VBS_ERROR_ROLLBACK_FAILED;
     }
   }
@@ -302,9 +302,17 @@ int ast_tpm_try_version(struct vbs *vbs, uint8_t image, uint32_t version,
     return VBS_ERROR_ROLLBACK_HUGE;
   }
 
-  if (version > *rb_target) {
-    /* Only update the NV space if this is a new version. */
-    *rb_fallback_target = (no_fallback) ? version : *rb_target;
+  if (version != *rb_target) {
+    /* Only update the NV space if this is a new version or fallback 'promo'. */
+    if (no_fallback) {
+      /* Fallback is disabled, the fallback is always the current. */
+      *rb_fallback_target = version;
+    } else if (version != *rb_fallback_target) {
+      /* This is not fallback 'promotion', previous version is now fallback. */
+      *rb_fallback_target = *rb_target;
+    }
+
+    /* Current is now the promoted fallback or a later version. */
     *rb_target = version;
     if (vbs->error_code == VBS_SUCCESS) {
       /* Only update times if verification has not yet failed. */

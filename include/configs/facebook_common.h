@@ -79,11 +79,7 @@
 #define CONFIG_ENV_OFFSET        0x60000 /* environment starts here  */
 #define CONFIG_ENV_ADDR          (CONFIG_SYS_ENV_BASE + CONFIG_ENV_OFFSET)
 #define CONFIG_ENV_SIZE          0x20000 /* # of bytes of env, 128k */
-#ifdef CONFIG_FIT
-#define ENV_INITRD_HIGH ""
-#else
 #define ENV_INITRD_HIGH "initrd_high=a0000000\0"
-#endif
 #define CONFIG_EXTRA_ENV_SETTINGS                       \
     "verify=no\0"                                       \
     "spi_dma=no\0"                                      \

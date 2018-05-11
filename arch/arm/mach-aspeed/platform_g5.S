@@ -576,6 +576,7 @@ str r1, [r0]
 //  and r1, r1, r2
 //  str r1, [r0]
 
+  // disable TX2,RX2 ,enable GPIOM[4:7]
   ldr r0, =0x1e6e2084
   ldr r1, [r0]
   ldr r2, =0x0FFFFFFF
@@ -611,7 +612,7 @@ dbg_card_pres\@:
   b case_end\@
 case_pos2\@:
   //Test for position#2
-  ldr r1, =0x01
+  ldr r1, =0x04
   cmp r0, r1
   bne case_end\@
   console_bmc

@@ -407,9 +407,9 @@ static int mux_init(void)
   reg |= 0xA000000;
   __raw_writel(reg, AST_GPIO_BASE + 0x1E4);
 
-  /*T6A : use GPIOE[4] as input gpio*/
+  /*minilaketb : use GPIOE[4], GPIOF[1] as input gpio*/
   reg = __raw_readl(AST_GPIO_BASE + 0x24);
-  reg &= ~0x10;
+  reg &= ~0x210;
   __raw_writel(reg, AST_GPIO_BASE + 0x24);
 
   // USB MUX

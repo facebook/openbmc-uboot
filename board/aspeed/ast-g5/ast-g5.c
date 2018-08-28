@@ -583,6 +583,16 @@ static int slot_led_init(void)
 
   return 0;
 }
+
+static int spi_init(void)
+{
+    u32 reg;
+    // enable SPI2 function pin
+    reg = __raw_readl(AST_SCU_BASE + 0x88);
+    reg |= 0x3C000000;
+    __raw_writel(reg, AST_SCU_BASE + 0x88);
+    return 0;
+}
 #endif
 
 int board_init(void)
@@ -609,6 +619,7 @@ int board_init(void)
   mux_init();
   slot_12V_init();
   slot_led_init();
+  spi_init();
 #endif
 
   gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;

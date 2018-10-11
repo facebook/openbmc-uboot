@@ -51,6 +51,12 @@
  */
 #define CONFIG_DRAM_ECC
 
+/*
+ * Watchdog configuration, needed for TPM hardware reset
+ * This will trigger GPIOAB2 output high when the CPU is reset
+ */
+#define CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
+
 #include "facebook_common.h"
 #include "ast2500_common.h"
 

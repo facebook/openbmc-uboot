@@ -10,7 +10,7 @@
 
 #define CONFIG_YOSEMITE 1
 
-#define CONFIG_BOOTARGS		"debug console=ttyS0,57600n8 root=/dev/ram rw printk.time=1"
+#define CONFIG_BOOTARGS		"debug console=ttyS0,57600n8 root=/dev/ram rw printk.time=1 dual_flash=1"
 #define CONFIG_UPDATE		"tftp 40800000 ast2400.scr; so 40800000'"
 #define CONFIG_BOOTFILE		"all.bin"
 

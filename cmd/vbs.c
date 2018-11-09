@@ -13,6 +13,19 @@
 #include <asm/arch/ast_scu.h>
 #include <asm/arch/vbs.h>
 
+static void put_vbs(volatile struct vbs *vbs)
+{
+  uint32_t uboot_exec_address = vbs->uboot_exec_address;
+  uint32_t rom_handoff = vbs->rom_handoff;
+  /* These are not part of CRC, set them to 0 */
+  vbs->rom_handoff = 0;
+  vbs->uboot_exec_address = 0;
+  vbs->crc = 0;
+  vbs->crc = crc16_ccitt(0, (uchar*)vbs, sizeof(struct vbs));
+  vbs->uboot_exec_address = uboot_exec_address;
+  vbs->rom_handoff = rom_handoff;
+}
+
 static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
   volatile struct vbs *vbs = (volatile struct vbs*)AST_SRAM_VBS_BASE;
@@ -25,6 +38,7 @@ static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
     }
     vbs->error_type = t;
     vbs->error_code = c;
+    put_vbs(vbs);
     return 0;
   }
 

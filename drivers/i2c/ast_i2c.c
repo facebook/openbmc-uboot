@@ -124,8 +124,8 @@ static inline int ast_i2c_wait_tx(struct ast_i2c_regs *i2c_base)
 	u32 flag = AST_I2CD_INTR_TX_ACK | AST_I2CD_INTR_TX_NAK;
 	u32 status = readl(&i2c_base->isr) & flag;
 	while (!status && timeout > 0) {
-		status = readl(&i2c_base->isr) & flag;
 		udelay(I2C_SLEEP_STEP);
+		status = readl(&i2c_base->isr) & flag;
 		timeout -= I2C_SLEEP_STEP;
 	}
 

@@ -11,7 +11,7 @@
 #include <asm/arch/vbs.h>
 
 /* Years the next upgrade must occur, protect against timestamp DoS */
-#define AST_TPM_MAX_YEARS 1
+#define AST_TPM_MAX_YEARS 5
 
 enum ast_tpm_rollback_type {
   AST_TPM_ROLLBACK_SUBORDINATE = 0,

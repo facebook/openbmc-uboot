@@ -298,7 +298,7 @@ int ast_tpm_try_version(struct vbs *vbs, uint8_t image, uint32_t version,
 
   if (*rb_target != 0 &&
       version > *rb_target + (86400 * 365 * AST_TPM_MAX_YEARS)) {
-    /* Do not allow fast-forwarding beyond 10 years. */
+    /* Do not allow fast-forwarding beyond 5 years. */
     return VBS_ERROR_ROLLBACK_HUGE;
   }
 

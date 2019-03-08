@@ -50,6 +50,19 @@ config SYS_CONFIG_NAME
   default "fbwedge100"
 endif
 
+if TARGET_FBWEDGE400
+config SYS_CPU
+  default "arm1176"
+config SYS_BOARD
+  default "ast-g5"
+config SYS_VENDOR
+  default "aspeed"
+config SYS_SOC
+  default "aspeed"
+config SYS_CONFIG_NAME
+  default "fbwedge400"
+endif
+
 if TARGET_FBMINIPACK
 config SYS_CPU
   default "arm1176"

@@ -9,9 +9,11 @@ F:	include/configs/fbwedge100.h
 F:	include/configs/fbwedge.h
 F:	include/configs/fbminipack.h
 F:	include/configs/fbttn.h
+F:      include/configs/fbwedge400.h
 F:	configs/fbyosemite_defconfig
 F:	configs/fblightning_defconfig
 F:	configs/fbwedge100_defconfig
 F:	configs/fbwedge_defconfig
 F:	configs/fbminipack_defconfig
 F:	configs/fbttn_defconfig
+F:      configs/fbwedge400_defconfig

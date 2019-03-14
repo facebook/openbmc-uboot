@@ -182,6 +182,11 @@ config TARGET_FBTP
 	select CPU_ARM1176
 	select SUPPORT_SPL
 
+config TARGET_FBAL
+	bool "Support Facebook's OpenBMC Angels Landing"
+	select CPU_ARM1176
+	select SUPPORT_SPL
+
 config TARGET_FBTTN
 	bool "Support Facebook's OpenBMC TTN"
 	select CPU_ARM1176

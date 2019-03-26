@@ -447,14 +447,14 @@ static int tpm_tis_i2c_send(struct udevice *dev, const u8 *buf, size_t len)
 			return rc;
 	}
 
-	burstcnt = tpm_tis_i2c_get_burstcount(dev);
-
-	/* burstcount < 0 -> tpm is busy */
-	if (burstcnt < 0)
-		return burstcnt;
 
 	while (count < len) {
-		udelay(300);
+		burstcnt = tpm_tis_i2c_get_burstcount(dev);
+
+		/* burstcount < 0 -> tpm is busy */
+		if (burstcnt < 0)
+			return burstcnt;
+
 		if (burstcnt > len - count)
 			burstcnt = len - count;
 

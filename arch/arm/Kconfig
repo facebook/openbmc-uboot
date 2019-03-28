@@ -197,6 +197,11 @@ config TARGET_FBY2
 	select CPU_ARM1176
 	select SUPPORT_SPL
 
+config TARGET_FBY3
+	bool "Support Facebook's OpenBMC Y3"
+	select CPU_ARM1176
+	select SUPPORT_SPL
+
 config TARGET_MINILAKETB
 	bool "Support Facebook's OpenBMC MINILAKETB"
 	select CPU_ARM1176

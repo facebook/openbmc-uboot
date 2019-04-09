@@ -3033,14 +3033,14 @@ set_D2PLL:
     ldr   r0, =0x1e6e0000                        @ disable MMC password
     mov   r1, #0x0
     str   r1, [r0]
+#endif /* CONFIG_SPL_BUILD: End normal U-Boot build */
 
+platform_exit_finish:
     /* Disable Timer separate mode */
     ldr   r0, =0x1e782038
     ldr   r1, =0xEA
     str   r1, [r0]
-#endif /* CONFIG_SPL_BUILD: End normal U-Boot build */
 
-platform_exit_finish:
     /* restore lr */
     mov   lr, r4
 

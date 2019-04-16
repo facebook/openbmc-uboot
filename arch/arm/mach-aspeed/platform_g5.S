@@ -1037,11 +1037,6 @@ wait_first_reset:
      *******************************************/
 
 bypass_first_reset:
-    /* Enable Timer separate clear mode */
-    ldr   r0, =0x1e782038
-    mov   r1, #0xAE
-    str   r1, [r0]
-
 /******************************************************************************
  Disable WDT2 for 2nd boot function
  ******************************************************************************/
@@ -1073,6 +1068,12 @@ bypass_first_reset:
 #if !defined(CONFIG_SPL_BUILD)
     /* This code is not included in the ROM and is always included in U-Boot. */
     init_board_gpio
+
+    /* Enable Timer separate clear mode */
+    ldr   r0, =0x1e782038
+    mov   r1, #0xAE
+    str   r1, [r0]
+
 
 /* Test - DRAM initial time */
     ldr   r0, =0x1e78203c
@@ -3036,11 +3037,12 @@ set_D2PLL:
 #endif /* CONFIG_SPL_BUILD: End normal U-Boot build */
 
 platform_exit_finish:
+#if !defined(CONFIG_SPL_BUILD)
     /* Disable Timer separate mode */
     ldr   r0, =0x1e782038
     ldr   r1, =0xEA
     str   r1, [r0]
-
+#endif
     /* restore lr */
     mov   lr, r4
 

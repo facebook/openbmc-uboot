@@ -264,6 +264,7 @@ dtb-$(CONFIG_SOC_KEYSTONE) += k2hk-evm.dtb \
 
 dtb-$(CONFIG_TARGET_FBTP) += aspeed-g5-tpm.dtb
 dtb-$(CONFIG_TARGET_FBAL) += aspeed-g5-tpm.dtb
+dtb-$(CONFIG_TARGET_FBEP) += aspeed-g5-tpm.dtb
 dtb-$(CONFIG_TARGET_FBY2) += aspeed-g5-fby2-tpm.dtb
 dtb-$(CONFIG_TARGET_FBY3) += aspeed-g5-fby3-tpm.dtb
 dtb-$(CONFIG_TARGET_MINILAKETB) += aspeed-g5-minilaketb-tpm.dtb

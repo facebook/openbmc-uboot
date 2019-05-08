@@ -187,6 +187,11 @@ config TARGET_FBAL
 	select CPU_ARM1176
 	select SUPPORT_SPL
 
+config TARGET_FBEP
+	bool "Support Facebook's OpenBMC Emerald Pools"
+	select CPU_ARM1176
+	select SUPPORT_SPL
+
 config TARGET_FBTTN
 	bool "Support Facebook's OpenBMC TTN"
 	select CPU_ARM1176

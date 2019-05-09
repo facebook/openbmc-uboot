@@ -239,6 +239,21 @@ void ast_scu_unlock(struct ast2500_scu *scu);
  */
 void ast_scu_lock(struct ast2500_scu *scu);
 
+/**
+ * ast_scu_enable_i2c_dev() - enable i2c pin function
+ * @dev, i2c device
+ *
+ * @return zero on success, error code (<0) otherwise
+ */
+int ast_scu_enable_i2c_dev(struct udevice *dev);
+
+/**
+ * ast_scu_enable_wdtrst1() - enable wdtrst1 function
+ *
+ * @return zero on success, error code (<0) otherwise
+ */
+int ast_scu_enable_wdtrst1(void);
+
 #endif  /* __ASSEMBLY__ */
 
 #endif  /* _ASM_ARCH_SCU_AST2500_H */

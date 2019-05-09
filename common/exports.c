@@ -21,6 +21,12 @@ unsigned long get_version(void)
 # define phy_find_by_mask		dummy
 # define mdio_phydev_for_ethname	dummy
 # define miiphy_set_current_dev		dummy
+#ifdef CONFIG_FMC_SPI
+# define spi_dma          dummy
+#endif
+#endif
+#ifndef CONFIG_AST_SPI_NOR
+# define memmove_dma          dummy
 #endif
 
 void jumptable_init(void)

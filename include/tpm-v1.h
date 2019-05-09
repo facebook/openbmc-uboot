@@ -245,8 +245,16 @@ struct tpm_permanent_flags {
 	u8	disable_full_da_logic_info;
 } __packed;
 
-#define TPM_SHA1_160_HASH_LEN	0x14
+struct tpm_volatile_flags {
+  __be16  tag;
+  u8      deactivated;
+  u8      disable_force_clear;
+  u8      physical_presence;
+  u8      physical_presence_lock;
+  u8      global_lock;
+} __packed;
 
+#define TPM_SHA1_160_HASH_LEN	0x14
 struct __packed tpm_composite_hash {
 	u8	digest[TPM_SHA1_160_HASH_LEN];
 };
@@ -398,6 +406,14 @@ u32 tpm_read_pubek(struct udevice *dev, void *data, size_t count);
 u32 tpm_force_clear(struct udevice *dev);
 
 /**
+ * Issue a TPM_DisableForceClear command.
+ *
+ * @param dev		TPM device
+ * @return return code of the operation
+ */
+uint32_t tpm_disable_force_clear(struct udevice *dev);
+
+/**
  * Issue a TPM_PhysicalEnable command.
  *
  * @param dev		TPM device
@@ -502,6 +518,14 @@ u32 tpm_get_pub_key_oiap(struct udevice *dev, u32 key_handle,
 			 size_t *pubkey_len);
 
 /**
+ * Allow the TPM to set an owner.
+ *
+ * @param dev		TPM device
+ * @return return code of the operation
+ */
+uint32_t tpm_set_owner_install(struct udevice *dev);
+
+/**
  * Get the TPM permanent flags value
  *
  * @param dev		TPM device
@@ -510,6 +534,16 @@ u32 tpm_get_pub_key_oiap(struct udevice *dev, u32 key_handle,
  */
 u32 tpm_get_permanent_flags(struct udevice *dev,
 			    struct tpm_permanent_flags *pflags);
+
+/**
+ * Get the TPM volatile (startup) flags value
+ *
+ * @param dev		TPM device
+ * @param vflags      Place to put volatile flags
+ * @return return code of the operation
+ */
+u32 tpm_get_volatile_flags(struct udevice *dev,
+                                struct tpm_volatile_flags *vflags);
 
 /**
  * Get the TPM permissions

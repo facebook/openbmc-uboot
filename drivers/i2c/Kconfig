@@ -122,7 +122,7 @@ config SYS_I2C_DW_ENABLE_STATUS_UNSUPPORTED
 
 config SYS_I2C_ASPEED
 	bool "Aspeed I2C Controller"
-	depends on DM_I2C && ARCH_ASPEED
+	depends on DM_I2C && ARCH_ASPEED_GOOGLE
 	help
 	  Say yes here to select Aspeed I2C Host Controller. The driver
 	  supports AST2500 and AST2400 controllers, but is very limited.

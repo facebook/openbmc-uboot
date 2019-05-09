@@ -4,7 +4,7 @@
  * Copyright 2016 IBM Corporation
  * Copyright 2017 Google, Inc.
  */
-
+#define DEBUG
 #include <common.h>
 #include <clk.h>
 #include <dm.h>
@@ -106,6 +106,7 @@ static int ast_i2c_ofdata_to_platdata(struct udevice *dev)
 static int ast_i2c_probe(struct udevice *dev)
 {
 	struct ast2500_scu *scu;
+	int ret;
 
 	debug("Enabling I2C%u\n", dev->seq);
 
@@ -119,8 +120,12 @@ static int ast_i2c_probe(struct udevice *dev)
 	clrbits_le32(&scu->sysreset_ctrl1, SCU_SYSRESET_I2C);
 	ast_scu_lock(scu);
 
-	ast_i2c_init_bus(dev);
+	ret = ast_scu_enable_i2c_dev(dev);
+	if (ret) {
+		return ret;
+	}
 
+	ast_i2c_init_bus(dev);
 	return 0;
 }
 

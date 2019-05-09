@@ -2,13 +2,16 @@
 /*
  * Copyright 2017 Google, Inc
  */
-
+#define DEBUG
 #include <common.h>
 #include <dm.h>
 #include <errno.h>
 #include <wdt.h>
 #include <asm/io.h>
 #include <asm/arch/wdt.h>
+#ifdef CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
+#include <asm/arch/scu_ast2500.h>
+#endif
 
 #define WDT_AST2500	2500
 #define WDT_AST2400	2400
@@ -17,12 +20,35 @@ struct ast_wdt_priv {
 	struct ast_wdt *regs;
 };
 
-static int ast_wdt_start(struct udevice *dev, u64 timeout, ulong flags)
+static int ast_wdt_setup_rst_pulse(struct udevice *dev)
+{
+	struct ast_wdt_priv *priv = dev_get_priv(dev);
+	// TODO: get pulse reset information from device tree
+	u32 reset_pulse = SET_WDT_RST_PULSE_POLARITY_HIGH | 0xFF;
+	writel(reset_pulse, &priv->regs->reset_width);
+	return 0;
+}
+
+static int ast_wdt_start(struct udevice *dev, u64 timeout_ms, ulong flags)
 {
 	struct ast_wdt_priv *priv = dev_get_priv(dev);
 	ulong driver_data = dev_get_driver_data(dev);
 	u32 reset_mode = ast_reset_mode_from_flags(flags);
+	/* watchdog timer clock is fixed at 1MHz */
+	u32 timeout_us = (u32)timeout_ms * 1000;
 
+	int ret;
+	debug("wdt%u set timeout after %uus\n", dev->seq, timeout_us);
+
+#ifdef CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
+	debug("Enable WDT trigger external reset\n");
+	ret = ast_scu_enable_wdtrst1();
+	if (ret)
+		return ret;
+	ret = ast_wdt_setup_rst_pulse(dev);
+	if (ret)
+		return ret;
+#endif
 	clrsetbits_le32(&priv->regs->ctrl,
 			WDT_CTRL_RESET_MASK << WDT_CTRL_RESET_MODE_SHIFT,
 			reset_mode << WDT_CTRL_RESET_MODE_SHIFT);
@@ -31,14 +57,22 @@ static int ast_wdt_start(struct udevice *dev, u64 timeout, ulong flags)
 		writel(ast_reset_mask_from_flags(flags),
 		       &priv->regs->reset_mask);
 
-	writel((u32) timeout, &priv->regs->counter_reload_val);
+	writel(timeout_us, &priv->regs->counter_reload_val);
 	writel(WDT_COUNTER_RESTART_VAL, &priv->regs->counter_restart);
 	/*
 	 * Setting CLK1MHZ bit is just for compatibility with ast2400 part.
 	 * On ast2500 watchdog timer clock is fixed at 1MHz and the bit is
 	 * read-only
+	 * Based on configuration to enable 2ND_BOOT or TRIGGER WDTRST1
 	 */
+	clrbits_le32(&priv->regs->ctrl, WDT_CTRL_2ND_BOOT | WDT_CTRL_EXT);
 	setbits_le32(&priv->regs->ctrl,
+		#ifdef CONFIG_ASPEED_WATCHDOG_2ND_BOOT
+		        WDT_CTRL_2ND_BOOT |
+		#endif
+		#ifdef CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
+			WDT_CTRL_EXT |
+		#endif
 		     WDT_CTRL_EN | WDT_CTRL_RESET | WDT_CTRL_CLK1MHZ);
 
 	return 0;
@@ -48,6 +82,7 @@ static int ast_wdt_stop(struct udevice *dev)
 {
 	struct ast_wdt_priv *priv = dev_get_priv(dev);
 
+	debug("Watch Dog stopped.\n");
 	clrbits_le32(&priv->regs->ctrl, WDT_CTRL_EN);
 
 	writel(WDT_RESET_DEFAULT, &priv->regs->reset_mask);
@@ -58,6 +93,7 @@ static int ast_wdt_reset(struct udevice *dev)
 {
 	struct ast_wdt_priv *priv = dev_get_priv(dev);
 
+	debug("Watch Dog reload.\n");
 	writel(WDT_COUNTER_RESTART_VAL, &priv->regs->counter_restart);
 
 	return 0;

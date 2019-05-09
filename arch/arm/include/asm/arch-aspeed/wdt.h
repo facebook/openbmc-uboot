@@ -14,12 +14,21 @@
  */
 #define WDT_COUNTER_RESTART_VAL		0x4755
 
+/*
+ * Values for setup the WDT reset pluse
+ */
+#define SET_WDT_RST_PULSE_POLARITY_LOW	0x5A000000
+#define SET_WDT_RST_PULSE_POLARITY_HIGH	0xA5000000
+#define SET_WDT_RST_PULSE_OPEN_DRAIN	0x8A000000
+#define SET_WDT_RST_PULSE_PUSH_PULL	0xA8000000
+
 /* Control register */
 #define WDT_CTRL_RESET_MODE_SHIFT	5
 #define WDT_CTRL_RESET_MODE_MASK	3
 
 #define WDT_CTRL_EN			(1 << 0)
 #define WDT_CTRL_RESET			(1 << 1)
+#define WDT_CTRL_EXT			(1 << 3)
 #define WDT_CTRL_CLK1MHZ		(1 << 4)
 #define WDT_CTRL_2ND_BOOT		(1 << 7)
 

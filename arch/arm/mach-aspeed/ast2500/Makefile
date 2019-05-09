@@ -1,1 +1,7 @@
-obj-y += clk_ast2500.o sdram_ast2500.o
+obj-y += clk_ast2500.o
+
+ifdef CONFIG_ARCH_AST2500
+obj-y += ../ast-sdk/ast-scu.o ../ast-sdk/ast-sdmc.o ../ast-sdk/platform_g5.o scu_ast2500.o
+else
+obj-y += sdram_ast2500.o
+endif

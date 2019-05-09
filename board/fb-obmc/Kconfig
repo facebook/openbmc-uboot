@@ -1,0 +1,18 @@
+source "board/aspeed/ast-g5/Kconfig"
+
+config SYS_TEXT_BASE
+	default 0x20015000 if ASPEED_RECOVERY_BUILD
+	default 0x28084000 if !ASPEED_RECOVERY_BUILD
+
+if TARGET_FBTP
+config SYS_BOARD
+	default "ast-g5"
+
+config SYS_VENDOR
+	default "aspeed"
+
+config SYS_CONFIG_NAME
+	default "fbtp"
+
+endif
+

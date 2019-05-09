@@ -2,7 +2,7 @@
 /*
  * (C) Copyright 2016 Google, Inc
  */
-
+#define DEBUG
 #include <common.h>
 #include <clk-uclass.h>
 #include <dm.h>

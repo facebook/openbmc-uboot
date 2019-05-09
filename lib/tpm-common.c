@@ -10,6 +10,7 @@
 #include <dm.h>
 #include <asm/unaligned.h>
 #include <tpm-common.h>
+#include <tpm-v1.h>
 #include "tpm-utils.h"
 
 enum tpm_version tpm_get_version(struct udevice *dev)
@@ -161,10 +162,12 @@ u32 tpm_return_code(const void *response)
 u32 tpm_sendrecv_command(struct udevice *dev, const void *command,
 			 void *response, size_t *size_ptr)
 {
-	int err, ret;
+	int err;
 	u8 response_buffer[COMMAND_BUFFER_SIZE];
 	size_t response_length;
 	int i;
+	u32 ret;
+	u8  retries;
 
 	if (response) {
 		response_length = *size_ptr;
@@ -173,16 +176,24 @@ u32 tpm_sendrecv_command(struct udevice *dev, const void *command,
 		response_length = sizeof(response_buffer);
 	}
 
-	err = tpm_xfer(dev, command, tpm_command_size(command),
-		       response, &response_length);
+	for (retries = 0; retries < 10; retries++) {
+		err = tpm_xfer(dev, command, tpm_command_size(command),
+				response, &response_length);
 
-	if (err < 0)
-		return err;
+		if (err < 0) {
+			log_err("TPM xfer error %d\n", err);
+			return err;
+		}
 
-	if (size_ptr)
-		*size_ptr = response_length;
+		if (size_ptr)
+			*size_ptr = response_length;
 
-	ret = tpm_return_code(response);
+		ret = tpm_return_code(response);
+		if (ret != TPM_FAIL && ret != TPM_RETRY)
+			break;
+		log_debug("TPM retry\n");
+		udelay(100);
+	}
 
 	log_debug("TPM response [ret:%d]: ", ret);
 	for (i = 0; i < response_length; i++)

@@ -1516,6 +1516,10 @@ PHONY += $(u-boot-dirs)
 $(u-boot-dirs): prepare scripts
 	$(Q)$(MAKE) $(build)=$@
 
+PHONY += test/fuzz
+test/fuzz: prepare scripts
+	$(Q)$(MAKE) $(build)=$@
+
 tools: prepare
 # The "tools" are needed early
 $(filter-out tools, $(u-boot-dirs)): tools

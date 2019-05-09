@@ -772,7 +772,7 @@ int rsa_add_verify_data(struct image_sign_info *info, void *keydest)
 		ret = node;
 	}
 
-	if (!ret) {
+	if (!ret && !info->engine_id) {
 		ret = fdt_setprop_string(keydest, node, "key-name-hint",
 				 info->keyname);
 	}

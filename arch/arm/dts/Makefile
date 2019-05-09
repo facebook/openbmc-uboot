@@ -560,7 +560,7 @@ dtb-$(CONFIG_ARCH_BCM283X) += \
 	bcm2836-rpi-2-b.dtb \
 	bcm2837-rpi-3-b.dtb
 
-dtb-$(CONFIG_ARCH_ASPEED) += ast2500-evb.dtb
+dtb-$(CONFIG_ARCH_ASPEED_GOOGLE) += ast2500-evb.dtb
 
 dtb-$(CONFIG_ARCH_STI) += stih410-b2260.dtb
 
@@ -573,6 +573,15 @@ dtb-$(CONFIG_SOC_K3_AM6) += k3-am654-base-board.dtb k3-am654-r5-base-board.dtb
 dtb-$(CONFIG_ARCH_MEDIATEK) += \
 	mt7623n-bananapi-bpi-r2.dtb \
 	mt7629-rfb.dtb
+
+dtb-$(CONFIG_TARGET_FBTP) += fbtp.dtb
+dtb-$(CONFIG_TARGET_FBAL) += aspeed-g5-tpm.dtb
+dtb-$(CONFIG_TARGET_FBEP) += aspeed-g5-tpm.dtb
+dtb-$(CONFIG_TARGET_FBY2) += aspeed-g5-fby2-tpm.dtb
+dtb-$(CONFIG_TARGET_FBY3) += aspeed-g5-fby3-tpm.dtb
+dtb-$(CONFIG_TARGET_MINILAKETB) += aspeed-g5-minilaketb-tpm.dtb
+dtb-$(CONFIG_TARGET_PWNEPTUNE) += aspeed-g5-tpm.dtb
+dtb-$(CONFIG_TARGET_FBTTN) += aspeed-g5-fbttn-tpm.dtb
 
 targets += $(dtb-y)
 

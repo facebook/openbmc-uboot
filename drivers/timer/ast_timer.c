@@ -2,7 +2,7 @@
 /*
  * Copyright 2016 Google Inc.
  */
-
+#define DEBUG
 #include <common.h>
 #include <dm.h>
 #include <errno.h>
@@ -29,6 +29,7 @@ static struct ast_timer_counter *ast_get_timer_counter(struct ast_timer *timer,
 
 static int ast_timer_probe(struct udevice *dev)
 {
+	debug("ast timer probe start\n");
 	struct ast_timer_priv *priv = dev_get_priv(dev);
 	struct timer_dev_priv *uc_priv = dev_get_uclass_priv(dev);
 
@@ -47,6 +48,7 @@ static int ast_timer_probe(struct udevice *dev)
 
 	uc_priv->clock_rate = AST_TMC_RATE;
 
+	debug("ast timer probe done\n");
 	return 0;
 }
 

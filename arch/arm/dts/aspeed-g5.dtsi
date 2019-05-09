@@ -1,0 +1,105 @@
+/* This device tree is copied from
+ * https://github.com/openbmc/linux/blob/c5682cb/arch/arm/boot/dts/aspeed-g5.dtsi
+ */
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+	model = "Aspeed G5 BMC";
+	compatible = "aspeed,ast2500";
+
+	chosen { };
+
+	aliases { };
+
+	ahb {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+		u-boot,dm-pre-reloc;
+
+		apb {
+			compatible = "simple-bus";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges;
+			u-boot,dm-pre-reloc;
+
+			clk_clkin: clk_clkin@1e6e2070 {
+				#clock-cells = <0>;
+				compatible = "aspeed,g5-clkin-clock";
+				reg = <0x1e6e2070 0x04>;
+				u-boot,dm-pre-reloc;
+			};
+
+			clk_hpll: clk_hpll@1e6e2024 {
+				#clock-cells = <0>;
+				compatible = "aspeed,g5-hpll-clock";
+				reg = <0x1e6e2024 0x4>;
+				clocks = <&clk_clkin>;
+				u-boot,dm-pre-reloc;
+			};
+
+			clk_apb: clk_apb@1e6e2008 {
+				#clock-cells = <0>;
+				compatible = "aspeed,g5-apb-clock";
+				reg = <0x1e6e2008 0x4>;
+				clocks = <&clk_hpll>;
+				u-boot,dm-pre-reloc;
+			};
+
+			i2c: i2c@1e78a000 {
+				#address-cells = <1>;
+				#size-cells = <1>;
+				#interrupt-cells = <1>;
+
+				compatible = "aspeed,ast2400-i2c-controller";
+				reg = <0x1e78a000 0x40>;
+				ranges = <0 0x1e78a000 0x1000>;
+				interrupts = <12>;
+				clocks = <&clk_apb>;
+				clock-ranges;
+				interrupt-controller;
+				u-boot,dm-pre-reloc;
+
+				i2c7: i2c-bus@1c0 {
+					#address-cells = <1>;
+					#size-cells = <0>;
+					reg = <0x1C0 0x40>;
+					compatible = "aspeed,ast2400-i2c-bus";
+					bus = <6>;
+					clock-frequency = <100000>;
+					status = "okay";
+					interrupts = <6>;
+					u-boot,dm-pre-reloc;
+				};
+
+                                i2c10: i2c-bus@380 {
+                                        #address-cells = <1>;
+                                        #size-cells = <0>;
+                                        reg = <0x380 0x40>;
+                                        compatible = "aspeed,ast2400-i2c-bus";
+                                        bus = <9>;
+                                        clock-frequency = <100000>;
+                                        status = "okay";
+                                        interrupts = <6>;
+                                        u-boot,dm-pre-reloc;
+                                };
+
+				i2c14: i2c-bus@480 {
+					#address-cells = <1>;
+					#size-cells = <0>;
+					reg = <0x480 0x40>;
+					compatible = "aspeed,ast2400-i2c-bus";
+					bus = <13>;
+					clock-frequency = <100000>;
+					status = "okay";
+					interrupts = <6>;
+					u-boot,dm-pre-reloc;
+				};
+			};
+
+		};
+	};
+};

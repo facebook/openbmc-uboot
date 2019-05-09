@@ -30,16 +30,18 @@ const char *bootdelay_process(void);
  * Also do the CONFIG_MENUKEY processing if enabled.
  *
  * @cmd: Command to run
+ * @return 0 on success otherwise non-0
  */
-void autoboot_command(const char *cmd);
+int autoboot_command(const char *cmd);
 #else
 static inline const char *bootdelay_process(void)
 {
 	return NULL;
 }
 
-static inline void autoboot_command(const char *s)
+static inline int autoboot_command(const char *s)
 {
+	return 0;
 }
 #endif
 

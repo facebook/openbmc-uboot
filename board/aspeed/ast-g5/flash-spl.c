@@ -306,10 +306,6 @@ int ast_fmc_spi_check(bool should_lock) {
   memcpy(buffer, (uchar*)doheap, function_size);
   spi_check = (heapstatus_t)buffer;
 
-  /* Set GPIOF1 to output high */
-  WRITEREG(0x1E780020, READREG(0x1E780020) | 0x200);
-  WRITEREG(0x1E780024, READREG(0x1E780024) | 0x200);
-
   /* Protect and unprotect CS1 (always check this first) */
   cs1_status = spi_check(timer_fp, 1, should_lock);
 

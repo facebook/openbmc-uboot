@@ -78,6 +78,7 @@ flash_info_t flash_info[CONFIG_SYS_MAX_FLASH_BANKS];		/* FLASH chips info */
 #define MX25L12805D		0x1820C2
 #define MX25L25635E		0x1920C2
 #define MX66L51235F		0x1A20C2
+#define MX66L1G45G		0x1B20C2
 #define SST25VF016B		0x4125bf
 #define SST25VF064C		0x4b25bf
 #define SST25VF040B		0x8d25bf
@@ -1016,6 +1017,26 @@ static ulong flash_get_size (const char *id, ulong base, flash_info_t *info)
 			info->quadport = 1;
 			info->dummydata = 0xaa;
 #endif
+#endif
+			break;
+
+		case MX66L1G45G:
+			info->sector_count = 2048;
+			info->size = 0x8000000;
+			erase_region_size = 0x10000;
+			info->readcmd = 0x0b;
+			info->dualport = 0;
+			info->dummybyte = 1;
+			info->buffersize = 256;
+			info->address32 = 1;
+			WriteClk = 50;
+			EraseClk = 20;
+			ReadClk  = 50;
+#if	defined(CONFIG_FLASH_SPIx2_Dummy)
+			info->readcmd = 0xbb;
+			info->dualport = 1;
+			info->dummybyte = 1;
+			info->iomode = IOMODEx2_dummy;
 #endif
 			break;
 

@@ -595,6 +595,19 @@ static int spi_init(void)
 }
 #endif
 
+#if defined(CONFIG_FBAL)
+static void disable_snoop_interrupt(void)
+{
+  u32 reg;
+
+  reg = __raw_readl(AST_LPC_BASE + 0x80);
+  reg &= ~0xA;
+  __raw_writel(reg, AST_LPC_BASE + 0x80);
+
+  __raw_writel(0x0, AST_LPC_BASE + 0x130);
+}
+#endif
+
 int board_init(void)
 {
 	watchdog_init();
@@ -620,6 +633,10 @@ int board_init(void)
   slot_12V_init();
   slot_led_init();
   spi_init();
+#endif
+
+#if defined(CONFIG_FBAL)
+  disable_snoop_interrupt();
 #endif
 
   gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;

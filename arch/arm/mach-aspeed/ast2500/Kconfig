@@ -15,6 +15,9 @@ config TARGET_FBTP
 	bool "Support Facebook's OpenBMC TP"
 	select SUPPORT_SPL
 
+config TARGET_FBAL
+	bool "Support Facebook's OpenBMC AL"
+	select SUPPORT_SPL
 
 source "board/aspeed/evb_ast2500/Kconfig"
 source "board/fb-obmc/Kconfig"

@@ -36,7 +36,9 @@
 #define CONFIG_UPDATE            "tftp 80800000 ast2500.scr; so 80800000'"
 #define CONFIG_BOOTFILE          "flash-fby2"
 #ifndef CONFIG_SPL_BUILD
+#ifndef CONFIG_SYS_LONGHELP
 #define CONFIG_SYS_LONGHELP     /* undef to save memory   */
+#endif
 #define CONFIG_SYS_HUSH_PARSER  /* Use the HUSH parser */
 #endif
 
@@ -48,8 +50,9 @@
 #define CONFIG_SYS_NS16550_REG_SIZE     -4
 #define CONFIG_SYS_NS16550_COM1         AST_UART0_BASE
 #define CONFIG_CONS_INDEX               1
+#ifndef CONFIG_BAUDRATE
 #define CONFIG_BAUDRATE                 57600
-
+#endif
 /*
  * EEPROM configuration
  */

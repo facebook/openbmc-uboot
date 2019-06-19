@@ -123,7 +123,7 @@ int ast_scu_enable_wdtrst1(void)
 	}
 
 	/* SCU_A8: pinmux_ctrl1[2], pin-2 */
-	ctrl_reg = &scu->pinmux_ctrl[2];
+	ctrl_reg = &scu->pinmux_ctrl1[2];
 
 	ast_scu_unlock(scu);
 	setbits_le32(ctrl_reg, (1<<2));

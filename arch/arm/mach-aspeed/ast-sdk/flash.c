@@ -30,8 +30,8 @@
 #include <asm/byteorder.h>
 #include <environment.h>
 
-#include <asm/arch/ast_scu.h>
-#include <asm/arch/aspeed.h>
+#include <asm/arch/ast-sdk/ast_scu.h>
+#include <asm/arch/ast-sdk/aspeed.h>
 
 
 /*

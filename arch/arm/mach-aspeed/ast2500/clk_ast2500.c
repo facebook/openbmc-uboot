@@ -38,7 +38,9 @@ void ast_scu_unlock(struct ast2500_scu *scu)
 
 void ast_scu_lock(struct ast2500_scu *scu)
 {
+#ifdef CONFIG_AST_SCU_LOCK
 	writel(0,  &scu->protection_key);
 	while (readl(&scu->protection_key))
 		;
+#endif
 }

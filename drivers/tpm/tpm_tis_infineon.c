@@ -18,7 +18,6 @@
  *
  * Version: 2.1.1
  */
-#define DEBUG
 #include <common.h>
 #include <dm.h>
 #include <fdtdec.h>

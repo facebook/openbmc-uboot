@@ -4,7 +4,6 @@
  * Copyright 2016 IBM Corporation
  * Copyright 2017 Google, Inc.
  */
-#define DEBUG
 #include <common.h>
 #include <clk.h>
 #include <dm.h>

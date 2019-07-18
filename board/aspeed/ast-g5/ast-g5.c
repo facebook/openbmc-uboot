@@ -6,7 +6,6 @@
  * as published by the Free Software Foundation; either version
  * 2 of the License, or (at your option) any later version.
  */
-#define DEBUG
 #include <common.h>
 #include <netdev.h>
 #include <malloc.h>

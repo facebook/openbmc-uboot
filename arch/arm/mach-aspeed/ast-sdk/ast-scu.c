@@ -35,7 +35,6 @@
  *    1. 2012/08/15 Ryan Chen Create
  *
  ******************************************************************************/
-#define DEBUG
 #include <common.h>
 #include <asm/processor.h>
 #include <asm/io.h>

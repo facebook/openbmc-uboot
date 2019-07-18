@@ -2,7 +2,6 @@
 /*
  * Copyright 2016 Google Inc.
  */
-#define DEBUG
 #include <common.h>
 #include <dm.h>
 #include <errno.h>

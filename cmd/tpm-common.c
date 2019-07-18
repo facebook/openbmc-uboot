@@ -2,7 +2,6 @@
 /*
  * Copyright (c) 2013 The Chromium OS Authors.
  */
-#define DEBUG
 #include <common.h>
 #include <command.h>
 #include <dm.h>

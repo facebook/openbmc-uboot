@@ -3,7 +3,6 @@
  * Copyright (C) 2019 Facebook, Inc
  */
 
-#define DEBUG
 #include <common.h>
 #include <dm.h>
 #include <asm/io.h>

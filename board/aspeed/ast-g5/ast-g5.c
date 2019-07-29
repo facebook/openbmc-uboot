@@ -589,6 +589,28 @@ static void disable_snoop_interrupt(void)
 
   __raw_writel(0x0, AST_LPC_BASE + 0x130);
 }
+
+static void enable_nic_mux(void)
+{
+  u32 reg;
+
+  reg = __raw_readl(AST_SCU_BASE + 0xA0);
+  reg |= (1 << 4);
+  __raw_writel(reg, AST_SCU_BASE + 0xA0);
+
+  // enable GPIOT4 WDT reset tolerance
+  reg = __raw_readl(AST_GPIO_BASE + 0x12C);
+  reg |= 0x10000000;
+  __raw_writel(reg, AST_GPIO_BASE + 0x12C);
+
+  reg = __raw_readl(AST_GPIO_BASE + 0x84);
+  reg |= 0x10000000;
+  __raw_writel(reg, AST_GPIO_BASE + 0x84);
+
+  reg = __raw_readl(AST_GPIO_BASE + 0x80);
+  reg |= 0x10000000;
+  __raw_writel(reg, AST_GPIO_BASE + 0x80); 
+}
 #endif
 
 int board_init(void)
@@ -620,6 +642,7 @@ int board_init(void)
 
 #if defined(CONFIG_FBAL)
   disable_snoop_interrupt();
+  enable_nic_mux();
 #endif
 
   gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;

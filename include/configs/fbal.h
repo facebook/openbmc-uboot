@@ -54,6 +54,13 @@
  */
 #define CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
 
+#if defined(CONFIG_FBAL)
+/*
+ * Enable 2x I/O read command
+ */
+#define CONFIG_FLASH_SPIx2_Dummy
+#endif
+
 #include "facebook_common.h"
 #include "ast2500_common.h"
 

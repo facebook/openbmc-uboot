@@ -8,6 +8,9 @@
 #include <common.h>
 #include <malloc.h>
 #include <timer.h>
+#if defined(CONFIG_FBAL)
+#include <stdio.h>
+#endif
 
 #include <asm/arch/ast-sdk/ast_g5_platform.h>
 #include <asm/arch/ast-sdk/ast_scu.h>
@@ -15,7 +18,11 @@
 
 #include "flash-spl.h"
 #define AST_FMC_WRITE_ENABLE 0x800f0000
-#define AST_FMC_STATUS_RESET 0x000b0641
+#if defined(CONFIG_FBAL)
+//Workaround slow down SPI clk to 12Mhz-->
+#define AST_FMC_STATUS_RESET 0x000b0041
+//<--end
+#endif
 #define AST_FMC_CE1_CONTROL  0x14
 #define AST_FMC_CE0_CONTROL  0x10
 #define AST_FMC_CE_CONTROL   0x04
@@ -177,7 +184,20 @@ inline void set_topbottom_mxic(heaptimer_t timer, u32 base, u32 ctrl) {
   /* Wait for the WIP/Busy to clear */
   (void)spi_status(timer, base, ctrl, false);
 }
+#if defined(CONFIG_FBAL)
+//Workaround Add signal strength-->
+inline void set_ods(heaptimer_t timer, u32 base, u32 ctrl) {
+  uchar r1;
 
+  r1 = spi_config(timer, base, ctrl);
+  r1 |= 0x06;
+  r1 &= 0xFE;
+  spi_write_config(timer, base, ctrl, r1);
+  /* Wait for the WIP/Busy to clear */
+  (void)spi_status(timer, base, ctrl, false);
+}
+//<--end
+#endif
 int heaptimer(unsigned long usec) {
   ulong last;
   ulong clks;
@@ -247,7 +267,15 @@ int doheap(heaptimer_t timer, uchar cs, bool should_lock) {
       return AST_FMC_ERROR;
     }
   }
-
+#if defined(CONFIG_FBAL)
+//Workaround Add signal strength-->
+  spi_write_enable(timer, base, ctrl);
+  spi_status(timer, base, ctrl, true);
+  spi_config(timer, base, ctrl);
+  set_ods(timer, base, ctrl);
+  spi_config(timer, base, ctrl);
+//<--end
+#endif
   /* Write enable for CSn */
   spi_write_enable(timer, base, ctrl);
   spi_status(timer, base, ctrl, true);

@@ -575,6 +575,7 @@ dtb-$(CONFIG_ARCH_MEDIATEK) += \
 	mt7629-rfb.dtb
 
 dtb-$(CONFIG_TARGET_FBTP) += fbtp.dtb
+dtb-$(CONFIG_TARGET_FBSP) += fbsp.dtb
 dtb-$(CONFIG_TARGET_FBAL) += fbal.dtb
 dtb-$(CONFIG_TARGET_FBEP) += aspeed-g5-tpm.dtb
 dtb-$(CONFIG_TARGET_FBY2) += fby2.dtb

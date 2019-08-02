@@ -16,6 +16,18 @@ config SYS_CONFIG_NAME
 
 endif
 
+if TARGET_FBSP
+config SYS_BOARD
+	default "ast-g5"
+
+config SYS_VENDOR
+	default "aspeed"
+
+config SYS_CONFIG_NAME
+	default "fbsp"
+
+endif
+
 if TARGET_FBAL
 config SYS_BOARD
 	default "ast-g5"

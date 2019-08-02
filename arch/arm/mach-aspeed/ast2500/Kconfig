@@ -15,6 +15,10 @@ config TARGET_FBTP
 	bool "Support Facebook's OpenBMC TP"
 	select SUPPORT_SPL
 
+config TARGET_FBSP
+	bool "Support Facebook's OpenBMC SP"
+	select SUPPORT_SPL
+
 config TARGET_FBAL
 	bool "Support Facebook's OpenBMC AL"
 	select SUPPORT_SPL

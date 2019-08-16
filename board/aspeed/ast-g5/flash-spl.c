@@ -16,7 +16,14 @@
 
 #include "flash-spl.h"
 #define AST_FMC_WRITE_ENABLE 0x800f0000
+
+#if defined(CONFIG_FBAL)
+/* Workaround slow down SPI clk to 12Mhz */
 #define AST_FMC_STATUS_RESET 0x000b0041
+#else
+#define AST_FMC_STATUS_RESET 0x000b0641
+#endif
+
 #define AST_FMC_CE1_CONTROL  0x14
 #define AST_FMC_CE0_CONTROL  0x10
 #define AST_FMC_CE_CONTROL   0x04
@@ -61,10 +68,7 @@ inline void fmc_enable_write(void) {
 }
 
 inline void fmc_reset(u32 ctrl) {
-#if defined(CONFIG_FBAL)
-  //Workaround slow down SPI clk to 12Mhz-->
   WRITEREG(AST_FMC_BASE + ctrl, AST_FMC_STATUS_RESET);
-#endif
 }
 
 inline void fmc_enable4b(uchar cs) {

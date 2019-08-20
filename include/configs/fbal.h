@@ -18,8 +18,8 @@
  * MA 02111-1307 USA
  */
 
-#ifndef __FBTP_CONFIG_H
-#define __FBTP_CONFIG_H
+#ifndef __FBAL_CONFIG_H
+#define __FBAL_CONFIG_H
 
 #define CONFIG_FBAL 1
 
@@ -54,14 +54,12 @@
  */
 #define CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
 
-#if defined(CONFIG_FBAL)
 /*
  * Enable 2x I/O read command
  */
 #define CONFIG_FLASH_SPIx2_Dummy
-#endif
 
 #include "facebook_common.h"
 #include "ast2500_common.h"
 
-#endif  /* __FBTP_CONFIG_H */
+#endif  /* __FBAL_CONFIG_H */

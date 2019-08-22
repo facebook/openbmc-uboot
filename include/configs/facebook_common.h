@@ -75,6 +75,7 @@
 #define CONFIG_ENV_IS_NOWHERE
 #endif
 #else
+#undef CONFIG_ENV_IS_NOWHERE
 #define CONFIG_ENV_IS_IN_FLASH
 #define CONFIG_ENV_OVERWRITE
 #endif

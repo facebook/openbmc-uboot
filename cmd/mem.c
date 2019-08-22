@@ -22,6 +22,7 @@
 #include <asm/io.h>
 #include <linux/compiler.h>
 #include <stdlib.h>
+#include <environment.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -1008,13 +1009,6 @@ static int section_mem_test(ulong start, ulong end)
 	return ret;
 }
 
-#ifdef CONFIG_ENV_IS_NOWHERE
-int saveenv(void) {
-	/* There is no environment worth saving. */
-	return 0;
-}
-#endif
-
 static int do_openbmc_mem_mtest(cmd_tbl_t *cmdtp, int flag, int argc,
 				char * const argv[])
 {
@@ -1028,7 +1022,7 @@ static int do_openbmc_mem_mtest(cmd_tbl_t *cmdtp, int flag, int argc,
 	env_set("do_mtest", "");
 	env_set("memtest_result", "fail");
 	env_set("memtest_reason", "incorrect_parameter");
-	saveenv();
+	env_save();
 
 	start1 = env_get_ulong("obmtest_start1", 16, 0UL);
 	end1 = env_get_ulong("obmtest_end1", 16, 0UL);
@@ -1045,7 +1039,7 @@ static int do_openbmc_mem_mtest(cmd_tbl_t *cmdtp, int flag, int argc,
 		env_set("obmtest_start2", "");
 		env_set("obmtest_end1", "");
 		env_set("obmtest_end2", "");
-		saveenv();
+		env_save();
 		return ret;
 	}
 
@@ -1056,7 +1050,7 @@ static int do_openbmc_mem_mtest(cmd_tbl_t *cmdtp, int flag, int argc,
 			env_set("obmtest_start2", "");
 			env_set("obmtest_end1", "");
 			env_set("obmtest_end2", "");
-			saveenv();
+			env_save();
 			return ret;
 		}
 
@@ -1065,7 +1059,7 @@ static int do_openbmc_mem_mtest(cmd_tbl_t *cmdtp, int flag, int argc,
 	}
 
 	env_set("memtest_reason", "mtest_section1_fail");
-	saveenv();
+	env_save();
 	if(section_mem_test(start1, end1)!=0) {
 		env_set("memtest_result", "fail");
 	} else {
@@ -1074,7 +1068,7 @@ static int do_openbmc_mem_mtest(cmd_tbl_t *cmdtp, int flag, int argc,
 		if (section2_flag)
 			{
 				env_set("memtest_reason", "mtest_section2_fail");
-				saveenv();
+				env_save();
 				if(section_mem_test(start2, end2)!=0)
 				{
 					env_set("memtest_result", "fail");
@@ -1092,7 +1086,7 @@ static int do_openbmc_mem_mtest(cmd_tbl_t *cmdtp, int flag, int argc,
 	env_set("obmtest_start2", "");
 	env_set("obmtest_end1", "");
 	env_set("obmtest_end2", "");
-	saveenv();
+	env_save();
 
 	return ret;     /* not reached */
 }
@@ -1362,7 +1356,7 @@ static int do_mem_crc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
  		env_set("do_cs1test", "");
  		env_set("cs1test_start_sect", "");
  		env_set("cs1test_total_sects", "");
- 		saveenv();
+ 		env_save();
 
  		// If the platform need to enable WDT, Restart the WDT
  		writel(wdt1_register_back, wdt1_register_index);
@@ -1373,7 +1367,7 @@ static int do_mem_crc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
  		env_set("do_cs1test", "");
  		env_set("cs1test_start_sect", "");
  		env_set("cs1test_total_sects", "");
- 		saveenv();
+ 		env_save();
      }
 	return 0;
  }

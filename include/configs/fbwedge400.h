@@ -12,7 +12,7 @@
 
 #define CONFIG_SYS_LONGHELP
 
-#define CONFIG_BOOTARGS   "debug console=ttyS0,9600n8 root=/dev/ram rw"
+#define CONFIG_BOOTARGS   "debug console=ttyS1,9600n8 root=/dev/ram rw"
 #define CONFIG_BOOTFILE   "flash-wedge400"
 
 /*
@@ -37,9 +37,12 @@
 /*
  * NIC configuration
  */
+#define CONFIG_MAC1_ENABLE
 #define CONFIG_MAC2_ENABLE
+#define CONFIG_MAC1_RGMII_MODE
 #define CONFIG_MAC1_PHY_SETTING     0
 #define CONFIG_MAC2_PHY_SETTING     0
+#define CONFIG_MAC1_PHY_LINK_INTERRUPT
 #define CONFIG_MAC2_PHY_LINK_INTERRUPT
 #define CONFIG_ASPEED_MAC_NUMBER    2
 #define CONFIG_ASPEED_MAC_CONFIG    2
@@ -48,6 +51,7 @@
  * Watchdog configuration
  */
 #define CONFIG_ASPEED_ENABLE_WATCHDOG
+
 
 #define CONFIG_MII_
 #define CONFIG_CMD_MII

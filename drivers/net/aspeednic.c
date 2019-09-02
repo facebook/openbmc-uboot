@@ -465,6 +465,10 @@ static void aspeed_mac1_enable(void)
 	reg = readl(AST_SCU_BASE + SCU_RESET_CONTROL);
 	writel(reg & ~BIT(11), AST_SCU_BASE + SCU_RESET_CONTROL);
 
+#ifdef CONFIG_MAC1_RGMII_MODE
+	reg = readl(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL3_REG);
+	writel(reg | (MAC1_MDC|MAC1_MDIO), SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL3_REG);
+#else /* RMII/NCSI */
 	/* Put pins in RMII/NCSI mode
 	 * Strap[6] = 0 and SCUA0[0:3, 12, 14:17]
 	 *
@@ -487,6 +491,7 @@ static void aspeed_mac1_enable(void)
 	/* RMII1 50MHz RCLK output enable */
 	reg = readl(AST_SCU_BASE + 0x48);
 	writel(reg | BIT(29), AST_SCU_BASE + 0x48);
+#endif
 
 #ifdef CONFIG_MAC1_PHY_LINK_INTERRUPT
 	reg = readl(SCU_BASE + SCU_MULTIFUNCTION_PIN_CTL1_REG);

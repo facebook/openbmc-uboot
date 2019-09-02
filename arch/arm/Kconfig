@@ -154,7 +154,7 @@ config TARGET_FBWEDGE100
 	select CPU_ARM926EJS
 
 config TARGET_FBWEDGE400
-       bool "Support Facebook's OpenBMC Wedge400 TOR"
+	bool "Support Facebook's OpenBMC Wedge400 TOR"
 	select CPU_ARM1176
 	select SUPPORT_SPL
 

@@ -611,6 +611,88 @@ static void enable_nic_mux(void)
   reg |= 0x10000000;
   __raw_writel(reg, AST_GPIO_BASE + 0x80); 
 }
+
+static int get_fbal_pwrok(void)
+{
+  // GPIOY2
+  return ((__raw_readl(AST_GPIO_BASE + 0x1E0) >> 2) & 1);
+}
+
+static void set_fbal_pwrbtn(int level)
+{
+  u32 reg;
+  // GPIOE3
+  // output
+  reg = __raw_readl(AST_GPIO_BASE + 0x24);
+  __raw_writel(reg | (1 << 3), AST_GPIO_BASE + 0x24);
+
+  reg = __raw_readl(AST_GPIO_BASE + 0x20);
+  if (level) //high
+    reg |= (1<<3);
+  else // low
+    reg &= ~(1<<3);
+  __raw_writel(reg, AST_GPIO_BASE + 0x20);
+}
+
+static void policy_init(void)
+{
+  u32 reg;
+  char *policy = NULL;
+  char *last_state = NULL;
+  char *result;
+  int to_pwr_on = 0;
+
+  // BMC's SCU3C: System Reset Control/Status Register
+  reg = __raw_readl(AST_SCU_BASE + 0x3c);
+  // Power on reset flag(SCU3C[0])
+  // POR flag bit will be cleared at Linux init
+  if (reg & 0x1) {
+    // getenv return the same buffer,
+    // duplicate result before call it again.
+    result = env_get("por_policy");
+    policy = (result) ? strdup(result) : NULL;
+    // printf("%X por_policy:%s\n", policy, policy?policy:"null");
+
+    result = env_get("por_ls");
+    last_state = (result) ? strdup(result) : NULL;
+    // printf("%X por_ls:%s\n", last_state, last_state?last_state:"null");
+
+    if (policy && last_state){
+      if ((!strcmp(policy, "on")) ||
+          (!strcmp(policy, "lps") && !strcmp(last_state, "on"))
+      ) {
+        to_pwr_on = 1;
+      }
+    } else {
+      // default power on if no por config
+      to_pwr_on = 1;
+    }
+  }
+  printf("to_pwr_on: %d, policy:%s, ls:%s, scu3c:%08X\n",
+    to_pwr_on,
+    policy ? policy : "null",
+    last_state ? last_state : "null",
+    reg);
+
+  // Host Server should power on
+  if (to_pwr_on == 1) {
+    // Host Server is not on
+    if (!get_fbal_pwrok()) {
+      set_fbal_pwrbtn(0);
+      udelay(1000*1000);
+      set_fbal_pwrbtn(1);
+      udelay(1000*1000);
+      if (!get_fbal_pwrok())
+        printf("!!!! Power On failed !!!!\n");
+    }
+  }
+
+  // free duplicated string buffer
+  if (policy)
+    free(policy);
+  if (last_state)
+    free(last_state);
+}
 #endif
 
 int board_init(void)
@@ -641,6 +723,7 @@ int board_init(void)
 #endif
 
 #if defined(CONFIG_FBAL)
+  policy_init();
   disable_snoop_interrupt();
   enable_nic_mux();
 #endif

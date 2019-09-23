@@ -112,7 +112,7 @@ void ast_wdt_reset(u32 timeout_micro, u32 reset_mask)
 	/* magic word to reload */
 	writel(0x4755, AST_WDT_BASE + 0x08);
 	writel(0xA50000FF, AST_WDT_BASE + 0x18);
-	writel(reset_mask, AST_WDT_BASE + 0x0C);
+	writel(reset_mask | 0x10, AST_WDT_BASE + 0x0C);
 }
 #endif
 

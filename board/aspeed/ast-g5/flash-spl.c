@@ -17,7 +17,7 @@
 #include "flash-spl.h"
 #define AST_FMC_WRITE_ENABLE 0x800f0000
 
-#if defined(CONFIG_FBAL)
+#if defined(CONFIG_FBAL) || defined(CONFIG_FBSP)
 /* Workaround slow down SPI clk to 12Mhz */
 #define AST_FMC_STATUS_RESET 0x000b0041
 #else

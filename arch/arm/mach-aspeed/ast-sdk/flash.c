@@ -1303,8 +1303,8 @@ static ulong flash_get_size (const char *id, ulong base, flash_info_t *info)
 	if (WriteClk > 50) WriteClk = 50;
 	if (EraseClk > 50) EraseClk = 50;
 	if (ReadClk > 50)  ReadClk  = 50;
-#if defined(CONFIG_FBAL)
-//Workaround slow down SPI clock to 12Mhz--> 
+#if defined(CONFIG_FBAL) || defined(CONFIG_FBSP)
+//Workaround slow down SPI clock to 12Mhz-->
     WriteClk = 12;
     EraseClk = 12;
     ReadClk  = 12;

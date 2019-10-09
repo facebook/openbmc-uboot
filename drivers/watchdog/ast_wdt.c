@@ -19,6 +19,7 @@ struct ast_wdt_priv {
 	struct ast_wdt *regs;
 };
 
+#ifdef CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
 static int ast_wdt_setup_rst_pulse(struct udevice *dev)
 {
 	struct ast_wdt_priv *priv = dev_get_priv(dev);
@@ -27,6 +28,7 @@ static int ast_wdt_setup_rst_pulse(struct udevice *dev)
 	writel(reset_pulse, &priv->regs->reset_width);
 	return 0;
 }
+#endif
 
 static int ast_wdt_start(struct udevice *dev, u64 timeout_ms, ulong flags)
 {
@@ -36,10 +38,10 @@ static int ast_wdt_start(struct udevice *dev, u64 timeout_ms, ulong flags)
 	/* watchdog timer clock is fixed at 1MHz */
 	u32 timeout_us = (u32)timeout_ms * 1000;
 
-	int ret;
 	debug("wdt%u set timeout after %uus\n", dev->seq, timeout_us);
 
 #ifdef CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
+	int ret;
 	debug("Enable WDT trigger external reset\n");
 	ret = ast_scu_enable_wdtrst1();
 	if (ret)

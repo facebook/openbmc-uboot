@@ -133,7 +133,9 @@
 #define CONFIG_CMD_MEMTEST
 #define CONFIG_CMD_MEMTEST2
 #define CONFIG_CMD_TFTPPUT
+#ifndef CONFIG_CMD_FLASH
 #define CONFIG_CMD_FLASH
+#endif
 #ifdef CONFIG_SPL
 #define CONFIG_CMD_VBS
 #endif

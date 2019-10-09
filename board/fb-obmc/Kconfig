@@ -52,3 +52,15 @@ config SYS_CONFIG_NAME
 
 endif
 
+if TARGET_FBWEDGE400
+config SYS_BOARD
+	default "ast-g5"
+
+config SYS_VENDOR
+	default "aspeed"
+
+config SYS_CONFIG_NAME
+	default "fbwedge400"
+
+endif
+

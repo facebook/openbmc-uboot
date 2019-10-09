@@ -583,6 +583,7 @@ dtb-$(CONFIG_TARGET_FBY3) += aspeed-g5-fby3-tpm.dtb
 dtb-$(CONFIG_TARGET_MINILAKETB) += aspeed-g5-minilaketb-tpm.dtb
 dtb-$(CONFIG_TARGET_PWNEPTUNE) += aspeed-g5-tpm.dtb
 dtb-$(CONFIG_TARGET_FBTTN) += aspeed-g5-fbttn-tpm.dtb
+dtb-$(CONFIG_TARGET_FBWEDGE400) += fbwedge400.dtb
 
 targets += $(dtb-y)
 

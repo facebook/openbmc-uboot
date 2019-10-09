@@ -10,7 +10,9 @@
 
 #define CONFIG_FBWEDGE400 1
 
+#ifndef CONFIG_SYS_LONGHELP
 #define CONFIG_SYS_LONGHELP
+#endif
 
 #define CONFIG_BOOTARGS   "debug console=ttyS0,9600n8 root=/dev/ram rw"
 #define CONFIG_BOOTFILE   "flash-wedge400"
@@ -23,8 +25,6 @@
 #define CONFIG_SYS_NS16550_COM1 AST_UART1_BASE
 #define CONFIG_CONS_INDEX       1
 #define CONFIG_ASPEED_COM       AST_UART1_BASE
-#define CONFIG_BAUDRATE         9600
-
 /*
  * UART configurtion
  */
@@ -49,8 +49,8 @@
  */
 #define CONFIG_ASPEED_ENABLE_WATCHDOG
 
-#define CONFIG_MII_
-#define CONFIG_CMD_MII
+// #define CONFIG_MII_
+// #define CONFIG_CMD_MII
 
 /*
  * SPI flash configuration

@@ -27,6 +27,9 @@ config TARGET_FBY2
 	bool "Support Facebook's OpenBMC Y2"
 	select SUPPORT_SPL
 
+config TARGET_FBWEDGE400
+	bool "Support Facebook's Openbmc Wedge400"
+
 source "board/aspeed/evb_ast2500/Kconfig"
 source "board/fb-obmc/Kconfig"
 

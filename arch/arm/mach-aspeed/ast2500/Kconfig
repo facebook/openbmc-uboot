@@ -30,6 +30,9 @@ config TARGET_FBY2
 config TARGET_FBWEDGE400
 	bool "Support Facebook's Openbmc Wedge400"
 
+config TARGET_FBCMM
+	bool "Support Facebook's Openbmc CMM"
+
 source "board/aspeed/evb_ast2500/Kconfig"
 source "board/fb-obmc/Kconfig"
 

@@ -64,3 +64,15 @@ config SYS_CONFIG_NAME
 
 endif
 
+if TARGET_FBCMM
+config SYS_BOARD
+	default "ast-g5"
+
+config SYS_VENDOR
+	default "aspeed"
+
+config SYS_CONFIG_NAME
+	default "fbcmm"
+
+endif
+

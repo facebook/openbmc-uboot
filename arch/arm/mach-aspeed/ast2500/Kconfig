@@ -23,6 +23,10 @@ config TARGET_FBAL
 	bool "Support Facebook's OpenBMC AL"
 	select SUPPORT_SPL
 
+config TARGET_FBEP
+	bool "Support Facebook's OpenBMC EP"
+	select SUPPORT_SPL
+
 config TARGET_FBY2
 	bool "Support Facebook's OpenBMC Y2"
 	select SUPPORT_SPL

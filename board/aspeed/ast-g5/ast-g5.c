@@ -695,6 +695,45 @@ static void policy_init(void)
 }
 #endif
 
+#ifdef CONFIG_FBEP
+static void set_fbep_pwrbtn(int level)
+{
+  u32 reg;
+  // GPIOE1
+  // output
+  reg = __raw_readl(AST_GPIO_BASE + 0x24);
+  __raw_writel(reg | (1 << 1), AST_GPIO_BASE + 0x24);
+
+  reg = __raw_readl(AST_GPIO_BASE + 0x20);
+  if (level) //high
+    reg |= (1<<1);
+  else // low
+    reg &= ~(1<<1);
+  __raw_writel(reg, AST_GPIO_BASE + 0x20);
+}
+
+static void policy_init(void)
+{
+  u32 reg;
+
+  // Always on if AC lost, check por flag
+  reg = __raw_readl(AST_SCU_BASE + 0x3c);
+  if (reg & 0x1) {
+    // TODO:
+    // To control power button, GPIOB2 should be low
+    // Remove this aftr CPLD update
+    reg = __raw_readl(AST_GPIO_BASE + 0x04);
+    __raw_writel(reg | (1 << 10), AST_GPIO_BASE + 0x04);
+    reg = __raw_readl(AST_GPIO_BASE + 0x00);
+    __raw_writel(reg & ~(1 << 10), AST_GPIO_BASE + 0x00);
+
+    set_fbep_pwrbtn(0);
+    udelay(1000*1000);
+    set_fbep_pwrbtn(1);
+  }
+}
+#endif
+
 int board_init(void)
 {
 	watchdog_init(CONFIG_ASPEED_WATCHDOG_TIMEOUT);
@@ -726,6 +765,10 @@ int board_init(void)
   policy_init();
   disable_snoop_interrupt();
   enable_nic_mux();
+#endif
+
+#if defined(CONFIG_FBEP)
+  policy_init();
 #endif
 
   gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;

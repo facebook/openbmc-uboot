@@ -1,0 +1,7 @@
+/dts-v1/;
+
+#include "ast2500-u-boot.dtsi"
+
+&wdt1 {
+	u-boot,dm-pre-reloc;
+};

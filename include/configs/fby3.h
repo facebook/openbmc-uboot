@@ -28,11 +28,19 @@
 #define CONFIG_ASPEED_UART3_ENABLE
 #define CONFIG_ASPEED_UART4_ENABLE
 
+#ifdef CONFIG_SPL
 #define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw printk.time=1 dual_flash=2"
+#else
+#define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw printk.time=1"
+#endif
+
 #define CONFIG_UPDATE            "tftp 80800000 ast2500.scr; so 80800000'"
 #define CONFIG_BOOTFILE          "flash-fby3"
+
 #ifndef CONFIG_SPL_BUILD
+#ifndef CONFIG_SYS_LONGHELP
 #define CONFIG_SYS_LONGHELP     /* undef to save memory   */
+#endif
 #define CONFIG_SYS_HUSH_PARSER  /* Use the HUSH parser */
 #endif
 

@@ -48,6 +48,7 @@
  * Watchdog configuration
  */
 #define CONFIG_ASPEED_ENABLE_WATCHDOG
+#define CONFIG_ASPEED_WATCHDOG_2ND_BOOT
 
 // #define CONFIG_MII_
 // #define CONFIG_CMD_MII

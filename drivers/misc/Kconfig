@@ -13,6 +13,18 @@ config MISC
 	  set of generic read, write and ioctl methods may be used to
 	  access the device.
 
+config ASPEED_AHBC
+	bool "Aspeed AHBC support"
+	depends on ARCH_ASPEED
+	help 
+	  Select this to enable ahbc driver for Aspeed SoC.
+
+config ASPEED_H2X
+        bool "Aspeed AHB to PCIe bus Bridge support"
+        depends on ARCH_ASPEED
+        help
+          Select this to enable AHB to PCIe bu Bridge driver for Aspeed SoC.
+
 config ALTERA_SYSID
 	bool "Altera Sysid support"
 	depends on MISC

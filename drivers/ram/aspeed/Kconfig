@@ -1,0 +1,71 @@
+choice
+	prompt "DDR4 target data rate"
+	default ASPEED_DDR4_1600
+
+config ASPEED_DDR4_400
+        bool "DDR4 targets at 400Mbps"
+        depends on DM && OF_CONTROL && ARCH_ASPEED
+        select RAM
+        select SPL_RAM if SPL
+        help
+                select DDR4 target data rate at 400M
+
+config ASPEED_DDR4_800
+        bool "DDR4 targets at 800Mbps"
+        depends on DM && OF_CONTROL && ARCH_ASPEED
+        select RAM
+        select SPL_RAM if SPL
+        help
+                select DDR4 target data rate at 800M
+
+config ASPEED_DDR4_1600
+        bool "DDR4 targets at 1600Mbps"
+        depends on DM && OF_CONTROL && ARCH_ASPEED
+        select RAM
+        select SPL_RAM if SPL
+        help
+                select DDR4 target data rate at 1600M
+endchoice
+
+config ASPEED_DDR4_DUALX8
+        bool "dual X8 DDR4 die"
+        depends on DM && OF_CONTROL && ARCH_ASPEED
+        select RAM
+        select SPL_RAM if SPL
+        default n
+        help
+                select dual X8 DDR4 die
+
+config ASPEED_PALLADIUM
+	bool "aspeed palladium RAM model"
+	select RAM
+        select SPL_RAM if SPL
+	default n
+	help
+	  Say Y here to enable the Aspeed Palladium driver
+
+	  This provides configurations specific for Aspeed Palladium SDRAM
+	  model
+
+config ASPEED_ECC
+        bool "aspeed SDRAM error correcting code"
+        depends on DM && OF_CONTROL && ARCH_ASPEED
+        select RAM
+        select SPL_RAM if SPL
+        default n
+        help
+                enable SDRAM ECC function
+
+config ASPEED_VIDEO_SIZE
+	int "Video memory reserved size"
+	depends on ASPEED_ECC
+	default 40
+	help
+		reserved size for Video engine. The unit is in Megabytes.
+
+config ASPEED_CRT_SIZE
+	int "CRT memory reserved size"
+	depends on ASPEED_ECC
+	default 8
+	help
+		reserved size for CRT engine. The unit is in Megabytes.

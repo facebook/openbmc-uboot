@@ -390,6 +390,11 @@ int eth_initialize(void)
 
 	eth_common_init();
 
+#ifdef CONFIG_MDIO
+	uclass_first_device_check(UCLASS_MDIO, &dev);
+	if (!dev) 
+		printf("No MDIO found.\n");
+#endif
 	/*
 	 * Devices need to write the hwaddr even if not started so that Linux
 	 * will have access to the hwaddr that u-boot stored for the device.

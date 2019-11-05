@@ -88,6 +88,7 @@ obj-$(CONFIG_CMD_MEMORY) += mem.o
 obj-$(CONFIG_CMD_IO) += io.o
 obj-$(CONFIG_CMD_MFSL) += mfsl.o
 obj-$(CONFIG_CMD_MII) += mii.o
+obj-$(CONFIG_CMD_OTP) += otp.o
 ifdef CONFIG_PHYLIB
 obj-$(CONFIG_CMD_MII) += mdio.o
 endif
@@ -175,6 +176,10 @@ obj-$(CONFIG_CMD_AVB) += avb.o
 obj-$(CONFIG_X86) += x86/
 
 obj-$(CONFIG_ARCH_MVEBU) += mvebu/
+
+obj-$(CONFIG_CMD_NETTEST) += nettest/
+obj-$(CONFIG_CMD_DRAMTEST) += dramtest.o
+
 endif # !CONFIG_SPL_BUILD
 
 # core command

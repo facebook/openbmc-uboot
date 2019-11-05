@@ -1,0 +1,32 @@
+if ASPEED_AST2600
+
+config SYS_CPU
+	default "armv7"
+
+choice
+	prompt "AST2600 board select"
+	depends on ASPEED_AST2600
+	default TARGET_EVB_AST2600
+
+config TARGET_EVB_AST2600
+	bool "EVB-AST2600"
+	depends on ASPEED_AST2600
+	help
+	  EVB-AST2600 is Aspeed evaluation board for AST2600 chip.
+	  It has 512M of RAM, 32M of SPI flash, two Ethernet ports,
+	  4 Serial ports, 4 USB ports, VGA port, PCIe, SD card slot,
+	  20 pin JTAG, pinouts for 14 I2Cs, 3 SPIs and eSPI, 8 PWMs.
+
+config TARGET_FPGA_AST2600
+	bool "FPGA-AST2600"
+	depends on ASPEED_AST2600
+	help
+	  FPGA-AST2600 is Aspeed FPGA board for AST2600 chip.
+	  This is mainly for internal development. Note that
+	  most implementation is co-code with EVB-AST2600.
+endchoice
+
+source "board/aspeed/evb_ast2600/Kconfig"
+source "board/aspeed/fpga_ast2600/Kconfig"
+
+endif

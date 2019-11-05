@@ -54,9 +54,25 @@ static void bcm_phy_write_misc(struct phy_device *phydev,
 /* Broadcom BCM5461S */
 static int bcm5461_config(struct phy_device *phydev)
 {
+	unsigned int mii_reg = 0;
 	genphy_config_aneg(phydev);
 
 	phy_reset(phydev);
+
+	if(phydev->drv->uid == 0x03625d12) {
+		mii_reg = phy_read(phydev, MDIO_DEVAD_NONE, 0x0) & ~BIT(10);
+		phy_write(phydev, MDIO_DEVAD_NONE, 0x0, mii_reg);
+
+		//disable skew
+		phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM54xx_AUXCNTL, 0x7007);
+		mii_reg = (phy_read(phydev, MDIO_DEVAD_NONE, MIIM_BCM54xx_AUXCNTL) & 0x0af0) | 0xf007;
+		phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM54xx_AUXCNTL, mii_reg);
+
+		//disable delay
+		phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM54XX_SHD, 0xc00);
+		mii_reg = 0x8c00;
+		phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM54XX_SHD, mii_reg);		
+	}
 
 	return 0;
 }
@@ -322,6 +338,16 @@ static int bcm5482_startup(struct phy_device *phydev)
 	return bcm54xx_parse_status(phydev);
 }
 
+static struct phy_driver BCM54616S_driver = {
+	.name = "Broadcom BCM54616S",
+	.uid = 0x03625d12,
+	.mask = 0xffffffff,
+	.features = PHY_GBIT_FEATURES,
+	.config = &bcm5461_config,
+	.startup = &bcm54xx_startup,
+	.shutdown = &genphy_shutdown,
+};
+
 static struct phy_driver BCM5461S_driver = {
 	.name = "Broadcom BCM5461S",
 	.uid = 0x2060c0,
@@ -364,6 +390,7 @@ static struct phy_driver BCM_CYGNUS_driver = {
 
 int phy_broadcom_init(void)
 {
+	phy_register(&BCM54616S_driver);
 	phy_register(&BCM5482S_driver);
 	phy_register(&BCM5464S_driver);
 	phy_register(&BCM5461S_driver);

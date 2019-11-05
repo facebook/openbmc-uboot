@@ -33,6 +33,14 @@ config ALTERA_SPI
 	  IP core. Please find details on the "Embedded Peripherals IP
 	  User Guide" of Altera.
 
+config ASPEED_SPI
+	bool "Aspeed SPI driver"
+	default y if ARCH_ASPEED
+	help
+	  Enable the Aspeed AST2500 FMC/SPI driver. This driver can be
+	  used to access the SPI NOR flash on boards using the Aspeed
+	  AST2500 SoC, such as the POWER9 OpenPOWER platforms
+
 config ATCSPI200_SPI
 	bool "Andestech ATCSPI200 SPI driver"
 	help

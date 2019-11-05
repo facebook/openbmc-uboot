@@ -267,6 +267,7 @@ struct sdhci_host {
 
 	int bus_width;
 	struct gpio_desc pwr_gpio;	/* Power GPIO */
+	struct gpio_desc pwr_sw_gpio;	/* Power switch GPIO */
 	struct gpio_desc cd_gpio;		/* Card Detect GPIO */
 
 	uint	voltages;

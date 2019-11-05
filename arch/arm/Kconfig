@@ -1449,6 +1449,7 @@ config TARGET_THUNDERX_88XX
 config ARCH_ASPEED
 	bool "Support Aspeed SoCs"
 	select DM
+	select DM_RESET
 	select OF_CONTROL
 	imply CMD_DM
 

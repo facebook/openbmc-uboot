@@ -607,6 +607,11 @@ endmenu
 
 menu "Device access commands"
 
+config CMD_OTP
+	depends on ASPEED_AST2600
+        bool "ASPEED otp program"
+        default y
+
 config CMD_ARMFLASH
 	#depends on FLASH_CFI_DRIVER
 	bool "armflash"
@@ -1932,4 +1937,13 @@ config CMD_UBIFS
 	help
 	  UBIFS is a file system for flash devices which works on top of UBI.
 
+menu "Aspeed Test commands"
+config CMD_NETTEST
+        bool "ASPEED Ethernet loopback test"
+        default n
+
+config CMD_DRAMTEST
+        bool "ASPEED DRAM controller stress test"
+        default y	
+endmenu
 endmenu

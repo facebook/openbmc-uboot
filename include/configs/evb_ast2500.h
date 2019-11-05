@@ -1,8 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright (C) 2012-2020  ASPEED Technology Inc.
- * Ryan Chen <ryan_chen@aspeedtech.com>
- *
+ * Copyright (C) ASPEED Technology Inc.
  * Copyright 2016 Google Inc
  */
 
@@ -19,6 +17,9 @@
 /* Memory Info */
 #define CONFIG_SYS_LOAD_ADDR		0x83000000
 
-#define CONFIG_ENV_SIZE			0x20000
+/* Environment */
+#define CONFIG_ENV_SIZE			0x10000
+#define CONFIG_ENV_OFFSET		0x90000
+#define CONFIG_ENV_SECT_SIZE		(4 << 10)
 
 #endif	/* __CONFIG_H */

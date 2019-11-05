@@ -60,33 +60,7 @@
 #define SCU_MICDS_RMII2_RCLKEN		(1 << 30)
 #define SCU_MICDS_RGMIIPLL		(1 << 31)
 
-/*
- * SYSRESET is actually more like a Power register,
- * except that corresponding bit set to 1 means that
- * the peripheral is off.
- */
-#define SCU_SYSRESET_XDMA		(1 << 25)
-#define SCU_SYSRESET_MCTP		(1 << 24)
-#define SCU_SYSRESET_ADC		(1 << 23)
-#define SCU_SYSRESET_JTAG		(1 << 22)
-#define SCU_SYSRESET_MIC		(1 << 18)
-#define SCU_SYSRESET_SDIO		(1 << 16)
-#define SCU_SYSRESET_USB11HOST		(1 << 15)
-#define SCU_SYSRESET_USBHUB		(1 << 14)
-#define SCU_SYSRESET_CRT		(1 << 13)
-#define SCU_SYSRESET_MAC2		(1 << 12)
-#define SCU_SYSRESET_MAC1		(1 << 11)
-#define SCU_SYSRESET_PECI		(1 << 10)
-#define SCU_SYSRESET_PWM		(1 << 9)
-#define SCU_SYSRESET_PCI_VGA		(1 << 8)
-#define SCU_SYSRESET_2D			(1 << 7)
-#define SCU_SYSRESET_VIDEO		(1 << 6)
-#define SCU_SYSRESET_LPC		(1 << 5)
-#define SCU_SYSRESET_HAC		(1 << 4)
-#define SCU_SYSRESET_USBHID		(1 << 3)
-#define SCU_SYSRESET_I2C		(1 << 2)
-#define SCU_SYSRESET_AHB		(1 << 1)
-#define SCU_SYSRESET_SDRAM_WDT		(1 << 0)
+
 
 /* Bits 16-27 in the register control pin functions for I2C devices 3-14 */
 #define SCU_PINMUX_CTRL5_I2C		(1 << 16)
@@ -104,9 +78,6 @@
 #define SCU_PIN_FUN_SCL2		(1 << 14)
 #define SCU_PIN_FUN_SDA1		(1 << 13)
 #define SCU_PIN_FUN_SDA2		(1 << 15)
-
-#define SCU_CLKSTOP_MAC1		(1 << 20)
-#define SCU_CLKSTOP_MAC2		(1 << 21)
 
 #define SCU_D2PLL_EXT1_OFF		(1 << 0)
 #define SCU_D2PLL_EXT1_BYPASS		(1 << 1)
@@ -135,8 +106,6 @@
 #define SCU_CLKDUTY_RGMII1TXCK_MASK	(0x7f << SCU_CLKDUTY_RGMII1TXCK_SHIFT)
 #define SCU_CLKDUTY_RGMII2TXCK_SHIFT	16
 #define SCU_CLKDUTY_RGMII2TXCK_MASK	(0x7f << SCU_CLKDUTY_RGMII2TXCK_SHIFT)
-
-#ifndef __ASSEMBLY__
 
 struct ast2500_clk_priv {
 	struct ast2500_scu *scu;
@@ -209,36 +178,5 @@ struct ast2500_scu {
 	u32 reserved9[13];
 	u32 clk_duty_sel;
 };
-
-/**
- * ast_get_clk() - get a pointer to Clock Driver
- *
- * @devp, OUT - pointer to Clock Driver
- * @return zero on success, error code (< 0) otherwise.
- */
-int ast_get_clk(struct udevice **devp);
-
-/**
- * ast_get_scu() - get a pointer to SCU registers
- *
- * @return pointer to struct ast2500_scu on success, ERR_PTR otherwise
- */
-void *ast_get_scu(void);
-
-/**
- * ast_scu_unlock() - unlock protected registers
- *
- * @scu, pointer to ast2500_scu
- */
-void ast_scu_unlock(struct ast2500_scu *scu);
-
-/**
- * ast_scu_lock() - lock protected registers
- *
- * @scu, pointer to ast2500_scu
- */
-void ast_scu_lock(struct ast2500_scu *scu);
-
-#endif  /* __ASSEMBLY__ */
 
 #endif  /* _ASM_ARCH_SCU_AST2500_H */

@@ -55,3 +55,4 @@ config K3_AM654_DDRSS
 	  SDRAM devices connected to DDR subsystem.
 
 source "drivers/ram/stm32mp1/Kconfig"
+source "drivers/ram/aspeed/Kconfig"

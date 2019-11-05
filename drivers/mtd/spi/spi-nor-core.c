@@ -2231,8 +2231,7 @@ static int spi_nor_init(struct spi_nor *nor)
 	}
 
 	if (nor->addr_width == 4 &&
-	    (JEDEC_MFR(nor->info) != SNOR_MFR_SPANSION) &&
-	    !(nor->info->flags & SPI_NOR_4B_OPCODES)) {
+	    (JEDEC_MFR(nor->info) != SNOR_MFR_SPANSION)) {
 		/*
 		 * If the RESET# pin isn't hooked up properly, or the system
 		 * otherwise doesn't perform a reset command in the boot
@@ -2360,15 +2359,13 @@ int spi_nor_scan(struct spi_nor *nor)
 #ifndef CONFIG_SPI_FLASH_BAR
 		/* enable 4-byte addressing if the device exceeds 16MiB */
 		nor->addr_width = 4;
-		if (JEDEC_MFR(info) == SNOR_MFR_SPANSION ||
-		    info->flags & SPI_NOR_4B_OPCODES)
-			spi_nor_set_4byte_opcodes(nor, info);
+		spi_nor_set_4byte_opcodes(nor, info);
 #else
-	/* Configure the BAR - discover bank cmds and read current bank */
-	nor->addr_width = 3;
-	ret = read_bar(nor, info);
-	if (ret < 0)
-		return ret;
+		/* Configure the BAR - discover bank cmds and read current bank */
+		nor->addr_width = 3;
+		ret = read_bar(nor, info);
+		if (ret < 0)
+			return ret;
 #endif
 	} else {
 		nor->addr_width = 3;

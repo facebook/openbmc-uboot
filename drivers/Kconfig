@@ -60,6 +60,8 @@ source "drivers/mtd/Kconfig"
 
 source "drivers/net/Kconfig"
 
+source "drivers/net/mdio/Kconfig"
+
 source "drivers/nvme/Kconfig"
 
 source "drivers/pci/Kconfig"

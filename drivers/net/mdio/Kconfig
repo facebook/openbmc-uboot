@@ -1,0 +1,19 @@
+#
+# MDIO infrastructure and drivers
+#
+
+menu "MDIO Support"
+
+config MDIO
+       bool "Enable MDIO (Management Data Input/Output) drivers"
+       depends on DM
+       help
+         Enable driver model for MDIO access.
+         Drivers provide methods to management data
+         Input/Output.
+         MDIO uclass provides interfaces to get mdio
+         udevice or mii bus from its child phy node or
+         an ethernet udevice which the phy belongs to.
+
+endmenu
+

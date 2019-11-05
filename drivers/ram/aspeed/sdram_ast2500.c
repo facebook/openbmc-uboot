@@ -15,10 +15,23 @@
 #include <asm/io.h>
 #include <asm/arch/scu_ast2500.h>
 #include <asm/arch/sdram_ast2500.h>
-#include <asm/arch/wdt.h>
 #include <linux/err.h>
 #include <linux/kernel.h>
-#include <dt-bindings/clock/ast2500-scu.h>
+#include <dt-bindings/clock/ast2500-clock.h>
+
+/* in order to speed up DRAM init time, write pre-defined values to registers
+ * directly */
+#define AST2500_SDRAMMC_MANUAL_CLK
+
+/* bit-field of m_pll_param */
+#define SCU_MPLL_FREQ_MASK		(SCU_MPLL_DENUM_MASK | SCU_MPLL_NUM_MASK | SCU_MPLL_POST_MASK)
+#define SCU_MPLL_FREQ_400M		0x93002400
+#define SCU_MPLL_FREQ_360M		0x930023A0
+#define SCU_MPLL_FREQ_CFG		SCU_MPLL_FREQ_360M
+
+#define SCU_MPLL_TURN_OFF		BIT(19)
+#define SCU_MPLL_BYPASS			BIT(20)
+#define SCU_MPLL_RESET			BIT(21)
 
 /* These configuration parameters are taken from Aspeed SDK */
 #define DDR4_MR46_MODE		0x08000000
@@ -330,21 +343,48 @@ static int ast2500_sdrammc_probe(struct udevice *dev)
 	struct reset_ctl reset_ctl;
 	struct dram_info *priv = (struct dram_info *)dev_get_priv(dev);
 	struct ast2500_sdrammc_regs *regs = priv->regs;
+	struct udevice *clk_dev;
 	int i;
 	int ret = clk_get_by_index(dev, 0, &priv->ddr_clk);
+	uint32_t reg;
 
 	if (ret) {
 		debug("DDR:No CLK\n");
 		return ret;
 	}
 
-	priv->scu = ast_get_scu();
+	/* find the SCU base address from the aspeed clock device */
+	ret = uclass_get_device_by_driver(UCLASS_CLK, DM_GET_DRIVER(aspeed_scu),
+                                          &clk_dev);
+	if (ret) {
+		debug("clock device not defined\n");
+		return ret;
+	}
+	priv->scu = devfdt_get_addr_ptr(clk_dev);
+	
 	if (IS_ERR(priv->scu)) {
 		debug("%s(): can't get SCU\n", __func__);
 		return PTR_ERR(priv->scu);
 	}
 
+	if (readl(&priv->scu->vga_handshake[0]) & (0x1 << 6)) {
+		printf("%s(): DDR SDRAM had been initialized\n", __func__);
+		ast2500_sdrammc_calc_size(priv);
+		return 0;
+	}
+
+#ifdef AST2500_SDRAMMC_MANUAL_CLK
+	reg = readl(&priv->scu->m_pll_param);
+	reg |= (SCU_MPLL_RESET | SCU_MPLL_TURN_OFF);
+	writel(reg, &priv->scu->m_pll_param);
+	reg &= ~(SCU_MPLL_RESET | SCU_MPLL_TURN_OFF| SCU_MPLL_FREQ_MASK);
+	reg |= SCU_MPLL_FREQ_CFG;
+	writel(reg, &priv->scu->m_pll_param);
+#else
 	clk_set_rate(&priv->ddr_clk, priv->clock_rate);
+#endif
+
+#if 0
 	ret = reset_get_by_index(dev, 0, &reset_ctl);
 	if (ret) {
 		debug("%s(): Failed to get reset signal\n", __func__);
@@ -356,7 +396,7 @@ static int ast2500_sdrammc_probe(struct udevice *dev)
 		debug("%s(): SDRAM reset failed: %u\n", __func__, ret);
 		return ret;
 	}
-
+#endif
 	ast2500_sdrammc_unlock(priv);
 
 	writel(SDRAM_PCR_MREQI_DIS | SDRAM_PCR_RESETN_DIS,
@@ -388,25 +428,19 @@ static int ast2500_sdrammc_probe(struct udevice *dev)
 static int ast2500_sdrammc_ofdata_to_platdata(struct udevice *dev)
 {
 	struct dram_info *priv = dev_get_priv(dev);
-	struct regmap *map;
 	int ret;
 
-	ret = regmap_init_mem(dev_ofnode(dev), &map);
-	if (ret)
-		return ret;
-
-	priv->regs = regmap_get_range(map, 0);
-	priv->phy = regmap_get_range(map, 1);
+	priv->regs = (void *)(uintptr_t)devfdt_get_addr_index(dev, 0);
+	priv->phy = (void *)(uintptr_t)devfdt_get_addr_index(dev, 1);
 
 	priv->clock_rate = fdtdec_get_int(gd->fdt_blob, dev_of_offset(dev),
 					  "clock-frequency", 0);
-
 	if (!priv->clock_rate) {
 		debug("DDR Clock Rate not defined\n");
 		return -EINVAL;
 	}
 
-	return 0;
+        return 0;
 }
 
 static int ast2500_sdrammc_get_info(struct udevice *dev, struct ram_info *info)

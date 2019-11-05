@@ -68,4 +68,13 @@ config FPGA_ZYNQPL
 	  Enable FPGA driver for loading bitstream in BIT and BIN format
 	  on Xilinx Zynq devices.
 
+config FPGA_ASPEED
+	bool "Enable Aspeed FPGA driver"
+	depends on ARCH_ASPEED
+	help
+	  Say Y here to enable the Aspeed FPGA driver
+
+	  This provides functionality and hardware configurations
+	  specific for Aspeed FPGA devices
+
 endmenu

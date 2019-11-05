@@ -1,0 +1,13 @@
+if TARGET_FPGA_AST2600
+
+config SYS_BOARD
+	default "fpga_ast2600"
+
+config SYS_VENDOR
+	default "aspeed"
+
+config SYS_CONFIG_NAME
+	string "board configuration name"
+	default "fpga_ast2600"
+
+endif

@@ -24,9 +24,16 @@ config TARGET_FPGA_AST2600
 	  FPGA-AST2600 is Aspeed FPGA board for AST2600 chip.
 	  This is mainly for internal development. Note that
 	  most implementation is co-code with EVB-AST2600.
+
+config TARGET_FACEBOOK_FUJI
+	bool "FACEBOOK-FUJI"
+	depends on ASPEED_AST2600
+	help
+	  FACEBOOK-FUJI is BMC board with AST2600 chip.
 endchoice
 
 source "board/aspeed/evb_ast2600/Kconfig"
 source "board/aspeed/fpga_ast2600/Kconfig"
+source "board/aspeed/facebook_fuji/Kconfig"
 
 endif

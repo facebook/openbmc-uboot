@@ -734,6 +734,27 @@ static void policy_init(void)
 }
 #endif
 
+#ifdef CONFIG_FBSP
+static void fan_init(void)
+{
+  u32 reg;
+
+  // enable PWM0 and PWM1 function pin
+  reg = __raw_readl(AST_SCU_BASE + 0x88);
+  reg |= 0x03;
+  __raw_writel(reg, AST_SCU_BASE + 0x88);
+
+  reg = __raw_readl(AST_SCU_BASE + 0x04);
+  reg &= ~0x200;
+  __raw_writel(reg, AST_SCU_BASE + 0x04);
+
+  // set PWM0 and PWM1 to 50%
+  __raw_writel(0x09435F05, AST_PWM_BASE + 0x04);
+  __raw_writel(0x2F002F00, AST_PWM_BASE + 0x08);
+  __raw_writel(0x00000301, AST_PWM_BASE + 0x00);
+}
+#endif
+
 int board_init(void)
 {
 	watchdog_init(CONFIG_ASPEED_WATCHDOG_TIMEOUT);
@@ -769,6 +790,10 @@ int board_init(void)
 
 #if defined(CONFIG_FBEP)
   policy_init();
+#endif
+
+#if defined(CONFIG_FBSP)
+  fan_init();
 #endif
 
   gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;

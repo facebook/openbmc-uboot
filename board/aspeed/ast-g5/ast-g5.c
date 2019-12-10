@@ -714,6 +714,86 @@ static void fan_init(void)
   __raw_writel(0x2F002F00, AST_PWM_BASE + 0x08);
   __raw_writel(0x00000301, AST_PWM_BASE + 0x00);
 }
+
+static int get_fbsp_pwrok(void)
+{
+  // GPIOY2
+  return ((__raw_readl(AST_GPIO_BASE + 0x1E0) >> 2) & 1);
+}
+
+static void set_fbsp_pwrbtn(int level)
+{
+  u32 reg;
+  // GPIOE3
+  // output
+  reg = __raw_readl(AST_GPIO_BASE + 0x24);
+  __raw_writel(reg | (1 << 3), AST_GPIO_BASE + 0x24);
+
+  reg = __raw_readl(AST_GPIO_BASE + 0x20);
+  if (level) //high
+    reg |= (1<<3);
+  else // low
+    reg &= ~(1<<3);
+  __raw_writel(reg, AST_GPIO_BASE + 0x20);
+}
+
+static void policy_init(void)
+{
+  u32 reg;
+  char *policy = NULL;
+  char *last_state = NULL;
+  char *result;
+  int to_pwr_on = 0;
+
+  // BMC's SCU3C: System Reset Control/Status Register
+  reg = __raw_readl(AST_SCU_BASE + 0x3c);
+  // Power on reset flag(SCU3C[0])
+  // POR flag bit will be cleared at Linux init
+  if (reg & 0x1) {
+    // getenv return the same buffer,
+    // duplicate result before call it again.
+    result = env_get("por_policy");
+    policy = (result) ? strdup(result) : NULL;
+
+    result = env_get("por_ls");
+    last_state = (result) ? strdup(result) : NULL;
+
+    if (policy && last_state){
+      if ((!strcmp(policy, "on")) ||
+          (!strcmp(policy, "lps") && !strcmp(last_state, "on"))
+      ) {
+        to_pwr_on = 1;
+      }
+    } else {
+      // default power on if no por config
+      to_pwr_on = 1;
+    }
+  }
+  printf("to_pwr_on: %d, policy:%s, ls:%s, scu3c:%08X\n",
+    to_pwr_on,
+    policy ? policy : "null",
+    last_state ? last_state : "null",
+    reg);
+
+  // Host Server should power on
+  if (to_pwr_on == 1) {
+    // Host Server is not on
+    if (!get_fbsp_pwrok()) {
+      set_fbsp_pwrbtn(0);
+      udelay(1000*1000);
+      set_fbsp_pwrbtn(1);
+      udelay(1000*1000);
+      if (!get_fbsp_pwrok())
+        printf("!!!! Power On failed !!!!\n");
+    }
+  }
+
+  // free duplicated string buffer
+  if (policy)
+    free(policy);
+  if (last_state)
+    free(last_state);
+}
 #endif
 
 int board_init(void)
@@ -751,6 +831,7 @@ int board_init(void)
 
 #if defined(CONFIG_FBSP)
   fan_init();
+  policy_init();
 #endif
 
   gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;

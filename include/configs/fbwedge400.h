@@ -18,6 +18,11 @@
 #define CONFIG_BOOTFILE   "flash-wedge400"
 
 /*
+ * Enable DRAM ECC, going to lose 1/8 of memory
+ */
+#define CONFIG_DRAM_ECC
+
+/*
  * Serial configuration
  */
 #define CONFIG_SYS_NS16550_MEM32

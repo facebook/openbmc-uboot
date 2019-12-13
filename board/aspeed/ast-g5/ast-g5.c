@@ -709,9 +709,9 @@ static void fan_init(void)
   reg &= ~0x200;
   __raw_writel(reg, AST_SCU_BASE + 0x04);
 
-  // set PWM0 and PWM1 to 50%
+  // set PWM0 and PWM1 to 70%
   __raw_writel(0x09435F05, AST_PWM_BASE + 0x04);
-  __raw_writel(0x2F002F00, AST_PWM_BASE + 0x08);
+  __raw_writel(0x43004300, AST_PWM_BASE + 0x08);
   __raw_writel(0x00000301, AST_PWM_BASE + 0x00);
 }
 

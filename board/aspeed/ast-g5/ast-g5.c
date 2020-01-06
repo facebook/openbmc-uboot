@@ -796,6 +796,26 @@ static void policy_init(void)
 }
 #endif
 
+#if defined(CONFIG_FBEP)
+static void spi_init(void)
+{
+  // Disable SPI interface of SPI1
+  __raw_writel((0x3 << 12), 0x1e6e207c);
+}
+
+static void led_init(void)
+{
+  u32 reg;
+  // ID_LED (GPIOM1) output-high
+  reg = __raw_readl(AST_GPIO_BASE + 0x78);
+  reg |= (0x1 << 1);
+  __raw_writel(reg, AST_GPIO_BASE + 0x78);
+  reg = __raw_readl(AST_GPIO_BASE + 0x7C);
+  reg |= (0x1 << 1);
+  __raw_writel(reg, AST_GPIO_BASE + 0x7C);
+}
+#endif
+
 int board_init(void)
 {
 	watchdog_init(CONFIG_ASPEED_WATCHDOG_TIMEOUT);
@@ -832,6 +852,11 @@ int board_init(void)
 #if defined(CONFIG_FBSP)
   fan_init();
   policy_init();
+#endif
+
+#if defined(CONFIG_FBEP)
+  spi_init();
+  led_init();
 #endif
 
   gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;

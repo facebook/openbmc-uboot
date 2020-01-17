@@ -284,7 +284,7 @@ int ast_tpm_extend(uint32_t index, unsigned char* data, uint32_t data_len) {
 	  return err;
   }
   sha1_csum_wd(data, data_len, value, CHUNKSZ_SHA1);
-  return tpm_extend(dev, index, data, data);
+  return tpm_extend(dev, index, value, value);
 }
 
 static void ast_tpm_update_vbs_times(struct tpm_rollback_t *rb,

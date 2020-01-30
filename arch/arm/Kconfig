@@ -177,6 +177,11 @@ config TARGET_FBYAMP
 	select CPU_ARM1176
 	select SUPPORT_SPL
 
+config TARGET_FBELBERT
+	bool "Support Facebook's OpenBMC ELBERT"
+	select CPU_ARM1176
+	select SUPPORT_SPL
+
 config TARGET_FBTP
 	bool "Support Facebook's OpenBMC TP"
 	select CPU_ARM1176

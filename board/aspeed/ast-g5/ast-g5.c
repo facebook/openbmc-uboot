@@ -578,6 +578,19 @@ static int spi_init(void)
 }
 #endif
 
+
+#if defined(CONFIG_FBAL) || defined(CONFIG_FBSP) || defined(CONFIG_FBEP) || defined(CONFIG_FBY3)
+static void fix_mmc_hold_time_fail(void)
+{
+  u32 reg;
+
+  reg = __raw_readl(AST_SCU_BASE + 0x08);
+  reg &= ~(7 << 12);
+  reg |= (0x01 << 12);
+  __raw_writel(reg, AST_SCU_BASE + 0x08);
+}
+#endif
+
 #if defined(CONFIG_FBAL)
 static void disable_snoop_interrupt(void)
 {
@@ -847,16 +860,23 @@ int board_init(void)
   policy_init();
   disable_snoop_interrupt();
   enable_nic_mux();
+  fix_mmc_hold_time_fail();
 #endif
 
 #if defined(CONFIG_FBSP)
   fan_init();
   policy_init();
+  fix_mmc_hold_time_fail();
 #endif
 
 #if defined(CONFIG_FBEP)
   spi_init();
   led_init();
+  fix_mmc_hold_time_fail();
+#endif
+
+#if defined(CONFIG_FBY3)
+  fix_mmc_hold_time_fail();
 #endif
 
   gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;

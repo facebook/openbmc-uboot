@@ -591,7 +591,7 @@ static void fix_mmc_hold_time_fail(void)
 }
 #endif
 
-#if defined(CONFIG_FBAL)
+#if defined(CONFIG_FBAL) || defined(CONFIG_FBSP)
 static void disable_snoop_interrupt(void)
 {
   u32 reg;
@@ -602,7 +602,9 @@ static void disable_snoop_interrupt(void)
 
   __raw_writel(0x0, AST_LPC_BASE + 0x130);
 }
+#endif
 
+#if defined(CONFIG_FBAL)
 static void enable_nic_mux(void)
 {
   u32 reg;
@@ -866,6 +868,7 @@ int board_init(void)
 #if defined(CONFIG_FBSP)
   fan_init();
   policy_init();
+  disable_snoop_interrupt();
   fix_mmc_hold_time_fail();
 #endif
 

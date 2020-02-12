@@ -58,6 +58,11 @@ config ATMEL_PIO4
 	  may be dedicated as a general purpose I/O or be assigned to
 	  a function of an embedded peripheral.
 
+config ASPEED_GPIO
+	bool "Aspeed GPIO Driver"
+	help
+	  This driver supports the Aspeed GPIO controller
+
 config DA8XX_GPIO
 	bool "DA8xx GPIO Driver"
 	help

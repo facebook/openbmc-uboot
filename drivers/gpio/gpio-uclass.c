@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2013 Google, Inc
  */
-
+#define DEBUG
 #include <common.h>
 #include <dm.h>
 #include <dt-bindings/gpio/gpio.h>

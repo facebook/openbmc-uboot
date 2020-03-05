@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2004-Present
+ * (C) Copyright 2020-Present
  * Teddy Reed <reed@fb.com>, Facebook, Inc.
  *
  * SPDX-License-Identifier: GPL-2.0+
@@ -26,6 +26,7 @@
 /*
  * UART configurtion
  */
+
 #define CONFIG_ASPEED_UART1_ENABLE
 #define CONFIG_ASPEED_UART1_BMC // by default, src is LPC for UART1
 #define CONFIG_ASPEED_UART2_ENABLE
@@ -37,10 +38,8 @@
 /*
  * NIC configuration
  */
-/*ELBERTTODO 447405 Review MAC ALLOCATION */
-#define CONFIG_MAC2_ENABLE
-#define CONFIG_MAC1_PHY_SETTING     2
-#define CONFIG_MAC2_PHY_SETTING     0
+#define CONFIG_MAC1_PHY_SETTING     0
+#define CONFIG_MAC1_RGMII_MODE
 #define CONFIG_ASPEED_MAC_NUMBER  1
 #define CONFIG_ASPEED_MAC_CONFIG  1
 

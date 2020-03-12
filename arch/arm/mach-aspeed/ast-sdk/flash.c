@@ -1052,6 +1052,11 @@ static ulong flash_get_size (const char *id, ulong base, flash_info_t *info)
 			info->dualport = 1;
 			info->dummybyte = 1;
 			info->iomode = IOMODEx2_dummy;
+#elif	defined(CONFIG_FLASH_SPIx2)
+			info->readcmd = 0x3b;
+			info->dualport = 1;
+			info->dummybyte = 1;
+			info->iomode = IOMODEx2;
 #endif
 			break;
 
@@ -1325,6 +1330,14 @@ static ulong flash_get_size (const char *id, ulong base, flash_info_t *info)
     ReadClk  = 12;
 //<--end
 #endif
+#if defined(CONFIG_FBY3)
+//Workaround slow down SPI clock to 40Mhz-->
+    WriteClk = 40;
+    EraseClk = 40;
+    ReadClk  = 40;
+//<--end
+#endif
+
 	info->tCK_Write = ast_spi_calculate_divisor(WriteClk*1000000);
 	info->tCK_Erase = ast_spi_calculate_divisor(EraseClk*1000000);
 	info->tCK_Read = ast_spi_calculate_divisor(ReadClk*1000000);

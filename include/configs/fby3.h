@@ -78,6 +78,7 @@
  * This will trigger GPIOAB2 output high when the CPU is reset
  */
 #define CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
+#define CONFIG_FLASH_SPIx2
 
 #include "fby3_ext.h"
 #include "facebook_common.h"

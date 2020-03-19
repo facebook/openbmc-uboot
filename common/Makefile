@@ -63,6 +63,10 @@ endif # !CONFIG_SPL_BUILD
 obj-$(CONFIG_$(SPL_TPL_)BOOTSTAGE) += bootstage.o
 obj-$(CONFIG_$(SPL_TPL_)BLOBLIST) += bloblist.o
 
+#AST MAC test command
+COBJS-$(CONFIG_CMD_NETTEST) += cmd_nettest.o
+COBJS-$(CONFIG_CMD_SLT) += cmd_slt.o
+
 ifdef CONFIG_SPL_BUILD
 ifdef CONFIG_SPL_DFU
 obj-$(CONFIG_DFU_OVER_USB) += dfu.o
@@ -106,11 +110,14 @@ obj-y += malloc_simple.o
 endif
 endif
 
+ifndef CONFIG_SPL_BUILD
 obj-y += image.o
+endif
 obj-$(CONFIG_ANDROID_BOOT_IMAGE) += image-android.o
 obj-$(CONFIG_$(SPL_TPL_)OF_LIBFDT) += image-fdt.o
 obj-$(CONFIG_$(SPL_TPL_)FIT) += image-fit.o
 obj-$(CONFIG_$(SPL_)MULTI_DTB_FIT) += boot_fit.o common_fit.o
+obj-$(CONFIG_$(SPL_)FIT) += image-hash.o
 obj-$(CONFIG_$(SPL_TPL_)FIT_SIGNATURE) += image-sig.o
 obj-$(CONFIG_IO_TRACE) += iotrace.o
 obj-y += memsize.o
@@ -125,10 +132,14 @@ endif
 obj-y += cli.o
 obj-$(CONFIG_FSL_DDR_INTERACTIVE) += cli_simple.o cli_readline.o
 obj-$(CONFIG_DFU_OVER_USB) += dfu.o
+ifndef CONFIG_SPL_BUILD
 obj-y += command.o
+endif
 obj-$(CONFIG_$(SPL_TPL_)LOG) += log.o
 obj-$(CONFIG_$(SPL_TPL_)LOG_CONSOLE) += log_console.o
+ifndef CONFIG_SPL_BUILD
 obj-y += s_record.o
+endif
 obj-$(CONFIG_CMD_LOADB) += xyzModem.o
 obj-$(CONFIG_$(SPL_TPL_)YMODEM_SUPPORT) += xyzModem.o
 

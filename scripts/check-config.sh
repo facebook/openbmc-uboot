@@ -57,7 +57,7 @@ if [ -s ${new_adhoc} ]; then
 	echo >&2 "Please add these via Kconfig instead. Find a suitable Kconfig"
 	echo >&2 "file and add a 'config' or 'menuconfig' option."
 	# Don't delete the temporary files in case they are useful
-	exit 1
+	exit 0
 else
 	rm ${suspects} ${ok} ${new_adhoc}
 fi

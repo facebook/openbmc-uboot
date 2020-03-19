@@ -11,6 +11,7 @@ choice
 config TARGET_EVB_AST2600
 	bool "EVB-AST2600"
 	depends on ASPEED_AST2600
+	select ASPEED_GENERIC_BOARD
 	help
 	  EVB-AST2600 is Aspeed evaluation board for AST2600 chip.
 	  It has 512M of RAM, 32M of SPI flash, two Ethernet ports,
@@ -20,6 +21,7 @@ config TARGET_EVB_AST2600
 config TARGET_FPGA_AST2600
 	bool "FPGA-AST2600"
 	depends on ASPEED_AST2600
+	select ASPEED_GENERIC_BOARD
 	help
 	  FPGA-AST2600 is Aspeed FPGA board for AST2600 chip.
 	  This is mainly for internal development. Note that
@@ -28,6 +30,7 @@ config TARGET_FPGA_AST2600
 config TARGET_FACEBOOK_FUJI
 	bool "FACEBOOK-FUJI"
 	depends on ASPEED_AST2600
+	select ASPEED_GENERIC_BOARD
 	help
 	  FACEBOOK-FUJI is BMC board with AST2600 chip.
 endchoice

@@ -325,16 +325,19 @@ const char *bootdelay_process(void)
 	return s;
 }
 
-void autoboot_command(const char *s)
+int autoboot_command(const char *s)
 {
+	int ret;
+
 	debug("### main_loop: bootcmd=\"%s\"\n", s ? s : "<UNDEFINED>");
 
+	ret = 0;
 	if (stored_bootdelay != -1 && s && !abortboot(stored_bootdelay)) {
 #if defined(CONFIG_AUTOBOOT_KEYED) && !defined(CONFIG_AUTOBOOT_KEYED_CTRLC)
 		int prev = disable_ctrlc(1);	/* disable Control C checking */
 #endif
 
-		run_command_list(s, -1, 0);
+		ret = run_command_list(s, -1, 0);
 
 #if defined(CONFIG_AUTOBOOT_KEYED) && !defined(CONFIG_AUTOBOOT_KEYED_CTRLC)
 		disable_ctrlc(prev);	/* restore Control C checking */
@@ -342,10 +345,12 @@ void autoboot_command(const char *s)
 	}
 
 #ifdef CONFIG_MENUKEY
-	if (menukey == CONFIG_MENUKEY) {
+	if (!ret && menukey == CONFIG_MENUKEY) {
 		s = env_get("menucmd");
 		if (s)
-			run_command_list(s, -1, 0);
+			ret = run_command_list(s, -1, 0);
 	}
 #endif /* CONFIG_MENUKEY */
+
+	return ret;
 }

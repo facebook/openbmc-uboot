@@ -36,7 +36,7 @@ ENTRY(relocate_vectors)
 	ldr	r1, =V7M_SCB_BASE
 	str	r0, [r1, V7M_SCB_VTOR]
 #else
-#ifdef CONFIG_HAS_VBAR
+#if defined(CONFIG_HAS_VBAR) && !defined(CONFIG_ARCH_AST2500)
 	/*
 	 * If the ARM processor has the security extensions,
 	 * use VBAR to relocate the exception vectors.

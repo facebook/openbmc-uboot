@@ -6,8 +6,9 @@ config SYS_ARCH
 config SYS_SOC
 	default "aspeed"
 
-config SYS_TEXT_BASE
-	default 0x00000000
+config ASPEED_GENERIC_BOARD
+	bool "Use aspeed generic reference board"
+	depends on ARCH_ASPEED
 
 choice
 	prompt "Aspeed SoC select"
@@ -35,6 +36,12 @@ config ASPEED_AST2600
 	  It is used as Board Management Controller on many server boards,
 	  which is enabled by support of LPC and eSPI peripherals.
 endchoice
+
+config ASPEED_GEN_5
+	bool "ASPEED G5 platform"
+
+config ARCH_AST2500
+	bool "TEMP used to migrate from ASPEED AST2500 SDK to upstream"
 
 source "arch/arm/mach-aspeed/ast2500/Kconfig"
 source "arch/arm/mach-aspeed/ast2600/Kconfig"

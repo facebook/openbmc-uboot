@@ -2,108 +2,80 @@
 /*
  * Copyright 2017 Google, Inc
  */
-
 #include <common.h>
 #include <dm.h>
 #include <errno.h>
 #include <wdt.h>
 #include <asm/io.h>
+#include <asm/arch/wdt.h>
+#ifdef CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
+#include <asm/arch/scu_ast2500.h>
+#endif
 
-/*
- * Special value that needs to be written to counter_restart register to
- * (re)start the timer
- */
-#define WDT_COUNTER_RESTART_VAL		0x4755
-
-/* Control register */
-#define WDT_CTRL_RESET_MODE_SHIFT	5
-#define WDT_CTRL_RESET_MODE_MASK	3
-
-#define WDT_CTRL_EN			(1 << 0)
-#define WDT_CTRL_RESET			(1 << 1)
-#define WDT_CTRL_CLK1MHZ		(1 << 4)
-#define WDT_CTRL_2ND_BOOT		(1 << 7)
-
-/* Values for Reset Mode */
-#define WDT_CTRL_RESET_SOC		0
-#define WDT_CTRL_RESET_CHIP		1
-#define WDT_CTRL_RESET_CPU		2
-#define WDT_CTRL_RESET_MASK		3
-
-/* Reset Mask register */
-#define WDT_RESET_ARM			(1 << 0)
-#define WDT_RESET_COPROC		(1 << 1)
-#define WDT_RESET_SDRAM			(1 << 2)
-#define WDT_RESET_AHB			(1 << 3)
-#define WDT_RESET_I2C			(1 << 4)
-#define WDT_RESET_MAC1			(1 << 5)
-#define WDT_RESET_MAC2			(1 << 6)
-#define WDT_RESET_GCRT			(1 << 7)
-#define WDT_RESET_USB20			(1 << 8)
-#define WDT_RESET_USB11_HOST		(1 << 9)
-#define WDT_RESET_USB11_EHCI2		(1 << 10)
-#define WDT_RESET_VIDEO			(1 << 11)
-#define WDT_RESET_HAC			(1 << 12)
-#define WDT_RESET_LPC			(1 << 13)
-#define WDT_RESET_SDSDIO		(1 << 14)
-#define WDT_RESET_MIC			(1 << 15)
-#define WDT_RESET_CRT2C			(1 << 16)
-#define WDT_RESET_PWM			(1 << 17)
-#define WDT_RESET_PECI			(1 << 18)
-#define WDT_RESET_JTAG			(1 << 19)
-#define WDT_RESET_ADC			(1 << 20)
-#define WDT_RESET_GPIO			(1 << 21)
-#define WDT_RESET_MCTP			(1 << 22)
-#define WDT_RESET_XDMA			(1 << 23)
-#define WDT_RESET_SPI			(1 << 24)
-#define WDT_RESET_MISC			(1 << 25)
-
-#define WDT_RESET_DEFAULT						\
-	(WDT_RESET_ARM | WDT_RESET_COPROC | WDT_RESET_I2C |		\
-	 WDT_RESET_MAC1 | WDT_RESET_MAC2 | WDT_RESET_GCRT |		\
-	 WDT_RESET_USB20 | WDT_RESET_USB11_HOST | WDT_RESET_USB11_EHCI2 | \
-	 WDT_RESET_VIDEO | WDT_RESET_HAC | WDT_RESET_LPC |		\
-	 WDT_RESET_SDSDIO | WDT_RESET_MIC | WDT_RESET_CRT2C |		\
-	 WDT_RESET_PWM | WDT_RESET_PECI | WDT_RESET_JTAG |		\
-	 WDT_RESET_ADC | WDT_RESET_GPIO | WDT_RESET_MISC)
-
-enum aspeed_wdt_model {
-	WDT_AST2400,
-	WDT_AST2500,
-	WDT_AST2600,
-};
-
-struct ast_wdt {
-	u32 counter_status;
-	u32 counter_reload_val;
-	u32 counter_restart;
-	u32 ctrl;
-	u32 timeout_status;
-	u32 clr_timeout_status;
-	u32 reset_width;
-	/* On pre-ast2500 SoCs this register is reserved. */
-	u32 reset_mask1;
-	u32 reset_mask2;	//ast2600 support
-	u32 sw_ctrl;	//ast2600 support
-	u32 sw_reset_mask1;	//ast2600 support
-	u32 sw_reset_mask2;	//ast2600 support
-	u32 sw_fun_disable;	//ast2600 support
-	
-};
+#define WDT_AST2600	2600
+#define WDT_AST2500	2500
+#define WDT_AST2400	2400
 
 struct ast_wdt_priv {
 	struct ast_wdt *regs;
 };
 
-static int ast_wdt_start(struct udevice *dev, u64 timeout, ulong flags)
+#ifdef CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
+static int ast_wdt_setup_rst_pulse(struct udevice *dev)
 {
 	struct ast_wdt_priv *priv = dev_get_priv(dev);
+	// TODO: get pulse reset information from device tree
+	u32 reset_pulse = SET_WDT_RST_PULSE_POLARITY_HIGH | 0xFF;
+	writel(reset_pulse, &priv->regs->reset_width);
+	return 0;
+}
+#endif
 
-	writel((u32) timeout, &priv->regs->counter_reload_val);
-	
+static int ast_wdt_start(struct udevice *dev, u64 timeout_ms, ulong flags)
+{
+	struct ast_wdt_priv *priv = dev_get_priv(dev);
+	ulong driver_data = dev_get_driver_data(dev);
+	u32 reset_mode = ast_reset_mode_from_flags(flags);
+	/* watchdog timer clock is fixed at 1MHz */
+	u32 timeout_us = (u32)timeout_ms * 1000;
+
+	debug("wdt%u set timeout after %uus\n", dev->seq, timeout_us);
+
+#ifdef CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
+	int ret;
+	debug("Enable WDT trigger external reset\n");
+	ret = ast_scu_enable_wdtrst1();
+	if (ret)
+		return ret;
+	ret = ast_wdt_setup_rst_pulse(dev);
+	if (ret)
+		return ret;
+#endif
+	clrsetbits_le32(&priv->regs->ctrl,
+			WDT_CTRL_RESET_MASK << WDT_CTRL_RESET_MODE_SHIFT,
+			reset_mode << WDT_CTRL_RESET_MODE_SHIFT);
+
+	if (driver_data == WDT_AST2500 && reset_mode == WDT_CTRL_RESET_SOC)
+		writel(ast_reset_mask_from_flags(flags),
+		       &priv->regs->reset_mask);
+
+	writel(timeout_us, &priv->regs->counter_reload_val);
 	writel(WDT_COUNTER_RESTART_VAL, &priv->regs->counter_restart);
-
-	writel(WDT_CTRL_EN | WDT_CTRL_RESET, &priv->regs->ctrl);
+	/*
+	 * Setting CLK1MHZ bit is just for compatibility with ast2400 part.
+	 * On ast2500 watchdog timer clock is fixed at 1MHz and the bit is
+	 * read-only
+	 * Based on configuration to enable 2ND_BOOT or TRIGGER WDTRST1
+	 */
+	clrbits_le32(&priv->regs->ctrl, WDT_CTRL_2ND_BOOT | WDT_CTRL_EXT);
+	setbits_le32(&priv->regs->ctrl,
+		#ifdef CONFIG_ASPEED_WATCHDOG_2ND_BOOT
+		        WDT_CTRL_2ND_BOOT |
+		#endif
+		#ifdef CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
+			WDT_CTRL_EXT |
+		#endif
+		     WDT_CTRL_EN | WDT_CTRL_RESET | WDT_CTRL_CLK1MHZ);
 
 	return 0;
 }
@@ -113,14 +85,17 @@ static int ast_wdt_stop(struct udevice *dev)
 	struct ast_wdt_priv *priv = dev_get_priv(dev);
 	ulong driver_data = dev_get_driver_data(dev);
 
+	debug("Watch Dog stopped.\n");
 	clrbits_le32(&priv->regs->ctrl, WDT_CTRL_EN);
 
-	if(driver_data == WDT_AST2600) {
-		writel(0x030f1ff1, &priv->regs->reset_mask1);
-		writel(0x3fffff1, &priv->regs->reset_mask1);		
-	} else 
-		writel(WDT_RESET_DEFAULT, &priv->regs->reset_mask1);
-	
+        if(driver_data == WDT_AST2600) {
+		writel(0x030f1ff1, &priv->regs->reset_mask);
+		writel(0x3fffff1, &priv->regs->reset_mask2);
+	} else {
+		writel(WDT_RESET_DEFAULT, &priv->regs->reset_mask);
+	}
+
+	writel(WDT_RESET_DEFAULT, &priv->regs->reset_mask);
 	return 0;
 }
 
@@ -128,6 +103,7 @@ static int ast_wdt_reset(struct udevice *dev)
 {
 	struct ast_wdt_priv *priv = dev_get_priv(dev);
 
+	debug("Watch Dog reload.\n");
 	writel(WDT_COUNTER_RESTART_VAL, &priv->regs->counter_restart);
 
 	return 0;
@@ -142,7 +118,8 @@ static int ast_wdt_expire_now(struct udevice *dev, ulong flags)
 	if (ret)
 		return ret;
 
-	while (readl(&priv->regs->ctrl) & WDT_CTRL_EN);
+	while (readl(&priv->regs->ctrl) & WDT_CTRL_EN)
+		;
 
 	return ast_wdt_stop(dev);
 }

@@ -88,6 +88,7 @@ dumpimage-mkimage-objs := aisimage.o \
 			lib/fdtdec.o \
 			fit_common.o \
 			fit_image.o \
+			common/image-hash.o \
 			common/image-fit.o \
 			image-host.o \
 			common/image.o \

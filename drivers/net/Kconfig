@@ -528,4 +528,28 @@ config MEDIATEK_ETH
 	  This Driver support MediaTek Ethernet GMAC
 	  Say Y to enable support for the MediaTek Ethernet GMAC.
 
+config ASPEEDNIC
+	bool "Aspeed ethernet support"
+	depends on ARM
+	select PHYLIB
+	help
+	  Network support for the Aspeed ast2400 and ast2500 series network
+	  devices including NC-SI support.
+
+if ASPEEDNIC
+
+choice
+	prompt "Network configuration"
+	help
+	  Select Aspeed network configuration
+
+  config ASPEED_NET_PHY
+	  bool "Use a direct attached PHY"
+
+  config ASPEED_NET_NCSI
+	  bool  "Use a network controller attached via NSCI"
+endchoice
+
+endif # ASPEEDNIC
+
 endif # NETDEVICES

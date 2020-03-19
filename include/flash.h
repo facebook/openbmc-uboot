@@ -51,6 +51,23 @@ typedef struct {
 	struct udevice *dev;
 	phys_addr_t base;
 #endif
+#ifdef CONFIG_AST_SPI_NOR
+	ulong 	reg_base;
+	ulong   readcmd;
+	ulong   dualport;
+	ulong	dummybyte;
+	ulong	tCK_Write;
+	ulong	tCK_Erase;
+	ulong	tCK_Read;
+	ulong	CE;
+	ulong 	sysspi;
+	ulong	iomode;
+	ulong   address32;
+	ulong   quadport;
+	ulong	dummydata;
+	ulong	buffersize;
+	ulong	specificspi;
+#endif
 } flash_info_t;
 
 extern flash_info_t flash_info[]; /* info for FLASH chips	*/
@@ -98,6 +115,10 @@ extern void flash_protect (int flag, ulong from, ulong to, flash_info_t *info);
 extern int flash_write (char *, ulong, ulong);
 extern flash_info_t *addr2info (ulong);
 extern int write_buff (flash_info_t *info, uchar *src, ulong addr, ulong cnt);
+
+#ifdef CONFIG_AST_SPI_NOR
+extern void memmove_dma(void * dest,const void *src,size_t count);
+#endif
 
 /* drivers/mtd/cfi_mtd.c */
 #ifdef CONFIG_FLASH_CFI_MTD

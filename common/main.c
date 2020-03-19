@@ -12,10 +12,15 @@
 #include <console.h>
 #include <version.h>
 
+extern int watchdog_init(u32 timeout_sec);
 /*
  * Board-specific Platform code can reimplement show_boot_progress () if needed
  */
 __weak void show_boot_progress(int val) {}
+
+/*
+ * Custom tests need the watchdog re-initialized.
+ */
 
 static void run_preboot_environment_command(void)
 {
@@ -40,9 +45,32 @@ static void run_preboot_environment_command(void)
 /* We come here after U-Boot is initialised and ready to process commands */
 void main_loop(void)
 {
+	int ret;
 	const char *s;
+#ifdef CONFIG_CMD_MEMTEST2
+	char *mtest;
+#endif /* CONFIG_CMD_MEMTEST2 */
+
+#ifdef CONFIG_CMD_CS1TEST
+    char *cs1test;
+#endif /*CONFIG_CMD_CS1TEST*/
 
 	bootstage_mark_name(BOOTSTAGE_ID_MAIN_LOOP, "main_loop");
+
+#ifdef CONFIG_CMD_MEMTEST2
+	mtest = env_get("do_mtest");
+	if(!(strcmp(mtest,"obmtest"))) {
+		run_command(mtest,0);
+		watchdog_init(CONFIG_ASPEED_WATCHDOG_TIMEOUT); // Cover the time consumed by mtest
+	}
+#endif /* CONFIG_CMD_MEMTEST2 */
+
+#ifdef CONFIG_CMD_CS1TEST
+    cs1test = env_get("do_cs1test");
+    if(!(strcmp(cs1test,"obcs1test"))) {
+            run_command(cs1test,0);
+    }
+#endif /*CONFIG_CMD_CS1TEST*/
 
 	if (IS_ENABLED(CONFIG_VERSION_VARIABLE))
 		env_set("ver", version_string);  /* set version variable */
@@ -58,7 +86,14 @@ void main_loop(void)
 	if (cli_process_fdt(&s))
 		cli_secure_boot_cmd(s);
 
-	autoboot_command(s);
+	ret = autoboot_command(s);
+
+	if (!ret) {
+#if defined(CONFIG_PRECLICOMMAND)
+		s = CONFIG_PRECLICOMMAND;
+		run_command_list(s, -1, 0);
+#endif
+	}
 
 	cli_loop();
 	panic("No CLI available");

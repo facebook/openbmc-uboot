@@ -18,7 +18,6 @@
  *
  * Version: 2.1.1
  */
-
 #include <common.h>
 #include <dm.h>
 #include <fdtdec.h>
@@ -444,14 +443,14 @@ static int tpm_tis_i2c_send(struct udevice *dev, const u8 *buf, size_t len)
 			return rc;
 	}
 
-	burstcnt = tpm_tis_i2c_get_burstcount(dev);
-
-	/* burstcount < 0 -> tpm is busy */
-	if (burstcnt < 0)
-		return burstcnt;
 
 	while (count < len) {
-		udelay(300);
+		burstcnt = tpm_tis_i2c_get_burstcount(dev);
+
+		/* burstcount < 0 -> tpm is busy */
+		if (burstcnt < 0)
+			return burstcnt;
+
 		if (burstcnt > len - count)
 			burstcnt = len - count;
 
@@ -599,6 +598,7 @@ static int tpm_tis_i2c_probe(struct udevice *dev)
 	struct tpm_chip_priv *uc_priv = dev_get_uclass_priv(dev);
 	struct tpm_chip *chip = dev_get_priv(dev);
 
+	debug("probing... %s\n", __func__);
 	chip->chip_type = dev_get_driver_data(dev);
 
 	/* TODO: These need to be checked and tuned */

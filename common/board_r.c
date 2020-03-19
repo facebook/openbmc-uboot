@@ -48,8 +48,14 @@
 #include <linux/compiler.h>
 #include <linux/err.h>
 #include <efi_loader.h>
+#include <asm/io.h>
 
 DECLARE_GLOBAL_DATA_PTR;
+
+
+#if defined(CONFIG_FBTTN)
+#define AST_FAN_BASE 0x1E786000
+#endif
 
 ulong monitor_flash_len;
 
@@ -621,6 +627,22 @@ static int initr_bedbug(void)
 }
 #endif
 
+#ifdef CONFIG_FBTTN
+static int init_fan(void)
+{
+  // Enable PWM0 and PWM1
+	writel(0x10301, AST_FAN_BASE);
+
+  // Set PWM0 and PWM1 type to M
+	writel(0xFF01FF01, AST_FAN_BASE + 0x4);
+
+  // Set PWM0 and PWM1 to 50%
+  writel(0x7F007F00, AST_FAN_BASE + 0x8);
+
+	return 0;
+}
+#endif
+
 static int run_main_loop(void)
 {
 #ifdef CONFIG_SANDBOX
@@ -751,7 +773,8 @@ static init_fnc_t init_sequence_r[] = {
 	 */
 	initr_pci,
 #endif
-	stdio_add_devices,
+	//stdio_add_devices,
+        stdio_init,
 	initr_jumptable,
 #ifdef CONFIG_API
 	initr_api,
@@ -824,7 +847,16 @@ static init_fnc_t init_sequence_r[] = {
 #if defined(CONFIG_PRAM)
 	initr_mem,
 #endif
+#if defined(CONFIG_FBTTN)
+    init_fan,
+#endif
 	run_main_loop,
+
+  // TODO: Sometimes after run_main_loop, The registers value may change.
+  // Need to debug.
+#if defined(CONFIG_FBTTN)
+    init_fan,
+#endif
 };
 
 void board_init_r(gd_t *new_gd, ulong dest_addr)

@@ -290,6 +290,11 @@ config FIT_ENABLE_SHA256_SUPPORT
 	  SHA256 variant is supported: SHA512 and others are not currently
 	  supported in U-Boot.
 
+config SPL_TINY_FIT
+	bool "Only only basic FIT library functions within SPL"
+	depends on FIT
+	depends on SPL
+
 config FIT_SIGNATURE
 	bool "Enable signature verification of FIT uImages"
 	depends on DM

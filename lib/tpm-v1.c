@@ -339,6 +339,15 @@ u32 tpm_force_clear(struct udevice *dev)
 	return tpm_sendrecv_command(dev, command, NULL, NULL);
 }
 
+u32 tpm_disable_force_clear(struct udevice *dev)
+{
+	const u8 command[10] = {
+		0x0, 0xc1, 0x0, 0x0, 0x0, 0xa, 0x0, 0x0, 0x0, 0x5e,
+	};
+
+	return tpm_sendrecv_command(dev, command, NULL, NULL);
+}
+
 u32 tpm_physical_enable(struct udevice *dev)
 {
 	const u8 command[10] = {
@@ -413,6 +422,18 @@ u32 tpm_get_capability(struct udevice *dev, u32 cap_area, u32 sub_cap,
 	return 0;
 }
 
+u32 tpm_set_owner_install(struct udevice *dev)
+{
+	const u8 command[11] = {
+		0x0, 0xc1,              /* TPM_TAG */
+		0x0, 0x0, 0x0, 0xb,     /* parameter size */
+		0x0, 0x0, 0x0, 0x71,    /* TPM_COMMAND_CODE */
+		0x1,                    /* true */
+	};
+
+	return tpm_sendrecv_command(dev, command, NULL, NULL);
+}
+
 u32 tpm_get_permanent_flags(struct udevice *dev,
 			    struct tpm_permanent_flags *pflags)
 {
@@ -420,9 +441,9 @@ u32 tpm_get_permanent_flags(struct udevice *dev,
 		0x0, 0xc1,		/* TPM_TAG */
 		0x0, 0x0, 0x0, 0x16,	/* parameter size */
 		0x0, 0x0, 0x0, 0x65,	/* TPM_COMMAND_CODE */
-		0x0, 0x0, 0x0, 0x4,	/* TPM_CAP_FLAG_PERM */
+		0x0, 0x0, 0x0, 0x4,	/* TPM_CAP_FLAG */
 		0x0, 0x0, 0x0, 0x4,	/* subcap size */
-		0x0, 0x0, 0x1, 0x8,	/* subcap value */
+		0x0, 0x0, 0x1, 0x8,	/* TPM_CAP_FLAG_PERM */
 	};
 	const size_t data_size_offset = TPM_HEADER_SIZE;
 	const size_t data_offset = TPM_HEADER_SIZE + sizeof(u32);
@@ -446,6 +467,45 @@ u32 tpm_get_permanent_flags(struct udevice *dev,
 	if (unpack_byte_string(response, response_length, "s",
 			       data_offset, pflags, sizeof(*pflags))) {
 		log_err("Cannot unpack pflags\n");
+		return TPM_LIB_ERROR;
+	}
+
+	return 0;
+}
+
+u32 tpm_get_volatile_flags(struct udevice *dev,
+			   struct tpm_volatile_flags *vflags)
+{
+	const u8 command[22] = {
+		0x0, 0xc1,		/* TPM_TAG */
+		0x0, 0x0, 0x0, 0x16,	/* parameter size */
+		0x0, 0x0, 0x0, 0x65,	/* TPM_COMMAND_CODE */
+		0x0, 0x0, 0x0, 0x4,	/* TPM_CAP_FLAG */
+		0x0, 0x0, 0x0, 0x4,	/* subcap size */
+		0x0, 0x0, 0x1, 0x9,	/* TPM_CAP_FLAG_VOLATILE */
+	};
+	const size_t data_size_offset = TPM_HEADER_SIZE;
+	const size_t data_offset = TPM_HEADER_SIZE + sizeof(u32);
+	u8 response[COMMAND_BUFFER_SIZE];
+	size_t response_length = sizeof(response);
+	u32 err;
+	u32 data_size;
+
+	err = tpm_sendrecv_command(dev, command, response, &response_length);
+	if (err)
+		return err;
+	if (unpack_byte_string(response, response_length, "d",
+			       data_size_offset, &data_size)) {
+		log_err("Cannot unpack data size\n");
+		return TPM_LIB_ERROR;
+	}
+	if (data_size < sizeof(*vflags)) {
+		log_err("Data size too small\n");
+		return TPM_LIB_ERROR;
+	}
+	if (unpack_byte_string(response, response_length, "s",
+			       data_offset, vflags, sizeof(*vflags))) {
+		log_err("Cannot unpack vflags\n");
 		return TPM_LIB_ERROR;
 	}
 

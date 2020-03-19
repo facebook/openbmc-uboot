@@ -2,7 +2,6 @@
 /*
  * Copyright (c) 2013 The Chromium OS Authors.
  */
-
 #include <common.h>
 #include <command.h>
 #include <dm.h>
@@ -236,7 +235,7 @@ int get_tpm(struct udevice **devp)
 
 	rc = uclass_first_device_err(UCLASS_TPM, devp);
 	if (rc) {
-		printf("Could not find TPM (ret=%d)\n", rc);
+		printf("Cmd Could not find TPM (ret=%d)\n", rc);
 		return CMD_RET_FAILURE;
 	}
 

@@ -1,0 +1,17 @@
+config SYS_BOARD
+	default "ast-g5"
+
+config SYS_VENDOR
+	default "aspeed"
+
+
+config ASPEED_TPM
+	bool "Perform TPM provisioning"
+	default n
+	depends on SPL
+
+config ASPEED_RECOVERY_BUILD
+	bool "Build a recovery environment"
+	default n
+	depends on SPL
+

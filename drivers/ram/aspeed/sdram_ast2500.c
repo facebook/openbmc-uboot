@@ -340,7 +340,7 @@ static void ast2500_sdrammc_lock(struct dram_info *info)
 
 static int ast2500_sdrammc_probe(struct udevice *dev)
 {
-	struct reset_ctl reset_ctl;
+	//struct reset_ctl reset_ctl;
 	struct dram_info *priv = (struct dram_info *)dev_get_priv(dev);
 	struct ast2500_sdrammc_regs *regs = priv->regs;
 	struct udevice *clk_dev;
@@ -361,7 +361,7 @@ static int ast2500_sdrammc_probe(struct udevice *dev)
 		return ret;
 	}
 	priv->scu = devfdt_get_addr_ptr(clk_dev);
-	
+
 	if (IS_ERR(priv->scu)) {
 		debug("%s(): can't get SCU\n", __func__);
 		return PTR_ERR(priv->scu);
@@ -428,7 +428,6 @@ static int ast2500_sdrammc_probe(struct udevice *dev)
 static int ast2500_sdrammc_ofdata_to_platdata(struct udevice *dev)
 {
 	struct dram_info *priv = dev_get_priv(dev);
-	int ret;
 
 	priv->regs = (void *)(uintptr_t)devfdt_get_addr_index(dev, 0);
 	priv->phy = (void *)(uintptr_t)devfdt_get_addr_index(dev, 1);

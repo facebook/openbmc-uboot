@@ -949,6 +949,12 @@ void fit_print_contents(const void *fit);
 void fit_image_print(const void *fit, int noffset, const char *p);
 
 /**
+ * fit_cert_store - return the location of the FIT certificate store
+ * This allows boards/arch to define a custom pub-key storage.
+ */
+char* fit_cert_store(void);
+
+/**
  * fit_get_end - get FIT image size
  * @fit: pointer to the FIT format image header
  *
@@ -1090,7 +1096,7 @@ void *image_get_host_blob(void);
 void image_set_host_blob(void *host_blob);
 # define gd_fdt_blob()		image_get_host_blob()
 #else
-# define gd_fdt_blob()		(gd->fdt_blob)
+# define gd_fdt_blob()		fit_cert_store()
 #endif
 
 #ifdef CONFIG_FIT_BEST_MATCH
@@ -1249,6 +1255,7 @@ int fit_image_verify_required_sigs(const void *fit, int image_noffset,
  * @noffset:		Offset of signature node to check
  * @data:		Image data to check
  * @size:		Size of image data
+ * @sig_blob		FDT continaing public keys
  * @required_keynode:	Offset in the control FDT of the required key node,
  *			if any. If this is given, then the image wil not
  *			pass verification unless that key is used. If this is
@@ -1258,7 +1265,37 @@ int fit_image_verify_required_sigs(const void *fit, int image_noffset,
  * @return 0 if all verified ok, <0 on error
  */
 int fit_image_check_sig(const void *fit, int noffset, const void *data,
-		size_t size, int required_keynode, char **err_msgp);
+		size_t size, const void *sig_blob, int required_keynode, char **err_msgp);
+
+/**
+ * fit_image_check_hash() - Check a single image hash node
+ *
+ * @fit:                FIT to check
+ * @noffset:            Offset of hash node to check
+ * @data:               Image data to check
+ * @size:               Size of image data
+ * @hash_value:         An input buffer to store the output hash
+ * @err_msgp:           In the event of an error, this will be pointed to a
+ *                      help error string to display to the user.
+ * @return 0 if hashes match ok, <0 on error
+ */
+int fit_image_check_hash(const void *fit, int noffset, const void *data,
+		size_t size, uint8_t *hash_value, char **err_msgp);
+
+/**
+ * fit_config_verify_required_sigs() - Verify signatures marked as 'required'
+ *
+ * @fit:		FIT to check
+ * @conf_noffset:	Offset of conf node to check
+ * @sig_blob:		FDT containing public keys
+ * @no_sigsp:		Returns 1 if no signatures were required, and
+ *			therefore nothing was checked. The caller may wish
+ *			to fall back to other mechanisms, or refuse to
+ *			boot.
+ * @return 0 if all verified ok, <0 on error
+ */
+int fit_config_verify_required_sigs(const void *fit, int conf_noffset,
+		const void *sig_blob, int *no_sigsp);
 
 /**
  * fit_region_make_list() - Make a list of regions to hash

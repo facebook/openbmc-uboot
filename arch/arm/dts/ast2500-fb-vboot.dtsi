@@ -1,0 +1,37 @@
+/dts-v1/;
+
+#include "ast2500-u-boot.dtsi"
+/ {
+	aliases {
+		spi0 = &fmc;
+	};
+};
+
+&wdt1 {
+	u-boot,dm-pre-reloc;
+};
+
+&i2c  {
+	u-boot,dm-pre-reloc;
+};
+
+&fmc {
+	status = "okay";
+	flash@0 {
+		compatible = "spi-flash";
+		status = "okay";
+		spi-max-frequency = <50000000>;
+		spi-tx-bus-width = <2>;
+		spi-rx-bus-width = <2>;
+	};
+
+	flash@1 {
+                compatible = "spi-flash";
+                status = "okay";
+                spi-max-frequency = <50000000>;
+                spi-tx-bus-width = <2>;
+                spi-rx-bus-width = <2>;
+        };
+};
+
+

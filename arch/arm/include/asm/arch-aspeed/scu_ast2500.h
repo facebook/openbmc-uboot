@@ -107,6 +107,8 @@
 #define SCU_CLKDUTY_RGMII2TXCK_SHIFT	16
 #define SCU_CLKDUTY_RGMII2TXCK_MASK	(0x7f << SCU_CLKDUTY_RGMII2TXCK_SHIFT)
 
+#ifndef __ASSEMBLY__
+
 struct ast2500_clk_priv {
 	struct ast2500_scu *scu;
 };
@@ -178,5 +180,43 @@ struct ast2500_scu {
 	u32 reserved9[13];
 	u32 clk_duty_sel;
 };
+
+/**
+ * ast_get_scu() - get a pointer to SCU registers
+ *
+ * @return pointer to struct ast2500_scu on success, ERR_PTR otherwise
+ */
+void *ast_get_scu(void);
+
+/**
+ * ast_scu_unlock() - unlock protected registers
+ *
+ * @scu, pointer to ast2500_scu
+ */
+void ast_scu_unlock(struct ast2500_scu *scu);
+
+/**
+ * ast_scu_lock() - lock protected registers
+ *
+ * @scu, pointer to ast2500_scu
+ */
+void ast_scu_lock(struct ast2500_scu *scu);
+
+/**
+ * ast_scu_enable_i2c_dev() - enable i2c pin function
+ * @dev, i2c device
+ *
+ * @return zero on success, error code (<0) otherwise
+ */
+int ast_scu_enable_i2c_dev(struct udevice *dev);
+
+/**
+ * ast_scu_enable_wdtrst1() - enable wdtrst1 function
+ *
+ * @return zero on success, error code (<0) otherwise
+ */
+int ast_scu_enable_wdtrst1(void);
+
+#endif  /* __ASSEMBLY__ */
 
 #endif  /* _ASM_ARCH_SCU_AST2500_H */

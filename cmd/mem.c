@@ -21,12 +21,20 @@
 #include <watchdog.h>
 #include <asm/io.h>
 #include <linux/compiler.h>
+#include <stdlib.h>
+#include <environment.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
 #ifndef CONFIG_SYS_MEMTEST_SCRATCH
 #define CONFIG_SYS_MEMTEST_SCRATCH 0
 #endif
+
+#ifdef CONFIG_CMD_CS1TEST
+#define SCU_BASE                0x1E6E2000
+#define WDT_REGISTER_BASE       0x1E785000
+extern flash_info_t flash_info[];       /* info for FLASH chips */
+#endif /*CONFIG_CMD_CS1TEST*/
 
 static int mod_mem(cmd_tbl_t *, int, int, int, char * const []);
 
@@ -947,6 +955,143 @@ static int do_mem_mtest(cmd_tbl_t *cmdtp, int flag, int argc,
 }
 #endif	/* CONFIG_CMD_MEMTEST */
 
+
+#ifdef CONFIG_CMD_MEMTEST2
+static int section_mem_test(ulong start, ulong end)
+{
+	vu_long *buf, *dummy;
+	ulong iteration_limit = 0;
+	int ret;
+	ulong errs = 0;	/* number of errors, or -1 if interrupted */
+	ulong pattern = 0;
+	int iteration;
+	iteration_limit = CONFIG_SYS_MEMTEST_ITERATION;
+	debug("%s:%d: start %#08lx end %#08lx\n", __func__, __LINE__,
+		start, end);
+
+	buf = map_sysmem(start, end - start);
+	dummy = map_sysmem(CONFIG_SYS_MEMTEST_SCRATCH, sizeof(vu_long));
+	for (iteration = 0;
+		!iteration_limit || iteration < iteration_limit;
+		iteration++) {
+		if (ctrlc()) {
+			errs = -1UL;
+			break;
+		}
+
+		printf("Iteration: %6d\r", iteration + 1);
+		debug("\n");
+		errs = mem_test_quick(buf, start, end, pattern, iteration);
+		if (errs == -1UL)
+			break;
+	}
+	/*
+	 * Work-around for eldk-4.2 which gives this warning if we try to
+	 * case in the unmap_sysmem() call:
+	 * warning: initialization discards qualifiers from pointer target type
+	 */
+	{
+		void *vbuf = (void *)buf;
+		void *vdummy = (void *)dummy;
+
+		unmap_sysmem(vbuf);
+		unmap_sysmem(vdummy);
+	}
+
+	if (errs == -1UL) {
+		/* Memory test was aborted - write a newline to finish off */
+		putc('\n');
+		ret = 1;
+	} else {
+		ret = errs != 0;
+	}
+
+	return ret;
+}
+
+static int do_openbmc_mem_mtest(cmd_tbl_t *cmdtp, int flag, int argc,
+				char * const argv[])
+{
+	int ret=0;
+	ulong start1, end1, start2, end2;
+	bool section2_flag = false;
+	char *result;
+
+	debug("%s:%d:ret: %d\n", __func__, __LINE__, ret);
+
+	env_set("do_mtest", "");
+	env_set("memtest_result", "fail");
+	env_set("memtest_reason", "incorrect_parameter");
+	env_save();
+
+	start1 = env_get_ulong("obmtest_start1", 16, 0UL);
+	end1 = env_get_ulong("obmtest_end1", 16, 0UL);
+	start2 = env_get_ulong("obmtest_start2", 16, 0UL);
+	end2 = env_get_ulong("obmtest_end2", 16, 0UL);
+
+	printf("%s:%d: start1 %#08lx end1 %#08lx\n", __func__, __LINE__, start1, end1);
+	printf("%s:%d: start2 %#08lx end2 %#08lx\n", __func__, __LINE__, start2, end2);
+
+	//Check Memory Test configuration
+	// Check Section 1
+	if( !(start1 & end1) || (end1 < start1)) {
+		env_set("obmtest_start1", "");
+		env_set("obmtest_start2", "");
+		env_set("obmtest_end1", "");
+		env_set("obmtest_end2", "");
+		env_save();
+		return ret;
+	}
+
+	// Check Section 2
+	if(!((start2 == 0) & (end2 == 0))) {
+		if( !(start2 & end2) || (end2 < start2) || (end1 > start2)) {
+			env_set("obmtest_start1", "");
+			env_set("obmtest_start2", "");
+			env_set("obmtest_end1", "");
+			env_set("obmtest_end2", "");
+			env_save();
+			return ret;
+		}
+
+		//Enable Section2 test
+		section2_flag = true;
+	}
+
+	env_set("memtest_reason", "mtest_section1_fail");
+	env_save();
+	if(section_mem_test(start1, end1)!=0) {
+		env_set("memtest_result", "fail");
+	} else {
+		env_set("memtest_result", "pass");
+
+		if (section2_flag)
+			{
+				env_set("memtest_reason", "mtest_section2_fail");
+				env_save();
+				if(section_mem_test(start2, end2)!=0)
+				{
+					env_set("memtest_result", "fail");
+				}
+			}
+	}
+
+	result=env_get("memtest_result");
+	if(!(strcmp(result,"pass")))
+	{
+		env_set("memtest_reason", "");
+	}
+
+	env_set("obmtest_start1", "");
+	env_set("obmtest_start2", "");
+	env_set("obmtest_end1", "");
+	env_set("obmtest_end2", "");
+	env_save();
+
+	return ret;     /* not reached */
+}
+#endif  /* CONFIG_CMD_MEMTEST2 */
+
 /* Modify memory.
  *
  * Syntax:
@@ -1082,6 +1227,151 @@ static int do_mem_crc(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 #endif
 
+#ifdef CONFIG_CMD_CS1TEST
+ static int do_openbmc_cs1_test(cmd_tbl_t *cmdtp, int flag, int argc,
+                                 char * const argv[])
+ {
+     char cmd[100];
+     uint32_t next_pattern_addr = CONFIG_CS1TEST_CS0PATTERN_ADDR;
+     uint32_t store_data_in_cs1_start,store_data_in_cs1_index;
+     uint32_t rand_value, test_addr_boundary;
+     uint32_t wdt1_register_back, wdt2_register_back, wdt1_register_index, wdt2_register_index;
+     uint32_t disable_wdt1, disable_wdt2 ;
+     bool flag_cs_result = 0;
+     int cs1test_start_sect, cs1test_total_sects;
+     uint32_t CS1_test_start_addr, CS1_test_end_addr, CS1_sector_size;
+     uint32_t testing_mem_size, index_address;
+     const void *buf1, *buf2, *buf3;
+     ulong word1, word2, word3;
+
+     cs1test_start_sect = env_get_ulong("cs1test_start_sect", 10, 0);
+     cs1test_total_sects = env_get_ulong("cs1test_total_sects", 10, 0);
+
+     // Clear the last test result
+     env_set("cs1test_result", "");
+
+     // Calculate the testing range
+     CS1_sector_size     = (flash_info[1].size/flash_info[1].sector_count);
+     CS1_test_start_addr = PHYS_FLASH_2 + CS1_sector_size*(cs1test_start_sect);
+     CS1_test_end_addr   = CS1_test_start_addr + ( CS1_sector_size * cs1test_total_sects )-1;
+
+     // Check if the testing range is valid
+     test_addr_boundary = PHYS_FLASH_2 + flash_info[1].size;
+
+     if(((CS1_test_end_addr-CS1_test_start_addr+1)<=flash_info[1].size)
+         && ((CS1_test_end_addr-CS1_test_start_addr+1)>0)
+         && (CS1_test_start_addr < test_addr_boundary)
+         && (CS1_test_end_addr < test_addr_boundary)){
+
+ 		/*Read, Store and Disable WDT1 and WDT2 register
+ 		WDT1 0Ch - WDT1 control register
+ 		WDT2 2Ch - WDT2 control register
+ 		*/
+ 		wdt1_register_index = WDT_REGISTER_BASE + 0x0C;
+ 		wdt2_register_index = WDT_REGISTER_BASE + 0x2C;
+
+ 		wdt1_register_back = readl(wdt1_register_index);
+ 		wdt2_register_back = readl(wdt2_register_index);
+ 		disable_wdt1 = (wdt1_register_back&(~(0x1)));
+ 		disable_wdt2 = (wdt2_register_back&(~(0x1)));
+ 		writel( disable_wdt1, wdt1_register_index);
+ 		writel( disable_wdt2, wdt2_register_index);
+
+ 		//Reading original data from CS1 and store it in SDRAM
+ 		testing_mem_size = (CS1_sector_size * cs1test_total_sects);
+ 		store_data_in_cs1_start = (CONFIG_CS1TEST_CS0PATTERN_ADDR+testing_mem_size+4);
+        	store_data_in_cs1_index = store_data_in_cs1_start;
+
+        	buf3 = map_sysmem(CS1_test_start_addr, testing_mem_size);
+        	while((uint32_t)buf3 < CS1_test_end_addr){
+        		word3 = *(u32 *)buf3;
+        		writel(word3, store_data_in_cs1_index);
+        		store_data_in_cs1_index +=4;
+        		buf3 +=4;
+        	}
+        	unmap_sysmem(buf3);
+
+        	// Protect off CS1
+ 		run_command("protect off all",0);
+
+ 		// Erasing CS1
+ 		sprintf(cmd, "erase %x %x",CS1_test_start_addr,CS1_test_end_addr);
+ 		run_command(cmd,0);
+
+ 		// Make the writing pattern and store in SDRAM
+ 		index_address = CS1_test_start_addr;
+ 		while(index_address<=CS1_test_end_addr){
+ 		   rand_value = readl(SCU_BASE + 0x78);
+ 		   writel(rand_value, next_pattern_addr);
+ 		   next_pattern_addr+=4;
+ 		   index_address+=4;
+ 		}
+
+ 		// Back to pattern start address
+ 		next_pattern_addr = CONFIG_CS1TEST_CS0PATTERN_ADDR;
+
+ 		// Writing to CS1
+ 		sprintf(cmd, "cp.b %x %x %x",next_pattern_addr,CS1_test_start_addr,testing_mem_size);
+ 		run_command(cmd,0);
+
+ 		// Check CS1 and Pattern
+ 		buf1 = map_sysmem(next_pattern_addr, testing_mem_size);
+ 		buf2 = map_sysmem(CS1_test_start_addr, testing_mem_size);
+ 		while((uint32_t)buf2 < CS1_test_end_addr)
+ 		{
+ 		   word1 = *(u32 *)buf1;
+ 		   word2 = *(u32 *)buf2;
+ 		   if (word1 != word2) {
+ 		      printf("word1(%x) at buf1(%x) != word2(%x) at buf2(%x)\n",
+		         (uint)word1, (uint)word1, (uint)word2, (uint)buf2);
+ 		      flag_cs_result=1;
+ 		      break;
+ 		   }
+ 		   buf1 += 4;
+ 		   buf2 += 4;
+ 		}
+ 		unmap_sysmem(buf1);
+ 		unmap_sysmem(buf2);
+
+        	// Protect off CS1
+ 		run_command("protect off all",0);
+
+ 		// Erasing CS1
+ 		sprintf(cmd, "erase %x %x",CS1_test_start_addr,CS1_test_end_addr);
+ 		run_command(cmd,0);
+
+        	//Writing store image data back to cs1
+ 		sprintf(cmd, "cp.b %x %x %x",store_data_in_cs1_start,CS1_test_start_addr,testing_mem_size);
+ 		run_command(cmd,0);
+
+
+ 		// Save the testing result and reset the env variable
+ 		if(flag_cs_result==0){
+ 		 env_set("cs1test_result", "pass");
+ 		}
+ 		else{
+ 		 env_set("cs1test_result", "fail");
+ 		}
+
+ 		env_set("do_cs1test", "");
+ 		env_set("cs1test_start_sect", "");
+ 		env_set("cs1test_total_sects", "");
+ 		env_save();
+
+ 		// If the platform need to enable WDT, Restart the WDT
+ 		writel(wdt1_register_back, wdt1_register_index);
+ 		writel(wdt2_register_back, wdt2_register_index);
+     }
+     else{
+ 		env_set("cs1test_result", "Invalid Testing Range");
+ 		env_set("do_cs1test", "");
+ 		env_set("cs1test_start_sect", "");
+ 		env_set("cs1test_total_sects", "");
+ 		env_save();
+     }
+	return 0;
+ }
+#endif /*CONFIG_CMD_CS1TEST*/
 /**************************************************/
 U_BOOT_CMD(
 	md,	3,	1,	do_mem_md,
@@ -1220,6 +1510,22 @@ U_BOOT_CMD(
 	"[start [end [pattern [iterations]]]]"
 );
 #endif	/* CONFIG_CMD_MEMTEST */
+
+#ifdef CONFIG_CMD_MEMTEST2
+U_BOOT_CMD(
+	obmtest, 5,  1,  do_openbmc_mem_mtest,
+	"New RAM read/write test",
+	" "
+);
+#endif /* CONFIG_CMD_MEMTEST2 */
+
+#ifdef CONFIG_CMD_CS1TEST
+U_BOOT_CMD(
+ 	obcs1test, 5,  1,  do_openbmc_cs1_test,
+ 	"CS1 read/write test",
+ 	" "
+);
+#endif /*CONFIG_CMD_CS1TEST*/
 
 #ifdef CONFIG_MX_CYCLIC
 U_BOOT_CMD(

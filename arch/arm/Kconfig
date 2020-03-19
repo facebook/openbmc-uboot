@@ -418,6 +418,7 @@ config TARGET_GPLUGD
 	bool "Support gplugd"
 	select CPU_ARM926EJS
 
+
 config ARCH_DAVINCI
 	bool "TI DaVinci"
 	select CPU_ARM926EJS

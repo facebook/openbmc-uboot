@@ -4,4 +4,9 @@ config SYS_TEXT_BASE
 	default 0x20015000 if ASPEED_RECOVERY_BUILD
 	default 0x28084000 if !ASPEED_RECOVERY_BUILD
 
+if TARGET_FBY3
 
+config SYS_CONFIG_NAME
+	default "fby3"
+
+endif

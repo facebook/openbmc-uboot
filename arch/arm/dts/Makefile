@@ -698,6 +698,8 @@ dtb-$(CONFIG_ARCH_MEDIATEK) += \
 	mt7623n-bananapi-bpi-r2.dtb \
 	mt7629-rfb.dtb
 
+dtb-$(CONFIG_TARGET_FBY3) += fby3.dtb
+
 targets += $(dtb-y)
 
 # Add any required device tree compiler flags here

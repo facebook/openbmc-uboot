@@ -699,6 +699,7 @@ dtb-$(CONFIG_ARCH_MEDIATEK) += \
 	mt7629-rfb.dtb
 
 dtb-$(CONFIG_TARGET_FBY3) += fby3.dtb
+dtb-$(CONFIG_TARGET_FBELBERT) += fbelbert.dtb
 
 targets += $(dtb-y)
 

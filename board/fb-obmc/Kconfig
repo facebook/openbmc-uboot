@@ -10,3 +10,9 @@ config SYS_CONFIG_NAME
 	default "fby3"
 
 endif
+
+if TARGET_FBELBERT
+config SYS_CONFIG_NAME
+	default "fbelbert"
+endif
+

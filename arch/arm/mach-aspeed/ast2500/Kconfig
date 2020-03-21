@@ -25,6 +25,10 @@ config TARGET_FBELBERT
 	bool "Facebook FBELBERT"
 	select ASPEED_GEN_5
 
+config TARGET_FBY2
+	bool "Facebook FBY2 platform"
+	select ASPEED_GEN_5
+
 endchoice
 
 source "board/aspeed/evb_ast2500/Kconfig"

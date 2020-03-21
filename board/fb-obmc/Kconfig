@@ -16,3 +16,8 @@ config SYS_CONFIG_NAME
 	default "fbelbert"
 endif
 
+if TARGET_FBY2
+config SYS_CONFIG_NAME
+	default "fby2"
+endif
+

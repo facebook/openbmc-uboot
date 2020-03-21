@@ -1,0 +1,16 @@
+/dts-v1/;
+
+#include "ast2500-fb-vboot.dtsi"
+
+&i2c9 {
+	status = "okay";
+	u-boot,dm-pre-reloc;
+	tpm@20 {
+		/* Emulators should use atmel,at97sc3204t. */
+		compatible = "infineon,slb9645tt";
+		reg = <0x20>;
+		clocks = <&scu ASPEED_CLK_APB>;
+		u-boot,dm-pre-reloc;
+	};
+};
+

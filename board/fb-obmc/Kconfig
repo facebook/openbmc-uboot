@@ -29,3 +29,8 @@ config SYS_CONFIG_NAME
 	default "fby2"
 endif
 
+if TARGET_FBAL
+config SYS_CONFIG_NAME
+	default "fbal"
+endif
+

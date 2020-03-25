@@ -702,6 +702,7 @@ dtb-$(CONFIG_TARGET_FBY3) += fby3.dtb
 dtb-$(CONFIG_TARGET_FBELBERT) += fbelbert.dtb
 dtb-$(CONFIG_TARGET_FBY2) += fby2.dtb
 dtb-$(CONFIG_TARGET_FBCMM) += fbcmm.dtb
+dtb-$(CONFIG_TARGET_FBWEDGE400) += fbwedge400.dtb
 
 targets += $(dtb-y)
 

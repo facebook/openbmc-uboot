@@ -5,17 +5,18 @@ config SYS_TEXT_BASE
 	default 0x28084000 if !ASPEED_RECOVERY_BUILD
 
 if TARGET_FBY3
-
 config SYS_CONFIG_NAME
 	default "fby3"
-
 endif 
 
 if TARGET_FBCMM
-
 config SYS_CONFIG_NAME
 	default "fbcmm"
+endif
 
+if TARGET_FBWEDGE400
+config SYS_CONFIG_NAME
+	default "fbwedge400"
 endif
 
 if TARGET_FBELBERT

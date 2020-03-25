@@ -1,0 +1,35 @@
+/dts-v1/;
+
+#include "ast2500-u-boot.dtsi"
+
+/*
+Currently the DRAM, UART, WDT and MAC are setup in platform.S
+during lowlevel_init so this dts is empty. need add configuration
+when we fully migrate from ast-sdk to upstream u-boot
+*/
+/ {
+	aliases {
+		spi0 = &fmc;
+	};
+};
+
+&fmc {
+	status = "okay";
+	flash@0 {
+		compatible = "spi-flash";
+		status = "okay";
+		spi-max-frequency = <50000000>;
+		spi-tx-bus-width = <2>;
+		spi-rx-bus-width = <2>;
+	};
+
+	flash@1 {
+                compatible = "spi-flash";
+                status = "okay";
+                spi-max-frequency = <50000000>;
+                spi-tx-bus-width = <2>;
+                spi-rx-bus-width = <2>;
+        };
+};
+
+

@@ -18,8 +18,12 @@ config TARGET_EVB_AST2500
 	  20 pin JTAG, pinouts for 14 I2Cs, 3 SPIs and eSPI, 8 PWMs.
 
 config TARGET_FBY3
-	select ASPEED_GEN_5
 	bool "Facebook FBY3"
+	select ASPEED_GEN_5
+
+config TARGET_FBCMM
+	bool "Facebook CMM"
+	select ASPEED_GEN_5
 
 config TARGET_FBELBERT
 	bool "Facebook FBELBERT"

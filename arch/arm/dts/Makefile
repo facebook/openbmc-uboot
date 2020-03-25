@@ -701,6 +701,7 @@ dtb-$(CONFIG_ARCH_MEDIATEK) += \
 dtb-$(CONFIG_TARGET_FBY3) += fby3.dtb
 dtb-$(CONFIG_TARGET_FBELBERT) += fbelbert.dtb
 dtb-$(CONFIG_TARGET_FBY2) += fby2.dtb
+dtb-$(CONFIG_TARGET_FBCMM) += fbcmm.dtb
 
 targets += $(dtb-y)
 

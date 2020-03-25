@@ -9,6 +9,13 @@ if TARGET_FBY3
 config SYS_CONFIG_NAME
 	default "fby3"
 
+endif 
+
+if TARGET_FBCMM
+
+config SYS_CONFIG_NAME
+	default "fbcmm"
+
 endif
 
 if TARGET_FBELBERT

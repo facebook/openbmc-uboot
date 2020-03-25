@@ -37,8 +37,11 @@ config TARGET_FBAL
 	bool "Facebook FBAL"
 	select ASPEED_GEN_5
 
-endchoice
+config TARGET_FBEP
+	bool "Facebook FBEP"
+	select ASPEED_GEN_5
 
+endchoice
 source "board/aspeed/evb_ast2500/Kconfig"
 source "board/fb-obmc/Kconfig"
 

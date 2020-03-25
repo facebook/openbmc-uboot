@@ -34,3 +34,8 @@ config SYS_CONFIG_NAME
 	default "fbal"
 endif
 
+if TARGET_FBEP
+config SYS_CONFIG_NAME
+	default "fbep"
+endif
+

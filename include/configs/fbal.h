@@ -59,6 +59,9 @@
  */
 #define CONFIG_FLASH_SPIx2_Dummy
 
+#define CONFIG_PFR_BUS "i2c-bus@140"
+#define CONFIG_PFR_ADDR 0x58
+
 #include "facebook_common.h"
 #include "ast2500_common.h"
 

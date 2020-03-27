@@ -6,20 +6,12 @@
 	u-boot,dm-pre-reloc;
 };
 
-&i2c  {
+&i2c {
 	u-boot,dm-pre-reloc;
 };
 
-&i2c6 {
+&i2c4 {
 	status = "okay";
 	clocks = <&scu BCLK_PCLK>;
 	u-boot,dm-pre-reloc;
-	tpm@20 {
-		/* Emulators should use atmel,at97sc3204t. */
-		compatible = "infineon,slb9645tt";
-		reg = <0x20>;
-		clocks = <&scu BCLK_PCLK>;
-		u-boot,dm-pre-reloc;
-	};
 };
-

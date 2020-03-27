@@ -13,6 +13,8 @@
 #include <version.h>
 
 extern int watchdog_init(u32 timeout_sec);
+extern int pfr_checkpoint(uint cmd);
+
 /*
  * Board-specific Platform code can reimplement show_boot_progress () if needed
  */
@@ -95,6 +97,7 @@ void main_loop(void)
 #endif
 	}
 
+	pfr_checkpoint(0x09);  // CHKPT_COMPLETE
 	cli_loop();
 	panic("No CLI available");
 }

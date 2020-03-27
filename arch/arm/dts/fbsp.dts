@@ -6,13 +6,12 @@
 	u-boot,dm-pre-reloc;
 };
 
-&i2c  {
+&i2c {
 	u-boot,dm-pre-reloc;
 };
 
-&i2c6 {
+&i2c4 {
 	status = "okay";
 	clocks = <&scu BCLK_PCLK>;
 	u-boot,dm-pre-reloc;
 };
-

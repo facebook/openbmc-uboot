@@ -54,12 +54,13 @@
  */
 #define CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
 
-#if defined(CONFIG_FBSP)
 /*
  * Enable 2x I/O read command
  */
 #define CONFIG_FLASH_SPIx2_Dummy
-#endif
+
+#define CONFIG_PFR_BUS "i2c-bus@140"
+#define CONFIG_PFR_ADDR 0x58
 
 #include "facebook_common.h"
 #include "ast2500_common.h"

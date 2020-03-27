@@ -488,6 +488,14 @@ void board_init_f(ulong bootflag)
   /*
    * This will never be relocated, so jump directly to the U-boot.
    */
+
+  if (!pfr_checkpoint(0x01)) {  // CHKPT_START
+    printf("PFR: UFM provisioned\n");
+    typedef void __noreturn (*image_entry_noargs_t)(void);
+    image_entry_noargs_t image_entry = (image_entry_noargs_t)CONFIG_SYS_RECOVERY_BASE;
+    image_entry();
+  }
+
   vboot_load_fit((volatile void*)CONFIG_SYS_SPL_FIT_BASE);
   hang();
 }

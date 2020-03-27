@@ -44,4 +44,16 @@ when we fully migrate from ast-sdk to upstream u-boot
 	};
 };
 
+&wdt1 {
+	u-boot,dm-pre-reloc;
+};
 
+&i2c {
+	u-boot,dm-pre-reloc;
+};
+
+&i2c4 {
+	status = "okay";
+	clocks = <&scu BCLK_PCLK>;
+	u-boot,dm-pre-reloc;
+};

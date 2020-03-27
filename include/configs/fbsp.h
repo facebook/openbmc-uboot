@@ -18,13 +18,13 @@
  * MA 02111-1307 USA
  */
 
-#ifndef __FBEP_CONFIG_H
-#define __FBEP_CONFIG_H
+#ifndef __FBSP_CONFIG_H
+#define __FBSP_CONFIG_H
 
-#define CONFIG_FBEP 1
+#define CONFIG_FBSP 1
 
 #define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw printk.time=1 dual_flash=2"
-#define CONFIG_BOOTFILE          "flash-emeraldpools"
+#define CONFIG_BOOTFILE          "flash-sonorapass"
 /*
  * Serial configuration
  */
@@ -65,4 +65,4 @@
 #include "facebook_common.h"
 #include "ast2500_common.h"
 
-#endif  /* __FBEP_CONFIG_H */
+#endif  /* __FBSP_CONFIG_H */

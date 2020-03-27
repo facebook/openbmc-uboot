@@ -1,4 +1,5 @@
 /dts-v1/;
 
-#include "ast2500-fb-vboot.dtsi"
+#include "ast2500-fb-pfr.dtsi"
+
 

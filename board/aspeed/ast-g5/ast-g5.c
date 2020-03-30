@@ -624,7 +624,7 @@ static void enable_nic_mux(void)
 
   reg = __raw_readl(AST_GPIO_BASE + 0x80);
   reg |= 0x10000000;
-  __raw_writel(reg, AST_GPIO_BASE + 0x80); 
+  __raw_writel(reg, AST_GPIO_BASE + 0x80);
 }
 
 static int get_fbal_pwrok(void)
@@ -897,13 +897,6 @@ int dram_init(void)
 #endif
 	return 0;
 }
-
-#ifdef CONFIG_FTGMAC100
-int board_eth_init(bd_t *bd)
-{
-  return ftgmac100_initialize(bd);
-}
-#endif
 
 #ifdef CONFIG_ASPEEDNIC
 int board_eth_init(bd_t *bd)

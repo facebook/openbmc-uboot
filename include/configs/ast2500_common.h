@@ -170,9 +170,6 @@
 /*
  * NIC configuration
  */
-#ifndef CONFIG_ASPEEDNIC
-#define CONFIG_ASPEEDNIC
-#endif
 #define CONFIG_NET_MULTI
 
 /*

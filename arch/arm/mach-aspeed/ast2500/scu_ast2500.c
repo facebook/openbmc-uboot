@@ -55,13 +55,13 @@ void ast_scu_lock(struct ast2500_scu *scu)
 int ast_scu_enable_i2c_dev(struct udevice *dev)
 {
 	/* PINCTRL shall handle this */
-	;
+	return 0;
 }
 
 int ast_scu_enable_wdtrst1(void)
 {
 	/* PINCTRL shall handle this */
-	;
+	return 0;
 }
 
 #else /* !CONFIG_IS_ENABLED(PINCTRL) */

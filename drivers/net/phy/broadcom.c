@@ -71,7 +71,7 @@ static int bcm5461_config(struct phy_device *phydev)
 		//disable delay
 		phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM54XX_SHD, 0xc00);
 		mii_reg = 0x8c00;
-		phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM54XX_SHD, mii_reg);		
+		phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM54XX_SHD, mii_reg);
 	}
 
 	return 0;
@@ -110,9 +110,15 @@ static int bcm54xx_parse_status(struct phy_device *phydev)
 		phydev->speed = SPEED_1000;
 		break;
 	default:
+#ifdef CONFIG_PHY_BROADCOM_MODE1000X
+		printf("Hacking, assume Mode-1000X\n");
+		phydev->duplex = DUPLEX_FULL;
+		phydev->speed = SPEED_1000;
+#else
 		printf("Auto-neg error, defaulting to 10BT/HD\n");
 		phydev->duplex = DUPLEX_HALF;
 		phydev->speed = SPEED_10;
+#endif
 		break;
 	}
 

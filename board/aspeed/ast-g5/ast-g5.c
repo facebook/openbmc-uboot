@@ -820,12 +820,6 @@ static void disable_gpioe_pass_through(void) {
 #endif
 
 #if defined(CONFIG_FBEP)
-static void spi_init(void)
-{
-  // Disable SPI interface of SPI1
-  __raw_writel((0x3 << 12), 0x1e6e207c);
-}
-
 static void led_init(void)
 {
   u32 reg;
@@ -882,7 +876,6 @@ int board_init(void)
 #endif
 
 #if defined(CONFIG_FBEP)
-  spi_init();
   led_init();
   fix_mmc_hold_time_fail();
 #endif

@@ -38,12 +38,14 @@
 /*
  * NIC configuration
  */
+#define CONFIG_PHY_BROADCOM_MODE1000X
+/*
 #define CONFIG_MAC2_ENABLE
 #define CONFIG_MAC1_PHY_SETTING     0
 #define CONFIG_MAC2_PHY_SETTING     0
 #define CONFIG_ASPEED_MAC_NUMBER  2
 #define CONFIG_ASPEED_MAC_CONFIG  2
-
+*/
 
 /*
  * Enable DRAM ECC, going to lose 1/8 of memory

@@ -1,4 +1,32 @@
 /dts-v1/;
 
 #include "ast2500-fboss.dtsi"
+/ {
+	aliases {
+		eth0 = &mac0;
+		eth1 = &mac1;
+	};
+};
+
+/*
+&mac0 {
+	status = "okay";
+	phy-mode = "rgmii";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_mac1link_default &pinctrl_mdio1_default>;
+};
+*/
+
+&mac1 {
+	status = "okay";
+	phy-mode = "rgmii";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_mac2link_default &pinctrl_mdio2_default>;
+	phy-handle = <&ethphy1>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+	ethphy1: ethernet-phy@1 {
+		reg = <15>;
+	};
+};
 

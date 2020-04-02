@@ -171,7 +171,8 @@ wait_lock:
 	ldr	r1, =AST_SCU_CA7_PARITY_CLR
 	str	r0, [r1]
 
-	mov	r0, #0x11
+	/* disable SRAM parity check to prevent AST2620 A1 uart no output */
+	mov	r0, #0x01
 	ldr	r1, =AST_SCU_CA7_PARITY_CHK
 	str	r0, [r1]
 

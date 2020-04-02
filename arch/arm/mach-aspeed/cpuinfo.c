@@ -53,6 +53,8 @@ static struct soc_id soc_map_table[] = {
 	SOC_ID("AST2530-A1", 0x04010403),
 	SOC_ID("AST2530-A2", 0x04030403),	
 	SOC_ID("AST2600-A0", 0x05000303),
+	SOC_ID("AST2600-A1", 0x05010303),
+	SOC_ID("AST2620-A1", 0x05010203),
 };
 
 void aspeed_get_revision_id(void)

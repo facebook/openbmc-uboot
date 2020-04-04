@@ -18,6 +18,7 @@
 #include <wait_bit.h>
 #include <linux/io.h>
 #include <linux/iopoll.h>
+#include <net/ncsi.h>
 
 #include "ftgmac100.h"
 #include "aspeed_mdio.h"
@@ -84,6 +85,7 @@ struct ftgmac100_data {
 	struct mii_dev *bus;
 	u32 phy_mode;
 	u32 max_speed;
+	bool ncsi_mode;
 
 	struct clk_bulk clks;
 
@@ -190,7 +192,7 @@ static int ftgmac100_phy_adjust_link(struct ftgmac100_data *priv)
 	struct phy_device *phydev = priv->phydev;
 	u32 maccr;
 
-	if (!phydev->link) {
+	if (!phydev->link && !priv->ncsi_mode) {
 		dev_err(phydev->dev, "No link\n");
 		return -EREMOTEIO;
 	}
@@ -226,7 +228,8 @@ static int ftgmac100_phy_init(struct udevice *dev)
 	if (!phydev)
 		return -ENODEV;
 
-	phydev->supported &= PHY_GBIT_FEATURES;
+	if (!priv->ncsi_mode)
+		phydev->supported &= PHY_GBIT_FEATURES;
 	if (priv->max_speed) {
 		ret = phy_set_supported(phydev, priv->max_speed);
 		if (ret)
@@ -284,7 +287,8 @@ static void ftgmac100_stop(struct udevice *dev)
 
 	writel(0, &ftgmac100->maccr);
 
-	phy_shutdown(priv->phydev);
+	if (!priv->ncsi_mode)
+		phy_shutdown(priv->phydev);
 }
 
 static int ftgmac100_start(struct udevice *dev)
@@ -294,7 +298,9 @@ static int ftgmac100_start(struct udevice *dev)
 	struct ftgmac100 *ftgmac100 = priv->iobase;
 	struct phy_device *phydev = priv->phydev;
 	unsigned int maccr;
+	unsigned int dblac;
 	ulong start, end;
+	size_t sz_txdes, sz_rxdes;
 	int ret;
 	int i;
 
@@ -343,6 +349,19 @@ static int ftgmac100_start(struct udevice *dev)
 
 	/* config receive buffer size register */
 	writel(FTGMAC100_RBSR_SIZE(FTGMAC100_RBSR_DEFAULT), &ftgmac100->rbsr);
+
+	/* config TX/RX descriptor size */
+	sz_txdes = sizeof(struct ftgmac100_txdes);
+	sz_rxdes = sizeof(struct ftgmac100_rxdes);
+	if ((sz_txdes & 0xF) || (sz_rxdes & 0xF)) {
+		dev_err(phydev->dev, "Descriptor size must be 16 bytes aligned\n");
+		return -1;
+	}
+	dblac = ftgmac100->dblac;
+	dblac &= ~(0xFF << 12);
+	dblac |= ((sz_txdes >> 3) << 16);
+	dblac |= ((sz_txdes >> 3) << 12);
+	writel(dblac, &ftgmac100->dblac);
 
 	/* enable transmitter, receiver */
 	maccr = FTGMAC100_MACCR_TXMAC_EN |
@@ -518,15 +537,25 @@ static int ftgmac100_ofdata_to_platdata(struct udevice *dev)
 	struct eth_pdata *pdata = dev_get_platdata(dev);
 	struct ftgmac100_data *priv = dev_get_priv(dev);
 	const char *phy_mode;
+	int offset = 0;
 
 	pdata->iobase = devfdt_get_addr(dev);
 	pdata->phy_interface = -1;
 	phy_mode = dev_read_string(dev, "phy-mode");
+
 	if (phy_mode)
 		pdata->phy_interface = phy_get_interface_by_name(phy_mode);
 	if (pdata->phy_interface == -1) {
 		dev_err(dev, "Invalid PHY interface '%s'\n", phy_mode);
 		return -EINVAL;
+	}
+
+	offset = fdtdec_lookup_phandle(gd->fdt_blob, dev_of_offset(dev),
+				       "phy-handle");
+	if (offset > 0) {
+		priv->phy_addr = fdtdec_get_int(gd->fdt_blob, offset, "reg", -1);
+	} else {
+		priv->phy_addr = 0;
 	}
 
 	pdata->max_speed = dev_read_u32_default(dev, "max-speed", 0);
@@ -552,21 +581,30 @@ static int ftgmac100_probe(struct udevice *dev)
 {
 	struct eth_pdata *pdata = dev_get_platdata(dev);
 	struct ftgmac100_data *priv = dev_get_priv(dev);
+	const char *phy_mode;
 	int ret;
+
+	phy_mode = dev_read_string(dev, "phy-mode");
+	priv->ncsi_mode = dev_read_bool(dev, "use-ncsi") ||
+		(phy_mode && strcmp(phy_mode, "NC-SI") == 0);
 
 	priv->iobase = (struct ftgmac100 *)pdata->iobase;
 	priv->phy_mode = pdata->phy_interface;
 	priv->max_speed = pdata->max_speed;
-	priv->phy_addr = 0;
 
 	ret = clk_enable_bulk(&priv->clks);
 	if (ret)
 		goto out;
 
-	ret = ftgmac100_mdio_init(dev);
-	if (ret) {
-		dev_err(dev, "Failed to initialize mdiobus: %d\n", ret);
-		goto out;
+	if (priv->ncsi_mode) {
+		printf("%s - NCSI detected\n", __func__);
+	} else {
+		ret = ftgmac100_mdio_init(dev);
+		if (ret) {
+			dev_err(dev, "Failed to initialize mdiobus: %d\n", ret);
+			goto out;
+		}
+
 	}
 
 	ret = ftgmac100_phy_init(dev);
@@ -586,9 +624,13 @@ static int ftgmac100_remove(struct udevice *dev)
 {
 	struct ftgmac100_data *priv = dev_get_priv(dev);
 
-	free(priv->phydev);
-	mdio_unregister(priv->bus);
-	mdio_free(priv->bus);
+	if (!priv->ncsi_mode) {
+		free(priv->phydev);
+		mdio_unregister(priv->bus);
+		mdio_free(priv->bus);
+	} else {
+		free(priv->phydev);
+	}
 	clk_release_bulk(&priv->clks);
 
 	return 0;

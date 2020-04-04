@@ -143,17 +143,21 @@ void NCSI_PrintCommandType2File (MAC_ENGINE *eng, unsigned char command, unsigne
 }
 
 //------------------------------------------------------------
-void NCSI_Struct_Initialize_SLT (MAC_ENGINE *eng) {
-	int        i;
-	uint32_t      NCSI_RxDatBase;
+void NCSI_Struct_Initialize_SLT (MAC_ENGINE *eng)
+{
+	int i;
+	uint32_t NCSI_RxDatBase;
 
 	eng->run.NCSI_RxTimeOutScale = 1;
 
 	for (i = 0; i < 6; i++) {
-		eng->ncsi_req.DA[ i ] = 0xFF;
-		eng->ncsi_req.SA[ i ] = eng->inf.SA[ i ];
+		eng->ncsi_req.DA[i] = 0xFF;
+		eng->ncsi_req.SA[i] = eng->inf.SA[i];
 	}
-	eng->ncsi_req.EtherType       = SWAP_2B_BEDN( 0x88F8 ); // EtherType = 0x88F8 (DMTF DSP0222 NC-SI spec), ethernet frame header format, table 8
+
+	/* EtherType = 0x88F8 (DMTF DSP0222 NC-SI spec)
+	ethernet frame header format, table 8 */
+	eng->ncsi_req.EtherType = SWAP_2B_BEDN(0x88F8);
 
 	eng->ncsi_req.MC_ID           = 0;
 	eng->ncsi_req.Header_Revision = 0x01;
@@ -213,6 +217,67 @@ void Calculate_Checksum_NCSI (MAC_ENGINE *eng, unsigned char *buffer_base, int L
 	eng->dat.Payload_Checksum_NCSI = SWAP_4B_BEDN(~(CheckSum) + 1); //2's complement
 }
 
+/**
+ * @brief	check error mask in RX descriptor
+ * @param	rx_desc0	RX descript[0]
+*/
+static int check_rx_desc_err(MAC_ENGINE *p_eng, uint32_t rx_desc0)
+{
+	uint8_t prefix[8] = "[RxDes]";
+
+	if (rx_desc0 & RXDES_EM_ALL) {
+#ifdef CheckRxErr
+		if (rx_desc0 & RXDES_EM_RXERR) {
+			PRINTF(STD_OUT, "%s Error RxErr        %08x\n", prefix,
+			       rx_desc0);
+			p_eng->dat.NCSI_RxEr = 1;
+		}
+#endif
+
+#ifdef CheckCRC
+		if (rx_desc0 & RXDES_EM_CRC) {
+			PRINTF(STD_OUT, "%s Error CRC          %08x\n", prefix,
+			       rx_desc0);
+			FindErr_Des(p_eng, Des_Flag_CRC);
+		}
+#endif
+
+#ifdef CheckFTL
+		if (rx_desc0 & RXDES_EM_FTL) {
+			PRINTF(STD_OUT, "%s Error FTL          %08x\n", prefix,
+			       rx_desc0);
+			FindErr_Des(p_eng, Des_Flag_FTL);
+		}
+#endif
+
+#ifdef CheckRunt
+		if (rx_desc0 & RXDES_EM_RUNT) {
+			PRINTF(STD_OUT, "%s Error Runt         %08x\n", prefix,
+			       rx_desc0);
+			FindErr_Des(p_eng, Des_Flag_Runt);
+		}
+#endif
+
+#ifdef CheckOddNibble
+		if (rx_desc0 & RXDES_EM_ODD_NB) {
+			PRINTF(STD_OUT, "%s Odd Nibble         %08x\n", prefix,
+			       rx_desc0);
+			FindErr_Des(p_eng, Des_Flag_OddNibble);
+		}
+#endif
+
+#ifdef CheckRxFIFOFull
+		if (rx_desc0 & RXDES_EM_FIFO_FULL) {
+			PRINTF(STD_OUT, "%s Error Rx FIFO Full %08x\n", prefix,
+			       rx_desc0);
+			FindErr_Des(p_eng, Des_Flag_RxFIFOFull);
+		}
+#endif
+	}
+
+	return 0;
+}
+
 //------------------------------------------------------------
 // return 0: it is PASS
 // return 1: it is FAIL
@@ -242,50 +307,7 @@ char NCSI_Rx_SLT (MAC_ENGINE *eng) {
 			}
 		} while( HWOwnRx( NCSI_RxDesDat ) );
 
-		if ( NCSI_RxDesDat & Check_ErrMask_ALL ) {
-#ifdef CheckRxErr
-			if ( NCSI_RxDesDat & Check_ErrMask_RxErr ) {
-				PRINTF( FP_LOG, "[RxDes] Error RxErr        %08x\n", NCSI_RxDesDat );
-				eng->dat.NCSI_RxEr = 1;
-//				FindErr_Des( eng, Des_Flag_RxErr );
-			}
-#endif // End CheckRxErr
-
-#ifdef CheckCRC
-			if ( NCSI_RxDesDat & Check_ErrMask_CRC ) {
-				PRINTF( FP_LOG, "[RxDes] Error CRC          %08x\n", NCSI_RxDesDat );
-				FindErr_Des( eng, Des_Flag_CRC );
-			}
-#endif // End CheckCRC
-
-#ifdef CheckFTL
-			if ( NCSI_RxDesDat & Check_ErrMask_FTL ) {
-				PRINTF( FP_LOG, "[RxDes] Error FTL          %08x\n", NCSI_RxDesDat );
-				FindErr_Des( eng, Des_Flag_FTL );
-			}
-#endif // End CheckFTL
-
-#ifdef CheckRunt
-			if ( NCSI_RxDesDat & Check_ErrMask_Runt ) {
-				PRINTF( FP_LOG, "[RxDes] Error Runt         %08x\n", NCSI_RxDesDat );
-				FindErr_Des( eng, Des_Flag_Runt );
-			}
-#endif // End CheckRunt
-
-#ifdef CheckOddNibble
-			if ( NCSI_RxDesDat & Check_ErrMask_OddNibble ) {
-				PRINTF( FP_LOG, "[RxDes] Odd Nibble         %08x\n", NCSI_RxDesDat );
-				FindErr_Des( eng, Des_Flag_OddNibble );
-			}
-#endif // End CheckOddNibble
-
-#ifdef CheckRxFIFOFull
-			if ( NCSI_RxDesDat & Check_ErrMask_RxFIFOFull ) {
-				PRINTF( FP_LOG, "[RxDes] Error Rx FIFO Full %08x\n", NCSI_RxDesDat );
-				FindErr_Des( eng, Des_Flag_RxFIFOFull );
-			}
-#endif // End CheckRxFIFOFull
-		}
+		check_rx_desc_err(eng, NCSI_RxDesDat);
 
 		// Get point of RX DMA buffer
 		NCSI_RxDatBase = AT_BUF_MEMRW( Read_Mem_Des_NCSI_DD( eng->run.ncsi_rdes_base + 0x0C ) );//base for read/write
@@ -438,7 +460,7 @@ char NCSI_Tx (MAC_ENGINE *eng, unsigned char command, unsigned char allid, uint1
 		PRINTF( FP_LOG ,"[Frm-NCSI][Tx IID:%2d]\n", eng->ncsi_req.IID );
 	}
 
-#if 0
+#if 1
 	// Copy data to DMA buffer
 	for ( i = 0; i < dwsize; i++ )
 		Write_Mem_Dat_NCSI_DD( DMA_BASE + ( i << 2 ), SWAP_4B_LEDN_NCSI( eng->dat.NCSI_TxDWBUF[i] ) );
@@ -778,22 +800,23 @@ void Get_Controller_Packet_Statistics_SLT (MAC_ENGINE *eng) {//Command:0x18
 }
 
 //------------------------------------------------------------
-char phy_ncsi (MAC_ENGINE *eng) {
-	uint32_t      pkg_idx;
-	uint32_t      chl_idx;
-	uint32_t      select_flag[ MAX_PACKAGE_NUM ];
-	uint32_t      Re_Send;
-	uint32_t      Link_Status;
+char phy_ncsi (MAC_ENGINE *eng) 
+{
+	uint32_t pkg_idx;
+	uint32_t chl_idx;
+	uint32_t select_flag[MAX_PACKAGE_NUM];
+	uint32_t Re_Send;
+	uint32_t Link_Status;
 
-	eng->dat.NCSI_RxEr  = 0;
+	eng->dat.NCSI_RxEr = 0;
 	eng->dat.number_chl = 0;
 	eng->dat.number_pak = 0;
 	eng->ncsi_cap.Package_ID = 0;
 	eng->ncsi_cap.Channel_ID = 0x1F;
-	eng->ncsi_cap.All_ID     = 0x1F;
-	PRINTF( FP_LOG, "\n\n======> Start:\n" );
+	eng->ncsi_cap.All_ID = 0x1F;
+	PRINTF(FP_LOG, "\n\n======> Start:\n");
 
-	NCSI_Struct_Initialize_SLT( eng );
+	NCSI_Struct_Initialize_SLT(eng);
 
 #ifdef NCSI_Skip_Phase1_DeSelectPackage
 #else

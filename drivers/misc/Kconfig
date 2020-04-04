@@ -25,6 +25,12 @@ config ASPEED_H2X
         help
           Select this to enable AHB to PCIe bu Bridge driver for Aspeed SoC.
 
+config ASPEED_FSI
+	bool "Enable ASPEED FSI driver"
+	depends on ARCH_ASPEED
+	help
+	  Support the FSI master present in the ASPEED system on chips.
+
 config ALTERA_SYSID
 	bool "Altera Sysid support"
 	depends on MISC

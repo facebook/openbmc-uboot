@@ -6,10 +6,6 @@ config SYS_ARCH
 config SYS_SOC
 	default "aspeed"
 
-config ASPEED_GENERIC_BOARD
-	bool "Use aspeed generic reference board"
-	depends on ARCH_ASPEED
-
 choice
 	prompt "Aspeed SoC select"
 	depends on ARCH_ASPEED
@@ -42,6 +38,32 @@ config ASPEED_GEN_5
 
 config ARCH_AST2500
 	bool "TEMP used to migrate from ASPEED AST2500 SDK to upstream"
+
+config ASPEED_PALLADIUM
+	bool "Aspeed palladium for simulation"
+	default n
+	help
+	  Say Y here to enable palladium build for simulation.
+
+	  This is mainly for internal verification and investigation
+	  on HW design. If not sure, say N.
+
+config SECURE_BOOT
+	bool "Support Aspeed secure boot feature"
+	depends on SPL && ASPEED_AST2600
+	select POSITION_INDEPENDENT
+	select ENABLE_ARM_SOC_BOOT0_HOOK
+	select FIT_SIGNATURE
+	help
+	  This option enables the support for secure boot.
+
+config SECURE_BOOT_TEXT_BASE
+	hex "Secure boot text base"
+	depends on SECURE_BOOT
+	default 0x90000000
+	help
+	  The address in memory where the secure boot verification
+	  on U-Boot image will be performed.
 
 source "arch/arm/mach-aspeed/ast2500/Kconfig"
 source "arch/arm/mach-aspeed/ast2600/Kconfig"

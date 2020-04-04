@@ -9,7 +9,7 @@ config ARM64
 	select PHYS_64BIT
 	select SYS_CACHE_SHIFT_6
 
-if ARM64
+if ARM64 || CPU_V7A
 config POSITION_INDEPENDENT
 	bool "Generate position-independent pre-relocation code"
 	help
@@ -19,7 +19,9 @@ config POSITION_INDEPENDENT
 	  from almost any address. This logic relies on the relocation
 	  information that is embedded into the binary to support U-Boot
 	  relocating itself to the top-of-RAM later during execution.
+endif
 
+if ARM64
 config SYS_INIT_SP_BSS_OFFSET
 	int
 	help
@@ -64,6 +66,18 @@ config HAS_VBAR
 
 config HAS_THUMB2
 	bool
+
+config SYS_ICACHE_OFF
+	bool "Do not enable icache"
+	default n
+	help
+	  Do not enable instruction cache in U-Boot
+
+config SYS_DCACHE_OFF
+	bool "Do not enable dcache"
+	default n
+	help
+	  Do not enable data cache in U-Boot
 
 # Used for compatibility with asm files copied from the kernel
 config ARM_ASM_UNIFIED

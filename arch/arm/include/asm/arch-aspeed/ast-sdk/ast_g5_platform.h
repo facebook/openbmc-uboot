@@ -186,5 +186,6 @@
 #define AST_FORMATTER_MEM_SIZE		0xC00000 /* 12MB */
 #define AST_FORMATTER_MEM_BASE 		(AST_H264_MEM_BASE + AST_H264_MEM_SIZE)
 
-
+/* hacking add the new sdk platform.h */
+#include <asm/arch/platform.h>
 #endif

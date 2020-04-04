@@ -51,8 +51,10 @@
 #define SDRAM_CONF_CAP_MASK		3
 #define SDRAM_CONF_DDR4			(1 << 4)
 #define SDRAM_CONF_SCRAMBLE		(1 << 8)
+#define SDRAM_CONF_ECC_EN		(1 << 7)
 #define SDRAM_CONF_SCRAMBLE_PAT2	(1 << 9)
 #define SDRAM_CONF_CACHE_EN		(1 << 10)
+#define SDRAM_CONF_CACHE_ADDR_CTRL	(1 << 11)
 #define SDRAM_CONF_CACHE_INIT_EN	(1 << 12)
 #define SDRAM_CONF_DUALX8		(1 << 13)
 #define SDRAM_CONF_CACHE_INIT_DONE	(1 << 19)
@@ -98,30 +100,30 @@
 #ifndef __ASSEMBLY__
 
 struct ast2500_sdrammc_regs {
-	u32 protection_key;
-	u32 config;
-	u32 gm_protection_key;
-	u32 refresh_timing;
-	u32 ac_timing[3];
-	u32 misc_control;
-	u32 mr46_mode_setting;
-	u32 mr5_mode_setting;
-	u32 mode_setting_control;
-	u32 mr02_mode_setting;
-	u32 mr13_mode_setting;
-	u32 power_control;
-	u32 req_limit_mask;
-	u32 pri_group_setting;
-	u32 max_grant_len[4];
-	u32 intr_ctrl;
-	u32 ecc_range_ctrl;
-	u32 first_ecc_err_addr;
-	u32 last_ecc_err_addr;
-	u32 phy_ctrl[4];
-	u32 ecc_test_ctrl;
-	u32 test_addr;
-	u32 test_fail_dq_bit;
-	u32 test_init_val;
+	u32 protection_key;		/* offset 0x00 */
+	u32 config;			/* offset 0x04 */
+	u32 gm_protection_key;		/* offset 0x08 */
+	u32 refresh_timing;		/* offset 0x0C */
+	u32 ac_timing[3];		/* offset 0x10 ~ 0x18 */
+	u32 misc_control;		/* offset 0x0C */
+	u32 mr46_mode_setting;		/* offset 0x20 */
+	u32 mr5_mode_setting;		/* offset 0x24 */
+	u32 mode_setting_control;	/* offset 0x28 */
+	u32 mr02_mode_setting;		/* offset 0x2C */
+	u32 mr13_mode_setting;		/* offset 0x30 */
+	u32 power_control;		/* offset 0x34 */
+	u32 req_limit_mask;		/* offset 0x38 */
+	u32 pri_group_setting;		/* offset 0x3C */
+	u32 max_grant_len[4];		/* offset 0x40 ~ 0x4C */
+	u32 intr_ctrl;			/* offset 0x50 */
+	u32 ecc_range_ctrl;		/* offset 0x54 */
+	u32 first_ecc_err_addr;		/* offset 0x58 */
+	u32 last_ecc_err_addr;		/* offset 0x5C */
+	u32 phy_ctrl[4];		/* offset 0x60 ~ 0x6C */
+	u32 ecc_test_ctrl;		/* offset 0x70 */
+	u32 test_addr;			/* offset 0x74 */
+	u32 test_fail_dq_bit;		/* offset 0x78 */
+	u32 test_init_val;		/* offset 0x7C */
 	u32 phy_debug_ctrl;
 	u32 phy_debug_data;
 	u32 reserved1[30];

@@ -64,6 +64,7 @@ obj-$(CONFIG_CMD_FLASH) += flash.o
 obj-$(CONFIG_CMD_FPGA) += fpga.o
 obj-$(CONFIG_CMD_FPGAD) += fpgad.o
 obj-$(CONFIG_CMD_FS_GENERIC) += fs.o
+obj-$(CONFIG_CMD_FSI) += fsi.o
 obj-$(CONFIG_CMD_FUSE) += fuse.o
 obj-$(CONFIG_CMD_NETTEST) += nettest.o
 obj-$(CONFIG_CMD_SLT) += slt.o
@@ -182,6 +183,7 @@ obj-$(CONFIG_ARCH_MVEBU) += mvebu/
 
 obj-$(CONFIG_CMD_NETTEST) += nettest/
 obj-$(CONFIG_CMD_DRAMTEST) += dramtest.o
+obj-$(CONFIG_CMD_PECITEST) += peci.o
 
 endif # !CONFIG_SPL_BUILD
 

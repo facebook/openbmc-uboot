@@ -10,7 +10,6 @@ choice
 
 config TARGET_EVB_AST2500
 	bool "EVB-AST2500"
-	select ASPEED_GENERIC_BOARD
 	help
 	  Evb-AST2500 is Aspeed evaluation board for AST2500 chip.
 	  It has 512M of RAM, 32M of SPI flash, two Ethernet ports,

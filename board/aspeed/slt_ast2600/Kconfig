@@ -1,0 +1,16 @@
+if TARGET_SLT_AST2600
+
+config SYS_TEXT_BASE
+	default 0x00000000
+
+config SYS_BOARD
+	default "slt_ast2600"
+
+config SYS_VENDOR
+	default "aspeed"
+
+config SYS_CONFIG_NAME
+	string "board configuration name"
+	default "slt_ast2600"
+
+endif

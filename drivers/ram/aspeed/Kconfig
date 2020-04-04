@@ -1,71 +1,64 @@
+if RAM || SPL_RAM
+
 choice
 	prompt "DDR4 target data rate"
 	default ASPEED_DDR4_1600
 
 config ASPEED_DDR4_400
-        bool "DDR4 targets at 400Mbps"
-        depends on DM && OF_CONTROL && ARCH_ASPEED
-        select RAM
-        select SPL_RAM if SPL
-        help
-                select DDR4 target data rate at 400M
+	bool "DDR4 targets at 400Mbps"
+	depends on DM && OF_CONTROL && ARCH_ASPEED
+	help
+	  select DDR4 target data rate at 400M
 
 config ASPEED_DDR4_800
-        bool "DDR4 targets at 800Mbps"
-        depends on DM && OF_CONTROL && ARCH_ASPEED
-        select RAM
-        select SPL_RAM if SPL
-        help
-                select DDR4 target data rate at 800M
+	bool "DDR4 targets at 800Mbps"
+	depends on DM && OF_CONTROL && ARCH_ASPEED
+	help
+	  select DDR4 target data rate at 800M
+
+config ASPEED_DDR4_1333
+	bool "DDR4 targets at 1333Mbps"
+	depends on DM && OF_CONTROL && ARCH_ASPEED
+	help
+	  select DDR4 target data rate at 1333M
 
 config ASPEED_DDR4_1600
-        bool "DDR4 targets at 1600Mbps"
-        depends on DM && OF_CONTROL && ARCH_ASPEED
-        select RAM
-        select SPL_RAM if SPL
-        help
-                select DDR4 target data rate at 1600M
+	bool "DDR4 targets at 1600Mbps"
+	depends on DM && OF_CONTROL && ARCH_ASPEED
+	help
+	  select DDR4 target data rate at 1600M
 endchoice
 
 config ASPEED_DDR4_DUALX8
-        bool "dual X8 DDR4 die"
-        depends on DM && OF_CONTROL && ARCH_ASPEED
-        select RAM
-        select SPL_RAM if SPL
-        default n
-        help
-                select dual X8 DDR4 die
-
-config ASPEED_PALLADIUM
-	bool "aspeed palladium RAM model"
-	select RAM
-        select SPL_RAM if SPL
+	bool "dual X8 DDR4 die"
+	depends on DM && OF_CONTROL && ARCH_ASPEED
 	default n
 	help
-	  Say Y here to enable the Aspeed Palladium driver
+	  select dual X8 DDR4 die
 
-	  This provides configurations specific for Aspeed Palladium SDRAM
-	  model
+config ASPEED_BYPASS_SELFTEST
+	bool "bypass self test during DRAM initialization"
+	default n
+	help
+	  Say Y here to bypass DRAM self test to speed up the boot time
 
 config ASPEED_ECC
-        bool "aspeed SDRAM error correcting code"
-        depends on DM && OF_CONTROL && ARCH_ASPEED
-        select RAM
-        select SPL_RAM if SPL
-        default n
-        help
-                enable SDRAM ECC function
-
-config ASPEED_VIDEO_SIZE
-	int "Video memory reserved size"
-	depends on ASPEED_ECC
-	default 40
+	bool "aspeed SDRAM error correcting code"
+	depends on DM && OF_CONTROL && ARCH_ASPEED
+	default n
 	help
-		reserved size for Video engine. The unit is in Megabytes.
+	  enable SDRAM ECC function
 
-config ASPEED_CRT_SIZE
-	int "CRT memory reserved size"
+if ASPEED_ECC
+config ASPEED_ECC_SIZE
+	int "ECC size: 0=driver auto-caluated"
 	depends on ASPEED_ECC
-	default 8
+	default 0
 	help
-		reserved size for CRT engine. The unit is in Megabytes.
+	  SDRAM size with the error correcting code enabled. The unit is 
+	  in Megabytes.  Noted that only the 8/9 of the configured size 
+	  can be used by the system.  The remaining 1/9 will be used by 
+	  the ECC engine.  If the size is set to 0, the sdram driver will 
+	  calculate the SDRAM size and set the whole range be ECC enabled.
+endif
+endif

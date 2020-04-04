@@ -262,7 +262,17 @@ static void print_arg_mac_idx(MAC_ENGINE *p_eng)
 	}
 	printf("\n");
 }
-
+static void print_legend(void)
+{
+	printf("Legend:\n");
+	printf("    o : OK\n");	
+	printf("    x : CRC error\n");
+	printf("    . : packet not found\n");
+	printf("    System default setting\n");
+	printf("    O : OK\n");	
+	printf("    X : CRC error\n");
+	printf("    * : packet not found\n");
+}
 static void print_usage(MAC_ENGINE *p_eng)
 {
 	if (MODE_DEDICATED == p_eng->arg.run_mode) {
@@ -280,7 +290,6 @@ static void print_usage(MAC_ENGINE *p_eng)
 		printf("ncsitest <idx> <packet num> <channel num> <test mode>"
 		       "<margin> <ctrl> <ARP num>\n");
 		print_arg_mac_idx(p_eng);
-		print_arg_mdio_idx(p_eng);
 		print_arg_package_num(p_eng);
 		print_arg_channel_num(p_eng);
 		print_arg_test_mode(p_eng);
@@ -1230,6 +1239,7 @@ uint32_t test_start(MAC_ENGINE *p_eng, PHY_ENGINE *p_phy_eng)
 	for (speed = 0; speed < 3; speed++) {
 		p_eng->flg.print_en = 1;
 		p_eng->run.speed_idx = speed;
+		mac_set_scan_boundary(p_eng);
 		if (0 == p_eng->run.speed_sel[speed]) {
 			continue;
 		}
@@ -1396,21 +1406,19 @@ void dump_setting(MAC_ENGINE *p_eng)
 {
 	/* dump env */
 	printf("===================\n");
-	printf("p_eng->env\n");
-	printf("ast2600 = %d\n", p_eng->env.ast2600);
-	printf("ast2500 = %d\n", p_eng->env.ast2500);
-	printf("mac_num = %d\n", p_eng->env.mac_num);
-	printf("is_new_mdio_reg = %d %d %d %d\n",
+	printf("ast2600 compatible = %d\n", p_eng->env.ast2600);
+	printf("ast2500 compatible = %d\n", p_eng->env.ast2500);
+	printf("valid MAC number = %d\n", p_eng->env.mac_num);
+	printf("use new MDIO register = %d %d %d %d\n",
 	       p_eng->env.is_new_mdio_reg[0],
 	       p_eng->env.is_new_mdio_reg[1],
 	       p_eng->env.is_new_mdio_reg[2],
 	       p_eng->env.is_new_mdio_reg[3]);
-	printf("is_1g_valid = %d %d %d %d\n",
+	printf("1G compatible = %d %d %d %d\n",
 	       p_eng->env.is_1g_valid[0],
 	       p_eng->env.is_1g_valid[1],
 	       p_eng->env.is_1g_valid[2],
-	       p_eng->env.is_1g_valid[3]);
-	printf("at_least_1g_valid = %d\n", p_eng->env.at_least_1g_valid);
+	       p_eng->env.is_1g_valid[3]);	
 	printf("===================\n");
 
 
@@ -1460,9 +1468,8 @@ int mac_test(int argc, char * const argv[], uint32_t mode)
 	mac_set_addr(&mac_eng);
 	if (mac_eng.arg.ctrl.b.mac_int_loopback)
 		mac_set_interal_loopback(&mac_eng);
-	
-	if (mac_eng.arg.run_mode == MODE_DEDICATED)
-		scu_set_pinmux(&mac_eng);
+
+	scu_set_pinmux(&mac_eng);
 
 	scu_disable_mac(&mac_eng);
 	scu_enable_mac(&mac_eng);
@@ -1483,7 +1490,8 @@ int mac_test(int argc, char * const argv[], uint32_t mode)
 	//------------------------------
 	// [Start] The loop of different speed
 	//------------------------------
+	print_legend();
 	test_start(&mac_eng, &phy_eng);
 
-	return(finish_check(&mac_eng, 0));
+	return 0;
 }

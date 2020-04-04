@@ -98,6 +98,14 @@ ENTRY(_main)
 	sub	r9, r9, #GD_SIZE		/* new GD is below bd */
 
 	adr	lr, here
+#ifdef CONFIG_POSITION_INDEPENDENT
+	adr	r0, _main
+	ldr	r1, _start_ofs
+	add	r0, r1
+	ldr	r1, =CONFIG_SYS_TEXT_BASE
+	sub	r1, r0
+	add	lr, r1
+#endif
 	ldr	r0, [r9, #GD_RELOC_OFF]		/* r0 = gd->reloc_off */
 	add	lr, lr, r0
 #if defined(CONFIG_CPU_V7M)
@@ -160,3 +168,6 @@ clbss_l:cmp	r0, r1			/* while not at end of BSS */
 #endif
 
 ENDPROC(_main)
+
+_start_ofs:
+	.word _start - _main

@@ -459,6 +459,7 @@ static int sdhci_set_ios(struct mmc *mmc)
 {
 #endif
 	u32 ctrl;
+	u32 gen_addr, gen_ctrl;
 	struct sdhci_host *host = mmc->priv;
 
 	if (host->ops && host->ops->set_control_reg)
@@ -470,6 +471,25 @@ static int sdhci_set_ios(struct mmc *mmc)
 	if (mmc->clk_disable)
 		sdhci_set_clock(mmc, 0);
 
+#ifdef CONFIG_MMC_SDHCI_ASPEED
+	/* Set bus width */
+	ctrl = sdhci_readb(host, SDHCI_HOST_CONTROL);
+	gen_addr = (u32)host->ioaddr;
+	gen_addr &= ~0x300;
+	gen_ctrl = readl(gen_addr);
+	if (mmc->bus_width == 8) {
+		if((u32)host->ioaddr & 0x100)
+			writel(gen_ctrl | BIT(24), gen_addr);
+		else
+			writel(gen_ctrl | BIT(25), gen_addr);
+	} else {
+		writel(gen_ctrl & ~(BIT(24) | BIT(25)), gen_addr);
+		if (mmc->bus_width == 4)
+			ctrl |= SDHCI_CTRL_4BITBUS;
+		else
+			ctrl &= ~SDHCI_CTRL_4BITBUS;
+	}
+#else
 	/* Set bus width */
 	ctrl = sdhci_readb(host, SDHCI_HOST_CONTROL);
 	if (mmc->bus_width == 8) {
@@ -486,7 +506,7 @@ static int sdhci_set_ios(struct mmc *mmc)
 		else
 			ctrl &= ~SDHCI_CTRL_4BITBUS;
 	}
-
+#endif
 	if (mmc->clock > 26000000)
 		ctrl |= SDHCI_CTRL_HISPD;
 	else

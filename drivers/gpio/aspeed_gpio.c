@@ -225,7 +225,6 @@ aspeed_gpio_direction_output(struct udevice *dev, unsigned offset,
 	return 0;
 }
 
-
 static int aspeed_gpio_get_value(struct udevice *dev, unsigned offset)
 {
 	struct aspeed_gpio_priv *priv = dev_get_priv(dev);

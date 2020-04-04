@@ -457,3 +457,21 @@ U_BOOT_CMD(
 );
 
 #endif  /* CONFIG_CMD_LINK_LOCAL */
+
+#if defined(CONFIG_CMD_NCSI)
+static int do_ncsi(cmd_tbl_t *cmdtp, int flag, int argc,
+		   char * const argv[])
+{
+	if (net_loop(NCSI) < 0)
+		return CMD_RET_FAILURE;
+
+	return CMD_RET_SUCCESS;
+}
+
+U_BOOT_CMD(
+	ncsi,	1,	1,	do_ncsi,
+	"Configure attached NIC via NC-SI",
+	""
+);
+
+#endif  /* CONFIG_CMD_NCSI */

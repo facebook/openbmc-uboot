@@ -92,11 +92,14 @@ static int pcie_aspeed_write_config(struct udevice *bus, pci_dev_t bdf,
 
 static int pcie_aspeed_probe(struct udevice *dev)
 {
+	void *fdt = (void *)gd->fdt_blob;
+
 	struct reset_ctl reset_ctl0, reset_ctl1;
 	struct pcie_aspeed *pcie = dev_get_priv(dev);
-	struct udevice *ctlr = pci_get_controller(dev);
-	struct pci_controller *hose = dev_get_uclass_priv(ctlr);
-	struct udevice *ahbc_dev, *h2x_dev;
+//	struct udevice *ctrl = pci_get_controller(dev);
+//	struct pci_controller *host = dev_get_uclass_priv(ctrl);
+	struct udevice *ahbc_dev;
+	int h2x_of_handle;	
 	int ret = 0;
 
 	ret = reset_get_by_index(dev, 0, &reset_ctl0);
@@ -105,7 +108,7 @@ static int pcie_aspeed_probe(struct udevice *dev)
 		return ret;
 	}
 
-	ret = reset_get_by_index(dev, 1, &reset_ctl1);
+	ret = reset_get_by_index(dev, 0, &reset_ctl1);
 	if (ret) {
 		printf("%s(): Failed to get reset signal\n", __func__);
 		return ret;
@@ -123,25 +126,20 @@ static int pcie_aspeed_probe(struct udevice *dev)
 		return ret;
 	}
 
-	ret = uclass_get_device_by_driver(UCLASS_MISC, DM_GET_DRIVER(aspeed_h2x),
-										  &h2x_dev);
-	if (ret) {
+	h2x_of_handle = fdtdec_lookup_phandle(fdt, dev_of_offset(dev), "cfg-handle");
+	if (h2x_of_handle > 0) {
+		pcie->h2x_pt = (void *)fdtdec_get_addr(fdt, h2x_of_handle, "reg");
+		debug("h2x cfg addr %x \n", (u32)pcie->h2x_pt);
+	} else {
 		debug("h2x device not defined\n");
-		return ret;
+		return h2x_of_handle;
 	}
 
-	pcie->h2x_pt = devfdt_get_addr_ptr(h2x_dev);
-	
 	aspeed_ahbc_remap_enable(devfdt_get_addr_ptr(ahbc_dev));
 
 	//plda enable 
 	writel(PCIE_UNLOCK, pcie->ctrl_base + ASPEED_PCIE_LOCK);
-//	writel(PCIE_CFG_CLASS_CODE(0x60000) | PCIE_CFG_REV_ID(4), pcie->ctrl_base + ASPEED_PCIE_CLASS_CODE);
 	writel(ROOT_COMPLEX_ID(0x3), pcie->ctrl_base + ASPEED_PCIE_GLOBAL);
-#if 0
-	//fpga 
-	writel(0x500460ff, pcie->ctrl_base + 0x2c);
-#endif
 
 	pcie->first_busno = dev->seq;
 	mdelay(100);
@@ -154,18 +152,9 @@ static int pcie_aspeed_probe(struct udevice *dev)
 		printf("PCIE-%d: Link down\n", dev->seq);
 		pcie->link_sts = 0;
 	}
-
-	//todo use range 
-	/* PCI memory space */
-	pci_set_region(hose->regions + 0, 0x60000000,
-			   0x60000000, 0x10000000, PCI_REGION_MEM);
-
-	pci_set_region(hose->regions + 1,
-			   0, 0,
-			   gd->ram_size,
-			   PCI_REGION_MEM | PCI_REGION_SYS_MEMORY);
-
-	hose->region_count = 2;
+	aspeed_h2x_rc_enable(pcie->h2x_pt);
+	if(pcie->link_sts)
+		aspeed_pcie_workaround(pcie->h2x_pt);
 
 	return 0;
 }

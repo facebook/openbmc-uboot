@@ -674,14 +674,15 @@ dtb-$(CONFIG_ARCH_BCM63158) += \
 dtb-$(CONFIG_ARCH_BCM6858) += \
 	bcm968580xref.dtb
 
-dtb-$(CONFIG_TARGET_EVB_AST2500) += \
+dtb-$(CONFIG_ARCH_ASPEED) += \
+	ast2600a0-evb.dtb \
+	ast2600a1-evb.dtb \
+	ast2600a0-ncsi.dtb \
+	ast2600a1-ncsi.dtb \
+	ast2600-fpga.dtb \
+	ast2600-slt.dtb \
 	ast2500-evb.dtb
 
-dtb-$(CONFIG_TARGET_EVB_AST2600) += \
-	ast2600-evb.dtb
-
-dtb-$(CONFIG_TARGET_FPGA_AST2600) += \
-	ast2600-fpga.dtb
 
 dtb-$(CONFIG_TARGET_FACEBOOK_FUJI) += \
 	aspeed-bmc-facebook-fuji.dtb

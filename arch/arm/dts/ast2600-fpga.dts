@@ -53,12 +53,17 @@
 
 &mdio {
 	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	ethphy1: ethernet-phy@1 {
+		reg = <0>;
+	};	
 };
 
 &mac0 {
 	status = "okay";
 	phy-mode = "rgmii";
-
+	phy-handle = <&ethphy1>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_mac1link_default &pinctrl_mdio1_default>;
 };

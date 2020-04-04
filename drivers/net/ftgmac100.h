@@ -177,12 +177,22 @@ struct ftgmac100 {
 /*
  * Transmit descriptor, aligned to 16 bytes
  */
+
+#ifndef CONFIG_SYS_DCACHE_OFF
+struct ftgmac100_txdes {
+	unsigned int	txdes0;
+	unsigned int	txdes1;
+	unsigned int	txdes2;	/* not used by HW */
+	unsigned int	txdes3;	/* TXBUF_BADR */
+} __aligned(CONFIG_SYS_CACHELINE_SIZE);
+#else
 struct ftgmac100_txdes {
 	unsigned int	txdes0;
 	unsigned int	txdes1;
 	unsigned int	txdes2;	/* not used by HW */
 	unsigned int	txdes3;	/* TXBUF_BADR */
 } __aligned(16);
+#endif
 
 #define FTGMAC100_TXDES0_TXBUF_SIZE(x)	((x) & 0x3fff)
 #define FTGMAC100_TXDES0_EDOTR		BIT(15)
@@ -203,12 +213,21 @@ struct ftgmac100_txdes {
 /*
  * Receive descriptor, aligned to 16 bytes
  */
+#ifndef CONFIG_SYS_DCACHE_OFF
+struct ftgmac100_rxdes {
+	unsigned int	rxdes0;
+	unsigned int	rxdes1;
+	unsigned int	rxdes2;	/* not used by HW */
+	unsigned int	rxdes3;	/* RXBUF_BADR */
+} __aligned(CONFIG_SYS_CACHELINE_SIZE);
+#else
 struct ftgmac100_rxdes {
 	unsigned int	rxdes0;
 	unsigned int	rxdes1;
 	unsigned int	rxdes2;	/* not used by HW */
 	unsigned int	rxdes3;	/* RXBUF_BADR */
 } __aligned(16);
+#endif
 
 #define FTGMAC100_RXDES0_VDBC(x)	((x) & 0x3fff)
 #define FTGMAC100_RXDES0_EDORR		BIT(15)

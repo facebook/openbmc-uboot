@@ -55,8 +55,11 @@ static const struct {
 	},
 };
 
-#define SDRAM_MAX_SIZE		(1024 * 1024 * 1024)
-#define SDRAM_MIN_SIZE		(128 * 1024 * 1024)
+/* supported SDRAM size */
+#define SDRAM_SIZE_1KB		(1024U)
+#define SDRAM_SIZE_1MB		(SDRAM_SIZE_1KB * SDRAM_SIZE_1KB)
+#define SDRAM_MIN_SIZE		(128 * SDRAM_SIZE_1MB)
+#define SDRAM_MAX_SIZE		(1024 * SDRAM_SIZE_1MB)
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -250,6 +253,43 @@ static void ast2500_sdrammc_calc_size(struct dram_info *info)
 			 << SDRAM_CONF_CAP_SHIFT));
 }
 
+#ifdef CONFIG_ASPEED_ECC
+static void ast2500_sdrammc_ecc_enable(struct dram_info *info)
+{
+	struct ast2500_sdrammc_regs *regs = info->regs;
+	size_t conf_size;
+	u32 reg;
+
+	conf_size = CONFIG_ASPEED_ECC_SIZE * SDRAM_SIZE_1MB;
+	if (conf_size > info->info.size) {
+		printf("warning: ECC configured %dMB but actual size is %dMB\n",
+		       CONFIG_ASPEED_ECC_SIZE,
+		       info->info.size / SDRAM_SIZE_1MB);
+		conf_size = info->info.size;
+	} else if (conf_size == 0) {
+		conf_size = info->info.size;
+	}
+
+	info->info.size = (((conf_size / 9) * 8) >> 20) << 20;
+	writel(((info->info.size >> 20) - 1) << 20, &regs->ecc_range_ctrl);
+	reg = readl(&regs->config) |
+	      (SDRAM_CONF_ECC_EN | SDRAM_CONF_CACHE_ADDR_CTRL);
+	writel(reg, &regs->config);
+
+	writel(0, &regs->test_init_val);
+	writel(0, &regs->test_addr);
+	writel(0x221, &regs->ecc_test_ctrl);
+	while (0 == (readl(&regs->ecc_test_ctrl) & BIT(12)))
+		;
+	writel(0, &regs->ecc_test_ctrl);
+	writel(BIT(31), &regs->intr_ctrl);
+	writel(0, &regs->intr_ctrl);
+
+	writel(0x400, &regs->ecc_test_ctrl);
+	printf("ECC enable, ");
+}
+#endif
+
 static int ast2500_sdrammc_init_ddr4(struct dram_info *info)
 {
 	int i;
@@ -305,6 +345,9 @@ static int ast2500_sdrammc_init_ddr4(struct dram_info *info)
 
 	writel(SDRAM_MISC_DDR4_TREFRESH, &info->regs->misc_control);
 
+#ifdef CONFIG_ASPEED_ECC
+	ast2500_sdrammc_ecc_enable(info);
+#endif
 	/* Enable all requests except video & display */
 	writel(SDRAM_REQ_USB20_EHCI1
 	       | SDRAM_REQ_USB20_EHCI2
@@ -340,7 +383,6 @@ static void ast2500_sdrammc_lock(struct dram_info *info)
 
 static int ast2500_sdrammc_probe(struct udevice *dev)
 {
-	//struct reset_ctl reset_ctl;
 	struct dram_info *priv = (struct dram_info *)dev_get_priv(dev);
 	struct ast2500_sdrammc_regs *regs = priv->regs;
 	struct udevice *clk_dev;
@@ -368,8 +410,20 @@ static int ast2500_sdrammc_probe(struct udevice *dev)
 	}
 
 	if (readl(&priv->scu->vga_handshake[0]) & (0x1 << 6)) {
-		printf("%s(): DDR SDRAM had been initialized\n", __func__);
+		printf("already initialized, ");
 		ast2500_sdrammc_calc_size(priv);
+
+		setbits_le32(&priv->regs->config, SDRAM_CONF_CACHE_INIT_EN);
+		while (
+		    !(readl(&priv->regs->config) & SDRAM_CONF_CACHE_INIT_DONE))
+			;
+		setbits_le32(&priv->regs->config, SDRAM_CONF_CACHE_EN);
+
+		writel(SDRAM_MISC_DDR4_TREFRESH, &priv->regs->misc_control);
+
+#ifdef CONFIG_ASPEED_ECC
+		ast2500_sdrammc_ecc_enable(priv);
+#endif
 		return 0;
 	}
 
@@ -384,19 +438,6 @@ static int ast2500_sdrammc_probe(struct udevice *dev)
 	clk_set_rate(&priv->ddr_clk, priv->clock_rate);
 #endif
 
-#if 0
-	ret = reset_get_by_index(dev, 0, &reset_ctl);
-	if (ret) {
-		debug("%s(): Failed to get reset signal\n", __func__);
-		return ret;
-	}
-
-	ret = reset_assert(&reset_ctl);
-	if (ret) {
-		debug("%s(): SDRAM reset failed: %u\n", __func__, ret);
-		return ret;
-	}
-#endif
 	ast2500_sdrammc_unlock(priv);
 
 	writel(SDRAM_PCR_MREQI_DIS | SDRAM_PCR_RESETN_DIS,

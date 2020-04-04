@@ -348,11 +348,11 @@ void get_dummy_delay(MAC_ENGINE *p_eng, int32_t *p_rx_d, int32_t *p_tx_d)
 typedef void (*pfn_get_delay) (MAC_ENGINE *, int32_t *, int32_t *);
 pfn_get_delay get_delay_func_tbl[2][4][3] = {
 	{
-		{get_mac1_rmii_delay, get_dummy_delay, get_dummy_delay},
-		{get_mac2_rmii_delay, get_dummy_delay, get_dummy_delay},
+		{get_mac1_rmii_delay, get_mac1_rmii_delay, get_mac1_rmii_delay},
+		{get_mac2_rmii_delay, get_mac2_rmii_delay, get_mac2_rmii_delay},
 #if defined(CONFIG_ASPEED_AST2600)
-		{get_mac3_rmii_delay, get_dummy_delay, get_dummy_delay},
-		{get_mac4_rmii_delay, get_dummy_delay, get_dummy_delay},
+		{get_mac3_rmii_delay, get_mac3_rmii_delay, get_mac3_rmii_delay},
+		{get_mac4_rmii_delay, get_mac4_rmii_delay, get_mac4_rmii_delay},
 #else
 		{get_dummy_delay, get_dummy_delay, get_dummy_delay},
 		{get_dummy_delay, get_dummy_delay, get_dummy_delay},
@@ -628,11 +628,11 @@ void set_dummy_delay(MAC_ENGINE *p_eng, int32_t rx_d, int32_t tx_d)
 typedef void (*pfn_set_delay) (MAC_ENGINE *, int32_t, int32_t);
 pfn_set_delay set_delay_func_tbl[2][4][3] = {
 	{
-		{set_mac1_rmii_delay, set_dummy_delay, set_dummy_delay},
-		{set_mac2_rmii_delay, set_dummy_delay, set_dummy_delay},
+		{set_mac1_rmii_delay, set_mac1_rmii_delay, set_mac1_rmii_delay},
+		{set_mac2_rmii_delay, set_mac2_rmii_delay, set_mac2_rmii_delay},
 #if defined(CONFIG_ASPEED_AST2600)
-		{set_mac3_rmii_delay, set_dummy_delay, set_dummy_delay},
-		{set_mac4_rmii_delay, set_dummy_delay, set_dummy_delay},
+		{set_mac3_rmii_delay, set_mac3_rmii_delay, set_mac3_rmii_delay},
+		{set_mac4_rmii_delay, set_mac4_rmii_delay, set_mac4_rmii_delay},
 #else
 		{set_dummy_delay, set_dummy_delay, set_dummy_delay},
 		{set_dummy_delay, set_dummy_delay, set_dummy_delay},
@@ -987,7 +987,8 @@ void FPri_RegValue (MAC_ENGINE *eng, uint8_t option)
 void FPri_End (MAC_ENGINE *eng, uint8_t option) 
 {
 	nt_log_func_name();
-	if ((0 == eng->run.is_rgmii) && ( eng->phy.RMIICK_IOMode != 0 ) && eng->run.IO_MrgChk && eng->flg.all_fail ) {
+	if ((0 == eng->run.is_rgmii) && (eng->phy.RMIICK_IOMode != 0) &&
+	    eng->run.IO_MrgChk && eng->flg.all_fail) {
 		if ( eng->arg.ctrl.b.rmii_phy_in == 0 ) {
 			PRINTF( option, "\n\n\n\n\n\n[Info] The PHY's RMII reference clock pin is setting to the OUTPUT mode now.\n" );
 			PRINTF( option, "       Maybe you can run the INPUT mode command \"mactest  %d %d %d %d %d %d %d\".\n\n\n\n", eng->arg.mac_idx, eng->arg.run_speed, (eng->arg.ctrl.w | 0x80), eng->arg.loop_max, eng->arg.test_mode, eng->arg.phy_addr, eng->arg.delay_scan_range );
@@ -996,13 +997,11 @@ void FPri_End (MAC_ENGINE *eng, uint8_t option)
 			PRINTF( option, "\n\n\n\n\n\n[Info] The PHY's RMII reference clock pin is setting to the INPUT mode now.\n" );
 			PRINTF( option, "       Maybe you can run the OUTPUT mode command \"mactest  %d %d %d %d %d %d %d\".\n\n\n\n", eng->arg.mac_idx, eng->arg.run_speed, (eng->arg.ctrl.w & 0x7f), eng->arg.loop_max, eng->arg.test_mode, eng->arg.phy_addr, eng->arg.delay_scan_range );
 		}
-	} // End if ( eng->env.MAC_RMII && ( eng->phy.RMIICK_IOMode != 0 ) && eng->run.IO_MrgChk && eng->flg.all_fail )
+	}
 
 	if (!eng->run.TM_RxDataEn) {
 	} else if (eng->flg.Err_Flag) {
 		PRINTF(option, "                    \n----> fail !!!\n");
-	} else {
-		PRINTF(option, "                    \n----> All Pass !!!\n");
 	}
 
 	//------------------------------
@@ -1017,10 +1016,10 @@ void FPri_End (MAC_ENGINE *eng, uint8_t option)
 	//[Warning] IO Strength
 	//------------------------------
 #ifdef CONFIG_ASPEED_AST2600
-	if (eng->io.init_done && (eng->io.mac34_drv_reg.value.w != 0xa)) {
+	if (eng->io.init_done && (eng->io.mac34_drv_reg.value.w != 0xf)) {
 		PRINTF(option,
 		       "\n[Warning] [%08X] 0x%08x is not the suggestion value "
-		       "0xa.\n",
+		       "0xf.\n",
 		       eng->io.mac34_drv_reg.addr,
 		       eng->io.mac34_drv_reg.value.w);
 #else
@@ -1088,10 +1087,7 @@ void FPri_End (MAC_ENGINE *eng, uint8_t option)
 	}
 	else {
 		PRINTF( option, "[PHY] Adr:%d ID2:%04x ID3:%04x (%s)\n", eng->phy.Adr, eng->phy.PHY_ID2, eng->phy.PHY_ID3, eng->phy.phy_name);
-	} // End if ( eng->arg.run_mode == MODE_NCSI )
-
-
-	PRINTF( option, "[Ver II] %s\n", version_name );
+	} // End if ( eng->arg.run_mode == MODE_NCSI )	
 } // End void FPri_End (MAC_ENGINE *eng, uint8_t option)
 
 //------------------------------------------------------------
@@ -1566,7 +1562,7 @@ char check_Data (MAC_ENGINE *eng, uint32_t datbase, int32_t number)
 
 	nt_log_func_name();
 
-	if ( eng->arg.ctrl.b.single_packet )
+	if (eng->arg.ctrl.b.single_packet)
 		number_dat = 0;
 	else
 		number_dat = number;
@@ -1628,9 +1624,9 @@ char check_Data (MAC_ENGINE *eng, uint32_t datbase, int32_t number)
 			wp = wp & wp_lst_cur;
 
 		if ( ( rdata & wp ) != ( gdata & wp ) ) {
-			printf("\nError: Adr:%08x[%3d] (%08x) (%08x:%08x) [Des:%d][loop[%d]:%d]\n", adr, ( adr - adr_srt ) / 4, rdata, gdata, wp, number, eng->run.loop_of_cnt, eng->run.loop_cnt );
+			PRINTF( FP_LOG, "\nError: Adr:%08x[%3d] (%08x) (%08x:%08x) [Des:%d][loop[%d]:%d]\n", adr, ( adr - adr_srt ) / 4, rdata, gdata, wp, number, eng->run.loop_of_cnt, eng->run.loop_cnt );
 			for ( index = 0; index < 6; index++ )
-				printf("Rep  : Adr:%08x      (%08x) (%08x:%08x) [Des:%d][loop[%d]:%d]\n", adr, Read_Mem_Dat_DD( adr ), gdata, wp, number, eng->run.loop_of_cnt, eng->run.loop_cnt );
+				PRINTF( FP_LOG, "Rep  : Adr:%08x      (%08x) (%08x:%08x) [Des:%d][loop[%d]:%d]\n", adr, Read_Mem_Dat_DD( adr ), gdata, wp, number, eng->run.loop_of_cnt, eng->run.loop_cnt );
 
 			if (DbgPrn_DumpMACCnt)
 				dump_mac_ROreg(eng);
@@ -1657,7 +1653,8 @@ char check_Data (MAC_ENGINE *eng, uint32_t datbase, int32_t number)
 } // End char check_Data (MAC_ENGINE *eng, uint32_t datbase, int32_t number)
 
 //------------------------------------------------------------
-char check_buf (MAC_ENGINE *eng, int loopcnt) {
+char check_buf (MAC_ENGINE *eng, int loopcnt) 
+{
 	int32_t       des_num;
 	uint32_t      desadr;
 	uint32_t      datbase;
@@ -1666,11 +1663,15 @@ char check_buf (MAC_ENGINE *eng, int loopcnt) {
 
 	desadr = eng->run.rdes_base + (16 * eng->dat.Des_Num) - 4;
 	for (des_num = eng->dat.Des_Num - 1; des_num >= 0; des_num--) {
+#ifdef CHECK_RX_DATA
 		datbase = AT_BUF_MEMRW(Read_Mem_Des_DD(desadr) & 0xfffffffc);
 		if (check_Data(eng, datbase, des_num)) {
 			check_int(eng, "");
 			return (1);
 		}
+		if (check_int(eng, ""))
+			return 1;
+#endif
 		desadr -= 16;
 	}
 	if (check_int(eng, ""))
@@ -1735,7 +1736,8 @@ void setup_txdes (MAC_ENGINE *eng, uint32_t desadr, uint32_t bufbase)
 }
 
 //------------------------------------------------------------
-void setup_rxdes (MAC_ENGINE *eng, uint32_t desadr, uint32_t bufbase) {
+void setup_rxdes (MAC_ENGINE *eng, uint32_t desadr, uint32_t bufbase) 
+{
 	uint32_t      bufadr;
 	uint32_t      desval;
 	int32_t       des_num;
@@ -1746,10 +1748,10 @@ void setup_rxdes (MAC_ENGINE *eng, uint32_t desadr, uint32_t bufbase) {
 	desval = RDES_IniVal;
 	if ( eng->run.TM_RxDataEn ) {
 		for ( des_num = 0; des_num < eng->dat.Des_Num; des_num++ ) {
-			Write_Mem_Des_DD( desadr + 0x04, 0      );
-			Write_Mem_Des_DD( desadr + 0x08, 0      );
-			Write_Mem_Des_DD( desadr + 0x0C, bufadr );
-			Write_Mem_Des_DD( desadr       , desval );
+			Write_Mem_Des_DD(desadr + 0x04, 0     );
+			Write_Mem_Des_DD(desadr + 0x08, 0     );
+			Write_Mem_Des_DD(desadr + 0x0C, bufadr);
+			Write_Mem_Des_DD(desadr + 0x00, desval);
 
 			if ( DbgPrn_BufAdr )
 				printf("[loop[%d]:%4d][des:%4d][setup_rxdes] %08x [%08x]\n", eng->run.loop_of_cnt, eng->run.loop_cnt, des_num, desadr, bufadr);
@@ -1888,11 +1890,14 @@ char check_des_header_Rx (MAC_ENGINE *eng, char *type, uint32_t adr, int32_t des
 	while (HWOwnRx(eng->dat.RxDes0DW)) {
 		// we will run again, if transfer has not been completed.
 		if (eng->run.TM_TxDataEn && (++timeout > eng->run.timeout_th)) {
+#if 0			
 			printf("[%sRxDesOwn] Address %08x = %08x "
 			       "[Des:%d][loop[%d]:%d]\n",
 			       type, adr, eng->dat.RxDes0DW, desnum,
 			       eng->run.loop_of_cnt, eng->run.loop_cnt);
-			return (FindErr_Des(eng, Des_Flag_RxOwnTimeOut));
+#endif
+			FindErr_Des(eng, Des_Flag_RxOwnTimeOut);
+			return (2);
 		}
 
   #ifdef Delay_ChkRxOwn
@@ -1912,45 +1917,45 @@ char check_des_header_Rx (MAC_ENGINE *eng, char *type, uint32_t adr, int32_t des
 	}
   #endif // End CheckRxLen
 
-	if ( eng->dat.RxDes0DW & Check_ErrMask_ALL ) {
+	if ( eng->dat.RxDes0DW & RXDES_EM_ALL ) {
 		eng->dat.RxDes3DW = Read_Mem_Des_DD( adr + 12 );
   #ifdef CheckRxErr
-		if ( eng->dat.RxDes0DW & Check_ErrMask_RxErr ) {
+		if ( eng->dat.RxDes0DW & RXDES_EM_RXERR ) {
 			PRINTF( FP_LOG, "[%sRxDes] Error RxErr        %08x:%08x %08x            [Des:%d][loop[%d]:%d]\n", type, adr, eng->dat.RxDes0DW, eng->dat.RxDes3DW, desnum, eng->run.loop_of_cnt, eng->run.loop_cnt );
 			FindErr_Des( eng, Des_Flag_RxErr );
 		}
   #endif // End CheckRxErr
 
   #ifdef CheckCRC
-		if ( eng->dat.RxDes0DW & Check_ErrMask_CRC ) {
+		if ( eng->dat.RxDes0DW & RXDES_EM_CRC ) {
 			PRINTF( FP_LOG, "[%sRxDes] Error CRC          %08x:%08x %08x            [Des:%d][loop[%d]:%d]\n", type, adr, eng->dat.RxDes0DW, eng->dat.RxDes3DW, desnum, eng->run.loop_of_cnt, eng->run.loop_cnt );
 			FindErr_Des( eng, Des_Flag_CRC );
 		}
   #endif // End CheckCRC
 
   #ifdef CheckFTL
-		if ( eng->dat.RxDes0DW & Check_ErrMask_FTL ) {
+		if ( eng->dat.RxDes0DW & RXDES_EM_FTL ) {
 			PRINTF( FP_LOG, "[%sRxDes] Error FTL          %08x:%08x %08x            [Des:%d][loop[%d]:%d]\n", type, adr, eng->dat.RxDes0DW, eng->dat.RxDes3DW, desnum, eng->run.loop_of_cnt, eng->run.loop_cnt );
 			FindErr_Des( eng, Des_Flag_FTL );
 		}
   #endif // End CheckFTL
 
   #ifdef CheckRunt
-		if ( eng->dat.RxDes0DW & Check_ErrMask_Runt) {
+		if ( eng->dat.RxDes0DW & RXDES_EM_RUNT) {
 			PRINTF( FP_LOG, "[%sRxDes] Error Runt         %08x:%08x %08x            [Des:%d][loop[%d]:%d]\n", type, adr, eng->dat.RxDes0DW, eng->dat.RxDes3DW, desnum, eng->run.loop_of_cnt, eng->run.loop_cnt );
 			FindErr_Des( eng, Des_Flag_Runt );
 		}
   #endif // End CheckRunt
 
   #ifdef CheckOddNibble
-		if ( eng->dat.RxDes0DW & Check_ErrMask_OddNibble ) {
+		if ( eng->dat.RxDes0DW & RXDES_EM_ODD_NB ) {
 			PRINTF( FP_LOG, "[%sRxDes] Odd Nibble         %08x:%08x %08x            [Des:%d][loop[%d]:%d]\n", type, adr, eng->dat.RxDes0DW, eng->dat.RxDes3DW, desnum, eng->run.loop_of_cnt, eng->run.loop_cnt );
 			FindErr_Des( eng, Des_Flag_OddNibble );
 		}
   #endif // End CheckOddNibble
 
   #ifdef CheckRxFIFOFull
-		if ( eng->dat.RxDes0DW & Check_ErrMask_RxFIFOFull ) {
+		if ( eng->dat.RxDes0DW & RXDES_EM_FIFO_FULL ) {
 			PRINTF( FP_LOG, "[%sRxDes] Error Rx FIFO Full %08x:%08x %08x            [Des:%d][loop[%d]:%d]\n", type, adr, eng->dat.RxDes0DW, eng->dat.RxDes3DW, desnum, eng->run.loop_of_cnt, eng->run.loop_cnt );
 			FindErr_Des( eng, Des_Flag_RxFIFOFull );
 		}
@@ -1966,7 +1971,8 @@ char check_des_header_Rx (MAC_ENGINE *eng, char *type, uint32_t adr, int32_t des
 } // End char check_des_header_Rx (MAC_ENGINE *eng, char *type, uint32_t adr, int32_t desnum)
 
 //------------------------------------------------------------
-char check_des (MAC_ENGINE *eng, uint32_t bufnum, int checkpoint) {
+char check_des (MAC_ENGINE *eng, uint32_t bufnum, int checkpoint) 
+{
 	int32_t       desnum;
 	int8_t       desnum_last;
 	uint32_t      H_rx_desadr;
@@ -1977,26 +1983,28 @@ char check_des (MAC_ENGINE *eng, uint32_t bufnum, int checkpoint) {
 	uint32_t      dly_cnt = 0;
 	uint32_t      dly_max = Delay_CntMaxIncVal;
 #endif
+	int ret;
 
 	nt_log_func_name();
 
-	// Fire the engine to send and recvice
-	mac_reg_write(eng, 0x1c, 0x00000000); // Rx Poll
-	mac_reg_write(eng, 0x18, 0x00000000); // Tx Poll
+	/* Fire the engine to send and recvice */
+	mac_reg_write(eng, 0x1c, 0x00000001); // Rx Poll
+	mac_reg_write(eng, 0x18, 0x00000001); // Tx Poll
 
 #ifndef SelectSimpleDes
-	H_tx_bufadr = AT_MEMRW_BUF( eng->dat.DMA_Base_Tx );//base of the descriptor
-	H_rx_bufadr = AT_MEMRW_BUF( eng->dat.DMA_Base_Rx );//base of the descriptor
+	/* base of the descriptors */
+	H_tx_bufadr = AT_MEMRW_BUF(eng->dat.DMA_Base_Tx);
+	H_rx_bufadr = AT_MEMRW_BUF(eng->dat.DMA_Base_Rx);
 #endif
 	H_rx_desadr = eng->run.rdes_base;
 	H_tx_desadr = eng->run.tdes_base;
 
 #ifdef Delay_DES
-	DELAY( Delay_DES );
+	DELAY(Delay_DES);
 #endif
 
-	for ( desnum = 0; desnum < eng->dat.Des_Num; desnum++ ) {
-		desnum_last = ( desnum == ( eng->dat.Des_Num - 1 ) ) ? 1 : 0;
+	for (desnum = 0; desnum < eng->dat.Des_Num; desnum++) {
+		desnum_last = (desnum == (eng->dat.Des_Num - 1)) ? 1 : 0;
 		if ( DbgPrn_BufAdr ) {
 			if ( checkpoint )
 				printf("[loop[%d]:%4d][des:%4d][check_des  ] %08x %08x [%08x %08x]\n", eng->run.loop_of_cnt, eng->run.loop_cnt, desnum, ( H_tx_desadr ), ( H_rx_desadr ), Read_Mem_Des_DD( H_tx_desadr + 12 ), Read_Mem_Des_DD( H_rx_desadr + 12 ) );
@@ -2042,20 +2050,24 @@ char check_des (MAC_ENGINE *eng, uint32_t bufnum, int checkpoint) {
 			       checkpoint);
 
 		// Check the description of Tx and Rx
-		if (eng->run.TM_TxDataEn &&
-		    check_des_header_Tx(eng, "", H_tx_desadr, desnum)) {
-			eng->flg.CheckDesFail_DesNum = desnum;
-
-			return (1);
+		if (eng->run.TM_TxDataEn) {
+			ret = check_des_header_Tx(eng, "", H_tx_desadr, desnum);
+			if (ret) {
+				eng->flg.CheckDesFail_DesNum = desnum;
+				return ret;
+			}
 		}
-		if ( eng->run.TM_RxDataEn && check_des_header_Rx( eng, "", H_rx_desadr, desnum ) ) {
-			eng->flg.CheckDesFail_DesNum = desnum;
-
-			return(1);
+		if (eng->run.TM_RxDataEn) {
+			ret = check_des_header_Rx(eng, "", H_rx_desadr, desnum);
+			if (ret) {
+				eng->flg.CheckDesFail_DesNum = desnum;
+				return ret;
+				
+			}
 		}
 
 #ifndef SelectSimpleDes
-		if ( !checkpoint ) {
+		if (!checkpoint) {
 			// Setting buffer address to description of Tx and Rx on next stage
 			if ( eng->run.TM_RxDataEn ) {
 				Write_Mem_Des_DD( H_rx_desadr + 0x0C, H_rx_bufadr );
@@ -2065,7 +2077,7 @@ char check_des (MAC_ENGINE *eng, uint32_t bufnum, int checkpoint) {
 					Write_Mem_Des_DD( H_rx_desadr, RDES_IniVal );
 
 				readl(H_rx_desadr);
-				mac_reg_write( eng, 0x1c, 0x00000000 ); //Rx Poll
+				mac_reg_write(eng, 0x1c, 0x00000000); //Rx Poll
 				H_rx_bufadr += DMA_PakSize;
 			}
 			if ( eng->run.TM_TxDataEn ) {
@@ -2076,7 +2088,7 @@ char check_des (MAC_ENGINE *eng, uint32_t bufnum, int checkpoint) {
 					Write_Mem_Des_DD( H_tx_desadr, TDES_IniVal );
 				
 				readl(H_tx_desadr);
-				mac_reg_write( eng, 0x18, 0x00000000 ); //Tx Poll
+				mac_reg_write(eng, 0x18, 0x00000000); //Tx Poll
 				H_tx_bufadr += DMA_PakSize;
 			}
 		}
@@ -2111,9 +2123,9 @@ void PrintIO_Header (MAC_ENGINE *eng, uint8_t option)
 		}
 	}
 
-	if      ( eng->run.speed_sel[ 0 ] ) { PRINTF( option, "[1G  ]========================================>\n" ); }
-	else if ( eng->run.speed_sel[ 1 ] ) { PRINTF( option, "[100M]========================================>\n" ); }
-	else                                { PRINTF( option, "[10M ]========================================>\n" ); }
+	if      ( eng->run.speed_sel[ 0 ] ) { PRINTF( option, "\n[1G  ]========================================>\n" ); }
+	else if ( eng->run.speed_sel[ 1 ] ) { PRINTF( option, "\n[100M]========================================>\n" ); }
+	else                                { PRINTF( option, "\n[10M ]========================================>\n" ); }
 
 	if ( !(option == FP_LOG) ) {
 		step = eng->io.rx_delay_scan.step;
@@ -2130,18 +2142,18 @@ void PrintIO_Header (MAC_ENGINE *eng, uint8_t option)
 
 		PRINTF(option, "\n    ");
 		for (rx_d = eng->io.rx_delay_scan.begin; rx_d <= eng->io.rx_delay_scan.end; rx_d += step) {
-			tmp = abs(rx_d) / 10;
+			tmp = (abs(rx_d) >> 4) & 0xf;
 			if (tmp == 0) {
 				PRINTF(option, "0" );
 			} else {
-				PRINTF(option, "%1d", tmp);
+				PRINTF(option, "%1x", tmp);
 			}
 		}
 
 		PRINTF(option, "\n    ");
 		for (rx_d = eng->io.rx_delay_scan.begin;
 		     rx_d <= eng->io.rx_delay_scan.end; rx_d += step) {
-			PRINTF(option, "%1d", (uint32_t)abs(rx_d) % 10);
+			PRINTF(option, "%1x", (uint32_t)abs(rx_d) & 0xf);
 		}
 
 		PRINTF(option, "\n    ");
@@ -2160,9 +2172,9 @@ void PrintIO_Header (MAC_ENGINE *eng, uint8_t option)
 void PrintIO_LineS(MAC_ENGINE *p_eng, uint8_t option)
 {
 	if (p_eng->io.tx_delay_scan.orig == p_eng->io.Dly_out_selval) {
-		PRINTF( option, "%02d:-", p_eng->io.Dly_out_selval); 
+		PRINTF( option, "%02x:-", p_eng->io.Dly_out_selval); 
 	} else {
-		PRINTF( option, "%02d: ", p_eng->io.Dly_out_selval);
+		PRINTF( option, "%02x: ", p_eng->io.Dly_out_selval);
 	}	
 } // End void PrintIO_LineS (MAC_ENGINE *eng, uint8_t option)
 
@@ -2171,14 +2183,18 @@ void PrintIO_Line(MAC_ENGINE *p_eng, uint8_t option)
 {
 	if ((p_eng->io.Dly_in_selval == p_eng->io.rx_delay_scan.orig) && 
 	    (p_eng->io.Dly_out_selval == p_eng->io.tx_delay_scan.orig)) {
-		if (p_eng->io.result) {
+		if (1 == p_eng->io.result) {
 			PRINTF(option, "X");
+		} else if (2 == p_eng->io.result) {
+			PRINTF(option, "*");
 		} else {
 			PRINTF(option, "O");
 		}
 	} else {
-		if (p_eng->io.result) {
+		if (1 == p_eng->io.result) {
 			PRINTF(option, "x");
+		} else if (2 == p_eng->io.result) {
+			PRINTF(option, ".");
 		} else {
 			PRINTF(option, "o");
 		}
@@ -2208,6 +2224,7 @@ char TestingLoop (MAC_ENGINE *eng, uint32_t loop_checknum)
 	char       checkprd;
 	char       looplast;
 	char       checken;
+	int ret;
 
 	nt_log_func_name();
 
@@ -2221,7 +2238,7 @@ char TestingLoop (MAC_ENGINE *eng, uint32_t loop_checknum)
 	looplast = 0;
 
 
-	setup_des( eng, 0 );
+	setup_des(eng, 0);
 
 	if ( eng->run.TM_WaitStart ) {
 		printf("Press any key to start...\n");
@@ -2254,51 +2271,50 @@ char TestingLoop (MAC_ENGINE *eng, uint32_t loop_checknum)
 		eng->dat.DMA_Base_Rx =
 		    ZeroCopy_OFFSET + GET_DMA_BASE(eng, eng->run.loop_cnt + 1);
 		//[Check DES]--------------------
-		if (check_des(eng, eng->run.loop_cnt, checken)) {
+		if (ret = check_des(eng, eng->run.loop_cnt, checken)) {
 			//descriptor error
-#ifdef CheckRxBuf
 			eng->dat.Des_Num = eng->flg.CheckDesFail_DesNum + 1;
-			if ( checkprd )
-				check_buf( eng, loop_checknum );
+#ifdef CheckRxBuf
+			if (checkprd)
+				check_buf(eng, loop_checknum);
 			else
-				check_buf( eng, ( eng->run.loop_max % loop_checknum ) );
+				check_buf(eng, (eng->run.loop_max % loop_checknum));
 			eng->dat.Des_Num = eng->dat.Des_Num_Org;
 #endif
 
 			if (DbgPrn_DumpMACCnt)
 				dump_mac_ROreg(eng);
 
-			return(1);
+			return ret;
 		}
 
 		//[Check Buf]--------------------
-		if ( eng->run.TM_RxDataEn && checken ) {
-			if ( checkprd ) {
+		if (eng->run.TM_RxDataEn && checken) {
+			if (checkprd) {
 #ifdef Enable_ShowBW  
 				printf("[run loop:%3d] BandWidth: %7.2f Mbps, %6.2f sec\n", loop_checknum, ((double)loop_checknum * (double)eng->dat.Total_frame_len * 8.0) / ((double)eng->timeused * 1000000.0), eng->timeused);
 				PRINTF( FP_LOG, "[run loop:%3d] BandWidth: %7.2f Mbps, %6.2f sec\n", loop_checknum, ((double)loop_checknum * (double)eng->dat.Total_frame_len * 8.0) / ((double)eng->timeused * 1000000.0), eng->timeused );  
 #endif
 
 #ifdef CheckRxBuf
-				if ( check_buf( eng, loop_checknum ) )
+				if (check_buf(eng, loop_checknum))
 					return(1);
 #endif
-			}
-			else {
+			} else {
 #ifdef Enable_ShowBW  
 				printf("[run loop:%3d] BandWidth: %7.2f Mbps, %6.2f sec\n", (eng->run.loop_max % loop_checknum), ((double)(eng->run.loop_max % loop_checknum) * (double)eng->dat.Total_frame_len * 8.0) / ((double)eng->timeused * 1000000.0), eng->timeused);
 				PRINTF( FP_LOG, "[run loop:%3d] BandWidth: %7.2f Mbps, %6.2f sec\n", (eng->run.loop_max % loop_checknum), ((double)(eng->run.loop_max % loop_checknum) * (double)eng->dat.Total_frame_len * 8.0) / ((double)eng->timeused * 1000000.0), eng->timeused );  
 #endif
 
 #ifdef CheckRxBuf
-				if ( check_buf( eng, ( eng->run.loop_max % loop_checknum ) ) )
+				if (check_buf(eng, (eng->run.loop_max % loop_checknum)))
 					return(1);
 #endif
 			} // End if ( checkprd )
 
 #ifndef SelectSimpleDes
-			if ( !looplast )
-				setup_des_loop( eng, eng->run.loop_cnt );
+			if (!looplast)
+				setup_des_loop(eng, eng->run.loop_cnt);
 #endif
 
 #ifdef Enable_ShowBW
@@ -2307,8 +2323,8 @@ char TestingLoop (MAC_ENGINE *eng, uint32_t loop_checknum)
 		} // End if ( eng->run.TM_RxDataEn && checken )
 
 #ifdef SelectSimpleDes
-		if ( !looplast )
-			setup_des_loop( eng, eng->run.loop_cnt );
+		if (!looplast)
+			setup_des_loop(eng, eng->run.loop_cnt);
 #endif
 
 		if ( eng->arg.loop_inf )

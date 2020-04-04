@@ -9,13 +9,15 @@
 
 #include <asm/io.h>
 #include <asm/spl.h>
+#include <asm/arch/aspeed_verify.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#define AST_BOOTMODE_SPI  0
-#define AST_BOOTMODE_EMMC 1
+#define AST_BOOTMODE_SPI	0
+#define AST_BOOTMODE_EMMC	1
+#define AST_BOOTMODE_UART	2
 
-u32 ast_bootmode(void);
+u32 aspeed_bootmode(void);
 
 void board_init_f(ulong dummy)
 {
@@ -29,23 +31,42 @@ void board_init_f(ulong dummy)
 
 u32 spl_boot_device(void)
 {
-	switch(ast_bootmode()) {
-#ifdef CONFIG_SPL_MMC_SUPPORT
+	switch(aspeed_bootmode()) {
 		case AST_BOOTMODE_EMMC:
 			return BOOT_DEVICE_MMC1;
-#endif
 		case AST_BOOTMODE_SPI:
 			return BOOT_DEVICE_RAM;
+		case AST_BOOTMODE_UART:
+			return BOOT_DEVICE_UART;
 		default:
 			break;
 	}
 	return BOOT_DEVICE_NONE;
- }
+}
 
 struct image_header *spl_get_load_buffer(ssize_t offset, size_t size)
 {
+#ifdef CONFIG_SECURE_BOOT
+	void *dst = (void*)CONFIG_SYS_UBOOT_START;
+	void *src = (void*)CONFIG_SYS_TEXT_BASE;
+	u32 count = CONFIG_SYS_MONITOR_LEN;
+	memmove(dst, src, count);
+#endif
     return (struct image_header *)(CONFIG_SYS_TEXT_BASE);
 }
+
+#ifdef CONFIG_SECURE_BOOT
+void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
+{
+	typedef void __noreturn (*image_entry_noargs_t)(void);
+
+	image_entry_noargs_t image_entry =
+		(image_entry_noargs_t)spl_image->entry_point;
+	if (aspeed_bl2_verify((void*)spl_image->entry_point, CONFIG_SPL_TEXT_BASE) != 0)
+		hang();
+	image_entry();
+}
+#endif
 
 #ifdef CONFIG_SPL_MMC_SUPPORT
 u32 spl_boot_mode(const u32 boot_device)

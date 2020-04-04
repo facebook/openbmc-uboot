@@ -323,7 +323,7 @@ typedef union {
 // For ncsi.c
 
 #define DEF_GPACKAGE2NUM                         1         // Default value
-#define DEF_GCHANNEL2NUM                         2         // Default value
+#define DEF_GCHANNEL2NUM                         1         // Default value
 
 //---------------------------------------------------------
 // Variable

@@ -69,7 +69,9 @@ struct aspeed_h2x_reg {
 	u32 h2x_regFC;
 };
 
-extern void aspeed_pcie_cfg_read(struct aspeed_h2x_reg *h2x, pci_dev_t bdf, uint offset, ulong *valuep);
-extern void aspeed_pcie_cfg_write(struct aspeed_h2x_reg *h2x, pci_dev_t bdf, uint offset, ulong value, enum pci_size_t size);
+extern void aspeed_pcie_cfg_read(void *rc_offset, pci_dev_t bdf, uint offset, ulong *valuep);
+extern void aspeed_pcie_cfg_write(void *rc_offset, pci_dev_t bdf, uint offset, ulong value, enum pci_size_t size);
+extern void aspeed_h2x_rc_enable(void *rc_offset);
+extern void aspeed_pcie_workaround(void *rc_offset);
 
 #endif

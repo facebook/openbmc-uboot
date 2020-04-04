@@ -6,22 +6,40 @@ config SYS_CPU
 choice
 	prompt "AST2600 board select"
 	depends on ASPEED_AST2600
-	default TARGET_EVB_AST2600
+	default TARGET_EVB_AST2600A0
 
-config TARGET_EVB_AST2600
-	bool "EVB-AST2600"
+config TARGET_EVB_AST2600A0
+	bool "EVB-AST2600A0"
 	depends on ASPEED_AST2600
-	select ASPEED_GENERIC_BOARD
 	help
 	  EVB-AST2600 is Aspeed evaluation board for AST2600 chip.
 	  It has 512M of RAM, 32M of SPI flash, two Ethernet ports,
 	  4 Serial ports, 4 USB ports, VGA port, PCIe, SD card slot,
 	  20 pin JTAG, pinouts for 14 I2Cs, 3 SPIs and eSPI, 8 PWMs.
 
+config TARGET_EVB_AST2600A1
+	bool "EVB-AST2600A1"
+	depends on ASPEED_AST2600
+	help
+	  EVB-AST2600A1 is based on A0 with ECO changes
+
+config TARGET_NCSI_AST2600A0
+	bool "NCSI-AST2600A0"
+	depends on ASPEED_AST2600
+	help
+	  NCSI-AST2600 is Aspeed EVB board for AST2600 chip with NC-SI 
+	  daughtercard. This is mainly for internal development. Note that
+	  most implementation is co-code with EVB-AST2600.	  
+
+config TARGET_NCSI_AST2600A1
+	bool "NCSI-AST2600A1"
+	depends on ASPEED_AST2600
+	help
+	  NCSI-AST2600A1 is based on A0 with ECO changes
+
 config TARGET_FPGA_AST2600
 	bool "FPGA-AST2600"
 	depends on ASPEED_AST2600
-	select ASPEED_GENERIC_BOARD
 	help
 	  FPGA-AST2600 is Aspeed FPGA board for AST2600 chip.
 	  This is mainly for internal development. Note that
@@ -30,13 +48,23 @@ config TARGET_FPGA_AST2600
 config TARGET_FACEBOOK_FUJI
 	bool "FACEBOOK-FUJI"
 	depends on ASPEED_AST2600
-	select ASPEED_GENERIC_BOARD
 	help
 	  FACEBOOK-FUJI is BMC board with AST2600 chip.
+
+config TARGET_SLT_AST2600
+	bool "SLT-AST2600"
+	depends on ASPEED_AST2600
+	help
+	  SLT-AST2600 is Aspeed SLT board for AST2600 chip.
+
 endchoice
 
-source "board/aspeed/evb_ast2600/Kconfig"
+source "board/aspeed/evb_ast2600a0/Kconfig"
+source "board/aspeed/evb_ast2600a1/Kconfig"
+source "board/aspeed/ncsi_ast2600a0/Kconfig"
+source "board/aspeed/ncsi_ast2600a1/Kconfig"
 source "board/aspeed/fpga_ast2600/Kconfig"
+source "board/aspeed/slt_ast2600/Kconfig"
 source "board/aspeed/facebook_fuji/Kconfig"
 
 endif

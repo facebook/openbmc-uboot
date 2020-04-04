@@ -1,0 +1,13 @@
+if TARGET_NCSI_AST2600A1
+
+config SYS_BOARD
+	default "ncsi_ast2600a1"
+
+config SYS_VENDOR
+	default "aspeed"
+
+config SYS_CONFIG_NAME
+	string "board configuration name"
+	default "ncsi_ast2600a1"
+
+endif

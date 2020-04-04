@@ -692,6 +692,12 @@ config CMD_FDC
 	help
 	  The 'fdtboot' command allows booting an image from a floppy disk.
 
+config CMD_FSI
+	bool "fsi - use FSI master"
+	depends on ASPEED_FSI
+	help
+	 The 'fsi' command allows use of the FSI master present in ASPEED SoCs
+
 config CMD_FLASH
 	bool "flinfo, erase, protect"
 	default y
@@ -1321,6 +1327,14 @@ config CMD_LINK_LOCAL
 	help
 	  Acquire a network IP address using the link-local protocol
 
+config CMD_NCSI
+	bool "ncsi"
+	depends on PHY_NCSI
+	help
+	  Manually configure the attached NIC via NC-SI.
+	  Normally this happens automatically before other network
+	  operations.
+
 endif
 
 config CMD_ETHSW
@@ -1938,6 +1952,7 @@ config CMD_UBIFS
 	  UBIFS is a file system for flash devices which works on top of UBI.
 
 menu "Aspeed Test commands"
+	depends on ARCH_ASPEED
 config CMD_NETTEST
         bool "ASPEED Ethernet loopback test"
         default n
@@ -1945,5 +1960,9 @@ config CMD_NETTEST
 config CMD_DRAMTEST
         bool "ASPEED DRAM controller stress test"
         default y	
+
+config CMD_PECITEST
+        bool "ASPEED PECI controller test"
+        default y
 endmenu
 endmenu

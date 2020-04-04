@@ -300,8 +300,9 @@ void phy_Wait_Reset_Done (MAC_ENGINE *eng) {
 void phy_Reset (MAC_ENGINE *eng) {
         phy_basic_setting( eng );
 
-//      phy_Read_Write( eng,  0, 0x0000, 0x8000 | eng->phy.PHY_00h );//clr set//Rst PHY
+//	phy_Read_Write( eng,  0, 0x0000, 0x8000 | eng->phy.PHY_00h );//clr set//Rst PHY
         phy_Read_Write( eng,  0, 0x7140, 0x8000 | eng->phy.PHY_00h );//clr set//Rst PHY
+	//phy_write( eng,  0, 0x8000);//clr set//Rst PHY
         phy_Wait_Reset_Done( eng );
 
         phy_basic_setting( eng );
@@ -738,8 +739,13 @@ void phy_broadcom0 (MAC_ENGINE *eng) {//BCM54612
         if ( DbgPrn_PHYName )
                 printf("--->(%04x %04x)[Broadcom] %s\n", eng->phy.PHY_ID2, eng->phy.PHY_ID3, eng->phy.phy_name);
 
+	phy_Reset(eng);
+
         eng->phy.PHY_00h = phy_read( eng, PHY_REG_BMCR );
         eng->phy.PHY_09h = phy_read( eng, PHY_GBCR );
+
+	phy_write( eng, 0, eng->phy.PHY_00h & ~BIT(10));
+
         phy_write( eng, 24, 0x7007 );//read reg 18h, shadow value 111
         eng->phy.PHY_18h = phy_read( eng, 24 );
         phy_write( eng, 28, 0x0c00 );//read reg 1Ch, shadow value 00011
@@ -845,7 +851,7 @@ void phy_realtek0 (MAC_ENGINE *eng) {//RTL8201E
         if ( DbgPrn_PHYName )
                 printf("--->(%04x %04x)[Realtek] %s\n", eng->phy.PHY_ID2, eng->phy.PHY_ID3, eng->phy.phy_name);
 
-        eng->phy.RMIICK_IOMode = eng->phy.RMIICK_IOMode | PHY_Flag_RMIICK_IOMode_RTL8201E;
+        eng->phy.RMIICK_IOMode |= PHY_Flag_RMIICK_IOMode_RTL8201E;
 
         phy_Reset( eng );
 
@@ -1510,7 +1516,7 @@ void phy_realtek4 (MAC_ENGINE *eng) {//RTL8201F
         if ( DbgPrn_PHYName )
                 printf("--->(%04x %04x)[Realtek] %s\n", eng->phy.PHY_ID2, eng->phy.PHY_ID3, eng->phy.phy_name);
 
-        eng->phy.RMIICK_IOMode = eng->phy.RMIICK_IOMode | PHY_Flag_RMIICK_IOMode_RTL8201F;
+        eng->phy.RMIICK_IOMode |= PHY_Flag_RMIICK_IOMode_RTL8201F;
 
         phy_write( eng, 31, 0x0007 );
         eng->phy.PHY_10h = phy_read( eng, 16 );

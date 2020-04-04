@@ -10,6 +10,7 @@
 		u-boot,dm-pre-reloc;
 		#clock-cells = <1>;
 		#reset-cells = <1>;
+		uart-clk-source = <0x0>; /* uart clock source selection: 0: uxclk 1: huxclk*/
 	};
 
 	rst: reset-controller {

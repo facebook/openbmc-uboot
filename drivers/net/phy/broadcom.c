@@ -72,6 +72,12 @@ static int bcm5461_config(struct phy_device *phydev)
 		phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM54XX_SHD, 0xc00);
 		mii_reg = 0x8c00;
 		phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM54XX_SHD, mii_reg);
+	} else if (phydev->drv->uid == 0x03625e6a) {
+		/* Disable RGMII RXD to RXC Skew */
+		phy_write(phydev, MDIO_DEVAD_NONE, 0x1c, 0x8c00);
+
+		/* First Switch shadow register selector */
+		phy_write(phydev, MDIO_DEVAD_NONE, 0x18, 0xf0e7);
 	}
 
 	return 0;
@@ -354,6 +360,16 @@ static struct phy_driver BCM54616S_driver = {
 	.shutdown = &genphy_shutdown,
 };
 
+static struct phy_driver BCM54612_driver = {
+	.name = "Broadcom BCM54612",
+	.uid = 0x03625e6a,
+	.mask = 0xffffffff,
+	.features = PHY_GBIT_FEATURES,
+	.config = &bcm5461_config,
+	.startup = &bcm54xx_startup,
+	.shutdown = &genphy_shutdown,
+};
+
 static struct phy_driver BCM5461S_driver = {
 	.name = "Broadcom BCM5461S",
 	.uid = 0x2060c0,
@@ -397,6 +413,7 @@ static struct phy_driver BCM_CYGNUS_driver = {
 int phy_broadcom_init(void)
 {
 	phy_register(&BCM54616S_driver);
+	phy_register(&BCM54612_driver);
 	phy_register(&BCM5482S_driver);
 	phy_register(&BCM5464S_driver);
 	phy_register(&BCM5461S_driver);

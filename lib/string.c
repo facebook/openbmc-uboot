@@ -20,7 +20,7 @@
 #include <linux/string.h>
 #include <linux/ctype.h>
 #include <malloc.h>
-
+#include <common.h>
 
 /**
  * strncasecmp - Case insensitive, length-limited string comparison
@@ -532,6 +532,11 @@ void * memcpy(void *dest, const void *src, size_t count)
 #endif
 
 #ifndef __HAVE_ARCH_MEMMOVE
+
+#ifdef CONFIG_ASPEED_SPI
+void aspeed_spi_fastcpy(u32 mem_addr, u32 spi_addr, u32 count);
+#endif
+
 /**
  * memmove - Copy one area of memory to another
  * @dest: Where to copy to
@@ -544,6 +549,18 @@ void * memmove(void * dest,const void *src,size_t count)
 {
 	char *tmp, *s;
 
+#ifdef CONFIG_ASPEED_SPI_DMA
+	if (dest == src)
+	    return dest;
+
+	if (
+	   ((u32)src >= ASPEED_FMC_CS0_BASE)
+	&& ((u32)src < (ASPEED_FMC_CS0_BASE + 0x10000000))) {
+		count = ((count + 3) / 4) * 4;
+		aspeed_spi_fastcpy((u32)dest, (u32)src, count);
+		return dest;
+	}
+#endif
 	if (dest <= src) {
 		memcpy(dest, src, count);
 	} else {

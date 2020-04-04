@@ -57,4 +57,10 @@ config APBH_DMA_BURST8
 
 endif
 
+if ASPEED_SPI
+config ASPEED_SPI_DMA
+	bool "Enable Aseepd SPI DMA"
+	default y
+endif
+
 endmenu # menu "DMA Support"

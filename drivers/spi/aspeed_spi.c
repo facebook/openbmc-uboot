@@ -26,7 +26,9 @@ struct aspeed_spi_regs {
 	u32 _reserved0[5];		/* .. */
 	u32 segment_addr[ASPEED_SPI_MAX_CS];
 					/* 0x30 .. 0x38 Segment Address */
-	u32 _reserved1[17];		/* .. */
+	u32 _reserved1[5];		/* .. */
+	u32 soft_rst_cmd_ctrl;	/* 0x50 Auto Soft-Reset Command Control */
+	u32 _reserved2[11];		/* .. */
 	u32 dma_ctrl;			/* 0x80 DMA Control/Status */
 	u32 dma_flash_addr;		/* 0x84 DMA Flash Side Address */
 	u32 dma_dram_addr;		/* 0x88 DMA DRAM Side Address */
@@ -98,6 +100,9 @@ struct aspeed_spi_regs {
 #define	  CE_CTRL_WRITEMODE		0x2
 #define	  CE_CTRL_USERMODE		0x3
 
+/* Auto Soft-Reset Command Control */
+#define SOFT_RST_CMD_EN     GENMASK(1, 0)
+
 /*
  * The Segment Register uses a 8MB unit to encode the start address
  * and the end address of the AHB window of a SPI flash device.
@@ -138,8 +143,13 @@ struct aspeed_spi_regs {
 #define DMA_CTRL_WRITE			BIT(1)
 #define DMA_CTRL_ENABLE			BIT(0)
 
+/* for ast2600 setting */
+#define SPI_3B_AUTO_CLR_REG   0x1e6e2510
+#define SPI_3B_AUTO_CLR       BIT(9)
+
+
 /*
- *
+ * flash related info
  */
 struct aspeed_spi_flash {
 	u8		cs;
@@ -593,8 +603,18 @@ static int aspeed_spi_write_reg(struct aspeed_spi_priv *priv,
 	aspeed_spi_write_to_ahb(flash->ahb_base, write_buf, len);
 	aspeed_spi_stop_user(priv, flash);
 
+	debug("=== write opcode [%x] ==== \n", opcode);
 	switch(opcode) {
 		case SPINOR_OP_EN4B:
+			/* For ast2600, if 2 chips ABR mode is enabled,
+			 * turn on 3B mode auto clear in order to avoid
+			 * the scenario where spi controller is at 4B mode
+			 * and flash site is at 3B mode after 3rd switch.
+			 */
+			if (priv->new_ver == 1 && (readl(SPI_3B_AUTO_CLR_REG) & SPI_3B_AUTO_CLR))
+				writel(readl(&priv->regs->soft_rst_cmd_ctrl) | SOFT_RST_CMD_EN,
+						&priv->regs->soft_rst_cmd_ctrl);
+
 			writel(readl(&priv->regs->ctrl) | BIT(flash->cs), &priv->regs->ctrl);
 			break;
 		case SPINOR_OP_EX4B:
@@ -614,6 +634,9 @@ static void aspeed_spi_send_cmd_addr(struct aspeed_spi_priv *priv,
 
 	/* First, send the opcode */
 	aspeed_spi_write_to_ahb(flash->ahb_base, &cmdbuf[0], 1);
+
+	if(flash->iomode == CE_CTRL_IO_QUAD_ADDR_DATA)
+		writel(flash->ce_ctrl_user | flash->iomode, &priv->regs->ce_ctrl[flash->cs]);
 
 	/*
 	 * The controller is configured for 4BYTE address mode. Fix
@@ -664,16 +687,13 @@ static ssize_t aspeed_spi_write_user(struct aspeed_spi_priv *priv,
 {
 	aspeed_spi_start_user(priv, flash);
 
-	if(flash->iomode == CE_CTRL_IO_QPI_DATA)
-		writel(flash->ce_ctrl_user | flash->iomode, &priv->regs->ce_ctrl[flash->cs]);
-	
 	/* cmd buffer = cmd + addr : normally cmd is use signle mode*/
 	aspeed_spi_send_cmd_addr(priv, flash, cmdbuf, cmdlen);
 
 	/* data will use io mode */
 	if(flash->iomode == CE_CTRL_IO_QUAD_DATA)
 		writel(flash->ce_ctrl_user | flash->iomode, &priv->regs->ce_ctrl[flash->cs]);
-	
+
 	aspeed_spi_write_to_ahb(flash->ahb_base, write_buf, len);
 
 	aspeed_spi_stop_user(priv, flash);
@@ -872,15 +892,20 @@ static int aspeed_spi_flash_init(struct aspeed_spi_priv *priv,
 	else
 		read_hclk = aspeed_spi_hclk_divisor(priv, slave->speed);
 
-	if (slave->mode & (SPI_RX_DUAL | SPI_TX_DUAL)) {
-		debug("CS%u: setting dual data mode\n", flash->cs);
-		flash->iomode = CE_CTRL_IO_DUAL_DATA;
-		flash->spi->read_opcode = SPINOR_OP_READ_1_1_2;
-	} else if (slave->mode & (SPI_RX_QUAD | SPI_TX_QUAD)) {
-		flash->iomode = CE_CTRL_IO_QUAD_DATA;
-		flash->spi->read_opcode = SPINOR_OP_READ_1_4_4;
-	} else {
-		debug("normal read \n");
+	switch(flash->spi->read_opcode) {
+		case SPINOR_OP_READ_1_1_2:
+		case SPINOR_OP_READ_1_1_2_4B:
+			flash->iomode = CE_CTRL_IO_DUAL_DATA;
+			break;
+		case SPINOR_OP_READ_1_1_4:
+		case SPINOR_OP_READ_1_1_4_4B:
+			flash->iomode = CE_CTRL_IO_QUAD_DATA;
+			break;
+		case SPINOR_OP_READ_1_4_4:
+		case SPINOR_OP_READ_1_4_4_4B:
+			flash->iomode = CE_CTRL_IO_QUAD_ADDR_DATA;
+			printf("need modify dummy for 3 bytes");
+			break;
 	}
 
 	if(priv->new_ver) {

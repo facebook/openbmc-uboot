@@ -16,9 +16,11 @@
 		spi0 = &fmc;
 		spi1 = &spi1;
 		spi2 = &spi2;
-		ethernet1 = &mac1;
-		ethernet2 = &mac2;
-		ethernet3 = &mac3;
+#if 0
+		ethernet0 = &mac1;
+#endif		
+		ethernet1 = &mac2;
+		ethernet2 = &mac3;
 	};
 
 	cpus {
@@ -67,7 +69,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_mac1link_default &pinctrl_mdio1_default>;
 };
-#endif
 
 &mac1 {
 	status = "okay";
@@ -76,21 +77,24 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_mac2link_default &pinctrl_mdio2_default>;
 };
+#endif
 
 &mac2 {
 	status = "okay";
 
-	phy-mode = "rgmii";
+	phy-mode = "NC-SI";
+	use-ncsi;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_mac3link_default &pinctrl_mdio3_default>;
+	pinctrl-0 = <&pinctrl_rmii3_default>;
 };
 
 &mac3 {
 	status = "okay";
 
-	phy-mode = "rgmii";
+	phy-mode = "NC-SI";
+	use-ncsi;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_mac4link_default &pinctrl_mdio4_default>;
+	pinctrl-0 = <&pinctrl_rmii4_default>;
 };
 
 &fmc {
@@ -243,12 +247,3 @@
 	pinctrl-0 = <&pinctrl_i2c9_default>;
 };
 
-#if 0
-&pcie_bridge1 {
-	status = "okay";
-};
-
-&h2x {
-	status = "okay";
-};
-#endif

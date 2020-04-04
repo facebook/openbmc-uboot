@@ -10,8 +10,65 @@
 #include <asm/arch/platform.h>
 #include <asm/arch/aspeed_scu_info.h>
 
-extern int
-aspeed_get_mac_phy_interface(u8 num)
+/* SoC mapping Table */
+#define SOC_ID(str, rev) { .name = str, .rev_id = rev, }
+
+struct soc_id {
+	const char *name;
+	u32	   rev_id;
+};
+
+static struct soc_id soc_map_table[] = {
+	SOC_ID("AST1100/AST2050-A0", 0x00000200),
+	SOC_ID("AST1100/AST2050-A1", 0x00000201),
+	SOC_ID("AST1100/AST2050-A2,3/AST2150-A0,1", 0x00000202),
+	SOC_ID("AST1510/AST2100-A0", 0x00000300),
+	SOC_ID("AST1510/AST2100-A1", 0x00000301),
+	SOC_ID("AST1510/AST2100-A2,3", 0x00000302),
+	SOC_ID("AST2200-A0,1", 0x00000102),
+	SOC_ID("AST2300-A0", 0x01000003),
+	SOC_ID("AST2300-A1", 0x01010303),
+	SOC_ID("AST1300-A1", 0x01010003),
+	SOC_ID("AST1050-A1", 0x01010203),
+	SOC_ID("AST2400-A0", 0x02000303),
+	SOC_ID("AST2400-A1", 0x02010303),
+	SOC_ID("AST1010-A0", 0x03000003),
+	SOC_ID("AST1010-A1", 0x03010003),
+	SOC_ID("AST3200-A0", 0x04002003),
+	SOC_ID("AST3200-A1", 0x04012003),
+	SOC_ID("AST3200-A2", 0x04032003),
+	SOC_ID("AST1520-A0", 0x03000203),	
+	SOC_ID("AST1520-A1", 0x03010203),
+	SOC_ID("AST2510-A0", 0x04000103),
+	SOC_ID("AST2510-A1", 0x04010103),
+	SOC_ID("AST2510-A2", 0x04030103),	
+	SOC_ID("AST2520-A0", 0x04000203),
+	SOC_ID("AST2520-A1", 0x04010203),
+	SOC_ID("AST2520-A2", 0x04030203),
+	SOC_ID("AST2500-A0", 0x04000303),	
+	SOC_ID("AST2500-A1", 0x04010303),
+	SOC_ID("AST2500-A2", 0x04030303),	
+	SOC_ID("AST2530-A0", 0x04000403),
+	SOC_ID("AST2530-A1", 0x04010403),
+	SOC_ID("AST2530-A2", 0x04030403),	
+	SOC_ID("AST2600-A0", 0x05000303),
+};
+
+void aspeed_print_soc_id(void)
+{
+	int i;
+	u32 rev_id = readl(ASPEED_REVISION_ID);
+	for (i = 0; i < ARRAY_SIZE(soc_map_table); i++) {
+		if (rev_id == soc_map_table[i].rev_id)
+			break;
+	}
+	if (i == ARRAY_SIZE(soc_map_table))
+		printf("UnKnow-SOC : %x \n",rev_id);
+	else
+		printf("SOC : %4s \n",soc_map_table[i].name);
+}
+
+int aspeed_get_mac_phy_interface(u8 num)
 {
 	u32 strap1 = readl(ASPEED_HW_STRAP1);
 #ifdef ASPEED_HW_STRAP2
@@ -52,8 +109,7 @@ aspeed_get_mac_phy_interface(u8 num)
 	return -1;
 }
 
-extern void
-aspeed_security_info(void)
+void aspeed_print_security_info(void)
 {
 	switch((readl(ASPEED_HW_STRAP2) >> 18) & 0x3) {
 		case 1:
@@ -75,8 +131,7 @@ aspeed_security_info(void)
 #define SYS_EXT_RESET			BIT(1)
 #define SYS_PWR_RESET_FLAG		BIT(0)
 
-extern void 
-aspeed_sys_reset_info(void)
+void aspeed_print_sysrst_info(void)
 {
 	u32 rest = readl(ASPEED_SYS_RESET_CTRL);
 
@@ -108,8 +163,7 @@ aspeed_sys_reset_info(void)
 
 #define SOC_FW_INIT_DRAM		BIT(7)
 
-extern void
-aspeed_who_init_dram(void)
+void aspeed_print_dram_initializer(void)
 {
 	if(readl(ASPEED_VGA_HANDSHAKE0) & SOC_FW_INIT_DRAM)
 		printf("[init by SOC]\n");
@@ -117,21 +171,18 @@ aspeed_who_init_dram(void)
 		printf("[init by VBIOS]\n");
 }
 
-extern void
-aspeed_2nd_wdt_mode(void)
+void aspeed_print_2nd_wdt_mode(void)
 {
 	if(readl(ASPEED_HW_STRAP1) & BIT(17))
 		printf("2nd Boot : Enable\n");
 }
 
-extern void
-aspeed_spi_strap_mode(void)
+void aspeed_print_spi_strap_mode(void)
 {
 	return;
 }
 
-extern void
-aspeed_espi_mode(void)
+void aspeed_print_espi_mode(void)
 {
 	int espi_mode = 0;
 	int sio_disable = 0;
@@ -159,3 +210,11 @@ aspeed_espi_mode(void)
 		printf("\n");
 }
 
+void aspeed_print_mac_info(void)
+{
+	int i;
+	printf("Eth :\n");
+	for (i = 0; i < ASPEED_MAC_COUNT; i++)
+		printf("    MAC%d: %s\n", i,
+				aspeed_get_mac_phy_interface(i) ? "RGMII" : "RMII/NCSI");
+}

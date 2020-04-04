@@ -18,11 +18,11 @@
 #define RGMII_TXCLK_ODLY	8
 #define RMII_RXCLK_IDLY		2
 
-#define MAC_DEF_DELAY_1G	0x00410410
-#define MAC_DEF_DELAY_100M	0x00410410
-#define MAC_DEF_DELAY_10M	0x00410410
+#define MAC_DEF_DELAY_1G	0x0041b75d
+#define MAC_DEF_DELAY_100M	0x00417410
+#define MAC_DEF_DELAY_10M	0x00417410
 
-#define MAC34_DEF_DELAY_1G	0x00104208
+#define MAC34_DEF_DELAY_1G	0x0010438a
 #define MAC34_DEF_DELAY_100M	0x00104208
 #define MAC34_DEF_DELAY_10M	0x00104208
 
@@ -562,28 +562,6 @@ static ulong ast2600_clk_set_rate(struct clk *clk, ulong rate)
 
 static u32 ast2600_configure_mac12_clk(struct ast2600_scu *scu)
 {
-#if 0	
-	struct ast2600_pll_desc epll;
-
-	epll.in = AST2600_CLK_IN;
-	epll.out = 1000000000;
-	if (false == ast2600_search_clock_config(&epll)) {
-		printf(
-		    "error!! unable to find valid ETHNET MAC clock setting\n");
-		debug("%s: epll cfg = 0x%08x 0x%08x\n", __func__,
-		      epll.cfg.reg.w, epll.cfg.ext_reg);
-		debug("%s: epll cfg = %02x %02x %02x\n", __func__,
-		      epll.cfg.reg.b.m, epll.cfg.reg.b.n, epll.cfg.reg.b.p);
-		return 0;
-	}
-	ast2600_configure_pll(scu, &(epll.cfg), ASPEED_CLK_EPLL);
-
-	/* select MAC#1 and MAC#2 clock source = EPLL / 8 */
-	clksel = readl(&scu->clk_sel2);
-	clksel &= ~BIT(23);
-	clksel |= 0x7 << 20;
-	writel(clksel, &scu->clk_sel2);
-#endif
 	/* scu340[25:0]: 1G default delay */
 	clrsetbits_le32(&scu->mac12_clk_delay, GENMASK(25, 0),
 			MAC_DEF_DELAY_1G);
@@ -600,7 +578,6 @@ static u32 ast2600_configure_mac12_clk(struct ast2600_scu *scu)
 
 static u32 ast2600_configure_mac34_clk(struct ast2600_scu *scu)
 {
-	ast2600_configure_mac12_clk(scu);
 
 	/*
 	 * scu350[31]   RGMII 125M source: 0 = from IO pin
@@ -625,7 +602,7 @@ static u32 ast2600_configure_mac34_clk(struct ast2600_scu *scu)
 	 * scu458[1:0] : MAC3 driving strength
 	 */
 	clrsetbits_le32(&scu->pinmux_ctrl16, GENMASK(3, 0),
-			(0x2 << 2) | (0x2 << 0));	
+			(0x3 << 2) | (0x3 << 0));	
 
 	return 0;
 }
@@ -818,30 +795,6 @@ static u32 ast2600_configure_mac(struct ast2600_scu *scu, int index)
 	u32 reset_bit;
 	u32 clkstop_bit;
 
-	/* check board level setup */
-	u32 mac_1_2_cfg = readl(&scu->hwstrap1) & GENMASK(7, 6);
-	u32 mac_3_4_cfg = readl(&scu->hwstrap2) & GENMASK(1, 0);
-
-	if ((mac_1_2_cfg == 0) && (mac_3_4_cfg != 0)) {
-		/**
-		 * HW limitation:
-		 * impossible to set MAC 3/4 = RGMII when MAC 1/2 = RMII
-		*/
-		printf("%s: unsupported configuration\n", __func__);
-		return -EINVAL;
-	} else if (mac_1_2_cfg | mac_3_4_cfg) {
-		/* setup RGMII clock */
-		ast2600_init_rgmii_clk(scu, &rgmii_clk_defconfig);
-	} else {
-		/* setup RMII clock */
-		ast2600_init_rmii_clk(scu, &rmii_clk_defconfig);
-	}
-
-	if (index < 3)
-		ast2600_configure_mac12_clk(scu);
-	else
-		ast2600_configure_mac34_clk(scu);
-
 	switch (index) {
 	case 1:
 		reset_bit = BIT(ASPEED_RESET_MAC1);
@@ -954,17 +907,111 @@ static ulong ast2600_enable_emmcclk(struct ast2600_scu *scu)
 
 static ulong ast2600_enable_extemmcclk(struct ast2600_scu *scu)
 {
+	u32 revision_id = readl(&scu->chip_id0);
 	u32 clk_sel = readl(&scu->clk_sel1);
 	u32 enableclk_bit;
+	u32 rate = 0;
+	u32 div = 0;
+	int i = 0;
 
 	enableclk_bit = BIT(SCU_CLKSTOP_EXTEMMC);
 
-	clk_sel &= ~SCU_CLK_SD_MASK;
-	clk_sel |= SCU_CLK_SD_DIV(1);
-	writel(clk_sel, &scu->clk_sel1);
+	if(((revision_id & GENMASK(23, 16)) >> 16) == 0x1) {
+		//use mpll to be clk source
+		rate = ast2600_get_pll_rate(scu, ASPEED_CLK_MPLL);
+		for(i = 0; i < 8; i++) {
+			div = (i + 1) * 2;
+			if ((rate / div) <= 200000000)
+				break;
+		}
+		
+		clk_sel &= ~SCU_CLK_EMMC_MASK;
+		clk_sel |= SCU_CLK_EMMC_DIV(i) | BIT(11);
+		writel(clk_sel, &scu->clk_sel1);	
+
+	} else {
+	 	//use hpll to be clk source
+
+		//ast2600 eMMC controller max clk is 200Mhz
+		rate = ast2600_get_pll_rate(scu, ASPEED_CLK_HPLL);
+
+		for(i = 0; i < 8; i++) {
+			div = (i + 1) * 4;
+			if ((rate / div) <= 200000000)
+				break;
+		}
+
+		clk_sel &= ~SCU_CLK_EMMC_MASK;
+		clk_sel |= SCU_CLK_EMMC_DIV(i);
+		writel(clk_sel, &scu->clk_sel1);
+	}
 
 	//enable clk 
 	setbits_le32(&scu->clk_sel1, enableclk_bit);
+
+	return 0;
+}
+
+#define SCU_CLKSTOP_FSICLK 30
+
+static ulong ast2600_enable_fsiclk(struct ast2600_scu *scu)
+{
+	u32 reset_bit;
+	u32 clkstop_bit;
+
+	reset_bit = BIT(ASPEED_RESET_FSI % 32);
+	clkstop_bit = BIT(SCU_CLKSTOP_FSICLK);
+
+	/* The FSI clock is shared between masters. If it's already on
+	 * don't touch it, as that will reset the existing master. */
+	if (!(readl(&scu->clk_stop_ctrl2) & clkstop_bit)) {
+		debug("%s: already running, not touching it\n", __func__);
+		return 0;
+	}
+
+	writel(reset_bit, &scu->sysreset_ctrl2);
+	udelay(100);
+	//enable clk
+	writel(clkstop_bit, &scu->clk_stop_clr_ctrl2);
+	mdelay(10);
+	writel(reset_bit, &scu->sysreset_clr_ctrl2);
+
+	return 0;
+}
+
+static ulong ast2600_enable_usbahclk(struct ast2600_scu *scu)
+{
+	u32 reset_bit;
+	u32 clkstop_bit;
+
+	reset_bit = BIT(ASPEED_RESET_EHCI_P1);
+	clkstop_bit = BIT(14);
+
+	writel(reset_bit, &scu->sysreset_ctrl1);
+		udelay(100);
+	//enable phy clk
+	writel(clkstop_bit, &scu->clk_stop_ctrl1);
+	mdelay(20);
+	writel(reset_bit, &scu->sysreset_clr_ctrl1);
+
+	return 0;
+}
+
+static ulong ast2600_enable_usbbhclk(struct ast2600_scu *scu)
+{
+	u32 reset_bit;
+	u32 clkstop_bit;
+
+	reset_bit = BIT(ASPEED_RESET_EHCI_P2);
+	clkstop_bit = BIT(7);
+
+	writel(reset_bit, &scu->sysreset_ctrl1);
+			udelay(100);
+	//enable phy clk
+	writel(clkstop_bit, &scu->clk_stop_clr_ctrl1);
+	mdelay(20);
+
+	writel(reset_bit, &scu->sysreset_clr_ctrl1);
 
 	return 0;
 }
@@ -998,6 +1045,15 @@ static int ast2600_clk_enable(struct clk *clk)
 		case ASPEED_CLK_GATE_EMMCEXTCLK:
 			ast2600_enable_extemmcclk(priv->scu);
 			break;
+		case ASPEED_CLK_GATE_FSICLK:
+			ast2600_enable_fsiclk(priv->scu);
+			break;
+		case ASPEED_CLK_GATE_USBPORT1CLK:
+			ast2600_enable_usbahclk(priv->scu);
+			break;
+		case ASPEED_CLK_GATE_USBPORT2CLK:
+			ast2600_enable_usbbhclk(priv->scu);
+			break;
 		default:
 			pr_debug("can't enable clk \n");
 			return -ENOENT;
@@ -1016,10 +1072,27 @@ struct clk_ops ast2600_clk_ops = {
 static int ast2600_clk_probe(struct udevice *dev)
 {
 	struct ast2600_clk_priv *priv = dev_get_priv(dev);
+	u32 uart_clk_source;
 
 	priv->scu = devfdt_get_addr_ptr(dev);
 	if (IS_ERR(priv->scu))
 		return PTR_ERR(priv->scu);
+
+	uart_clk_source = dev_read_u32_default(dev, "uart-clk-source",
+					    0x0);
+
+	if(uart_clk_source) {
+		if(uart_clk_source & GENMASK(5, 0))
+			setbits_le32(&priv->scu->clk_sel4, uart_clk_source & GENMASK(5, 0));
+		if(uart_clk_source & GENMASK(12, 6))
+			setbits_le32(&priv->scu->clk_sel5, uart_clk_source & GENMASK(12, 6));
+	}
+
+	
+	ast2600_init_rgmii_clk(priv->scu, &rgmii_clk_defconfig);	
+	ast2600_init_rmii_clk(priv->scu, &rmii_clk_defconfig);
+	ast2600_configure_mac12_clk(priv->scu);
+	ast2600_configure_mac34_clk(priv->scu);
 
 	return 0;
 }

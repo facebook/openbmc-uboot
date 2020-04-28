@@ -43,6 +43,7 @@
 #define AST_SCU_DEBUG_CTRL2             (AST_SCU_BASE + 0x0D8)
 #define AST_SCU_HPLL_PARAM		(AST_SCU_BASE + 0x200)
 #define AST_SCU_HPLL_PARAM_EXT		(AST_SCU_BASE + 0x204)
+#define AST_SCU_MFP_CTRL7		(AST_SCU_BASE + 0x41C)
 #define AST_SCU_MFP_CTRL15		(AST_SCU_BASE + 0x454)
 #define AST_SCU_HW_STRAP1		(AST_SCU_BASE + 0x500)
 #define AST_SCU_HW_STRAP2		(AST_SCU_BASE + 0x510)
@@ -60,6 +61,7 @@
 
 #define AST_GPIO_BASE		(0x1E780000)
 #define AST_GPIOYZ_DATA_VALUE	(AST_GPIO_BASE + 0x1E0)
+#define AST_HI_CTRL9            (AST_GPIO_BASE + 0x9098)
 
 /* Revision ID */
 #define REV_ID_AST2600A0	0x05000303
@@ -255,6 +257,17 @@ wait_lock:
 	orr     r1, #0x0A
 	str     r1, [r0]
 #endif
+
+	/* Enable UART1: Set Multi-function Pin for UART1 */
+	ldr     r0, =AST_SCU_MFP_CTRL7
+	ldr     r1, [r0]
+	orr     r1, #0x0F
+	str     r1, [r0]
+
+	/* Disable UART1 reset source from LPC */
+	ldr   r0, =AST_HI_CTRL9
+	ldr   r1, =0x20
+	str   r1, [r0]
 
 	/* Strongest LADESPID Driving Strngth */
 	ldr	r0, =AST_SCU_MFP_CTRL15

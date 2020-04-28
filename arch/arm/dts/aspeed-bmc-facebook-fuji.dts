@@ -14,7 +14,7 @@
 	};
 
 	chosen {
-		stdout-path = &uart5;
+		stdout-path = &uart1;
 	};
 
 	aliases {
@@ -32,7 +32,7 @@
 	};
 };
 
-&uart5 {
+&uart1 {
 	u-boot,dm-pre-reloc;
 	status = "okay";
 };

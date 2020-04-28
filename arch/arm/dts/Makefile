@@ -683,6 +683,8 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
 	ast2600-slt.dtb \
 	ast2500-evb.dtb
 
+dtb-$(CONFIG_TARGET_FACEBOOK_CLOUDRIPPER) += \
+	aspeed-bmc-facebook-cloudripper.dtb
 
 dtb-$(CONFIG_TARGET_FACEBOOK_FUJI) += \
 	aspeed-bmc-facebook-fuji.dtb

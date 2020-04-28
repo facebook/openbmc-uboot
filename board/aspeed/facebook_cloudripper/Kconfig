@@ -1,0 +1,13 @@
+if TARGET_FACEBOOK_CLOUDRIPPER
+
+config SYS_BOARD
+	default "facebook_cloudripper"
+
+config SYS_VENDOR
+	default "aspeed"
+
+config SYS_CONFIG_NAME
+	string "board configuration name"
+	default "facebook_cloudripper"
+
+endif

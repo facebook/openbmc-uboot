@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2019-Present
+ * (C) Copyright 2020-Present
  * Teddy Reed <reed@fb.com>, Facebook, Inc.
  *
  * SPDX-License-Identifier: GPL-2.0+
@@ -18,18 +18,13 @@
 #define CONFIG_BOOTFILE   "flash-elbert"
 
 /*
- * Enable DRAM ECC, going to lose 1/8 of memory
- */
-#define CONFIG_DRAM_ECC
-
-/*
  * Serial configuration
  */
-#define CONFIG_SYS_NS16550_MEM32
-#define CONFIG_SYS_NS16550_REG_SIZE     -4
-#define CONFIG_SYS_NS16550_COM1 AST_UART1_BASE
+#define CONFIG_SYS_NS16550_COM1 AST_UART0_BASE
 #define CONFIG_CONS_INDEX       1
-#define CONFIG_ASPEED_COM       AST_UART1_BASE
+#define CONFIG_ASPEED_COM       AST_UART0_BASE
+#define CONFIG_BAUDRATE         9600
+
 /*
  * UART configurtion
  */
@@ -44,23 +39,27 @@
 /*
  * NIC configuration
  */
-#define CONFIG_MAC2_ENABLE
-#define CONFIG_MAC1_PHY_SETTING     0
-#define CONFIG_MAC2_PHY_SETTING     0
-#define CONFIG_MAC2_PHY_LINK_INTERRUPT
-#define CONFIG_ASPEED_MAC_NUMBER    2
-#define CONFIG_ASPEED_MAC_CONFIG    2
+#define CONFIG_MAC1_PHY_SETTING   0
+#define CONFIG_ASPEED_MAC_NUMBER  1
+#define CONFIG_ASPEED_MAC_CONFIG  1
+
+#define CONFIG_MII_
+#define CONFIG_CMD_MII
 
 /*
- * Watchdog configuration
+ * Enable DRAM ECC, going to lose 1/8 of memory
  */
-#define CONFIG_ASPEED_ENABLE_WATCHDOG
-#define CONFIG_ASPEED_WATCHDOG_2ND_BOOT
+#define CONFIG_DRAM_ECC
 
 /*
- * SPI flash configuration
+ * Watchdog configuration, needed for TPM hardware reset
+ * This will trigger GPIOAB2 output high when the CPU is reset
  */
-#define CONFIG_2SPIFLASH
+#define CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
+
+// ELBERTTODO SECONDARY BOOT ENABLE
+// #define CONFIG_ASPEED_ENABLE_WATCHDOG
+// #define CONFIG_ASPEED_WATCHDOG_2ND_BOOT
 
 #include "facebook_common.h"
 #include "ast2500_common.h"

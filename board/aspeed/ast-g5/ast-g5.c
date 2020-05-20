@@ -602,6 +602,20 @@ static void disable_snoop_interrupt(void)
 
   __raw_writel(0x0, AST_LPC_BASE + 0x130);
 }
+
+//Config GPIOE pass-through
+static void config_gpioe_pass_through(void) {
+  u32 reg;
+
+  //disable GPIOE Pass-throuth
+  reg = 0x00400000;
+  __raw_writel(reg, AST_SCU_BASE + 0x7C);
+
+  //Enable Reset Button
+  reg = 1 << 12;
+  __raw_writel(reg, AST_SCU_BASE + 0x8C); 
+}
+
 #endif
 
 #if defined(CONFIG_FBAL)
@@ -696,7 +710,7 @@ static void policy_init(void)
       set_fbal_pwrbtn(0);
       udelay(1000*1000);
       set_fbal_pwrbtn(1);
-      udelay(1000*1000);
+      udelay(1000*2000);
       if (!get_fbal_pwrok())
         printf("!!!! Power On failed !!!!\n");
     }
@@ -809,14 +823,6 @@ static void policy_init(void)
   if (last_state)
     free(last_state);
 }
-
-//disable GPIOE pass-through
-static void disable_gpioe_pass_through(void) {
-  u32 reg;
-  reg = __raw_readl(AST_SCU_BASE + 0x70);
-  reg &= 0xFFBFFFFF;
-  __raw_writel(reg, AST_SCU_BASE + 0x70);
-}
 #endif
 
 #if defined(CONFIG_FBEP)
@@ -861,6 +867,7 @@ int board_init(void)
 #endif
 
 #if defined(CONFIG_FBAL)
+  config_gpioe_pass_through();
   policy_init();
   disable_snoop_interrupt();
   enable_nic_mux();
@@ -869,8 +876,8 @@ int board_init(void)
 
 #if defined(CONFIG_FBSP)
   fan_init();
+  config_gpioe_pass_through();
   policy_init();
-  disable_gpioe_pass_through();
   disable_snoop_interrupt();
   fix_mmc_hold_time_fail();
 #endif

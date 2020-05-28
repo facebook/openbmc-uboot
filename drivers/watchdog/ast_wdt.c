@@ -39,11 +39,11 @@ static int ast_wdt_start(struct udevice *dev, u64 timeout_ms, ulong flags)
 	/* watchdog timer clock is fixed at 1MHz */
 	u32 timeout_us = (u32)timeout_ms * 1000;
 
-	debug("wdt%u set timeout after %uus\n", dev->seq, timeout_us);
+	dev_info(dev, "wdt%u set timeout after %uus\n", dev->seq, timeout_us);
 
 #ifdef CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
 	int ret;
-	debug("Enable WDT trigger external reset\n");
+	dev_info(dev, "Enable WDT trigger external reset\n");
 	ret = ast_scu_enable_wdtrst1();
 	if (ret)
 		return ret;
@@ -85,7 +85,7 @@ static int ast_wdt_stop(struct udevice *dev)
 	struct ast_wdt_priv *priv = dev_get_priv(dev);
 	ulong driver_data = dev_get_driver_data(dev);
 
-	debug("Watch Dog stopped.\n");
+	dev_info(dev, "Watch Dog stopped.\n");
 	clrbits_le32(&priv->regs->ctrl, WDT_CTRL_EN);
 
         if(driver_data == WDT_AST2600) {
@@ -103,7 +103,7 @@ static int ast_wdt_reset(struct udevice *dev)
 {
 	struct ast_wdt_priv *priv = dev_get_priv(dev);
 
-	debug("Watch Dog reload.\n");
+	dev_info(dev, "Watch Dog reload.\n");
 	writel(WDT_COUNTER_RESTART_VAL, &priv->regs->counter_restart);
 
 	return 0;
@@ -144,7 +144,7 @@ static const struct wdt_ops ast_wdt_ops = {
 
 static int ast_wdt_probe(struct udevice *dev)
 {
-	debug("%s() wdt%u\n", __func__, dev->seq);
+	dev_dbg(dev, "%s() wdt%u\n", __func__, dev->seq);
 	ast_wdt_stop(dev);
 
 	return 0;

@@ -1,29 +1,40 @@
 // SPDX-License-Identifier: GPL-2.0
-// SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) ASPEED Technology Inc.
- * Chia-Wei Wang <chiawei_wang@aspeedtech.com>
+ * (C) Copyright 2016 Google, Inc
  */
-
 #include <common.h>
 #include <dm.h>
 #include <errno.h>
 #include <sysreset.h>
 #include <wdt.h>
 #include <asm/io.h>
+#include <asm/arch/wdt.h>
 #include <linux/err.h>
 
 static int ast_sysreset_request(struct udevice *dev, enum sysreset_t type)
 {
 	struct udevice *wdt;
+	u32 reset_mode;
 	int ret = uclass_first_device(UCLASS_WDT, &wdt);
 
+	dev_info(dev, "%s( type=%d )\n", __func__, type);
 	if (ret)
 		return ret;
 
-	ret = wdt_expire_now(wdt, 0);
+	switch (type) {
+	case SYSRESET_WARM:
+		reset_mode = WDT_CTRL_RESET_CPU;
+		break;
+	case SYSRESET_COLD:
+		reset_mode = WDT_CTRL_RESET_CHIP;
+		break;
+	default:
+		return -EPROTONOSUPPORT;
+	}
+
+	ret = wdt_expire_now(wdt, reset_mode);
 	if (ret) {
-		debug("Sysreset failed: %d", ret);
+		dev_err(dev, "Sysreset failed: %d", ret);
 		return ret;
 	}
 

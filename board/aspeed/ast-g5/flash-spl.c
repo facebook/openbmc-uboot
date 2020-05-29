@@ -20,7 +20,7 @@
 #if defined(CONFIG_FBAL) || defined(CONFIG_FBSP)
 /* Workaround slow down SPI clk to 12Mhz */
 #define AST_FMC_STATUS_RESET 0x000b0041
-#elif defined(CONFIG_FBY3)
+#elif defined(CONFIG_FBY3) || defined(CONFIG_FBEP)
 /* Workaround slow down SPI clk to 40Mhz */
 #define AST_FMC_STATUS_RESET 0x000B0D41
 #else

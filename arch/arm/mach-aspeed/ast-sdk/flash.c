@@ -1330,7 +1330,7 @@ static ulong flash_get_size (const char *id, ulong base, flash_info_t *info)
     ReadClk  = 12;
 //<--end
 #endif
-#if defined(CONFIG_FBY3)
+#if defined(CONFIG_FBY3) || defined(CONFIG_FBEP)
 //Workaround slow down SPI clock to 40Mhz-->
     WriteClk = 40;
     EraseClk = 40;

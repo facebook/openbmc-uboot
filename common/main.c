@@ -97,7 +97,9 @@ void main_loop(void)
 #endif
 	}
 
+#if CONFIG_IS_ENABLED(PFR_SUPPORT)
 	pfr_checkpoint(0x09);  // CHKPT_COMPLETE
+#endif
 	cli_loop();
 	panic("No CLI available");
 }

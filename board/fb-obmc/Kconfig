@@ -1,5 +1,9 @@
 source "board/aspeed/ast-g5/Kconfig"
 
+config PFR_SUPPORT
+	bool "support Intel FPR"
+	default n
+
 config SYS_TEXT_BASE
 	default 0x20015000 if ASPEED_RECOVERY_BUILD
 	default 0x28084000 if !ASPEED_RECOVERY_BUILD
@@ -7,7 +11,7 @@ config SYS_TEXT_BASE
 if TARGET_FBY3
 config SYS_CONFIG_NAME
 	default "fby3"
-endif 
+endif
 
 if TARGET_FBCMM
 config SYS_CONFIG_NAME

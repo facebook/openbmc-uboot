@@ -54,6 +54,5 @@ when we fully migrate from ast-sdk to upstream u-boot
 
 &i2c4 {
 	status = "okay";
-	clocks = <&scu BCLK_PCLK>;
 	u-boot,dm-pre-reloc;
 };

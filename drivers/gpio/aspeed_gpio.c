@@ -15,6 +15,7 @@
 #include <dm.h>
 #include <asm/io.h>
 #include <linux/sizes.h>
+#include <dm/pinctrl.h>
 
 struct aspeed_gpio_priv {
 	void *regs;
@@ -204,8 +205,7 @@ aspeed_gpio_direction_input(struct udevice *dev, unsigned offset)
 }
 
 static int
-aspeed_gpio_direction_output(struct udevice *dev, unsigned offset,
-									int value)
+aspeed_gpio_direction_output(struct udevice *dev, unsigned offset, int value)
 {
 	struct aspeed_gpio_priv *priv = dev_get_priv(dev);
 	const struct aspeed_gpio_bank *bank = to_bank(offset);
@@ -262,12 +262,32 @@ static int aspeed_gpio_get_function(struct udevice *dev, unsigned offset)
 		return GPIOF_INPUT;
 }
 
+static int
+aspeed_gpio_request(struct udevice *dev, unsigned offset, const char *label)
+{
+#if CONFIG_IS_ENABLED(PINCTRL)
+	struct udevice *pctldev;
+	int ret;
+
+	dev_dbg(dev, "%s(%d, %s)\n", __func__, offset, label);
+	ret = uclass_get_device(UCLASS_PINCTRL, 0, &pctldev);
+	if (ret)
+		return ret;
+	/* aspeed pinctrl driver support 0 flag as reset to default
+	 * which will restore the pin(offset) to default GPIO
+	 */
+	pinctrl_request(pctldev, offset, 0);
+#endif
+	return 0;
+}
+
 static const struct dm_gpio_ops gpio_aspeed_ops = {
 	.direction_input		= aspeed_gpio_direction_input,
 	.direction_output		= aspeed_gpio_direction_output,
-	.get_value				= aspeed_gpio_get_value,
-	.set_value				= aspeed_gpio_set_value,
+	.get_value			= aspeed_gpio_get_value,
+	.set_value			= aspeed_gpio_set_value,
 	.get_function			= aspeed_gpio_get_function,
+	.request			= aspeed_gpio_request,
 };
 
 static int aspeed_gpio_probe(struct udevice *dev)
@@ -286,7 +306,7 @@ static int aspeed_gpio_probe(struct udevice *dev)
 
 static const struct udevice_id aspeed_gpio_ids[] = {
 	{ .compatible = "aspeed,ast2500-gpio",	.data = 232 },
-	{ .compatible = "aspeed,ast2600-gpio",	.data = 208 },	
+	{ .compatible = "aspeed,ast2600-gpio",	.data = 208 },
 	{ }
 };
 

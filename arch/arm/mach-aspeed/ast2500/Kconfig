@@ -16,28 +16,8 @@ config TARGET_EVB_AST2500
 	  4 Serial ports, 4 USB ports, VGA port, PCIe, SD card slot,
 	  20 pin JTAG, pinouts for 14 I2Cs, 3 SPIs and eSPI, 8 PWMs.
 
-config TARGET_FBY3
-	bool "Facebook FBY3"
-	select ASPEED_GEN_5
-
-config TARGET_FBCMM
-	bool "Facebook CMM"
-	select ASPEED_GEN_5
-
-config TARGET_FBELBERT
-	bool "Facebook FBELBERT"
-	select ASPEED_GEN_5
-
-config TARGET_FBWEDGE400
-	bool "Facebook Wedge400"
-	select ASPEED_GEN_5
-
-config TARGET_FBAL
-	bool "Facebook FBAL"
-	select ASPEED_GEN_5
-
-config TARGET_FBEP
-	bool "Facebook FBEP"
+config TARGET_FB_AST_GEN_5
+	bool "Facebook ast25xx based platform"
 	select ASPEED_GEN_5
 
 endchoice

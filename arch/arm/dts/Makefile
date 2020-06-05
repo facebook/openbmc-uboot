@@ -701,13 +701,14 @@ dtb-$(CONFIG_ARCH_MEDIATEK) += \
 	mt7623n-bananapi-bpi-r2.dtb \
 	mt7629-rfb.dtb
 
-dtb-$(CONFIG_TARGET_FBY3) += fby3.dtb
-dtb-$(CONFIG_TARGET_FBELBERT) += fbelbert.dtb
-dtb-$(CONFIG_TARGET_FBY2) += fby2.dtb
-dtb-$(CONFIG_TARGET_FBCMM) += fbcmm.dtb
-dtb-$(CONFIG_TARGET_FBWEDGE400) += fbwedge400.dtb
-dtb-$(CONFIG_TARGET_FBAL) += fbal.dtb
-dtb-$(CONFIG_TARGET_FBEP) += fbep.dtb
+dtb-$(CONFIG_TARGET_FB_AST_GEN_5) += \
+	fbal.dtb \
+	fbcmm.dtb \
+	fbelbert.dtb \
+	fbep.dtb \
+	fbwedge400.dtb \
+	fby2.dtb \
+	fby3.dtb
 
 targets += $(dtb-y)
 

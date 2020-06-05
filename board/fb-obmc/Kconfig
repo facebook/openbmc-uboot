@@ -1,45 +1,15 @@
-source "board/aspeed/ast-g5/Kconfig"
+config ASPEED_TPM
+	bool "Perform TPM provisioning"
+	default n
+	depends on SPL
+
+config ASPEED_RECOVERY_BUILD
+	bool "Build a recovery environment"
+	default n
+	depends on SPL
 
 config PFR_SUPPORT
 	bool "support Intel FPR"
 	default n
 
-config SYS_TEXT_BASE
-	default 0x20015000 if ASPEED_RECOVERY_BUILD
-	default 0x28084000 if !ASPEED_RECOVERY_BUILD
-
-if TARGET_FBY3
-config SYS_CONFIG_NAME
-	default "fby3"
-endif
-
-if TARGET_FBCMM
-config SYS_CONFIG_NAME
-	default "fbcmm"
-endif
-
-if TARGET_FBWEDGE400
-config SYS_CONFIG_NAME
-	default "fbwedge400"
-endif
-
-if TARGET_FBELBERT
-config SYS_CONFIG_NAME
-	default "fbelbert"
-endif
-
-if TARGET_FBY2
-config SYS_CONFIG_NAME
-	default "fby2"
-endif
-
-if TARGET_FBAL
-config SYS_CONFIG_NAME
-	default "fbal"
-endif
-
-if TARGET_FBEP
-config SYS_CONFIG_NAME
-	default "fbep"
-endif
-
+source "board/aspeed/ast-g5/Kconfig"

@@ -825,20 +825,6 @@ static void policy_init(void)
 }
 #endif
 
-#if defined(CONFIG_FBEP)
-static void led_init(void)
-{
-  u32 reg;
-  // ID_LED (GPIOM1) output-high
-  reg = __raw_readl(AST_GPIO_BASE + 0x78);
-  reg |= (0x1 << 1);
-  __raw_writel(reg, AST_GPIO_BASE + 0x78);
-  reg = __raw_readl(AST_GPIO_BASE + 0x7C);
-  reg |= (0x1 << 1);
-  __raw_writel(reg, AST_GPIO_BASE + 0x7C);
-}
-#endif
-
 int board_init(void)
 {
 	watchdog_init(CONFIG_ASPEED_WATCHDOG_TIMEOUT);
@@ -883,7 +869,6 @@ int board_init(void)
 #endif
 
 #if defined(CONFIG_FBEP)
-  led_init();
   fix_mmc_hold_time_fail();
 #endif
 

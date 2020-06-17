@@ -19,4 +19,7 @@ config TI_EDMA3
 	  This driver support data transfer between memory
 	  regions.
 
+config ASPEED_SPI_DMA
+	bool "Enable Aseepd SPI DMA"
+
 endmenu # menu "DMA Support"

@@ -14,5 +14,10 @@ obj-y += timer.o reset.o cpuinfo.o ast-scu.o ast-ahbc.o ast-sdmc.o
 ifndef CONFIG_SPL_BUILD
 obj-$(CONFIG_AST_SPI_NOR) += flash.o
 endif
-obj-$(CONFIG_ARCH_AST2500) += platform_g5.o
+ifdef CONFIG_ARCH_AST2500
+obj-y += platform_g5.o
+ifdef CONFIG_ASPEED_SPI_DMA
+obj-y += utils.o
+endif
+endif
 obj-$(CONFIG_ARCH_AST2400) += platform_g4.o

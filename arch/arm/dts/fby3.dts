@@ -1,4 +1,7 @@
 /dts-v1/;
 
+#if CONFIG_IS_ENABLED(PFR_SUPPORT)
 #include "ast2500-fb-pfr.dtsi"
-
+#else
+#include "ast2500-fb-vboot.dtsi"
+#endif

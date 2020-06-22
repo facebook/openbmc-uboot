@@ -63,6 +63,11 @@ config TARGET_SLT_AST2600
 	help
 	  SLT-AST2600 is Aspeed SLT board for AST2600 chip.
 
+config TARGET_FACEBOOK_GRANDCANYON
+	bool "FACEBOOK-GRANDCANYON"
+	depends on ASPEED_AST2600
+	help
+	  FACEBOOK-GRANDCANYON is BMC board with AST2620 chip.
 endchoice
 
 source "board/aspeed/evb_ast2600a0/Kconfig"
@@ -73,5 +78,6 @@ source "board/aspeed/fpga_ast2600/Kconfig"
 source "board/aspeed/slt_ast2600/Kconfig"
 source "board/aspeed/facebook_cloudripper/Kconfig"
 source "board/aspeed/facebook_fuji/Kconfig"
+source "board/aspeed/facebook_grandcanyon/Kconfig"
 
 endif

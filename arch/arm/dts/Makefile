@@ -689,6 +689,9 @@ dtb-$(CONFIG_TARGET_FACEBOOK_CLOUDRIPPER) += \
 dtb-$(CONFIG_TARGET_FACEBOOK_FUJI) += \
 	aspeed-bmc-facebook-fuji.dtb
 
+dtb-$(CONFIG_TARGET_FACEBOOK_GRANDCANYON) += \
+	aspeed-bmc-facebook-grandcanyon.dtb
+
 dtb-$(CONFIG_ARCH_STI) += stih410-b2260.dtb
 
 dtb-$(CONFIG_TARGET_STM32MP1) += \

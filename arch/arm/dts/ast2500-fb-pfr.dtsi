@@ -1,6 +1,5 @@
 /dts-v1/;
 
-#include <dt-bindings/gpio/aspeed-gpio.h>
 #include "ast2500-u-boot.dtsi"
 
 /*
@@ -11,25 +10,6 @@ when we fully migrate from ast-sdk to upstream u-boot
 / {
 	aliases {
 		spi0 = &fmc;
-	};
-
-	spi_gpio: spi-gpio {
-		status = "okay";
-		compatible = "spi-gpio";
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		gpio-sck = <&gpio ASPEED_GPIO(R, 3) GPIO_ACTIVE_HIGH>;
-		gpio-mosi = <&gpio ASPEED_GPIO(R, 4) GPIO_ACTIVE_HIGH>;
-		gpio-miso = <&gpio ASPEED_GPIO(R, 5) GPIO_ACTIVE_HIGH>;
-		num-chipselects = <1>;
-		cs-gpios = <&gpio ASPEED_GPIO(R, 2) GPIO_ACTIVE_LOW>;
-
-		tpmdev@0 {
-			compatible = "tis,tpm2-spi";
-			spi-max-frequency = <33000000>;
-			reg = <0>;
-		};
 	};
 };
 
@@ -55,4 +35,5 @@ when we fully migrate from ast-sdk to upstream u-boot
 &i2c4 {
 	status = "okay";
 	u-boot,dm-pre-reloc;
+	/* TODO: Add PFR I2C device*/
 };

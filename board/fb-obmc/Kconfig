@@ -12,4 +12,9 @@ config PFR_SUPPORT
 	bool "support Intel FPR"
 	default n
 
+config FBOBMC_IMG_LAYOUT_VER
+	int "fb-obmc image layout version"
+	default 0
+	range 0 1
+
 source "board/aspeed/ast-g5/Kconfig"

@@ -7,12 +7,14 @@ config SYS_VENDOR
 	string "board vendor"
 	default "aspeed"
 
+
 config SYS_TEXT_BASE
-	default 0x20015000 if ASPEED_RECOVERY_BUILD
-	default 0x28084000 if !ASPEED_RECOVERY_BUILD
+	default 0x20015000 if ASPEED_RECOVERY_BUILD && (FBOBMC_IMG_LAYOUT_VER = 0)
+	default 0x28084000 if !ASPEED_RECOVERY_BUILD && (FBOBMC_IMG_LAYOUT_VER = 0)
+	default 0x20040000 if ASPEED_RECOVERY_BUILD && (FBOBMC_IMG_LAYOUT_VER = 1)
+	default 0x28104000 if !ASPEED_RECOVERY_BUILD && (FBOBMC_IMG_LAYOUT_VER = 1)
 
 config SYS_CONFIG_NAME
 	string "board configure name"
 	default ""
 endif
-

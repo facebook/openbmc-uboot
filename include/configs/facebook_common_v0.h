@@ -41,6 +41,8 @@
 #define CONFIG_SYS_SPL_FIT_BASE   0x28080000
 #define CONFIG_SYS_RECOVERY_BASE  0x20015000
 #define CONFIG_SYS_ENV_BASE       0x28000000
+#define CONFIG_ENV_SPI_BUS 0
+#define CONFIG_ENV_SPI_CS 1
 #else
 /* Legacy non-Verified boot configuration. */
 #define CONFIG_SYS_REMAP_BASE     0x00000000

@@ -5,7 +5,6 @@
  * (C) Copyright 2012
  * Marek Vasut <marex@denx.de>
  */
-#define DEBUG
 #include <common.h>
 #include <errno.h>
 #include <dm/device.h>

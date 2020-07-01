@@ -66,9 +66,6 @@
  *   CONFIG_ENV_IS_IN_SPI_FLASH
  *   CONFIG_ENV_IS_NOWHERE
  */
-#ifndef CONFIG_DEBUG_QEMU
-#define CONFIG_ASPEED_WRITE_DEFAULT_ENV
-#endif
 #if defined(CONFIG_ASPEED_RECOVERY_BUILD) || defined(CONFIG_SPL_BUILD)
 /* Prevent the Recovery build from using the RW environment. */
 #ifndef CONFIG_ENV_IS_NOWHERE

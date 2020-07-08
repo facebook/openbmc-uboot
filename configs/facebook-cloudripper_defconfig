@@ -58,7 +58,7 @@ CONFIG_WDT=y
 # Board specific config.
 #
 CONFIG_USE_BOOTARGS=y
-CONFIG_BOOTARGS="console=ttyS0,9600n8 root=/dev/ram rw vmalloc=384M"
+CONFIG_BOOTARGS="console=ttyS0,9600n8 root=/dev/ram rw vmalloc=640M"
 CONFIG_USE_BOOTCOMMAND=y
 CONFIG_BOOTCOMMAND="bootm 20100000"
 CONFIG_BAUDRATE=9600

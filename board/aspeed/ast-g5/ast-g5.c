@@ -825,6 +825,22 @@ static void policy_init(void)
 }
 #endif
 
+#if defined(CONFIG_FBEP)
+static void fan_init(void)
+{
+  u32 reg;
+  // Disable reset PWM controller
+  // EXTRST
+  reg = __raw_readl(AST_SCU_BASE + 0x9C);
+  reg &= ~(1 << 17);
+  __raw_writel(reg, AST_SCU_BASE + 0x9C);
+  // WDT1
+  reg = __raw_readl(AST_WDT_BASE + 0x1C);
+  reg &= ~(1 << 17);
+  __raw_writel(reg, AST_WDT_BASE + 0x1C);
+}
+#endif
+
 int board_init(void)
 {
 	watchdog_init(CONFIG_ASPEED_WATCHDOG_TIMEOUT);
@@ -869,6 +885,7 @@ int board_init(void)
 #endif
 
 #if defined(CONFIG_FBEP)
+  fan_init();
   fix_mmc_hold_time_fail();
 #endif
 

@@ -29,7 +29,7 @@
 #define CONFIG_ASPEED_UART4_ENABLE
 
 #ifdef CONFIG_SPL
-#define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw printk.time=1 dual_flash=2"
+#define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw printk.time=1 dual_flash=1"
 #else
 #define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw printk.time=1"
 #endif

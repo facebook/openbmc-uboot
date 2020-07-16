@@ -43,3 +43,9 @@
 	};
 };
 #endif
+
+&fmc {
+	flash@0 {
+		spi-max-frequency = <40000000>;
+	};
+};

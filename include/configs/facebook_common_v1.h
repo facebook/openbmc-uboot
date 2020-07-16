@@ -41,7 +41,7 @@
 #define CONFIG_SYS_SPL_FIT_BASE   0x28100000
 #define CONFIG_SYS_RECOVERY_BASE  0x20040000
 #define CONFIG_SYS_ENV_BASE       0x28000000
-#define CONFIG_ENV_OFFSET         0xD0000 /* environment starts here  */
+#define CONFIG_ENV_OFFSET         0xE0000 /* environment starts here  */
 #define CONFIG_ENV_SPI_BUS 0
 #define CONFIG_ENV_SPI_CS 1
 #else
@@ -49,7 +49,7 @@
 #define CONFIG_SYS_REMAP_BASE     0x00000000
 #define CONFIG_SYS_UBOOT_START    0x00000000
 #define CONFIG_SYS_ENV_BASE       0x20000000
-#define CONFIG_ENV_OFFSET         0xD0000 /* environment starts here  */
+#define CONFIG_ENV_OFFSET         0xE0000 /* environment starts here  */
 #ifdef CONFIG_FIT
 #define CONFIG_KERNEL_LOAD	  "20100000"
 #else
@@ -81,7 +81,7 @@
 #define CONFIG_ENV_OVERWRITE
 #endif
 #define CONFIG_ENV_ADDR          (CONFIG_SYS_ENV_BASE + CONFIG_ENV_OFFSET)
-#define CONFIG_ENV_SIZE          0x20000 /* # of bytes of env, 128k */
+#define CONFIG_ENV_SIZE          0x10000 /* # of bytes of env, 64k */
 #define CONFIG_ENV_SECT_SIZE	 (64 << 10) /* 64 KiB */
 #define ENV_INITRD_HIGH "initrd_high=a0000000\0"
 #define CONFIG_EXTRA_ENV_SETTINGS                       \

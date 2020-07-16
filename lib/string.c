@@ -19,7 +19,7 @@
 #include <linux/string.h>
 #include <linux/ctype.h>
 #include <malloc.h>
-
+#include <common.h>
 
 /**
  * strncasecmp - Case insensitive, length-limited string comparison
@@ -521,8 +521,7 @@ void * memmove(void * dest,const void *src,size_t count)
 	if (
 	   ((u32)src >= AST_FMC_CS0_BASE)
 	&& ((u32)src < (AST_FMC_CS0_BASE + 0x10000000))) {
-		count = ((count + 3) / 4) * 4;
-		aspeed_spi_fastcpy((u32)dest, (u32)src, count);
+		aspeed_spi_dma_copy(dest, src, count);
 		return dest;
 	}
 #endif

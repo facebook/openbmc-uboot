@@ -115,8 +115,8 @@ extern int flash_write (char *, ulong, ulong);
 extern flash_info_t *addr2info (ulong);
 extern int write_buff (flash_info_t *info, uchar *src, ulong addr, ulong cnt);
 
-#ifdef CONFIG_AST_SPI_NOR
-extern void memmove_dma(void * dest,const void *src,size_t count);
+#ifdef CONFIG_ASPEED_SPI_DMA
+extern void aspeed_spi_dma_copy(void * dest, const void *src, size_t count);
 #endif
 
 /* drivers/mtd/cfi_mtd.c */

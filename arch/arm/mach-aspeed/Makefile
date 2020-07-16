@@ -16,8 +16,5 @@ obj-$(CONFIG_AST_SPI_NOR) += flash.o
 endif
 ifdef CONFIG_ARCH_AST2500
 obj-y += platform_g5.o
-ifdef CONFIG_ASPEED_SPI_DMA
-obj-y += utils.o
-endif
 endif
 obj-$(CONFIG_ARCH_AST2400) += platform_g4.o

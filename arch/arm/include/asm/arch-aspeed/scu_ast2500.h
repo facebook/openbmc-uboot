@@ -210,12 +210,6 @@ void ast_scu_lock(struct ast2500_scu *scu);
  */
 int ast_scu_enable_i2c_dev(struct udevice *dev);
 
-/**
- * ast_scu_enable_wdtrst1() - enable wdtrst1 function
- *
- * @return zero on success, error code (<0) otherwise
- */
-int ast_scu_enable_wdtrst1(void);
 
 #endif  /* __ASSEMBLY__ */
 

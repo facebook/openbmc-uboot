@@ -1,0 +1,9 @@
+#ifndef __DT_BINDINGS_WDT_ASPEED_H__
+#define __DT_BINDINGS_WDT_ASPEED_H__
+
+#define WDTRST_POLARITY_L 0
+#define WDTRST_POLARITY_H 1
+#define WDTRST_OPEN_DRAIN 0
+#define WDTRST_PUSH_PULL  1
+
+#endif

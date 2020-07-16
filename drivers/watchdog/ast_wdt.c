@@ -8,9 +8,7 @@
 #include <wdt.h>
 #include <asm/io.h>
 #include <asm/arch/wdt.h>
-#ifdef CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
-#include <asm/arch/scu_ast2500.h>
-#endif
+#include <dt-bindings/wdt/aspeed.h>
 
 #define WDT_AST2600	2600
 #define WDT_AST2500	2500
@@ -18,18 +16,33 @@
 
 struct ast_wdt_priv {
 	struct ast_wdt *regs;
+	u32 wdtrst[3];
+	u32 boot2nd;
 };
 
-#ifdef CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
 static int ast_wdt_setup_rst_pulse(struct udevice *dev)
 {
 	struct ast_wdt_priv *priv = dev_get_priv(dev);
-	// TODO: get pulse reset information from device tree
-	u32 reset_pulse = SET_WDT_RST_PULSE_POLARITY_HIGH | 0xFF;
-	writel(reset_pulse, &priv->regs->reset_width);
+	/* setup pulse polarity */
+	if (WDTRST_POLARITY_L == priv->wdtrst[0]) {
+		dev_info(dev, "set wdtrst pulse polarity low\n");
+		writel(SET_WDT_RST_PULSE_POLARITY_LOW, &priv->regs->reset_width);
+	}
+	else if (WDTRST_POLARITY_H == priv->wdtrst[0]) {
+		dev_info(dev, "set wdtrst pulse polarity high\n");
+		writel(SET_WDT_RST_PULSE_POLARITY_HIGH, &priv->regs->reset_width);
+	}
+	/* setup pulse drive type */
+	if (WDTRST_OPEN_DRAIN == priv->wdtrst[1]) {
+		dev_info(dev,"set wdtrst pulse drive as open-drain\n");
+		writel(SET_WDT_RST_PULSE_OPEN_DRAIN, &priv->regs->reset_width);
+	}
+	else if (WDTRST_PUSH_PULL == priv->wdtrst[0]) {
+		dev_info(dev,"set wdtrst pulse drive as push-pull\n");
+		writel(SET_WDT_RST_PULSE_PUSH_PULL, &priv->regs->reset_width);
+	}
 	return 0;
 }
-#endif
 
 static int ast_wdt_start(struct udevice *dev, u64 timeout_ms, ulong flags)
 {
@@ -38,19 +51,10 @@ static int ast_wdt_start(struct udevice *dev, u64 timeout_ms, ulong flags)
 	u32 reset_mode = ast_reset_mode_from_flags(flags);
 	/* watchdog timer clock is fixed at 1MHz */
 	u32 timeout_us = (u32)timeout_ms * 1000;
+	u32 wdt_ctrl;
 
 	dev_info(dev, "wdt%u set timeout after %uus\n", dev->seq, timeout_us);
 
-#ifdef CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
-	int ret;
-	dev_info(dev, "Enable WDT trigger external reset\n");
-	ret = ast_scu_enable_wdtrst1();
-	if (ret)
-		return ret;
-	ret = ast_wdt_setup_rst_pulse(dev);
-	if (ret)
-		return ret;
-#endif
 	clrsetbits_le32(&priv->regs->ctrl,
 			WDT_CTRL_RESET_MASK << WDT_CTRL_RESET_MODE_SHIFT,
 			reset_mode << WDT_CTRL_RESET_MODE_SHIFT);
@@ -68,14 +72,17 @@ static int ast_wdt_start(struct udevice *dev, u64 timeout_ms, ulong flags)
 	 * Based on configuration to enable 2ND_BOOT or TRIGGER WDTRST1
 	 */
 	clrbits_le32(&priv->regs->ctrl, WDT_CTRL_2ND_BOOT | WDT_CTRL_EXT);
-	setbits_le32(&priv->regs->ctrl,
-		#ifdef CONFIG_ASPEED_WATCHDOG_2ND_BOOT
-		        WDT_CTRL_2ND_BOOT |
-		#endif
-		#ifdef CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
-			WDT_CTRL_EXT |
-		#endif
-		     WDT_CTRL_EN | WDT_CTRL_RESET | WDT_CTRL_CLK1MHZ);
+	wdt_ctrl = WDT_CTRL_EN | WDT_CTRL_RESET | WDT_CTRL_CLK1MHZ;
+	if (priv->wdtrst[2]) {
+		dev_info(dev, "trig pulse width = %d \n", priv->wdtrst[2]);
+		writel(priv->wdtrst[2], &priv->regs->reset_width);
+		wdt_ctrl |= WDT_CTRL_EXT;
+	}
+	if (priv->boot2nd) {
+		dev_info(dev, "trig 2nd boot\n");
+		wdt_ctrl |= WDT_CTRL_2ND_BOOT;
+	}
+	setbits_le32(&priv->regs->ctrl, wdt_ctrl);
 
 	return 0;
 }
@@ -132,6 +139,21 @@ static int ast_wdt_ofdata_to_platdata(struct udevice *dev)
 	if (IS_ERR(priv->regs))
 		return PTR_ERR(priv->regs);
 
+	/* wdtrst = <polarity drive-type width>
+	 * width > 0 means enable trig WDTRST
+	 */
+	priv->wdtrst[0] = priv->wdtrst[1] = priv->wdtrst[2] = 0;
+	if (!dev_read_u32_array(dev, "wdtrst", priv->wdtrst, 3)) {
+		dev_dbg(dev, "wdtrst = [%d, %d, %x]\n",
+		priv->wdtrst[0], priv->wdtrst[1], priv->wdtrst[2]);
+	}
+	/* boot2nd > 0 trigger 2nd boot */
+	priv->boot2nd = 0;
+	dev_read_u32(dev, "boot2nd", &priv->boot2nd);
+	if (priv->boot2nd) {
+		dev_info(dev, "wdt trig boot2nd\n");
+	}
+
 	return 0;
 }
 
@@ -144,8 +166,18 @@ static const struct wdt_ops ast_wdt_ops = {
 
 static int ast_wdt_probe(struct udevice *dev)
 {
+	int ret;
+	struct ast_wdt_priv *priv = dev_get_priv(dev);
+
 	dev_dbg(dev, "%s() wdt%u\n", __func__, dev->seq);
 	ast_wdt_stop(dev);
+	if (priv->wdtrst[2]) {
+		ret = ast_wdt_setup_rst_pulse(dev);
+		if (ret) {
+			dev_err(dev, "setup wdtrst1 failed %d", ret);
+			return ret;
+		}
+	}
 
 	return 0;
 }

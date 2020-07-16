@@ -58,12 +58,6 @@ int ast_scu_enable_i2c_dev(struct udevice *dev)
 	return 0;
 }
 
-int ast_scu_enable_wdtrst1(void)
-{
-	/* PINCTRL shall handle this */
-	return 0;
-}
-
 #else /* !CONFIG_IS_ENABLED(PINCTRL) */
 
 struct scu_i2c_pinctrl {
@@ -144,27 +138,6 @@ int ast_scu_enable_i2c_dev(struct udevice *dev)
 
 	ast_scu_unlock(scu);
 	setbits_le32(ctrl_reg, pinctrl->ctrl_bit_mask);
-	ast_scu_lock(scu);
-
-	return 0;
-}
-
-int ast_scu_enable_wdtrst1(void)
-{
-	struct ast2500_scu *scu;
-	u32 *ctrl_reg;
-
-	scu = ast_get_scu();
-	if(IS_ERR_OR_NULL(scu)) {
-		debug("Get SCU failed ret(%ld)\n", PTR_ERR(scu));
-		return scu ? PTR_ERR(scu) : -ENODEV;
-	}
-
-	/* SCU_A8: pinmux_ctrl1[2], pin-2 */
-	ctrl_reg = &scu->pinmux_ctrl1[2];
-
-	ast_scu_unlock(scu);
-	setbits_le32(ctrl_reg, (1<<2));
 	ast_scu_lock(scu);
 
 	return 0;

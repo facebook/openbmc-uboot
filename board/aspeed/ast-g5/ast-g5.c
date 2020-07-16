@@ -69,12 +69,7 @@ void arch_preboot_os(void) {
   vboot_finish();
 }
 
-#if defined(CONFIG_FBTP) || defined(CONFIG_PWNEPTUNE)
-static void fan_init(void)
-{
-  __raw_writel(0x43004300, 0x1e786008);
-}
-
+#if defined(CONFIG_PWNEPTUNE)
 static int get_svr_pwr(void)
 {
   // GPIOB6
@@ -155,6 +150,13 @@ static void policy_init(void)
     free(policy);
   if (last_state)
     free(last_state);
+}
+#endif
+
+#if defined(CONFIG_FBTP) || defined(CONFIG_PWNEPTUNE)
+static void fan_init(void)
+{
+  __raw_writel(0x43004300, 0x1e786008);
 }
 
 static void disable_bios_debug(void)
@@ -615,7 +617,11 @@ int board_init(void)
 
 #if defined(CONFIG_FBTP) || defined(CONFIG_PWNEPTUNE)
   fan_init();
+#endif
+#if defined(CONFIG_PWNEPTUNE)
   policy_init();
+#endif
+#if defined(CONFIG_FBTP) || defined(CONFIG_PWNEPTUNE)
   disable_bios_debug();
   disable_snoop_dma_interrupt();
 #endif

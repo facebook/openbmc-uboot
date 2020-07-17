@@ -26,7 +26,13 @@ static int ast_sysreset_request(struct udevice *dev, enum sysreset_t type)
 		reset_mode = WDT_CTRL_RESET_CPU;
 		break;
 	case SYSRESET_COLD:
+#ifdef AST_SYSRESET_WITH_SOC
+		dev_info(dev, "SOC reset with mask=0x%X\n", AST_SYSRESET_WITH_SOC);
+		reset_mode = WDT_CTRL_RESET_SOC | (AST_SYSRESET_WITH_SOC << 2);
+#else
+		dev_info(dev, "Full-chip reset\n");
 		reset_mode = WDT_CTRL_RESET_CHIP;
+#endif
 		break;
 	default:
 		return -EPROTONOSUPPORT;

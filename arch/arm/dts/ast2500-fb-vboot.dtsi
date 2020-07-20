@@ -1,5 +1,6 @@
 /dts-v1/;
-
+#include <dt-bindings/gpio/aspeed-gpio.h>
+#include <dt-bindings/wdt/aspeed.h>
 #include "ast2500-u-boot.dtsi"
 / {
 	aliases {
@@ -9,6 +10,9 @@
 
 &wdt1 {
 	u-boot,dm-pre-reloc;
+	wdtrst = <WDTRST_POLARITY_H WDTRST_OPEN_DRAIN 0xFF>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_wdtrst1_default>;
 };
 
 &i2c  {

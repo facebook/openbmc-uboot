@@ -23,8 +23,21 @@
 
 #define CONFIG_FBAL 1
 
+#ifdef CONFIG_SPL
 #define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw printk.time=1 dual_flash=2"
+#else
+#define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw printk.time=1"
+#endif
+
 #define CONFIG_BOOTFILE          "flash-angelslanding"
+
+#ifndef CONFIG_SPL_BUILD
+#ifndef CONFIG_SYS_LONGHELP
+#define CONFIG_SYS_LONGHELP     /* undef to save memory   */
+#endif
+#define CONFIG_SYS_HUSH_PARSER  /* Use the HUSH parser */
+#endif
+
 /*
  * Serial configuration
  */
@@ -42,22 +55,10 @@
 #define CONFIG_ASPEED_MAC_NUMBER  1
 #define CONFIG_ASPEED_MAC_CONFIG  1 /* config MAC1 */
 
-
 /*
  * Enable DRAM ECC, going to lose 1/8 of memory
  */
 #define CONFIG_DRAM_ECC
-
-/*
- * Watchdog configuration, needed for TPM hardware reset
- * This will trigger GPIOAB2 output high when the CPU is reset
- */
-#define CONFIG_ASPEED_WATCHDOG_TRIGGER_GPIO
-
-/*
- * Enable 2x I/O read command
- */
-#define CONFIG_FLASH_SPIx2_Dummy
 
 #define CONFIG_PFR_BUS "i2c-bus@140"
 #define CONFIG_PFR_ADDR 0x58

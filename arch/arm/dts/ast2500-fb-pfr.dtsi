@@ -36,9 +36,3 @@ when we fully migrate from ast-sdk to upstream u-boot
 &i2c {
 	u-boot,dm-pre-reloc;
 };
-
-&i2c4 {
-	status = "okay";
-	u-boot,dm-pre-reloc;
-	/* TODO: Add PFR I2C device*/
-};

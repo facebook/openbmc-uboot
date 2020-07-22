@@ -83,5 +83,7 @@
 #include "fby3_ext.h"
 #include "facebook_common.h"
 #include "ast2500_common.h"
+#define CONFIG_BB_CPLD_BUS "i2c-bus@440"
+#define CONFIG_BB_CPLD_ADDR 0x0F
 
 #endif  /* __FBY3_CONFIG_H */

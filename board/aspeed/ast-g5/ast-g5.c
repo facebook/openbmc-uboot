@@ -15,9 +15,13 @@
 #include <asm/arch/ast-sdk/ast-sdmc.h>
 #include <asm/arch/ast-sdk/vbs.h>
 #include <asm/io.h>
+#include <asm/gpio.h>
+#include <asm/arch/gpio.h>
 
 #include "tpm-spl.h"
 #include "util.h"
+#include <i2c.h>
+#include <dm.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -347,6 +351,79 @@ static int slot_led_init(void)
 }
 #endif
 
+#ifdef CONFIG_FBY3
+static int slot_12V_init(void)
+{
+  int ret = -1;
+  int retry = 2;
+  int i = 0;
+  int node = 0;
+  int board_id = 0;
+  int slots_present_status = 0;
+  uint8_t present = 0;
+  struct udevice *bus, *dev;
+  struct gpio_desc desc[4];
+  // struct gpio_desc desctest[4];
+
+  node = fdt_node_offset_by_compatible(gd->fdt_blob, 0, "board_id");
+  if (node < 0) {
+    return -1;
+  }
+  ret = gpio_request_list_by_name_nodev(offset_to_ofnode(node),
+                "board-id-gpios", desc,
+                ARRAY_SIZE(desc), GPIOD_IS_IN);
+  if (ret < 0) {
+    return ret;
+  }
+  board_id = dm_gpio_get_values_as_int(desc, ret);
+  printf("board_id = %x\n", board_id);
+
+  // if config C, do nothing
+  // GPIOF[0:3] = BOARD_ID[3:0] = 1001 -------> NIC Expansion Card
+  if (board_id == 9) {
+    return 0;
+  }
+
+  node = fdt_node_offset_by_compatible(gd->fdt_blob, 0, "slots-present");
+  if (node < 0) {
+    return -1;
+  }
+  ret = gpio_request_list_by_name_nodev(offset_to_ofnode(node),
+              "slots-present-gpios", desc,
+              ARRAY_SIZE(desc), GPIOD_IS_IN);
+  if (ret < 0) {
+    return ret;
+  }
+  slots_present_status = dm_gpio_get_values_as_int(desc, ret);
+
+  do {
+    ret = uclass_get_device_by_name(UCLASS_I2C, CONFIG_BB_CPLD_BUS, &bus);
+    if (ret) {
+      break;
+    }
+
+    ret = i2c_get_chip(bus, CONFIG_BB_CPLD_ADDR, 1, &dev);
+    if (ret) {
+      break;
+    }
+
+    for (i = 0; i < MAX_NODES; i++) {
+      present = (slots_present_status >> i) & 0x01;
+      if (present == 0) {
+        retry = 2;
+        do {
+          ret = dm_i2c_reg_write(dev, 0x09+i, 0x01);
+          if (ret && retry) {
+            udelay(10000);
+          }
+        } while (ret && (retry-- > 0));
+      }
+    }
+  } while (0);
+
+  return 0;
+}
+#endif //CONFIG_FBY3 end
 
 #ifdef CONFIG_MINILAKETB
 static void fan_init(void)
@@ -856,6 +933,10 @@ int board_init(void)
   mux_init();
   slot_12V_init();
   slot_led_init();
+#endif
+
+#ifdef CONFIG_FBY3
+  slot_12V_init();
 #endif
 
 #ifdef CONFIG_MINILAKETB

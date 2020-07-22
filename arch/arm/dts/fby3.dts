@@ -49,3 +49,30 @@
 		spi-max-frequency = <40000000>;
 	};
 };
+
+&i2c {
+	u-boot,dm-pre-reloc;
+};
+
+&i2c12 {
+	status = "okay";
+	u-boot,dm-pre-reloc;
+};
+
+#include <dt-bindings/gpio/aspeed-gpio.h>
+/ {
+	board_id {
+		compatible = "board_id";
+		board-id-gpios = <&gpio ASPEED_GPIO(F, 0) GPIO_ACTIVE_HIGH>,
+		                 <&gpio ASPEED_GPIO(F, 1) GPIO_ACTIVE_HIGH>,
+		                 <&gpio ASPEED_GPIO(F, 2) GPIO_ACTIVE_HIGH>,
+		                 <&gpio ASPEED_GPIO(F, 3) GPIO_ACTIVE_HIGH>;
+	};
+	slots-present {
+		compatible = "slots-present";
+		slots-present-gpios = <&gpio ASPEED_GPIO(B, 4) GPIO_ACTIVE_HIGH>,
+		                      <&gpio ASPEED_GPIO(B, 5) GPIO_ACTIVE_HIGH>,
+		                      <&gpio ASPEED_GPIO(B, 6) GPIO_ACTIVE_HIGH>,
+		                      <&gpio ASPEED_GPIO(B, 7) GPIO_ACTIVE_HIGH>;
+	};
+};

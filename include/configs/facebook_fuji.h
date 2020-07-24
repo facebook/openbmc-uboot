@@ -16,5 +16,9 @@
 /* Memory Info */
 #define CONFIG_SYS_LOAD_ADDR		0x83000000
 
+#undef CONFIG_ENV_SIZE
+#define CONFIG_ENV_SIZE 0x20000
+#undef CONFIG_ENV_OFFSET
+#define CONFIG_ENV_OFFSET 0xE0000
 
 #endif	/* __CONFIG_H */

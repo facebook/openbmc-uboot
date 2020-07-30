@@ -709,6 +709,7 @@ dtb-$(CONFIG_TARGET_FB_AST_GEN_5) += \
 	fbcmm.dtb \
 	fbelbert.dtb \
 	fbep.dtb \
+	fbcc.dtb \
 	fbwedge400.dtb \
 	fby2.dtb \
 	fby3.dtb

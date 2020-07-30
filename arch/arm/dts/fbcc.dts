@@ -1,0 +1,9 @@
+/dts-v1/;
+
+#include "ast2500-fb-pfr.dtsi"
+
+&fmc {
+	flash@0 {
+		spi-max-frequency = <40000000>;
+	};
+};

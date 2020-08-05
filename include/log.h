@@ -86,6 +86,13 @@ int _log(enum log_category_t cat, enum log_level_t level, const char *file,
 #define LOG_CATEGORY LOGC_NONE
 #endif
 
+/**
+ * Dump the buffer
+ * @param buf 		the buffer
+ * @param length	the buffer length
+ */
+void _log_debug_buffer(const u8 *buf, const size_t length);
+
 /*
  * This header may be including when CONFIG_LOG is disabled, in which case
  * CONFIG_LOG_MAX_LEVEL is not defined. Add a check for this.
@@ -113,8 +120,10 @@ int _log(enum log_category_t cat, enum log_level_t level, const char *file,
 #if CONFIG_IS_ENABLED(LOG)
 #ifdef LOG_DEBUG
 #define _LOG_DEBUG	1
+#define log_debug_buffer(b,l)	_log_debug_buffer((b), (l))
 #else
 #define _LOG_DEBUG	0
+#define log_debug_buffer(b,l)
 #endif
 
 /* Emit a log record if the level is less that the maximum */
@@ -407,5 +416,6 @@ static inline int log_init(void)
 	return 0;
 }
 #endif
+
 
 #endif

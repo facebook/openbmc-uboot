@@ -135,7 +135,7 @@ obj-$(CONFIG_DFU_OVER_USB) += dfu.o
 ifndef CONFIG_SPL_BUILD
 obj-y += command.o
 endif
-obj-$(CONFIG_$(SPL_TPL_)LOG) += log.o
+obj-$(CONFIG_$(SPL_TPL_)LOG) += log.o logbuffer.o
 obj-$(CONFIG_$(SPL_TPL_)LOG_CONSOLE) += log_console.o
 ifndef CONFIG_SPL_BUILD
 obj-y += s_record.o

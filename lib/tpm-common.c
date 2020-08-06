@@ -165,8 +165,8 @@ u32 tpm_sendrecv_command(struct udevice *dev, const void *command,
 	int err;
 	u8 response_buffer[COMMAND_BUFFER_SIZE];
 	size_t response_length;
-	int i;
 	u32 ret;
+	u32 cmdsize;
 	u8  retries;
 
 	if (response) {
@@ -175,9 +175,12 @@ u32 tpm_sendrecv_command(struct udevice *dev, const void *command,
 		response = response_buffer;
 		response_length = sizeof(response_buffer);
 	}
+	cmdsize = tpm_command_size(command);
+	log_debug("TPM command [%d]:\n", cmdsize);
+	log_debug_buffer(command, cmdsize);
 
 	for (retries = 0; retries < 10; retries++) {
-		err = tpm_xfer(dev, command, tpm_command_size(command),
+		err = tpm_xfer(dev, command, cmdsize,
 				response, &response_length);
 
 		if (err < 0) {
@@ -195,11 +198,8 @@ u32 tpm_sendrecv_command(struct udevice *dev, const void *command,
 		udelay(100);
 	}
 
-	log_debug("TPM response [ret:%d]: ", ret);
-	for (i = 0; i < response_length; i++)
-		log_debug("%02x ", ((u8 *)response)[i]);
-	log_debug("\n");
-
+	log_debug("TPM response [ret:%d]: \n", ret);
+	log_debug_buffer(response, response_length);
 	return ret;
 }
 

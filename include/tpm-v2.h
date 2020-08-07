@@ -78,6 +78,7 @@ enum tpm2_handles {
  * @TPM2_CC_PCR_READ: TPM2_PCR_Read().
  * @TPM2_CC_PCR_EXTEND: TPM2_PCR_Extend().
  * @TPM2_CC_PCR_SETAUTHVAL: TPM2_PCR_SetAuthValue().
+ * @TPM2_CC_NV_READPUBLIC: TPM2_NV_ReadPublic().
  */
 enum tpm2_command_codes {
 	TPM2_CC_HIERCONTROL	= 0x0121,
@@ -96,6 +97,7 @@ enum tpm2_command_codes {
 	TPM2_CC_PCR_READ	= 0x017E,
 	TPM2_CC_PCR_EXTEND	= 0x0182,
 	TPM2_CC_PCR_SETAUTHVAL	= 0x0183,
+	TPM2_CC_NV_READPUBLIC	= 0x0169,
 };
 
 /**
@@ -387,4 +389,24 @@ u32 tpm2_nv_read(struct udevice *dev, const u8 *pw, u16 pw_sz,
  */
 u32 tpm2_hierarchy_control(struct udevice *dev, const u8 *pw, u16 pw_sz,
 			u32 auth_handle, u32 res_handle, bool enable);
+
+/**
+ * Issue a TPM_NV_ReadPublic command.
+ *
+ * @dev			TPM device
+ * @nv_index	Requested NVRAM index
+ * @hash_alg	Hash algorithm [OUT]
+ * @attributes	NV Attributes [OUT]
+ * @policy_sz	Size of auth policy [OUT]
+ * @policy		Auth policy [OUT]
+ * @data_sz		Requested data size [OUT]
+ * @nv_name_sz	Size of NV index name [OUT]
+ * @nv_name		NV index name [OUT]
+ *
+ * @return 		code of the operation
+ */
+u32 tpm2_nv_readpublic(struct udevice *dev, u32 nv_index,
+			u16 *hash_alg, u32* attributes, u16 *policy_sz, u8* policy,
+			u16* data_sz, u16 *nv_name_sz, u8 *nv_name);
+
 #endif /* __TPM_V2_H */

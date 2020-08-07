@@ -506,6 +506,64 @@ static int do_tpm2_hierarchy_control(cmd_tbl_t *cmdtp, int flag,
 	return report_return_code(rc);
 }
 
+static int do_tpm2_nv_readpublic(cmd_tbl_t *cmdtp, int flag,
+					int argc, char * const argv[])
+{
+	u32 nv_index = 0;
+	u16 hash_alg, policy_sz, data_sz, nv_name_sz;
+	u32 attributes;
+	u8 policy[TPM2_DIGEST_LEN] = {0};
+	u8 nv_name[TPM2_DIGEST_LEN] = {0};
+
+	struct udevice *dev;
+	int ret;
+	u32 rc;
+
+	ret = get_tpm(&dev);
+	if (ret)
+		return ret;
+
+	if (argc < 1 || argc > 2)
+		return CMD_RET_USAGE;
+
+	if (argc == 1)
+	{
+		printf("read all not support yet\n");
+		return ret;
+	}
+	else if (argc == 2)
+	{
+		nv_index = simple_strtoul(argv[1], NULL, 0);
+		nv_index |= (TPM_HT_NV_INDEX<<24);
+	}
+
+	rc = tpm2_nv_readpublic(dev, nv_index,
+					&hash_alg, &attributes, &policy_sz, policy,
+					&data_sz, &nv_name_sz, nv_name);
+
+	if (rc == TPM2_RC_SUCCESS)
+	{
+		printf("0x%08X:\n", nv_index);
+		printf("name: \n");
+		print_byte_string(nv_name, nv_name_sz);
+
+		printf("hash algorithm: 0x%04X ", hash_alg);
+		if (hash_alg == TPM2_ALG_SHA256)
+			printf("(SHA256)\n");
+		else
+			printf("\n");
+
+		printf("attributes: 0x%08X\n", (unsigned int)attributes);
+
+		printf("policy: \n");
+		print_byte_string(policy, policy_sz);
+
+		printf("size: %u\n", data_sz);
+	}
+
+	return report_return_code(rc);
+}
+
 static cmd_tbl_t tpm2_commands[] = {
 	U_BOOT_CMD_MKENT(info, 0, 1, do_tpm_info, "", ""),
 	U_BOOT_CMD_MKENT(init, 0, 1, do_tpm_init, "", ""),
@@ -526,6 +584,7 @@ static cmd_tbl_t tpm2_commands[] = {
 	U_BOOT_CMD_MKENT(nv_write, 0, 1, do_tpm2_nv_write, "", ""),
 	U_BOOT_CMD_MKENT(nv_read, 0, 1, do_tpm2_nv_read, "", ""),
 	U_BOOT_CMD_MKENT(hier_ctrl, 0, 1, do_tpm2_hierarchy_control, "", ""),
+	U_BOOT_CMD_MKENT(nv_readpublic, 0, 1, do_tpm2_nv_readpublic, "", ""),
 };
 
 cmd_tbl_t *get_tpm2_commands(unsigned int *size)
@@ -617,6 +676,10 @@ U_BOOT_CMD(tpm2, CONFIG_SYS_MAXARGS, 1, do_tpm, "Issue a TPMv2.x command",
 "    <offset>: offset into the area"
 "    <length>: number of reading bytes\n"
 "    <password>: optional password of the PLATFORM hierarchy\n"
+"nv_readpublic <nv_index>\n"
+"    Experimental: Implementation of TPM2_NV_ReadPublic command\n"
+"    /!\\WARNING: untested function, use at your own risks !\n"
+"    <nv_index>: index of the NVRAM\n"
 "hier_ctrl <res_handle> <set_or_clear> [<password>]\n"
 "    Experimental: Implementation of TPM_HierarchyControl command\n"
 "    /!\\WARNING: untested function, use at your own risks !\n"

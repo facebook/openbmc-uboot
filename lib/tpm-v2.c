@@ -622,3 +622,69 @@ u32 tpm2_hierarchy_control(struct udevice *dev, const u8 *pw, u16 pw_sz,
 
 	return rc;
 }
+
+u32 tpm2_nv_readpublic(struct udevice *dev, u32 nv_index,
+			u16 *hash_alg, u32* attributes, u16 *policy_sz, u8* policy,
+			u16* data_sz, u16 *nv_name_sz, u8 *nv_name)
+{
+	u32 rc;
+	u8 command_v2[COMMAND_BUFFER_SIZE] = {
+		/* HEADER */
+		tpm_u16(TPM2_ST_NO_SESSIONS),	/* TAG */
+		tpm_u32(14),			/* Length */
+		tpm_u32(TPM2_CC_NV_READPUBLIC),	/* Command code */
+
+		/* HANDLE */
+		tpm_u32(nv_index),		/* NV Index */
+	};
+	u8 response[COMMAND_BUFFER_SIZE] = { 0 };
+	size_t response_len = sizeof(response);
+	size_t offset = 10;
+	u16 nv_public_sz;
+	u32 rsp_nv_index;
+
+	rc = tpm_sendrecv_command(dev, command_v2, response, &response_len);
+	log_debug("rc = %d\n", rc);
+
+	if (rc != TPM2_RC_SUCCESS)
+		goto out;
+
+	if (unpack_byte_string(response, response_len, "w", offset, &nv_public_sz))
+		goto lib_error;
+
+	offset += 2;
+	if (unpack_byte_string(response, response_len, "dwdw",
+					offset, &rsp_nv_index,
+					offset + 4, hash_alg,
+					offset + 6, attributes,
+					offset + 10, policy_sz))
+		goto lib_error;
+
+	if (nv_index != rsp_nv_index)
+	{
+		log_err("Required NV index: 0x%08x, but responsed with index :%u\n",
+				nv_index, rsp_nv_index);
+		return TPM_LIB_ERROR;
+	}
+
+	offset += 12;
+	if (unpack_byte_string(response, response_len, "s",
+					offset, policy, *policy_sz))
+		goto lib_error;
+
+	offset += *policy_sz;
+	if (unpack_byte_string(response, response_len, "ww",
+					offset, data_sz,
+					offset + 2, nv_name_sz))
+		goto lib_error;
+
+	offset += 4;
+	if (unpack_byte_string(response, response_len, "s",
+					offset, nv_name, *nv_name_sz))
+		goto lib_error;
+
+out:
+	return rc;
+lib_error:
+	return TPM_LIB_ERROR;
+}

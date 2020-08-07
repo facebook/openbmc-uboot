@@ -194,6 +194,20 @@ static const char *ast2500_pinctrl_get_group_name(struct udevice *dev,
 	return ast2500_groups[selector].group_name;
 }
 
+#if defined(CONFIG_SPL_BUILD)
+static const char*
+ast2500_pinctrl_get_pin_name(struct udevice *dev, unsigned selector)
+{
+	switch (selector) {
+		case 138: return "GPIOR2";
+		case 139: return "GPIOR3";
+		case 140: return "GPIOR4";
+		case 141: return "GPIOR5";
+		default: return "GPIO???";
+	}
+}
+
+#else /* CONFIG_SPL_BUILD */
 static int
 convert_gpio_offset_to_label(unsigned offset, char* label, unsigned maxlen)
 {
@@ -240,6 +254,7 @@ ast2500_pinctrl_get_pin_name(struct udevice *dev, unsigned selector)
 	ast2500_pin_name[pin_name_prefix_len + label_len] = '\0';
 	return ast2500_pin_name;
 }
+#endif
 
 static void
 do_pinctrl_config(struct udevice* dev, const struct aspeed_group_config *config)

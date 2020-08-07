@@ -38,4 +38,17 @@
     };
 };
 
+&syscon {
+	u-boot,dm-pre-reloc;
+};
+
+&pinctrl {
+	u-boot,dm-pre-reloc;
+};
+
+&gpio {
+	u-boot,dm-pre-reloc;
+};
+
+
 

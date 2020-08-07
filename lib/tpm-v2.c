@@ -475,3 +475,49 @@ u32 tpm2_nv_definespace(struct udevice *dev, const u8 *pw, u16 pw_sz,
 
 	return rc;
 }
+
+u32 tpm2_nv_write(struct udevice *dev, const u8 *pw, u16 pw_sz,
+			u32 auth_handle, u32 nv_index, u8 *data, u16 data_sz, u16 data_ofs)
+{
+	u32 rc;
+	u8 command_v2[COMMAND_BUFFER_SIZE] = {
+		/* HEADER */
+		tpm_u16(TPM2_ST_SESSIONS),	/* TAG */
+		tpm_u32(35 + pw_sz + data_sz),	/* Length */
+		tpm_u32(TPM2_CC_NV_WRITE),	/* Command code */
+
+		/* HANDLE */
+		tpm_u32(auth_handle),		/* TPM resource handle */
+		tpm_u32(nv_index),		/* NV Index */
+
+		/* AUTH_SESSION */
+		tpm_u32(9 + pw_sz),		/* Authorization size */
+		tpm_u32(TPM2_RS_PW),		/* session handle */
+		tpm_u16(0),			/* Size of <nonce> */
+		0,				/* Attributes: Cont/Excl/Rst */
+		tpm_u16(pw_sz),			/* Size of <hmac/password> */
+		/* STRING(pw)			<hmac/password> (if any) */
+
+		/* TPM2B_MAX_NV_BUFFER */
+		/* tpm_u16(data_sz)		data size */
+		/* STRING(data)			data */
+
+		/* OFFSET */
+		/* tpm_u16(offset),		offset */
+	};
+	u8 response[COMMAND_BUFFER_SIZE] = { 0 };
+	size_t response_len = sizeof(response);
+	u32 offset = 31;
+
+	if (pack_byte_string(command_v2, sizeof(command_v2), "swsw",
+				offset, pw, pw_sz,
+				offset + pw_sz, data_sz,
+				offset + pw_sz + 2, data, data_sz,
+				offset + pw_sz + 2 + data_sz, data_ofs))
+		return TPM_LIB_ERROR;
+
+	rc = tpm_sendrecv_command(dev, command_v2, response, &response_len);
+	log_debug("rc = %d\n", rc);
+
+	return rc;
+}

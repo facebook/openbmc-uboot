@@ -383,6 +383,39 @@ static int do_tpm2_nv_define(cmd_tbl_t *cmdtp, int flag,
 		TPM2_RH_PLATFORM, nv_index, TPM2_ALG_SHA256, attri, data_sz));
 }
 
+static int do_tpm2_nv_write(cmd_tbl_t *cmdtp, int flag,
+				   int argc, char * const argv[])
+{
+	u32 nv_index, offset, length;
+	char* data = NULL;
+	char* pw = NULL;
+	u32 pw_sz = 0;
+	struct udevice *dev;
+	int ret;
+
+	ret = get_tpm(&dev);
+	if (ret)
+		return ret;
+
+	if (argc < 4 || argc > 5)
+		return CMD_RET_USAGE;
+
+	nv_index = simple_strtoul(argv[1], NULL, 0);
+	offset = simple_strtoul(argv[2], NULL, 0);
+	data = argv[3];
+	length = strlen(data);
+
+	if (argc == 5)
+	{
+		pw = argv[4];
+		pw_sz = strlen(pw);
+	}
+
+	nv_index |= (TPM_HT_NV_INDEX<<24);
+	return report_return_code(tpm2_nv_write(dev, (u8*)pw, pw_sz,
+		TPM2_RH_PLATFORM, nv_index, (u8*)data, length, offset));
+}
+
 static cmd_tbl_t tpm2_commands[] = {
 	U_BOOT_CMD_MKENT(info, 0, 1, do_tpm_info, "", ""),
 	U_BOOT_CMD_MKENT(init, 0, 1, do_tpm_init, "", ""),
@@ -400,6 +433,7 @@ static cmd_tbl_t tpm2_commands[] = {
 	U_BOOT_CMD_MKENT(pcr_setauthvalue, 0, 1,
 			 do_tpm_pcr_setauthvalue, "", ""),
 	U_BOOT_CMD_MKENT(nv_define, 0, 1, do_tpm2_nv_define, "", ""),
+	U_BOOT_CMD_MKENT(nv_write, 0, 1, do_tpm2_nv_write, "", ""),
 };
 
 cmd_tbl_t *get_tpm2_commands(unsigned int *size)
@@ -476,5 +510,11 @@ U_BOOT_CMD(tpm2, CONFIG_SYS_MAXARGS, 1, do_tpm, "Issue a TPMv2.x command",
 "    /!\\WARNING: untested function, use at your own risks !\n"
 "    <nv_index>: index of the NVRAM\n"
 "    <data_size>: required data size\n"
+"    <password>: optional password of the PLATFORM hierarchy\n"
+"nv_write <nv_index> <offset> <data_str> [<passward>]\n"
+"    Experimental: Implementation of TPM2_NV_Write command\n"
+"    /!\\WARNING: untested function, use at your own risks !\n"
+"    <nv_index>: index of the NVRAM\n"
+"    <data_str>: data string \n"
 "    <password>: optional password of the PLATFORM hierarchy\n"
 );

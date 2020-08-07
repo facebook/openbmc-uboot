@@ -564,6 +564,33 @@ static int do_tpm2_nv_readpublic(cmd_tbl_t *cmdtp, int flag,
 	return report_return_code(rc);
 }
 
+static int do_tpm2_nv_undefinespace(cmd_tbl_t *cmdtp, int flag,
+				   int argc, char * const argv[])
+{
+	u32 nv_index = simple_strtoul(argv[1], NULL, 0);
+	char* pw = NULL;
+	u32 pw_sz = 0;
+	struct udevice *dev;
+	int ret;
+
+	ret = get_tpm(&dev);
+	if (ret)
+		return ret;
+
+	if (argc < 2 || argc > 3)
+		return CMD_RET_USAGE;
+
+	if (argc == 3)
+	{
+		pw = argv[2];
+		pw_sz = strlen(pw);
+	}
+
+	nv_index |= (TPM_HT_NV_INDEX<<24);
+	return report_return_code(tpm2_nv_undefinespace(dev, (u8*)pw, pw_sz,
+		TPM2_RH_PLATFORM, nv_index));
+}
+
 static cmd_tbl_t tpm2_commands[] = {
 	U_BOOT_CMD_MKENT(info, 0, 1, do_tpm_info, "", ""),
 	U_BOOT_CMD_MKENT(init, 0, 1, do_tpm_init, "", ""),
@@ -585,6 +612,7 @@ static cmd_tbl_t tpm2_commands[] = {
 	U_BOOT_CMD_MKENT(nv_read, 0, 1, do_tpm2_nv_read, "", ""),
 	U_BOOT_CMD_MKENT(hier_ctrl, 0, 1, do_tpm2_hierarchy_control, "", ""),
 	U_BOOT_CMD_MKENT(nv_readpublic, 0, 1, do_tpm2_nv_readpublic, "", ""),
+	U_BOOT_CMD_MKENT(nv_undefine, 0, 1, do_tpm2_nv_undefinespace, "", ""),
 };
 
 cmd_tbl_t *get_tpm2_commands(unsigned int *size)
@@ -680,6 +708,11 @@ U_BOOT_CMD(tpm2, CONFIG_SYS_MAXARGS, 1, do_tpm, "Issue a TPMv2.x command",
 "    Experimental: Implementation of TPM2_NV_ReadPublic command\n"
 "    /!\\WARNING: untested function, use at your own risks !\n"
 "    <nv_index>: index of the NVRAM\n"
+"nv_undefine <nv_index> [<password>]\n"
+"    Experimental: Implementation of TPM2_NV_UndefineSpace command\n"
+"    /!\\WARNING: untested function, use at your own risks !\n"
+"    <nv_index>: index of the NVRAM\n"
+"    <password>: optional password of the PLATFORM hierarchy\n"
 "hier_ctrl <res_handle> <set_or_clear> [<password>]\n"
 "    Experimental: Implementation of TPM_HierarchyControl command\n"
 "    /!\\WARNING: untested function, use at your own risks !\n"

@@ -688,3 +688,39 @@ out:
 lib_error:
 	return TPM_LIB_ERROR;
 }
+
+u32 tpm2_nv_undefinespace(struct udevice *dev, const u8 *pw, u16 pw_sz,
+			u32 auth_handle, u32 nv_index)
+{
+	u32 rc;
+	u8 command_v2[COMMAND_BUFFER_SIZE] = {
+		/* HEADER */
+		tpm_u16(TPM2_ST_SESSIONS),	/* TAG */
+		tpm_u32(31 + pw_sz),		/* Length */
+		tpm_u32(TPM2_CC_NV_UNDEFINESPACE),	/* Command code */
+
+		/* HANDLE */
+		tpm_u32(auth_handle),		/* TPM resource handle */
+		tpm_u32(nv_index),		/* NV Index */
+
+		/* AUTH_SESSION */
+		tpm_u32(9 + pw_sz),		/* Authorization size */
+		tpm_u32(TPM2_RS_PW),		/* session handle */
+		tpm_u16(0),			/* Size of <nonce> */
+		0,				/* Attributes: Cont/Excl/Rst */
+		tpm_u16(pw_sz),			/* Size of <hmac/password> */
+		/* STRING(pw)			<hmac/password> (if any) */
+	};
+	u8 response[COMMAND_BUFFER_SIZE] = { 0 };
+	size_t response_len = sizeof(response);
+	size_t offset = 31;
+
+	if (pack_byte_string(command_v2, sizeof(command_v2), "s",
+			offset, pw, pw_sz))
+		return TPM_LIB_ERROR;
+
+	rc = tpm_sendrecv_command(dev, command_v2, response, &response_len);
+	log_debug("rc = %d\n", rc);
+
+	return rc;
+}

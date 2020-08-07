@@ -79,6 +79,7 @@ enum tpm2_handles {
  * @TPM2_CC_PCR_EXTEND: TPM2_PCR_Extend().
  * @TPM2_CC_PCR_SETAUTHVAL: TPM2_PCR_SetAuthValue().
  * @TPM2_CC_NV_READPUBLIC: TPM2_NV_ReadPublic().
+ * @TPM2_CC_NV_UNDEFINESPACE: TPM2_NV_UndefineSpace().
  */
 enum tpm2_command_codes {
 	TPM2_CC_HIERCONTROL	= 0x0121,
@@ -98,6 +99,7 @@ enum tpm2_command_codes {
 	TPM2_CC_PCR_EXTEND	= 0x0182,
 	TPM2_CC_PCR_SETAUTHVAL	= 0x0183,
 	TPM2_CC_NV_READPUBLIC	= 0x0169,
+	TPM2_CC_NV_UNDEFINESPACE= 0x0122,
 };
 
 /**
@@ -409,4 +411,17 @@ u32 tpm2_nv_readpublic(struct udevice *dev, u32 nv_index,
 			u16 *hash_alg, u32* attributes, u16 *policy_sz, u8* policy,
 			u16* data_sz, u16 *nv_name_sz, u8 *nv_name);
 
+/**
+ * Issue a TPM_NV_UndefineSpace command.
+ *
+ * @dev			TPM device
+ * @pw			Platform password
+ * @pw_sz		Length of the password
+ * @auth_handle	Auth handle
+ * @nv_index	Requested NVRAM index
+ *
+ * @return 		code of the operation
+ */
+u32 tpm2_nv_undefinespace(struct udevice *dev, const u8 *pw, u16 pw_sz,
+			u32 auth_handle, u32 nv_index);
 #endif /* __TPM_V2_H */

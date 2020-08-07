@@ -212,9 +212,9 @@
 #define CONFIG_SPL_STACK          (CONFIG_SYS_SRAM_BASE + 0x6000)
 #define CONFIG_SYS_INIT_SP_ADDR   CONFIG_SPL_STACK
 
-/* Establish an 'arena' for heap from 0x1000 - 0x3000, 8k */
+/* Establish an 'arena' for heap from 0x1000 - 0x4000, 12k */
 #define CONFIG_SYS_SPL_MALLOC_START (CONFIG_SYS_SRAM_BASE + 0x1000)
-#define CONFIG_SYS_SPL_MALLOC_SIZE  0x2000
+#define CONFIG_SYS_SPL_MALLOC_SIZE  0x3000
 
 /* General SPL build feature includes. */
 #define CONFIG_SPL_LIBGENERIC_SUPPORT

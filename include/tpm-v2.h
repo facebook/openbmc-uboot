@@ -66,6 +66,7 @@ enum tpm2_handles {
  * @TPM2_CC_CLEAR: TPM2_Clear().
  * @TPM2_CC_CLEARCONTROL: TPM2_ClearControl().
  * @TPM2_CC_HIERCHANGEAUTH: TPM2_HierarchyChangeAuth().
+ * @TPM2_CC_NV_DEFINESPACE: TPM2_NV_DefineSpace().
  * @TPM2_CC_PCR_SETAUTHPOL: TPM2_PCR_SetAuthPolicy().
  * @TPM2_CC_DAM_RESET: TPM2_DictionaryAttackLockReset().
  * @TPM2_CC_DAM_PARAMETERS: TPM2_DictionaryAttackParameters().
@@ -80,6 +81,7 @@ enum tpm2_command_codes {
 	TPM2_CC_CLEAR		= 0x0126,
 	TPM2_CC_CLEARCONTROL	= 0x0127,
 	TPM2_CC_HIERCHANGEAUTH	= 0x0129,
+	TPM2_CC_NV_DEFINESPACE	= 0x012A,
 	TPM2_CC_PCR_SETAUTHPOL	= 0x012C,
 	TPM2_CC_DAM_RESET	= 0x0139,
 	TPM2_CC_DAM_PARAMETERS	= 0x013A,
@@ -159,6 +161,11 @@ enum tpm_index_attrs {
 				TPMA_NV_AUTHREAD | TPMA_NV_POLICYREAD,
 	TPMA_NV_MASK_WRITE	= TPMA_NV_PPWRITE | TPMA_NV_OWNERWRITE |
 					TPMA_NV_AUTHWRITE | TPMA_NV_POLICYWRITE,
+};
+
+/* TPM2 Handle Type */
+enum tpm2_handle_type {
+	TPM_HT_NV_INDEX = 1,
 };
 
 /**
@@ -308,4 +315,21 @@ u32 tpm2_pcr_setauthvalue(struct udevice *dev, const char *pw,
 			  const ssize_t pw_sz, u32 index, const char *key,
 			  const ssize_t key_sz);
 
+/**
+ * Issue a TPM_NV_DefineSpace command.
+ *
+ * @dev			TPM device
+ * @pw			Platform password
+ * @pw_sz		Length of the password
+ * @auth_handle	Auth handle
+ * @nv_index	Requested NVRAM index
+ * @hash_alg	Hash algorithm
+ * @attributes	NV Attributes
+ * @data_sz		Requested data size
+ *
+ * @return 		code of the operation
+ */
+u32 tpm2_nv_definespace(struct udevice *dev, const u8 *pw,
+				u16 pw_sz, u32 auth_handle, u32 nv_index,
+				u16 hash_alg, u32 attributes, u16 data_sz);
 #endif /* __TPM_V2_H */

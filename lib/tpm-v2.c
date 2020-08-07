@@ -421,3 +421,57 @@ u32 tpm2_pcr_setauthvalue(struct udevice *dev, const char *pw,
 
 	return tpm_sendrecv_command(dev, command_v2, NULL, NULL);
 }
+
+u32 tpm2_nv_definespace(struct udevice *dev, const u8 *pw, u16 pw_sz,
+			u32 auth_handle, u32 nv_index, u16 hash_alg,
+			u32 attributes, u16 data_sz)
+{
+	u32 rc;
+	u8 command_v2[COMMAND_BUFFER_SIZE] = {
+		/* HEADER */
+		tpm_u16(TPM2_ST_SESSIONS),	/* TAG */
+		tpm_u32(45+pw_sz),		/* Length */
+		tpm_u32(TPM2_CC_NV_DEFINESPACE),/* Command code */
+
+		/* HANDLE */
+		tpm_u32(auth_handle),		/* TPM resource handle */
+
+		/* AUTH_SESSION */
+		tpm_u32(9 + pw_sz),		/* Authorization size */
+		tpm_u32(TPM2_RS_PW),		/* session handle */
+		tpm_u16(0),			/* Size of <nonce> */
+		0,				/* Attributes: Cont/Excl/Rst */
+		tpm_u16(pw_sz),			/* Size of <hmac/password> */
+		/* STRING(pw)			<hmac/password> (if any) */
+
+		/* TPM2B_AUTH */
+		/* tpm_u16(0),			size of auth */
+
+		/* TPM2B_NV_PUBLIC */
+		/* tpm_u16(14),			size of public info */
+		/* tpm_u32(nv_index),		NV Index */
+		/* tpm_u16(hash_alg),		hash algorithm */
+		/* tpm_u32(attributes),		NV attributes */
+		/* tpm_u16(0),			auth policy */
+		/* tpm_u16(data_sz),		data size */
+	};
+	u8 response[COMMAND_BUFFER_SIZE] = { 0 };
+	size_t response_len = sizeof(response);
+	size_t offset = 27;
+
+	if (pack_byte_string(command_v2, sizeof(command_v2), "swwdwdww",
+				offset, pw, pw_sz,
+				offset + pw_sz, 0,
+				offset + pw_sz + 2, 14,
+				offset + pw_sz + 4, nv_index,
+				offset + pw_sz + 8, hash_alg,
+				offset + pw_sz + 10, attributes,
+				offset + pw_sz + 14, 0,
+				offset + pw_sz + 16, data_sz))
+		return TPM_LIB_ERROR;
+
+	rc = tpm_sendrecv_command(dev, command_v2, response, &response_len);
+	log_debug("rc = %d\n", rc);
+
+	return rc;
+}

@@ -521,3 +521,63 @@ u32 tpm2_nv_write(struct udevice *dev, const u8 *pw, u16 pw_sz,
 
 	return rc;
 }
+
+u32 tpm2_nv_read(struct udevice *dev, const u8 *pw, u16 pw_sz,
+			u32 auth_handle, u32 nv_index, u16 size, u16 ofs, u8* rdata)
+{
+	u32 rc;
+	u8 command_v2[COMMAND_BUFFER_SIZE] = {
+		/* HEADER */
+		tpm_u16(TPM2_ST_SESSIONS),	/* TAG */
+		tpm_u32(35 + pw_sz),		/* Length */
+		tpm_u32(TPM2_CC_NV_READ),	/* Command code */
+
+		/* HANDLE */
+		tpm_u32(auth_handle),		/* TPM resource handle */
+		tpm_u32(nv_index),		/* NV Index */
+
+		/* AUTH_SESSION */
+		tpm_u32(9 + pw_sz),		/* Authorization size */
+		tpm_u32(TPM2_RS_PW),		/* session handle */
+		tpm_u16(0),			/* Size of <nonce> */
+		0,				/* Attributes: Cont/Excl/Rst */
+		tpm_u16(pw_sz),			/* Size of <hmac/password> */
+		/* STRING(pw)			<hmac/password> (if any) */
+
+		/* PARAMETERS */
+		/* tpm_u16(size)		read size */
+		/* tpm_u16(ofs),		offset */
+	};
+	u8 response[COMMAND_BUFFER_SIZE] = { 0 };
+	size_t response_len = sizeof(response);
+	u32 offset = 31;
+	u16 rdata_sz;
+
+	if (pack_byte_string(command_v2, sizeof(command_v2), "sww",
+				offset, pw, pw_sz,
+				offset + pw_sz, size,
+				offset + pw_sz + 4, ofs))
+		return TPM_LIB_ERROR;
+
+	rc = tpm_sendrecv_command(dev, command_v2, response, &response_len);
+	log_debug("rc = %d\n", rc);
+
+	if (rc != TPM2_RC_SUCCESS)
+		goto out;
+
+	if (unpack_byte_string(response, response_len, "w", 14, &rdata_sz))
+		return TPM_LIB_ERROR;
+
+	if (rdata_sz != size)
+	{
+		log_err("Required reading size %u, but only %u received\n",
+				size, rdata_sz);
+		return TPM_LIB_ERROR;
+	}
+
+	if (unpack_byte_string(response, response_len, "s", 16, rdata, rdata_sz))
+		return TPM_LIB_ERROR;
+
+out:
+	return rc;
+}

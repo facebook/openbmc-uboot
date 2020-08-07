@@ -416,6 +416,44 @@ static int do_tpm2_nv_write(cmd_tbl_t *cmdtp, int flag,
 		TPM2_RH_PLATFORM, nv_index, (u8*)data, length, offset));
 }
 
+static int do_tpm2_nv_read(cmd_tbl_t *cmdtp, int flag,
+				   int argc, char * const argv[])
+{
+	u32 nv_index, offset, length;
+	char data[256] = {0};
+	char* pw = NULL;
+	u32 pw_sz = 0;
+	struct udevice *dev;
+	int ret;
+	u32 rc;
+
+	ret = get_tpm(&dev);
+	if (ret)
+		return ret;
+
+	if (argc < 4 || argc > 5)
+		return CMD_RET_USAGE;
+
+	nv_index = simple_strtoul(argv[1], NULL, 0);
+	offset = simple_strtoul(argv[2], NULL, 0);
+	length = simple_strtoul(argv[3], NULL, 0);
+
+	if (argc == 5)
+	{
+		pw = argv[4];
+		pw_sz = strlen(pw);
+	}
+
+	nv_index |= (TPM_HT_NV_INDEX<<24);
+	rc = tpm2_nv_read(dev, (u8*)pw, pw_sz, TPM2_RH_PLATFORM,
+				nv_index, length, offset, (u8*)data);
+
+	if (rc == TPM2_RC_SUCCESS)
+		printf("[0x%08x]: %s\n", nv_index, data);
+
+	return report_return_code(rc);
+}
+
 static cmd_tbl_t tpm2_commands[] = {
 	U_BOOT_CMD_MKENT(info, 0, 1, do_tpm_info, "", ""),
 	U_BOOT_CMD_MKENT(init, 0, 1, do_tpm_init, "", ""),
@@ -434,6 +472,7 @@ static cmd_tbl_t tpm2_commands[] = {
 			 do_tpm_pcr_setauthvalue, "", ""),
 	U_BOOT_CMD_MKENT(nv_define, 0, 1, do_tpm2_nv_define, "", ""),
 	U_BOOT_CMD_MKENT(nv_write, 0, 1, do_tpm2_nv_write, "", ""),
+	U_BOOT_CMD_MKENT(nv_read, 0, 1, do_tpm2_nv_read, "", ""),
 };
 
 cmd_tbl_t *get_tpm2_commands(unsigned int *size)
@@ -515,6 +554,14 @@ U_BOOT_CMD(tpm2, CONFIG_SYS_MAXARGS, 1, do_tpm, "Issue a TPMv2.x command",
 "    Experimental: Implementation of TPM2_NV_Write command\n"
 "    /!\\WARNING: untested function, use at your own risks !\n"
 "    <nv_index>: index of the NVRAM\n"
+"    <offset>: offset into the area"
 "    <data_str>: data string \n"
+"    <password>: optional password of the PLATFORM hierarchy\n"
+"nv_read <nv_index> <offset> <length> [<password>]\n"
+"    Experimental: Implementation of TPM2_NV_Read command\n"
+"    /!\\WARNING: untested function, use at your own risks !\n"
+"    <nv_index>: index of the NVRAM\n"
+"    <offset>: offset into the area"
+"    <length>: number of reading bytes\n"
 "    <password>: optional password of the PLATFORM hierarchy\n"
 );

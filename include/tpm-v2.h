@@ -71,6 +71,7 @@ enum tpm2_handles {
  * @TPM2_CC_NV_WRITE: TPM2_NV_Write().
  * @TPM2_CC_DAM_RESET: TPM2_DictionaryAttackLockReset().
  * @TPM2_CC_DAM_PARAMETERS: TPM2_DictionaryAttackParameters().
+ * @TPM2_CC_NV_READ: TPM2_NV_Read().
  * @TPM2_CC_GET_CAPABILITY: TPM2_GetCapibility().
  * @TPM2_CC_PCR_READ: TPM2_PCR_Read().
  * @TPM2_CC_PCR_EXTEND: TPM2_PCR_Extend().
@@ -335,7 +336,6 @@ u32 tpm2_nv_definespace(struct udevice *dev, const u8 *pw,
 				u16 pw_sz, u32 auth_handle, u32 nv_index,
 				u16 hash_alg, u32 attributes, u16 data_sz);
 
-
 /**
  * Issue a TPM_NV_Write command.
  *
@@ -352,4 +352,21 @@ u32 tpm2_nv_definespace(struct udevice *dev, const u8 *pw,
  */
 u32 tpm2_nv_write(struct udevice *dev, const u8 *pw, u16 pw_sz,
 			u32 auth_handle, u32 nv_index, u8 *data, u16 data_sz, u16 data_ofs);
+
+/**
+ * Issue a TPM_NV_Read command.
+ *
+ * @dev			TPM device
+ * @pw			Platform password
+ * @pw_sz		Length of the password
+ * @auth_handle	Auth handle
+ * @nv_index	Requested NVRAM index
+ * @size		Number of byte to read
+ * @ofs			Data offset into the NV Area
+ * @data		Data reading buffer
+ *
+ * @return 		code of the operation
+ */
+u32 tpm2_nv_read(struct udevice *dev, const u8 *pw, u16 pw_sz,
+			u32 auth_handle, u32 nv_index, u16 size, u16 ofs, u8* data);
 #endif /* __TPM_V2_H */

@@ -34,14 +34,17 @@
 		gpio-miso = <&gpio ASPEED_GPIO(R, 5) GPIO_ACTIVE_HIGH>;
 		num-chipselects = <1>;
 		cs-gpios = <&gpio ASPEED_GPIO(R, 2) GPIO_ACTIVE_LOW>;
+		u-boot,dm-pre-reloc;
 
 		tpmdev@0 {
 			compatible = "tis,tpm2-spi";
 			spi-max-frequency = <33000000>;
 			reg = <0>;
+			u-boot,dm-pre-reloc;
 		};
 	};
 };
+
 #endif
 
 &fmc {

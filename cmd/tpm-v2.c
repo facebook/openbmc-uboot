@@ -454,6 +454,58 @@ static int do_tpm2_nv_read(cmd_tbl_t *cmdtp, int flag,
 	return report_return_code(rc);
 }
 
+static int do_tpm2_hierarchy_control(cmd_tbl_t *cmdtp, int flag,
+					int argc, char * const argv[])
+{
+	char* pw = NULL;
+	u32 pw_sz = 0;
+	u32 res_handle;
+	bool set = false;
+	struct udevice *dev;
+	int ret;
+	u32 rc;
+
+	ret = get_tpm(&dev);
+	if (ret)
+		return ret;
+
+	if (argc < 3 || argc > 4)
+		return CMD_RET_USAGE;
+
+	if (argc == 4)
+	{
+		pw = argv[4];
+		pw_sz = strlen(pw);
+	}
+
+	if (!strcasecmp("TPM2_RH_OWNER", argv[1]))
+		res_handle = TPM2_RH_OWNER;
+	else if (!strcasecmp("TPM2_RH_ENDORSEMENT", argv[1]))
+		res_handle = TPM2_RH_ENDORSEMENT;
+	else if (!strcasecmp("TPM2_RH_PLATFORM", argv[1]))
+		res_handle = TPM2_RH_PLATFORM;
+	else if (!strcasecmp("TPM2_RH_PLATFORM_NV", argv[1]))
+		res_handle = TPM2_RH_PLATFORM_NV;
+	else
+		return CMD_RET_USAGE;
+
+	if (!strcasecmp("YES", argv[2]) || !strcasecmp("Y", argv[2]) ||
+		!strcasecmp("SET", argv[2]) || !strcasecmp("S", argv[2]) ||
+		!strcasecmp("TRUE", argv[2]) || !strcasecmp("T", argv[2]))
+		set = true;
+	else if (!strcasecmp("NO", argv[2]) || !strcasecmp("N", argv[2]) ||
+		!strcasecmp("CLEAR", argv[2]) || !strcasecmp("C", argv[2]) ||
+		!strcasecmp("FALSE", argv[2]) || !strcasecmp("F", argv[2]))
+		set = false;
+	else
+		return CMD_RET_USAGE;
+
+	rc = tpm2_hierarchy_control(dev, (u8*)pw, pw_sz, TPM2_RH_PLATFORM,
+				res_handle, set);
+
+	return report_return_code(rc);
+}
+
 static cmd_tbl_t tpm2_commands[] = {
 	U_BOOT_CMD_MKENT(info, 0, 1, do_tpm_info, "", ""),
 	U_BOOT_CMD_MKENT(init, 0, 1, do_tpm_init, "", ""),
@@ -473,6 +525,7 @@ static cmd_tbl_t tpm2_commands[] = {
 	U_BOOT_CMD_MKENT(nv_define, 0, 1, do_tpm2_nv_define, "", ""),
 	U_BOOT_CMD_MKENT(nv_write, 0, 1, do_tpm2_nv_write, "", ""),
 	U_BOOT_CMD_MKENT(nv_read, 0, 1, do_tpm2_nv_read, "", ""),
+	U_BOOT_CMD_MKENT(hier_ctrl, 0, 1, do_tpm2_hierarchy_control, "", ""),
 };
 
 cmd_tbl_t *get_tpm2_commands(unsigned int *size)
@@ -564,4 +617,15 @@ U_BOOT_CMD(tpm2, CONFIG_SYS_MAXARGS, 1, do_tpm, "Issue a TPMv2.x command",
 "    <offset>: offset into the area"
 "    <length>: number of reading bytes\n"
 "    <password>: optional password of the PLATFORM hierarchy\n"
+"hier_ctrl <res_handle> <set_or_clear> [<password>]\n"
+"    Experimental: Implementation of TPM_HierarchyControl command\n"
+"    /!\\WARNING: untested function, use at your own risks !\n"
+"    <res_handle>: resource handle (case insensitive)\n"
+"        * TPM2_RH_OWNER\n"
+"        * TPM2_RH_ENDORSEMENT\n"
+"        * TPM2_RH_PLATFORM\n"
+"        * TPM2_RH_PLATFORM_NV\n"
+"    <set_or_clear>: set or clear resource handle (case insensitive)\n"
+"        * set: Y|YES|T|TRUE|S|SET\n"
+"        * clear: N|NO|F|FALSE|C|CLEAR\n"
 );

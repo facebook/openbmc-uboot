@@ -56,11 +56,13 @@ enum tpm2_handles {
 	TPM2_RH_LOCKOUT		= 0x4000000A,
 	TPM2_RH_ENDORSEMENT	= 0x4000000B,
 	TPM2_RH_PLATFORM	= 0x4000000C,
+	TPM2_RH_PLATFORM_NV	= 0x4000000D,
 };
 
 /**
  * TPM2 command codes used at the beginning of a buffer, gives the command.
  *
+ * @TPM2_CC_HIERCONTROL: TPM2_HierarchyControl().
  * @TPM2_CC_STARTUP: TPM2_Startup().
  * @TPM2_CC_SELF_TEST: TPM2_SelfTest().
  * @TPM2_CC_CLEAR: TPM2_Clear().
@@ -78,6 +80,7 @@ enum tpm2_handles {
  * @TPM2_CC_PCR_SETAUTHVAL: TPM2_PCR_SetAuthValue().
  */
 enum tpm2_command_codes {
+	TPM2_CC_HIERCONTROL	= 0x0121,
 	TPM2_CC_STARTUP		= 0x0144,
 	TPM2_CC_SELF_TEST	= 0x0143,
 	TPM2_CC_CLEAR		= 0x0126,
@@ -369,4 +372,19 @@ u32 tpm2_nv_write(struct udevice *dev, const u8 *pw, u16 pw_sz,
  */
 u32 tpm2_nv_read(struct udevice *dev, const u8 *pw, u16 pw_sz,
 			u32 auth_handle, u32 nv_index, u16 size, u16 ofs, u8* data);
+
+/**
+ * Issue a TPM_HierarchyControl command.
+ *
+ * @dev			TPM device
+ * @pw			Platform password
+ * @pw_sz		Length of the password
+ * @auth_handle	Auth handle
+ * @res_handle	Resource handle
+ * @enable		Enable or disable resource handle
+ *
+ * @return 		code of the operation
+ */
+u32 tpm2_hierarchy_control(struct udevice *dev, const u8 *pw, u16 pw_sz,
+			u32 auth_handle, u32 res_handle, bool enable);
 #endif /* __TPM_V2_H */

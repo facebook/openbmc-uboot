@@ -581,3 +581,44 @@ u32 tpm2_nv_read(struct udevice *dev, const u8 *pw, u16 pw_sz,
 out:
 	return rc;
 }
+
+u32 tpm2_hierarchy_control(struct udevice *dev, const u8 *pw, u16 pw_sz,
+			u32 auth_handle, u32 res_handle, bool enable)
+{
+	u32 rc;
+	u8 command_v2[COMMAND_BUFFER_SIZE] = {
+		/* HEADER */
+		tpm_u16(TPM2_ST_SESSIONS),	/* TAG */
+		tpm_u32(32 + pw_sz),		/* Length */
+		tpm_u32(TPM2_CC_HIERCONTROL),	/* Command code */
+
+		/* HANDLE */
+		tpm_u32(auth_handle),		/* TPM resource handle */
+
+		/* AUTH_SESSION */
+		tpm_u32(9 + pw_sz),		/* Authorization size */
+		tpm_u32(TPM2_RS_PW),		/* session handle */
+		tpm_u16(0),			/* Size of <nonce> */
+		0,				/* Attributes: Cont/Excl/Rst */
+		tpm_u16(pw_sz),			/* Size of <hmac/password> */
+		/* STRING(pw)			<hmac/password> (if any) */
+
+		/* PARAMETERS */
+		/* tpm_u32(res_handle)		resource handle */
+		/* enable,			set enable (1) or disable (0)*/
+	};
+	u8 response[COMMAND_BUFFER_SIZE] = { 0 };
+	size_t response_len = sizeof(response);
+	size_t offset = 27;
+
+	if (pack_byte_string(command_v2, sizeof(command_v2), "sdb",
+				offset, pw, pw_sz,
+				offset + pw_sz, res_handle,
+				offset + pw_sz + 4, (enable)?TPMI_YES:TPMI_NO))
+		return TPM_LIB_ERROR;
+
+	rc = tpm_sendrecv_command(dev, command_v2, response, &response_len);
+	log_debug("rc = %d\n", rc);
+
+	return rc;
+}

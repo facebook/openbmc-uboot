@@ -25,6 +25,7 @@ u32 tpm2_startup(struct udevice *dev, enum tpm2_startup_types mode)
 	 * but will return RC_INITIALIZE otherwise.
 	 */
 	ret = tpm_sendrecv_command(dev, command_v2, NULL, NULL);
+	log_debug("rc = %d\n", ret);
 	if (ret && ret != TPM2_RC_INITIALIZE)
 		return ret;
 
@@ -40,7 +41,9 @@ u32 tpm2_self_test(struct udevice *dev, enum tpm2_yes_no full_test)
 		full_test,
 	};
 
-	return tpm_sendrecv_command(dev, command_v2, NULL, NULL);
+	u32 ret = tpm_sendrecv_command(dev, command_v2, NULL, NULL);
+	log_debug("rc = %d\n", ret);
+	return ret;
 }
 
 u32 tpm2_clear(struct udevice *dev, u32 handle, const char *pw,
@@ -114,7 +117,9 @@ u32 tpm2_pcr_extend(struct udevice *dev, u32 index, const uint8_t *digest)
 	if (ret)
 		return TPM_LIB_ERROR;
 
-	return tpm_sendrecv_command(dev, command_v2, NULL, NULL);
+	ret = tpm_sendrecv_command(dev, command_v2, NULL, NULL);
+	log_debug("rc = %d\n", ret);
+	return ret;
 }
 
 u32 tpm2_pcr_read(struct udevice *dev, u32 idx, unsigned int idx_min_sz,
@@ -144,6 +149,7 @@ u32 tpm2_pcr_read(struct udevice *dev, u32 idx, unsigned int idx_min_sz,
 		return TPM_LIB_ERROR;
 
 	ret = tpm_sendrecv_command(dev, command_v2, response, &response_len);
+	log_debug("rc = %d\n", ret);
 	if (ret)
 		return ret;
 

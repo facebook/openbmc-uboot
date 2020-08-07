@@ -63,8 +63,7 @@ enum tpm2_handles {
  * TPM2 command codes used at the beginning of a buffer, gives the command.
  *
  * @TPM2_CC_HIERCONTROL: TPM2_HierarchyControl().
- * @TPM2_CC_STARTUP: TPM2_Startup().
- * @TPM2_CC_SELF_TEST: TPM2_SelfTest().
+ * @TPM2_CC_NV_UNDEFINESPACE: TPM2_NV_UndefineSpace().
  * @TPM2_CC_CLEAR: TPM2_Clear().
  * @TPM2_CC_CLEARCONTROL: TPM2_ClearControl().
  * @TPM2_CC_HIERCHANGEAUTH: TPM2_HierarchyChangeAuth().
@@ -73,18 +72,18 @@ enum tpm2_handles {
  * @TPM2_CC_NV_WRITE: TPM2_NV_Write().
  * @TPM2_CC_DAM_RESET: TPM2_DictionaryAttackLockReset().
  * @TPM2_CC_DAM_PARAMETERS: TPM2_DictionaryAttackParameters().
+ * @TPM2_CC_STARTUP: TPM2_Startup().
+ * @TPM2_CC_SELF_TEST: TPM2_SelfTest().
  * @TPM2_CC_NV_READ: TPM2_NV_Read().
+ * @TPM2_CC_NV_READPUBLIC: TPM2_NV_ReadPublic().
  * @TPM2_CC_GET_CAPABILITY: TPM2_GetCapibility().
  * @TPM2_CC_PCR_READ: TPM2_PCR_Read().
  * @TPM2_CC_PCR_EXTEND: TPM2_PCR_Extend().
  * @TPM2_CC_PCR_SETAUTHVAL: TPM2_PCR_SetAuthValue().
- * @TPM2_CC_NV_READPUBLIC: TPM2_NV_ReadPublic().
- * @TPM2_CC_NV_UNDEFINESPACE: TPM2_NV_UndefineSpace().
  */
 enum tpm2_command_codes {
 	TPM2_CC_HIERCONTROL	= 0x0121,
-	TPM2_CC_STARTUP		= 0x0144,
-	TPM2_CC_SELF_TEST	= 0x0143,
+	TPM2_CC_NV_UNDEFINESPACE= 0x0122,
 	TPM2_CC_CLEAR		= 0x0126,
 	TPM2_CC_CLEARCONTROL	= 0x0127,
 	TPM2_CC_HIERCHANGEAUTH	= 0x0129,
@@ -93,13 +92,14 @@ enum tpm2_command_codes {
 	TPM2_CC_NV_WRITE	= 0x0137,
 	TPM2_CC_DAM_RESET	= 0x0139,
 	TPM2_CC_DAM_PARAMETERS	= 0x013A,
-	TPM2_CC_NV_READ         = 0x014E,
+	TPM2_CC_STARTUP		= 0x0144,
+	TPM2_CC_SELF_TEST	= 0x0143,
+	TPM2_CC_NV_READ		= 0x014E,
+	TPM2_CC_NV_READPUBLIC	= 0x0169,
 	TPM2_CC_GET_CAPABILITY	= 0x017A,
 	TPM2_CC_PCR_READ	= 0x017E,
 	TPM2_CC_PCR_EXTEND	= 0x0182,
 	TPM2_CC_PCR_SETAUTHVAL	= 0x0183,
-	TPM2_CC_NV_READPUBLIC	= 0x0169,
-	TPM2_CC_NV_UNDEFINESPACE= 0x0122,
 };
 
 /**

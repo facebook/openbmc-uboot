@@ -7,7 +7,12 @@
 #include <common.h>
 #include <command.h>
 #include <u-boot/crc.h>
+#if CONFIG_IS_ENABLED(TPM_V1)
 #include <tpm-v1.h>
+#endif
+#if CONFIG_IS_ENABLED(TPM_V2)
+#include <tpm-v2.h>
+#endif
 
 #include <asm/io.h>
 #include <asm/arch/ast-sdk/ast_scu.h>
@@ -62,12 +67,23 @@ static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
       return 0;
     } else if (strncmp(argv[1], "clear", sizeof("clear")) == 0) {
 #ifdef CONFIG_ASPEED_TPM
-      tpm_nv_define_space(dev, VBS_TPM_ROLLBACK_INDEX,
-          TPM_NV_PER_GLOBALLOCK | TPM_NV_PER_PPWRITE, 0);
-      char blank[VBS_TPM_ROLLBACK_SIZE];
-      memset(blank, 0x0, sizeof(blank));
-      return tpm_nv_write_value(dev,
-				VBS_TPM_ROLLBACK_INDEX, blank, sizeof(blank));
+		char blank[VBS_TPM_ROLLBACK_SIZE];
+		memset(blank, 0x0, sizeof(blank));
+
+#if CONFIG_IS_ENABLED(TPM_V1)
+		tpm_nv_define_space(dev, VBS_TPM_ROLLBACK_INDEX,
+			TPM_NV_PER_GLOBALLOCK | TPM_NV_PER_PPWRITE, 0);
+		return tpm_nv_write_value(dev,
+			VBS_TPM_ROLLBACK_INDEX, blank, sizeof(blank));
+#endif
+
+#if CONFIG_IS_ENABLED(TPM_V2)
+	printf("Zero-out Rollback NV-index 0x%08x\n", VBS_TPM_ROLLBACK_INDEX);
+	return tpm2_nv_write(dev, NULL, 0, TPM2_RH_PLATFORM,
+		(TPM_HT_NV_INDEX << 24) | (VBS_TPM_ROLLBACK_INDEX & 0xFFFFF),
+		(u8*)blank, sizeof(blank), 0);
+#endif
+
 #endif
     } else if (strncmp(argv[1], "oscheck", sizeof("oscheck")) == 0) {
       if (vbs->error_type == VBS_SUCCESS) {
@@ -117,7 +133,12 @@ static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
   printf("Flags recovery_boot:     %d\n", (vbs->recovery_boot) ? 1 : 0);
   printf("Flags recovery_retries:  %u\n", vbs->recovery_retries);
   printf("\n");
+#if CONFIG_IS_ENABLED(TPM_V1)
   printf("TPM status:  %u\n", vbs->error_tpm);
+#endif
+#if CONFIG_IS_ENABLED(TPM_V2)
+  printf("TPM2 status:  %u\n", vbs->error_tpm2);
+#endif
   printf("CRC valid:   %d (%hu)\n", (crc_valid) ? 1 : 0, crc);
   printf("Status: type (%d) code (%d)\n", vbs->error_type, vbs->error_code);
 

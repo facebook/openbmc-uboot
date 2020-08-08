@@ -92,12 +92,13 @@ struct vbs {
   /* 1A */ u8 error_code;          /* Unique error code, or 0 for success */
   /* 1B */ u8 error_tpm;           /* The last-most-recent error from the TPM. */
   /* 1C */ u16 crc;                /* A CRC of the vbs structure */
-  /* 1E */ u32 subordinate_last;   /* Status reporting only: the last booted subordinate. */
-  /* 22 */ u32 uboot_last;         /* Status reporting only: the last booted U-Boot. */
-  /* 26 */ u32 kernel_last;        /* Status reporting only: the last booted kernel. */
-  /* 2A */ u32 subordinate_current;/* Status reporting only: the current booted subordinate. */
-  /* 2E */ u32 uboot_current;      /* Status reporting only: the current booted U-Boot. */
-  /* 32 */ u32 kernel_current;     /* Status reporting only: the current booted kernel. */
+  /* 1E */ u16 error_tpm2;         /* tpm2 error code */
+  /* 20 */ u32 subordinate_last;   /* Status reporting only: the last booted subordinate. */
+  /* 24 */ u32 uboot_last;         /* Status reporting only: the last booted U-Boot. */
+  /* 28 */ u32 kernel_last;        /* Status reporting only: the last booted kernel. */
+  /* 2C */ u32 subordinate_current;/* Status reporting only: the current booted subordinate. */
+  /* 30 */ u32 uboot_current;      /* Status reporting only: the current booted U-Boot. */
+  /* 34 */ u32 kernel_current;     /* Status reporting only: the current booted kernel. */
 };
 
 /* TPM NVram index used for rollback protection data. */

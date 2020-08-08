@@ -245,8 +245,6 @@ static int soft_spi_probe(struct udevice *dev)
 	int cs_flags, clk_flags;
 	int ret;
 
-	printf("enter: %s %d\n", __func__, __LINE__);
-
 	cs_flags = (slave && slave->mode & SPI_CS_HIGH) ? 0 : GPIOD_ACTIVE_LOW;
 	clk_flags = (slave && slave->mode & SPI_CPOL) ? GPIOD_ACTIVE_LOW : 0;
 
@@ -270,7 +268,6 @@ static int soft_spi_probe(struct udevice *dev)
 	    (SPI_MASTER_NO_RX | SPI_MASTER_NO_TX))
 		return -EINVAL;
 
-	printf("exit: %s %d\n", __func__, __LINE__);
 	return 0;
 }
 

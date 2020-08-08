@@ -30,12 +30,12 @@
 #define AST_MAX_UBOOT_FIT   0x4000
 
 #define vboot_recovery(v, t , c) do {			\
-	printf("%s %d\n", __func__, __LINE__);		\
+	debug("%s %d\n", __func__, __LINE__);		\
 	real_vboot_recovery((v), (t), (c));		\
 } while(0)
 
 #define vboot_enforce(v, t , c) do {			\
-	printf("%s %d\n", __func__, __LINE__);		\
+	debug("%s %d\n", __func__, __LINE__);		\
 	real_vboot_enforce((v), (t), (c));		\
 } while(0)
 

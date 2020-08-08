@@ -376,7 +376,7 @@ static int slot_12V_init(void)
     return ret;
   }
   board_id = dm_gpio_get_values_as_int(desc, ret);
-  printf("board_id = %x\n", board_id);
+  debug("board_id = %x\n", board_id);
 
   // if config C, do nothing
   // GPIOF[0:3] = BOARD_ID[3:0] = 1001 -------> NIC Expansion Card

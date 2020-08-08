@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: GPL-2.0+
  */
-#define LOG_DEBUG
 #include <common.h>
 #include <dm.h>
 #include <tpm-v2.h>

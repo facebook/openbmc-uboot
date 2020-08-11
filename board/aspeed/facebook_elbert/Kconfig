@@ -1,0 +1,13 @@
+if TARGET_FACEBOOK_ELBERT
+
+config SYS_BOARD
+	default "facebook_elbert"
+
+config SYS_VENDOR
+	default "aspeed"
+
+config SYS_CONFIG_NAME
+	string "board configuration name"
+	default "facebook_elbert"
+
+endif

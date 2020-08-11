@@ -51,6 +51,12 @@ config TARGET_FACEBOOK_CLOUDRIPPER
 	help
 	  FACEBOOK-CLOUDRIPPER is BMC board with AST2600 chip.
 
+config TARGET_FACEBOOK_ELBERT
+	bool "FACEBOOK-ELBERT"
+	depends on ASPEED_AST2600
+	help
+	  FACEBOOK-ELBERT is BMC board with AST2600 chip.
+
 config TARGET_FACEBOOK_FUJI
 	bool "FACEBOOK-FUJI"
 	depends on ASPEED_AST2600
@@ -77,6 +83,7 @@ source "board/aspeed/ncsi_ast2600a1/Kconfig"
 source "board/aspeed/fpga_ast2600/Kconfig"
 source "board/aspeed/slt_ast2600/Kconfig"
 source "board/aspeed/facebook_cloudripper/Kconfig"
+source "board/aspeed/facebook_elbert/Kconfig"
 source "board/aspeed/facebook_fuji/Kconfig"
 source "board/aspeed/facebook_grandcanyon/Kconfig"
 

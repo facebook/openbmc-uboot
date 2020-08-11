@@ -234,9 +234,17 @@ void env_relocate(void)
 #else
 		bootstage_error(BOOTSTAGE_ID_NET_CHECKSUM);
 		set_default_env("bad CRC", 0);
+#ifdef CONFIG_ASPEED_WRITE_DEFAULT_ENV
+		env_save();
+#endif
 #endif
 	} else {
-		env_load();
+		if (env_load() != 0) {
+#ifdef CONFIG_ASPEED_WRITE_DEFAULT_ENV
+			if (gd->env_valid == ENV_VALID)
+				env_save();
+#endif
+		}
 	}
 }
 

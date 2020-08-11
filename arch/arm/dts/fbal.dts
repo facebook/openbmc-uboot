@@ -1,15 +1,47 @@
 /dts-v1/;
 
+#if CONFIG_IS_ENABLED(PFR_SUPPORT)
 #include "ast2500-fb-pfr.dtsi"
-
-&fmc {
-	flash@0 {
-		spi-max-frequency = <40000000>;
-	};
-};
 
 &i2c4 {
 	status = "okay";
 	u-boot,dm-pre-reloc;
 	/* mailbox */
+};
+#else
+#include "ast2500-fb-vboot.dtsi"
+#endif
+
+#if CONFIG_IS_ENABLED(TPM_V2)
+/ {
+	spi_gpio: spi-gpio {
+		status = "okay";
+		compatible = "spi-gpio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		gpio-sck = <&gpio ASPEED_GPIO(R, 3) GPIO_ACTIVE_HIGH>;
+		gpio-mosi = <&gpio ASPEED_GPIO(R, 4) GPIO_ACTIVE_HIGH>;
+		gpio-miso = <&gpio ASPEED_GPIO(R, 5) GPIO_ACTIVE_HIGH>;
+		num-chipselects = <1>;
+		cs-gpios = <&gpio ASPEED_GPIO(R, 2) GPIO_ACTIVE_LOW>;
+		u-boot,dm-pre-reloc;
+
+		tpmdev@0 {
+			compatible = "tis,tpm2-spi";
+			spi-max-frequency = <33000000>;
+			reg = <0>;
+			u-boot,dm-pre-reloc;
+		};
+	};
+};
+#endif
+
+&fmc {
+	flash@0 {
+		spi-max-frequency = <40000000>;
+	};
+	flash@1 {
+		spi-max-frequency = <40000000>;
+	};
 };

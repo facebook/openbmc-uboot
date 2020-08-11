@@ -1059,6 +1059,13 @@ bypass_first_reset:
     str r1, [r0]
 #endif
 
+#if defined(CONFIG_SPI1_DISABLE)
+    /* Disable SPI1 */
+    ldr r0, =0x1e6e207c
+    ldr r1, =0x00003000
+    str r1, [r0]
+#endif
+
 #if defined(CONFIG_SPL_BUILD)
     /* If building a ROM, the ROM code is finished platform initialization. */
     b platform_exit_finish

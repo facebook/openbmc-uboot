@@ -17,8 +17,11 @@
 #include "flash-spl.h"
 #define AST_FMC_WRITE_ENABLE 0x800f0000
 
-#if defined(CONFIG_FBAL) || defined(CONFIG_FBSP)
-/* Workaround slow down SPI clk to 12Mhz */
+#if defined(CONFIG_FBAL) || defined(CONFIG_FBEP) || defined(CONFIG_FBY3)
+/* Workaround slow down SPI clk to 40 Mhz */
+#define AST_FMC_STATUS_RESET 0x000b0d41
+#elif defined(CONFIG_FBSP)
+/* Workaround slow down SPI clk to 12 Mhz */
 #define AST_FMC_STATUS_RESET 0x000b0041
 #else
 #define AST_FMC_STATUS_RESET 0x000b0641
@@ -185,20 +188,7 @@ inline void set_topbottom_mxic(heaptimer_t timer, u32 base, u32 ctrl) {
   /* Wait for the WIP/Busy to clear */
   (void)spi_status(timer, base, ctrl, false);
 }
-#if defined(CONFIG_FBAL)
-//Workaround Add signal strength-->
-inline void set_ods(heaptimer_t timer, u32 base, u32 ctrl) {
-  uchar r1;
 
-  r1 = spi_config(timer, base, ctrl);
-  r1 |= 0x06;
-  r1 &= 0xFE;
-  spi_write_config(timer, base, ctrl, r1);
-  /* Wait for the WIP/Busy to clear */
-  (void)spi_status(timer, base, ctrl, false);
-}
-//<--end
-#endif
 int heaptimer(unsigned long usec) {
   ulong last;
   ulong clks;
@@ -268,15 +258,7 @@ int doheap(heaptimer_t timer, uchar cs, bool should_lock) {
       return AST_FMC_ERROR;
     }
   }
-#if defined(CONFIG_FBAL)
-//Workaround Add signal strength-->
-  spi_write_enable(timer, base, ctrl);
-  spi_status(timer, base, ctrl, true);
-  spi_config(timer, base, ctrl);
-  set_ods(timer, base, ctrl);
-  spi_config(timer, base, ctrl);
-//<--end
-#endif
+
   /* Write enable for CSn */
   spi_write_enable(timer, base, ctrl);
   spi_status(timer, base, ctrl, true);

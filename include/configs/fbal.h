@@ -60,8 +60,21 @@
  */
 #define CONFIG_DRAM_ECC
 
+/* u-boot reset command and reset() is implemented via sysreset
+ * which will trigger the WDT to do full-chip reset by default.
+ * But WDT Full-chip reset cannot successfully drive the WDTRST_N pin,
+ * so define AST_SYSRESET_WITH_SOC to make sysreset use SOC reset,
+ * and use AST_SYS_RESET_WITH_SOC as SOC reset mask.
+ * Notice: For system which loop back the WDTRST_N pin to BMC SRST pin.
+ * the value of AST_SYSRESET_WITH_SOC does not matter, because
+ * no matter how the BMC will get full reset by SRST pin.
+ */
+#define AST_SYSRESET_WITH_SOC 0x23FFFF3
+
+#ifdef CONFIG_PFR_SUPPORT
 #define CONFIG_PFR_BUS "i2c-bus@140"
 #define CONFIG_PFR_ADDR 0x58
+#endif
 
 #include "facebook_common.h"
 #include "ast2500_common.h"

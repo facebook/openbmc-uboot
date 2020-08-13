@@ -146,6 +146,8 @@ static u32 ast_tpm_write(struct udevice *dev, const void *data, size_t length)
 	return result;
 }
 
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
 int ast_tpm_nv_provision(struct vbs *vbs)
 {
 	struct udevice *dev;
@@ -190,6 +192,7 @@ int ast_tpm_nv_provision(struct vbs *vbs)
 
 	return VBS_SUCCESS;
 }
+#pragma GCC pop_options
 
 int ast_tpm_extend(uint32_t index, unsigned char *data, uint32_t data_len)
 {

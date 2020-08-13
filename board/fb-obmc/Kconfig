@@ -17,4 +17,8 @@ config FBOBMC_IMG_LAYOUT_VER
 	default 0
 	range 0 1
 
+config ASPEED_WRITE_DEFAULT_ENV
+	bool "Enable write default environment"
+	default n
+
 source "board/aspeed/ast-g5/Kconfig"

@@ -903,6 +903,24 @@ static void policy_init(void)
 #endif
 
 #if defined(CONFIG_FBEP)
+static void fan_init(void)
+{
+  u32 reg;
+  // Disable reset PWM controller
+  // EXTRST
+  reg = __raw_readl(AST_SCU_BASE + 0x9C);
+  reg &= ~(1 << 17);
+  __raw_writel(reg, AST_SCU_BASE + 0x9C);
+  // WDT1
+  reg = __raw_readl(AST_WDT_BASE + 0x1C);
+  reg &= ~(1 << 17);
+  __raw_writel(reg, AST_WDT_BASE + 0x1C);
+
+  // Set PWM A/B/C/D to 70%
+  __raw_writel(0x43004300, AST_PWM_BASE + 0x08);
+  __raw_writel(0x43004300, AST_PWM_BASE + 0x0C);
+}
+
 static void led_init(void)
 {
   u32 reg;
@@ -964,6 +982,7 @@ int board_init(void)
 #endif
 
 #if defined(CONFIG_FBEP)
+  fan_init();
   led_init();
   fix_mmc_hold_time_fail();
 #endif

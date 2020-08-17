@@ -136,6 +136,7 @@ void _log_debug_buffer(const u8 *buf, const size_t length);
 	})
 #else
 #define log(_cat, _level, _fmt, _args...)
+#define log_debug_buffer(b,l)
 #endif
 
 #ifdef DEBUG

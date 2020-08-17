@@ -5,10 +5,8 @@
  */
 #define LOG_DEBUG
 #include <common.h>
-#include <log.h>
 
 DECLARE_GLOBAL_DATA_PTR;
-
 void _log_debug_buffer(const u8 *buf, const size_t length)
 {
 	int fmt = gd->log_fmt;

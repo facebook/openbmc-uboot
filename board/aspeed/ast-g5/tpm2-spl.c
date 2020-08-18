@@ -34,6 +34,46 @@ static inline void set_tpm_error(struct vbs *vbs, uint32_t r)
 	vbs->error_tpm2 = r & 0xFFFF;
 }
 
+static int check_pcrs_are_reset(struct udevice* dev, struct vbs *vbs)
+{
+	uint32_t result, updates, i ;
+	struct tpm_chip_priv *priv;
+	uint8_t pcrval[TPM2_DIGEST_LEN], byte0;
+
+	/* inital vaule of PCR[0] shall be all bits are 0 or 1 or locality
+	 * run the tpm2_startup(), as we will only use locality 0
+	 * so we can just check all bits are 0 or 1
+	 */
+	priv = dev_get_uclass_priv(dev);
+	if (!priv) {
+		log_err("Cannot get tpm priv\n");
+		return VBS_ERROR_TPM_NOT_ENABLED ;
+	}
+
+	result = tpm2_pcr_read(dev, 0, priv->pcr_select_min, pcrval, &updates);
+	if (result) {
+		log_err("Read PCR0 failed (0x%08X)\n", result);
+		set_tpm_error(vbs, result);
+		return VBS_ERROR_TPM_FAILURE;
+	}
+
+	log_debug_buffer(pcrval, sizeof(pcrval));
+	byte0 = pcrval[0];
+	if ( (byte0 != 0) && (byte0 != 0xFF)) {
+		log_warning("PCR is not cleared\n");
+		return VBS_ERROR_TPM_RESET_NEEDED;
+	}
+
+	for (i = 1 ; i < sizeof(pcrval); ++i) {
+		if (pcrval[i] != byte0) {
+			log_warning("PCR is not cleared\n");
+			return VBS_ERROR_TPM_RESET_NEEDED;
+		}
+	}
+
+	return VBS_SUCCESS;
+}
+
 int ast_tpm_provision(struct vbs *vbs)
 {
 	uint32_t result;
@@ -84,7 +124,7 @@ int ast_tpm_provision(struct vbs *vbs)
 		return VBS_ERROR_TPM_SETUP;
 	}
 
-	return VBS_SUCCESS;
+	return check_pcrs_are_reset(dev, vbs);
 }
 
 int ast_tpm_owner_provision(struct vbs *vbs)

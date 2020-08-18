@@ -794,14 +794,19 @@ wdt_reset_source:
     ldr   r1, =0x00000001
     orr   r1, r1, r2
     str   r1, [r0]
+    /* Stop WDT2 in case it is enabled by-default */
+    ldr   r0, =0x1e78502c
+    mov   r1, #0
+    str   r1, [r0]
+    /* stage WDT2 counter with 1 */
     ldr   r0, =0x1e785024
     ldr   r1, =0x00000001
     str   r1, [r0]
-    /* Write magic to counter restart register */
+    /* Write magic load WDT2 counter with 1  */
     ldr   r0, =0x1e785028
     ldr   r1, =0x00004755
     str   r1, [r0]
-    /* Write Control Register */
+    /* Trigger WDT2 to restart */
     ldr   r0, =0x1e78502C
     ldr   r1, =0x00000033
     str   r1, [r0]

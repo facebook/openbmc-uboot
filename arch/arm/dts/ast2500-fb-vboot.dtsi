@@ -50,5 +50,8 @@
 	u-boot,dm-pre-reloc;
 };
 
+&pinctrl_wdtrst1_default {
+	u-boot,dm-pre-reloc;
+};
 
 

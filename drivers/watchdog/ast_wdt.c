@@ -56,6 +56,7 @@ static int ast_wdt_start(struct udevice *dev, u64 timeout_ms, ulong flags)
 	dev_info(dev, "wdt%u set timeout after %uus\n", dev->seq, timeout_us);
 
 	clrsetbits_le32(&priv->regs->ctrl,
+			WDT_CTRL_EN |
 			WDT_CTRL_RESET_MASK << WDT_CTRL_RESET_MODE_SHIFT,
 			reset_mode << WDT_CTRL_RESET_MODE_SHIFT);
 

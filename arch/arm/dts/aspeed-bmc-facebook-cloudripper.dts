@@ -19,7 +19,7 @@
 
 	aliases {
 		spi0 = &fmc;
-		ethernet1 = &mac1;
+		ethernet0 = &mac3;
 	};
 
 	cpus {
@@ -51,7 +51,12 @@
 
 	phy-mode = "rgmii";
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_mac4link_default &pinctrl_mdio2_default>;
+	pinctrl-0 = <&pinctrl_mac4link_default &pinctrl_mdio4_default>;
+
+	fixed-link {
+		speed = <1000>;
+		full-duplex;
+	};
 };
 
 &fmc {

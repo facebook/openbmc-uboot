@@ -103,7 +103,6 @@ static int ast_wdt_stop(struct udevice *dev)
 		writel(WDT_RESET_DEFAULT, &priv->regs->reset_mask);
 	}
 
-	writel(WDT_RESET_DEFAULT, &priv->regs->reset_mask);
 	return 0;
 }
 

@@ -934,6 +934,163 @@ static void led_init(void)
 }
 #endif
 
+#if defined (CONFIG_FBCC)
+static void init_SEL_FLASH_PAX(void)
+{
+  u32 reg;
+  // set GPIOAA0 AA1 AA5 AA6 direction output
+  reg = __raw_readl(AST_GPIO_BASE + 0x1E4);
+  reg |= 0x00630000;
+  __raw_writel(reg, AST_GPIO_BASE + 0x1E4);
+  // set GPIOAA0 AA1 AA5 AA6 value 0
+  reg = __raw_readl(AST_GPIO_BASE + 0x1E0);
+  reg &= 0xFF9CFFFF;
+  __raw_writel(reg, AST_GPIO_BASE + 0x0D8);
+}
+
+static void init_SKU_ID_PAX(void)
+{
+  u32 reg;
+  // set GPIOB0 B4 AA5 B6 B7 direction output
+  reg = __raw_readl(AST_GPIO_BASE + 0x004);
+  reg |= 0x0000D100;
+  __raw_writel(reg, AST_GPIO_BASE + 0x004);
+
+  reg = __raw_readl(AST_GPIO_BASE + 0x000);
+  reg &= 0xFFFF3EFF;
+  // __raw_writel(reg, AST_GPIO_BASE + 0x0C0);
+  __raw_writel(reg, AST_GPIO_BASE + 0x000);
+
+  reg = __raw_readl(AST_GPIO_BASE + 0x000);
+  reg |= 0x00001000;
+  // __raw_writel(reg, AST_GPIO_BASE + 0x0C0);
+  __raw_writel(reg, AST_GPIO_BASE + 0x000);
+
+  // set GPIOM0 M6 direction output
+  reg = __raw_readl(AST_GPIO_BASE + 0x07C);
+  reg |= 0x00000041;
+  __raw_writel(reg, AST_GPIO_BASE + 0x07C);
+
+  reg = __raw_readl(AST_GPIO_BASE + 0x078);
+  reg |= 0x00000041;
+  // __raw_writel(reg, AST_GPIO_BASE + 0x0CC);
+  __raw_writel(reg, AST_GPIO_BASE + 0x078);
+  
+  // set GPIOAC0 AC2 direction output
+  reg = __raw_readl(AST_GPIO_BASE + 0x1EC);
+  reg |= 0x5;
+  __raw_writel(reg, AST_GPIO_BASE + 0x1EC);
+
+  reg = __raw_readl(AST_GPIO_BASE + 0x1E8);
+  reg &= 0xFFFFFFF0;
+  // __raw_writel(reg, AST_GPIO_BASE + 0x0DC);
+  __raw_writel(reg, AST_GPIO_BASE + 0x1E8);
+
+  reg = __raw_readl(AST_GPIO_BASE + 0x1E8);
+  reg |= 0x00000004;
+  // __raw_writel(reg, AST_GPIO_BASE + 0x0DC);
+  __raw_writel(reg, AST_GPIO_BASE + 0x1E8);
+}
+
+static void init_MUX_RESET_PIN(void)
+{
+  u32 reg;
+  // set GPIOL5 direction output
+  reg = __raw_readl(AST_GPIO_BASE + 0x074);
+  reg |= 0x20000000;
+  __raw_writel(reg, AST_GPIO_BASE + 0x074);
+  // set GPIOL5 value 1
+  reg = __raw_readl(AST_GPIO_BASE + 0x070);
+  reg |= 0x20000000;
+  __raw_writel(reg, AST_GPIO_BASE + 0x070);
+
+
+    // set GPIOY0 direction output
+  reg = __raw_readl(AST_GPIO_BASE + 0x1E4);
+  reg |= 0x00000001;
+  __raw_writel(reg, AST_GPIO_BASE + 0x1E4);
+  // set GPIOY0 value 1
+  reg = __raw_readl(AST_GPIO_BASE + 0x1E0);
+  reg |= 0x00000001;
+  __raw_writel(reg, AST_GPIO_BASE + 0x1E0);
+}
+
+static int init_tac9539(void)
+{
+  int retry = 2;
+  int ret = -1;
+  struct udevice *bus, *dev;
+  
+  udelay(1000000);
+
+  //i2c bus#3
+  ret = uclass_get_device_by_name(UCLASS_I2C, CONFIG_TCA9548_BUS, &bus);
+  if (ret) {
+    return ret;
+  }
+
+  //Enable TCA9548 channel#5
+  ret = i2c_get_chip(bus, CONFIG_TCA9548_ADDR, 1, &dev);
+  if (ret) {
+    return ret;
+  }
+
+  do {
+    ret = dm_i2c_reg_write(dev, 0x0, 0x20);
+    if (ret && retry) {
+      udelay(10000);
+    }
+  } while (ret && (retry-- > 0));
+
+  retry = 2;
+
+  //Set TCA9539 P0 as output 
+  ret = i2c_get_chip(bus, CONFIG_TCA9539_ADDR, 1, &dev);
+  if (ret) {
+    return ret;
+  }
+
+  do {
+    ret = dm_i2c_reg_write(dev, 0x06, 0x00);
+    if (ret && retry) {
+      udelay(10000);
+    }
+  } while (ret && (retry-- > 0));
+
+  //Enable TCA9548 channel#6
+  ret = i2c_get_chip(bus, CONFIG_TCA9548_ADDR, 1, &dev);
+  if (ret) {
+    return ret;
+  }
+
+  do {
+    ret = dm_i2c_reg_write(dev, 0x0, 0x40);
+    if (ret && retry) {
+      udelay(10000);
+    }
+  } while (ret && (retry-- > 0));
+
+  retry = 2;
+
+  //Set TCA9539 P0 as output 
+  ret = i2c_get_chip(bus, CONFIG_TCA9539_ADDR, 1, &dev);
+  if (ret) {
+    return ret;
+  }
+
+  do {
+    ret = dm_i2c_reg_write(dev, 0x06, 0x00);
+    if (ret && retry) {
+      udelay(10000);
+    }
+  } while (ret && (retry-- > 0));
+
+
+  return 0;
+}
+
+#endif
+
 int board_init(void)
 {
 	watchdog_init(CONFIG_ASPEED_WATCHDOG_TIMEOUT);
@@ -989,6 +1146,13 @@ int board_init(void)
 
 #if defined(CONFIG_FBY3)
   fix_mmc_hold_time_fail();
+#endif
+
+#if defined(CONFIG_FBCC)
+  init_SEL_FLASH_PAX();
+  init_SKU_ID_PAX();
+  init_MUX_RESET_PIN();
+  init_tac9539();
 #endif
 
   gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;

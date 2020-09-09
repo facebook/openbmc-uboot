@@ -62,6 +62,9 @@
 
 #define CONFIG_PFR_BUS "i2c-bus@140"
 #define CONFIG_PFR_ADDR 0x58
+#define CONFIG_TCA9548_BUS "i2c-bus@100"
+#define CONFIG_TCA9548_ADDR 0x70
+#define CONFIG_TCA9539_ADDR 0x77
 
 #include "facebook_common.h"
 #include "ast2500_common.h"

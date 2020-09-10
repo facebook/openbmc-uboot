@@ -16,5 +16,11 @@
 /* Memory Info */
 #define CONFIG_SYS_LOAD_ADDR		0x83000000
 
+/*
+ * Autoboot configuration
+ */
+#define CONFIG_AUTOBOOT_PROMPT		"autoboot in %d seconds (stop with 'Delete' key)...\n"
+#define CONFIG_AUTOBOOT_STOP_STR	"\x1b\x5b\x33\x7e"	/* 'Delete', ESC[3~ */
+#define CONFIG_AUTOBOOT_KEYED
 
 #endif	/* __CONFIG_H */

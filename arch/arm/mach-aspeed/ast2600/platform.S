@@ -230,18 +230,19 @@ wait_lock:
 	ldr	r1, =AST_SCU_CA7_PARITY_CHK
 	str	r0, [r1]
 
-	/* disable FMC WDT for SPI address mode detection */
-	mov	r0, #0
-	ldr	r1, =AST_FMC_WDT1_CTRL_MODE
-	str	r0, [r1]
 #if 0
 	ldr	r1, =AST_FMC_WDT2_CTRL_MODE
 	str	r0, [r1]
 #endif
-	/* tune up SPI clock */
-	movw	r0, #0x0641
-	movt	r0, #0x203B
+	/* tune up SPI clock with default 4B address mode */
+	movw	r0, #0x0600
+	movt	r0, #0x0000
 	ldr	r1, =AST_FMC_CE0_CTRL
+	str	r0, [r1]
+
+	/* disable FMC WDT for SPI address mode detection */
+	mov	r0, #0
+	ldr	r1, =AST_FMC_WDT1_CTRL_MODE
 	str	r0, [r1]
 
 #if 0

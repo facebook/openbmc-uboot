@@ -615,10 +615,10 @@ static int aspeed_spi_write_reg(struct aspeed_spi_priv *priv,
 				writel(readl(&priv->regs->soft_rst_cmd_ctrl) | SOFT_RST_CMD_EN,
 						&priv->regs->soft_rst_cmd_ctrl);
 
-			writel(readl(&priv->regs->ctrl) | BIT(flash->cs), &priv->regs->ctrl);
+			writel(readl(&priv->regs->ctrl) | (0x11 << flash->cs), &priv->regs->ctrl);
 			break;
 		case SPINOR_OP_EX4B:
-			writel(readl(&priv->regs->ctrl) & ~BIT(flash->cs), &priv->regs->ctrl);
+			writel(readl(&priv->regs->ctrl) & ~(0x11 << flash->cs), &priv->regs->ctrl);
 			break;
 	}
 	return 0;
@@ -921,6 +921,9 @@ static int aspeed_spi_flash_init(struct aspeed_spi_priv *priv,
 			CE_CTRL_DUMMY((flash->spi->read_dummy/8)) |
 			CE_CTRL_FREADMODE;
 	}
+
+	if (flash->spi->addr_width == 4)
+		writel(readl(&priv->regs->ctrl) | 0x11 << flash->cs, &priv->regs->ctrl);
 
 	debug("CS%u: USER mode 0x%08x FREAD mode 0x%08x\n", flash->cs,
 	      flash->ce_ctrl_user, flash->ce_ctrl_fread);

@@ -36,11 +36,6 @@
 	};
 };
 
-&i2c {
-	u-boot,dm-pre-reloc;
-};
-
 &i2c3 {
 	status = "okay";
-	u-boot,dm-pre-reloc;
 };

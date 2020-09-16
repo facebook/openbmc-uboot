@@ -110,11 +110,26 @@ int ast_tpm_provision(struct vbs *vbs)
 	/* run full selftest */
 	result = tpm2_self_test(dev, TPMI_YES);
 
-	/* Wait until test done. */
+	/* TPM implementation can either use
+	 * synchronize self-test: response SelfTest command until test is done;
+	 * or a-synchronized SelfTest: start the test in background and
+	 * return TPM_RC_TESTING.
+	 * For a-synchronized selftest, system can via issue SelfTest() again
+	 * to polling self-test is success (RC_SUCCESS), fail (RC_FAIL)
+	 * or still going on (RC_TESTING)
+	 *
+	 * There is a known issue in Infineon TPM with FW early than 7.85:
+	 * If the TPM perform selftest in the background subsequently other
+	 * commands may interrupts the running selftest and results in
+	 * a security reset of the TPM.
+	 * To workaround of this issue, system shall make sure wait at least
+	 * 50ms to issue another command after TPM2_SelfTest(fullTest=No) is
+	 * request.
+	*/
 	for (retries = 0; (TPM2_RC_TESTING == result) && (retries < 3);
 	     retries++) {
-		log_warning("delay 10ms wait selftest done.\n");
-		udelay(10 * 1000);
+		log_warning("delay 50ms wait selftest done.\n");
+		udelay(50 * 1000);
 		result = tpm2_self_test(dev, TPMI_NO);
 	}
 

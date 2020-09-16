@@ -386,14 +386,21 @@ int ast_tpm_finish(void)
 	uint32_t result;
 	struct udevice *dev;
 	int err;
+	volatile struct vbs *vbs = (volatile struct vbs*)AST_SRAM_VBS_BASE;
 
 	err = get_tpm(&dev);
 	if (err) {
 		return err;
 	}
 #ifdef CONFIG_ASPEED_TPM_LOCK
-	result = tpm2_hierarchy_control(dev, NULL, 0, TPM2_RH_PLATFORM,
-					TPM2_RH_PLATFORM, false);
+	if (vbs->hardware_enforce) {
+		printf("disabling platform hierarchy\n");
+		result = tpm2_hierarchy_control(dev, NULL, 0, TPM2_RH_PLATFORM,
+						TPM2_RH_PLATFORM, false);
+	} else {
+		printf("Keep platform hierarchy enabled when no h/w enforce\n");
+		result = TPM2_RC_SUCCESS;
+	}
 	if (TPM2_RC_SUCCESS != result) {
 		log_err("disable platform hierarchy failed(0x%08x)\n", result);
 		return VBS_ERROR_ROLLBACK_FINISH;

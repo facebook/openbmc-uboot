@@ -24,8 +24,11 @@ int watchdog_init(u32 timeout_sec)
 		printf("No WDT device: %d\n", ret);
 		return ret;
 	}
-
+#ifdef AST_SYSRESET_WITH_SOC
+	ret = wdt_start(wdt, timeout_ms, WDT_CTRL_RESET_SOC);
+#else
 	ret = wdt_start(wdt, timeout_ms, WDT_CTRL_RESET_CHIP);
+#endif
 	if (ret) {
 		printf("Start WDT%u %us failed: %d\n",
 		       wdt->seq, timeout_sec, ret);

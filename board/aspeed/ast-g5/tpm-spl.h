@@ -33,6 +33,11 @@ enum ast_tpm_pcrs {
   AST_TPM_PCR_ENV = 3,
 };
 
+enum ast_tpm_state {
+  AST_TPM_STATE_GOOD = 0,
+  AST_TPM_STATE_FAIL = 1,
+  AST_TPM_STATE_INIT = 2, /* not startup and selftest yet */
+};
 /**
  * int ast_tpm_provision() - Perform a 1-time provision of the TPM.
  *
@@ -79,3 +84,19 @@ int ast_tpm_try_version(struct vbs *vbs, uint8_t image, uint32_t version,
  * @return a status for vboot_status
  */
 int ast_tpm_finish(void);
+
+/**
+ * ast_tpm_get_state() - Get the current TPM
+ *
+ * @return ast_tpm_state
+ */
+int ast_tpm_get_state(void);
+
+/**
+ * bool ast_tpm_pcr_is_open() - check whether the PCR is just reset
+ *
+ * @param vbs the vboot structure.
+ * @param pcrid the PCR index
+ * @return true if the pcr all bits are 0 or 1, otherwise false.
+ */
+bool ast_tpm_pcr_is_open(struct vbs *vbs, uint32_t pcrid);

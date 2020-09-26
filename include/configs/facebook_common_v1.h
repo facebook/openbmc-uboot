@@ -44,6 +44,8 @@
 #define CONFIG_ENV_OFFSET         0xE0000 /* environment starts here  */
 #define CONFIG_ENV_SPI_BUS 0
 #define CONFIG_ENV_SPI_CS 1
+/* recovery u-boot max size 640K */
+#define CONFIG_RECOVERY_UBOOT_SIZE 0xA0000
 #else
 /* Legacy non-Verified boot configuration. */
 #define CONFIG_SYS_REMAP_BASE     0x00000000

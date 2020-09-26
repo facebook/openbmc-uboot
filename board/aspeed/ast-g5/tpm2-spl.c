@@ -34,14 +34,14 @@ static inline void set_tpm_error(struct vbs *vbs, uint32_t r)
 	vbs->error_tpm2 = r & 0xFFFF;
 }
 
-static int check_pcrs_are_reset(struct udevice* dev, struct vbs *vbs)
+static int check_pcr_is_reset(struct udevice* dev, struct vbs *vbs, int pcrid)
 {
 	uint32_t result, updates, i ;
 	struct tpm_chip_priv *priv;
 	uint8_t pcrval[TPM2_DIGEST_LEN], byte0;
 
-	/* inital vaule of PCR[0] shall be all bits are 0 or 1 or locality
-	 * run the tpm2_startup(), as we will only use locality 0
+	/* inital vaule of PCR shall be all bits are 0 or 1.
+	 * even PCR[0] could be locality as we will only use locality 0
 	 * so we can just check all bits are 0 or 1
 	 */
 	priv = dev_get_uclass_priv(dev);
@@ -50,9 +50,9 @@ static int check_pcrs_are_reset(struct udevice* dev, struct vbs *vbs)
 		return VBS_ERROR_TPM_NOT_ENABLED ;
 	}
 
-	result = tpm2_pcr_read(dev, 0, priv->pcr_select_min, pcrval, &updates);
+	result = tpm2_pcr_read(dev, pcrid, priv->pcr_select_min, pcrval, &updates);
 	if (result) {
-		log_err("Read PCR0 failed (0x%08X)\n", result);
+		log_err("Read %d failed (0x%08X)\n", pcrid, result);
 		set_tpm_error(vbs, result);
 		return VBS_ERROR_TPM_FAILURE;
 	}
@@ -72,6 +72,17 @@ static int check_pcrs_are_reset(struct udevice* dev, struct vbs *vbs)
 	}
 
 	return VBS_SUCCESS;
+}
+
+bool ast_tpm_pcr_is_open(struct vbs *vbs, uint32_t pcrid)
+{
+	int result;
+	struct udevice *dev;
+
+	result = get_tpm(&dev);
+	if (result) return false;
+	result = check_pcr_is_reset(dev, vbs, pcrid);
+	return (VBS_SUCCESS == result);
 }
 
 int ast_tpm_provision(struct vbs *vbs)
@@ -139,7 +150,8 @@ int ast_tpm_provision(struct vbs *vbs)
 		return VBS_ERROR_TPM_SETUP;
 	}
 
-	return check_pcrs_are_reset(dev, vbs);
+	/* check pcr0 be reset to see whether tpm need be reset */
+	return check_pcr_is_reset(dev, vbs, 0);
 }
 
 int ast_tpm_owner_provision(struct vbs *vbs)
@@ -407,4 +419,27 @@ int ast_tpm_finish(void)
 	}
 #endif
 	return VBS_SUCCESS;
+}
+
+int ast_tpm_get_state(void)
+{
+	uint32_t result, updates;
+	struct tpm_chip_priv *priv;
+	struct udevice *dev;
+	uint8_t pcrval[TPM2_DIGEST_LEN];
+
+	/* try to read PCR0 to detect TPM state */
+	if (get_tpm(&dev))
+		return AST_TPM_STATE_FAIL;
+	priv = dev_get_uclass_priv(dev);
+	if (!priv) {
+		return AST_TPM_STATE_FAIL ;
+	}
+
+	result = tpm2_pcr_read(dev, 0, priv->pcr_select_min, pcrval, &updates);
+	switch (result) {
+		case TPM2_RC_SUCCESS: return AST_TPM_STATE_GOOD;
+		case TPM2_RC_INITIALIZE: return AST_TPM_STATE_INIT;
+		default: return AST_TPM_STATE_FAIL;
+	}
 }

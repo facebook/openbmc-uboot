@@ -138,12 +138,67 @@ static void vboot_status(struct vbs *vbs, u8 t, u8 c) {
   }
 }
 
+#ifdef CONFIG_ASPEED_TPM
+/**
+ * vboot_do_measures() - Measure SPL, key-store, rec-uboot uboot-env.
+ */
+static void vboot_do_measures(struct vbs *vbs, u8 *uboot, uint32_t uboot_size)
+{
+	printf("\n");
+	if (ast_tpm_pcr_is_open(vbs, AST_TPM_PCR_SPL)) {
+		printf("measure SPL...");
+		ast_tpm_extend(AST_TPM_PCR_SPL, (unsigned char*)0x0,
+			CONFIG_SPL_MAX_FOOTPRINT);
+		printf("done\n");
+	}
+	if (ast_tpm_pcr_is_open(vbs, AST_TPM_PCR_FIT)) {
+		printf("measure key-store...");
+		ast_tpm_extend(AST_TPM_PCR_FIT,
+			(unsigned char*)CONFIG_SYS_SPL_FIT_BASE,
+			AST_MAX_UBOOT_FIT);
+		printf("done\n");
+	}
+	if (ast_tpm_pcr_is_open(vbs, AST_TPM_PCR_UBOOT)) {
+		if (uboot_size) {
+			printf("measure U-Boot...");
+			ast_tpm_extend( AST_TPM_PCR_UBOOT,
+				uboot, uboot_size);
+			printf("done\n");
+		} else {
+			printf("measure recovery U-Boot...");
+			ast_tpm_extend( AST_TPM_PCR_UBOOT,
+				(unsigned char*)CONFIG_SYS_RECOVERY_BASE,
+				CONFIG_RECOVERY_UBOOT_SIZE);
+			printf("done\n");
+		}
+	}
+	if (ast_tpm_pcr_is_open(vbs, AST_TPM_PCR_ENV)) {
+		printf("measure U-Boot environment...");
+		ast_tpm_extend(AST_TPM_PCR_ENV,
+			(unsigned char*)CONFIG_ENV_ADDR,
+			CONFIG_ENV_SIZE);
+		printf("done\n");
+	}
+}
+#endif
 /**
  * vboot_recovery() - Boot the Recovery U-Boot.
  */
 static void real_vboot_recovery(struct vbs *vbs, u8 t, u8 c) {
-  vboot_status(vbs, t, c);
+#ifdef CONFIG_ASPEED_TPM
+	int tpm_state = ast_tpm_get_state();
+	/* make sure TPM is provisioned */
+	if (AST_TPM_STATE_INIT == tpm_state) {
+		tpm_state = AST_TPM_STATE_GOOD;
+		if (ast_tpm_provision(vbs))
+			tpm_state = AST_TPM_STATE_FAIL;
+	}
+	/* make sure all PCRs used by SPL closed if TPM_STATE is good*/
+	if (AST_TPM_STATE_GOOD == tpm_state)
+		vboot_do_measures(vbs, 0, 0);
+#endif /* ASPEED_TPM */
 
+  vboot_status(vbs, t, c);
   /* Overwrite all of the verified boot flags we've defined. */
   vbs->recovery_boot = 1;
   vbs->recovery_retries += 1;
@@ -224,11 +279,6 @@ void vboot_check_fit(void* fit, struct vbs *vbs,
     printf("Cannot find U-Boot firmware.\n");
     vboot_recovery(vbs, VBS_ERROR_TYPE_DATA, VBS_ERROR_BAD_FW);
   }
-
-#ifdef CONFIG_ASPEED_TPM
-  /* Measure the U-Boot FIT into PCR1 */
-  ast_tpm_extend(AST_TPM_PCR_FIT, (unsigned char*)fit, AST_MAX_UBOOT_FIT);
-#endif
 }
 
 void vboot_rollback_protection(const void* fit, uint8_t image, struct vbs *vbs) {
@@ -295,7 +345,8 @@ void vboot_verify_subordinate(void* fit, struct vbs *vbs) {
 }
 
 void vboot_verify_uboot(void* fit, struct vbs *vbs, void* load,
-                        int config, int uboot, int uboot_size) {
+                        int config, int uboot, int uboot_size,
+			uint8_t* uboot_hash) {
   int verified = 0;
   const char* sig_store = (const char*)vbs->rom_keys;
   if (vbs->subordinate_keys != 0x0) {
@@ -318,22 +369,14 @@ void vboot_verify_uboot(void* fit, struct vbs *vbs, void* load,
 
   /* Now verify the hash of the first image. */
   char *error;
-  uint8_t hash_value[FIT_MAX_HASH_LEN];
   int hash = fdt_subnode_offset(fit, uboot, FIT_HASH_NODENAME);
-  if (fit_image_check_hash(fit, hash, load, uboot_size, hash_value, &error)) {
+  if (fit_image_check_hash(fit, hash, load, uboot_size, uboot_hash, &error)) {
     printf("\nU-Boot was not verified.\n");
     vboot_enforce(vbs, VBS_ERROR_TYPE_FW, VBS_ERROR_FW_UNVERIFIED);
     return;
   }
 
   printf("\nU-Boot verified.\n");
-#ifdef CONFIG_ASPEED_TPM
-  /* Hash the SHA256 hash of U-boot firmware, avoid recalculating the hash. */
-  ast_tpm_extend(AST_TPM_PCR_UBOOT, hash_value, FIT_MAX_HASH_LEN);
-  /* Hash the contents of the environment before passing execution to U-Boot. */
-  ast_tpm_extend(AST_TPM_PCR_ENV, (unsigned char*)CONFIG_ENV_ADDR,
-      CONFIG_ENV_SIZE);
-#endif
 }
 
 void vboot_reset(struct vbs *vbs) {
@@ -426,10 +469,6 @@ void vboot_reset(struct vbs *vbs) {
     vboot_enforce(vbs, VBS_ERROR_TYPE_NV, tpm_status);
     return;
   }
-
-  /* Measure the SPL into PCR0 */
-  ast_tpm_extend(AST_TPM_PCR_SPL, (unsigned char*)0x0,
-      CONFIG_SPL_MAX_FOOTPRINT);
 #endif
 }
 
@@ -450,6 +489,8 @@ void vboot_load_fit(volatile void* from) {
   u32 uboot_position;
   /* The size of U-Boot content following the FIT */
   u32 uboot_size;
+  /* uboot hash extracted fro FIT */
+  uint8_t uboot_hash[FIT_MAX_HASH_LEN];
 
   /* Check the sanity of the FIT. */
   vboot_check_fit(fit, vbs, &uboot, &config, &uboot_position, &uboot_size);
@@ -473,10 +514,11 @@ void vboot_load_fit(volatile void* from) {
   void* load = (void*)((u32)from + uboot_position);
 
   /* Finally verify U-Boot using the subordinate store if verified. */
-  vboot_verify_uboot(fit, vbs, load, config, uboot, uboot_size);
+  vboot_verify_uboot(fit, vbs, load, config, uboot, uboot_size, uboot_hash);
 
 #ifdef CONFIG_ASPEED_TPM
   vboot_rollback_protection(fit, AST_TPM_ROLLBACK_UBOOT, vbs);
+  vboot_do_measures(vbs, uboot_hash, FIT_MAX_HASH_LEN);
 #endif
 
   vboot_jump((volatile void*)load, vbs);
@@ -495,7 +537,7 @@ void board_init_f(ulong bootflag)
 //#ifdef CONFIG_ASPEED_ENABLE_WATCHDOG
 //  ast_wdt_reset(120 * AST_WDT_CLK, 0x3 | 0x08);
 //#endif
-	watchdog_init(120);
+	watchdog_init(300);
   /*
    * This will never be relocated, so jump directly to the U-boot.
    */

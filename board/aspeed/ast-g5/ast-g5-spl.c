@@ -144,6 +144,10 @@ static void vboot_status(struct vbs *vbs, u8 t, u8 c) {
  */
 static void vboot_do_measures(struct vbs *vbs, u8 *uboot, uint32_t uboot_size)
 {
+	if ((!vbs->hardware_enforce) && (!vbs->software_enforce)) {
+		printf("skip do measure for non verified boot platform\n");
+		return;
+	}
 	printf("\n");
 	if (ast_tpm_pcr_is_open(vbs, AST_TPM_PCR_SPL)) {
 		printf("measure SPL...");

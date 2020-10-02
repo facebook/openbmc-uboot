@@ -35,6 +35,66 @@ static void vboot_check_enforce(void)
   }
 }
 
+#ifdef CONFIG_ASPEED_TPM
+static int vboot_get_image_hash_from_fit(uint8_t *fit, int image_offset,
+				uint8_t **valuep, int *value_lenp)
+{
+	int hash_offset;
+	uint8_t *value = 0;
+	int value_len = 0;
+	int ret = -1;
+
+	log_debug("Get hash from fit 0x%p(%d)\n", fit, image_offset);
+	hash_offset = fdt_subnode_offset(fit, image_offset, FIT_HASH_NODENAME);
+	if (hash_offset < 0) {
+		log_err("No hash subnode in fit = %p, image = %d\n",
+			fit, image_offset);
+		return ret;
+	}
+
+	ret = fit_image_hash_get_value(fit, hash_offset, &value, &value_len);
+	if (ret)
+		return ret;
+
+	log_debug("hash[%d]:\n", value_len);
+	log_debug_buffer( value, value_len );
+	if (valuep) *valuep = value;
+	if (value_lenp) *value_lenp = value_len;
+
+	return ret;
+}
+
+static void vboot_uboot_do_measures(void)
+{
+	uint8_t *value;
+	int value_len;
+
+	printf("\n");
+
+	printf("measure OS-Kernel...");
+	value = 0; value_len = 0;
+	vboot_get_image_hash_from_fit(images.fit_hdr_os, images.fit_noffset_os,
+		&value, &value_len);
+	ast_tpm_extend(AST_TPM_PCR_OS, value, value_len);
+	printf("done\n");
+
+	printf("measure Ramdisk...");
+	value = 0; value_len = 0;
+	vboot_get_image_hash_from_fit(images.fit_hdr_rd, images.fit_noffset_rd,
+		&value, &value_len);
+	ast_tpm_extend(AST_TPM_PCR_OS, value, value_len);
+	printf("done\n");
+
+	printf("measure Fdt...");
+	value = 0; value_len = 0;
+	vboot_get_image_hash_from_fit(images.fit_hdr_fdt, images.fit_noffset_fdt,
+		&value, &value_len);
+	ast_tpm_extend(AST_TPM_PCR_OS, value, value_len);
+	printf("done\n");
+}
+
+#endif
+
 static void vboot_finish(void)
 {
   /* Clean the handoff marker from ROM. */
@@ -42,7 +102,13 @@ static void vboot_finish(void)
   vbs->rom_handoff = 0x0;
 
 #ifdef CONFIG_ASPEED_TPM
-  ast_tpm_finish();
+	if (vbs->hardware_enforce ||
+	    vbs->software_enforce ||
+	    vbs->recovery_boot) {
+		/* Only do measure when verifiy boot is enabled */
+		vboot_uboot_do_measures();
+	}
+	ast_tpm_finish();
 #endif
 }
 

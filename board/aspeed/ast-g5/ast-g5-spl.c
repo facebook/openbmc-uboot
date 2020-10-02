@@ -140,9 +140,9 @@ static void vboot_status(struct vbs *vbs, u8 t, u8 c) {
 
 #ifdef CONFIG_ASPEED_TPM
 /**
- * vboot_do_measures() - Measure SPL, key-store, rec-uboot uboot-env.
+ * vboot_spl_do_measures() - Measure SPL, key-store, rec-uboot uboot-env.
  */
-static void vboot_do_measures(struct vbs *vbs, u8 *uboot, uint32_t uboot_size)
+static void vboot_spl_do_measures(struct vbs *vbs, u8 *uboot, uint32_t uboot_size)
 {
 	if ((!vbs->hardware_enforce) && (!vbs->software_enforce)) {
 		printf("skip do measure for non verified boot platform\n");
@@ -199,7 +199,7 @@ static void real_vboot_recovery(struct vbs *vbs, u8 t, u8 c) {
 	}
 	/* make sure all PCRs used by SPL closed if TPM_STATE is good*/
 	if (AST_TPM_STATE_GOOD == tpm_state)
-		vboot_do_measures(vbs, 0, 0);
+		vboot_spl_do_measures(vbs, 0, 0);
 #endif /* ASPEED_TPM */
 
   vboot_status(vbs, t, c);
@@ -522,7 +522,7 @@ void vboot_load_fit(volatile void* from) {
 
 #ifdef CONFIG_ASPEED_TPM
   vboot_rollback_protection(fit, AST_TPM_ROLLBACK_UBOOT, vbs);
-  vboot_do_measures(vbs, uboot_hash, FIT_MAX_HASH_LEN);
+  vboot_spl_do_measures(vbs, uboot_hash, FIT_MAX_HASH_LEN);
 #endif
 
   vboot_jump((volatile void*)load, vbs);

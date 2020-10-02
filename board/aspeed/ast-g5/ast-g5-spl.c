@@ -142,47 +142,39 @@ static void vboot_status(struct vbs *vbs, u8 t, u8 c) {
 /**
  * vboot_spl_do_measures() - Measure SPL, key-store, rec-uboot uboot-env.
  */
-static void vboot_spl_do_measures(struct vbs *vbs, u8 *uboot, uint32_t uboot_size)
+static void vboot_spl_do_measures(u8 *uboot, uint32_t uboot_size)
 {
-	if ((!vbs->hardware_enforce) && (!vbs->software_enforce)) {
-		printf("skip do measure for non verified boot platform\n");
-		return;
-	}
 	printf("\n");
-	if (ast_tpm_pcr_is_open(vbs, AST_TPM_PCR_SPL)) {
-		printf("measure SPL...");
-		ast_tpm_extend(AST_TPM_PCR_SPL, (unsigned char*)0x0,
-			CONFIG_SPL_MAX_FOOTPRINT);
+
+	printf("measure SPL...");
+	ast_tpm_extend(AST_TPM_PCR_SPL, (unsigned char*)0x0,
+		CONFIG_SPL_MAX_FOOTPRINT);
+	printf("done\n");
+
+	printf("measure key-store...");
+	ast_tpm_extend(AST_TPM_PCR_FIT,
+		(unsigned char*)CONFIG_SYS_SPL_FIT_BASE,
+		AST_MAX_UBOOT_FIT);
+	printf("done\n");
+
+	if (uboot_size) {
+		printf("measure U-Boot...");
+		ast_tpm_extend( AST_TPM_PCR_UBOOT,
+			uboot, uboot_size);
+		printf("done\n");
+	} else {
+		printf("measure recovery U-Boot...");
+		ast_tpm_extend( AST_TPM_PCR_UBOOT,
+			(unsigned char*)CONFIG_SYS_RECOVERY_BASE,
+			CONFIG_RECOVERY_UBOOT_SIZE);
 		printf("done\n");
 	}
-	if (ast_tpm_pcr_is_open(vbs, AST_TPM_PCR_FIT)) {
-		printf("measure key-store...");
-		ast_tpm_extend(AST_TPM_PCR_FIT,
-			(unsigned char*)CONFIG_SYS_SPL_FIT_BASE,
-			AST_MAX_UBOOT_FIT);
-		printf("done\n");
-	}
-	if (ast_tpm_pcr_is_open(vbs, AST_TPM_PCR_UBOOT)) {
-		if (uboot_size) {
-			printf("measure U-Boot...");
-			ast_tpm_extend( AST_TPM_PCR_UBOOT,
-				uboot, uboot_size);
-			printf("done\n");
-		} else {
-			printf("measure recovery U-Boot...");
-			ast_tpm_extend( AST_TPM_PCR_UBOOT,
-				(unsigned char*)CONFIG_SYS_RECOVERY_BASE,
-				CONFIG_RECOVERY_UBOOT_SIZE);
-			printf("done\n");
-		}
-	}
-	if (ast_tpm_pcr_is_open(vbs, AST_TPM_PCR_ENV)) {
-		printf("measure U-Boot environment...");
-		ast_tpm_extend(AST_TPM_PCR_ENV,
-			(unsigned char*)CONFIG_ENV_ADDR,
-			CONFIG_ENV_SIZE);
-		printf("done\n");
-	}
+
+	printf("measure U-Boot environment...");
+	ast_tpm_extend(AST_TPM_PCR_ENV,
+		(unsigned char*)CONFIG_ENV_ADDR,
+		CONFIG_ENV_SIZE);
+	printf("done\n");
 }
 #endif
 /**
@@ -198,8 +190,9 @@ static void real_vboot_recovery(struct vbs *vbs, u8 t, u8 c) {
 			tpm_state = AST_TPM_STATE_FAIL;
 	}
 	/* make sure all PCRs used by SPL closed if TPM_STATE is good*/
-	if (AST_TPM_STATE_GOOD == tpm_state)
-		vboot_spl_do_measures(vbs, 0, 0);
+	if (AST_TPM_STATE_GOOD == tpm_state) {
+		vboot_spl_do_measures(0, 0);
+	}
 #endif /* ASPEED_TPM */
 
   vboot_status(vbs, t, c);
@@ -522,7 +515,9 @@ void vboot_load_fit(volatile void* from) {
 
 #ifdef CONFIG_ASPEED_TPM
   vboot_rollback_protection(fit, AST_TPM_ROLLBACK_UBOOT, vbs);
-  vboot_spl_do_measures(vbs, uboot_hash, FIT_MAX_HASH_LEN);
+  if (vbs->hardware_enforce || vbs->software_enforce) {
+    vboot_spl_do_measures(uboot_hash, FIT_MAX_HASH_LEN);
+  }
 #endif
 
   vboot_jump((volatile void*)load, vbs);

@@ -31,6 +31,7 @@ enum ast_tpm_pcrs {
   AST_TPM_PCR_FIT = 1,
   AST_TPM_PCR_UBOOT = 2,
   AST_TPM_PCR_ENV = 3,
+  AST_TPM_PCR_VBS = 5,
   AST_TPM_PCR_OS = 9,
 };
 

@@ -64,12 +64,15 @@ static int vboot_get_image_hash_from_fit(uint8_t *fit, int image_offset,
 	return ret;
 }
 
-static void vboot_uboot_do_measures(void)
+static void vboot_uboot_do_measures(volatile struct vbs *vbs)
 {
 	uint8_t *value;
 	int value_len;
 
 	printf("\n");
+	printf("measure vbs...");
+	ast_tpm_extend(AST_TPM_PCR_VBS, (uint8_t *)vbs, sizeof(struct vbs));
+	printf("done\n");
 
 	printf("measure OS-Kernel...");
 	value = 0; value_len = 0;
@@ -106,7 +109,7 @@ static void vboot_finish(void)
 	    vbs->software_enforce ||
 	    vbs->recovery_boot) {
 		/* Only do measure when verifiy boot is enabled */
-		vboot_uboot_do_measures();
+		vboot_uboot_do_measures(vbs);
 	}
 	ast_tpm_finish();
 #endif

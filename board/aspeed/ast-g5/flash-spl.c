@@ -50,7 +50,9 @@
 /* Status register Top/Bottom bit select */
 #define SPI_TB (0x1 << 6)
 
-#define SPI_CS0_HW_PROTECTIONS (SPI_BP0 | SPI_BP1 | SPI_BP2 | SPI_BP3)
+/* Lock top 32MB of CS0 */
+#define SPI_CS0_HW_PROTECTIONS ( SPI_BP1 | SPI_BP3)
+/* Lock top 64KB of CS1 */
 #define SPI_CS1_HW_PROTECTIONS (SPI_BP0)
 
 #define WRITEREG(r, v) *(volatile u32*)(r) = v
@@ -241,7 +243,6 @@ int doheap(heaptimer_t timer, uchar cs, bool should_lock) {
 
   fmc_romcs(cs);
 
-  if (cs == 1) {
     /* Set the T/B bit based on the chip vendor. */
     uchar id[3];
     spi_id(timer, base, ctrl, id);
@@ -257,7 +258,6 @@ int doheap(heaptimer_t timer, uchar cs, bool should_lock) {
     } else {
       return AST_FMC_ERROR;
     }
-  }
 
   /* Write enable for CSn */
   spi_write_enable(timer, base, ctrl);

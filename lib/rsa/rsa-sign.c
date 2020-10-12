@@ -486,7 +486,7 @@ err_set:
 	return ret;
 }
 
-int rsa_sign(struct image_sign_info *info,
+int rsa_sign_origin(struct image_sign_info *info,
 	     const struct image_region region[], int region_count,
 	     uint8_t **sigp, uint *sig_len)
 {
@@ -527,6 +527,227 @@ err_priv:
 err_engine:
 	rsa_remove();
 	return ret;
+}
+
+static int gen_hsmcli_cmd(char *dgtfile, char *sigfile, const char *keydir,
+			  const char *keyname, char cmd[], uint size)
+{
+#define HSM_SIGN_ALGO \
+" --hashing-algorithm SHA256 --rsa-padding-mode EMSA_PKCS1_v1_5 --pre-hashed"
+	uint num = 0;
+	char cmdpref[] = "hsmcli sign -k ";
+	char hsmalgo[] = HSM_SIGN_ALGO;
+
+	num += strlen(cmdpref);
+	if (num > size - 1) {
+		return ENOSPC;
+	}
+	strncpy(cmd, cmdpref, size);
+
+	num += strlen(keydir);
+	if (num > size - 1) {
+		return ENOSPC;
+	}
+	strcat(cmd, keydir);
+
+	num += strlen("/");
+	if (num > size - 1) {
+		return ENOSPC;
+	}
+	strcat(cmd, "/");
+
+	num += strlen(keyname);
+	if (num > size - 1) {
+		return ENOSPC;
+	}
+	strcat(cmd, keyname);
+
+	num += strlen(" -i ");
+	if (num > size - 1) {
+		return ENOSPC;
+	}
+	strcat(cmd, " -i ");
+
+	num += strlen(dgtfile);
+	if (num > size - 1) {
+		return ENOSPC;
+	}
+	strcat(cmd, dgtfile);
+
+	num += strlen(" -s ");
+	if (num > size - 1) {
+		return ENOSPC;
+	}
+	strcat(cmd, " -s ");
+
+	num += strlen(sigfile);
+	if (num > size - 1) {
+		return ENOSPC;
+	}
+	strcat(cmd, sigfile);
+
+	num += strlen(hsmalgo);
+	if (num > size - 1) {
+		return ENOSPC;
+	}
+	strcat(cmd, hsmalgo);
+
+	return 0;
+}
+
+static inline int write_region(int fd, const uint8_t *data, int len)
+{
+	ssize_t cnt;
+	int retry = 3;
+
+	errno = 0;
+	while (len) {
+		cnt = write(fd, data, len);
+		if (cnt < 0) {
+			return errno;
+		}
+		if (cnt == 0) {
+			if (retry > 0) {
+				retry--;
+				errno = 0;
+				continue;
+			}
+			return ENOSPC;
+		}
+		data += cnt;
+		len -= cnt;
+	}
+
+	return 0;
+}
+
+static int write_region_to_tmpfile(char *tmpfile,
+				   const struct image_region region[],
+				   int region_count)
+{
+	int i, ret = 0;
+	int tmpfh;
+	/* create the tmpfile */
+	tmpfh = mkstemp(tmpfile);
+	if (tmpfh < 0) {
+		ret = errno;
+	}
+	for (i = 0; !ret && i < region_count; i++) {
+		ret = write_region(tmpfh, region[i].data, region[i].size);
+	}
+	if (tmpfh >=0 )
+		close(tmpfh);
+
+	return ret;
+}
+
+static int rsa_sign_with_hsmcli(struct image_sign_info *info,
+				const struct image_region region[],
+				int region_count, uint8_t **sigp, uint *sig_len)
+{
+#define HSMCLI_TMPFILE_TEMPLATE "/tmp/rsa-sign-XXXXXX"
+	int ret = 0;
+	uint8_t *sig, *buf;
+	size_t cnt, remain, sigsize = 512;
+	FILE *fp;
+
+	char tmpfile[] = HSMCLI_TMPFILE_TEMPLATE;
+	char tmpsigfile[sizeof(tmpfile) + 8];
+	char hsmcli_cmd[256];
+
+	printf("**** signing with FB-HSM ****\n");
+	/* write region into a temp file for hsmcli use */
+	ret = write_region_to_tmpfile(tmpfile, region, region_count);
+	if (ret) {
+		fprintf(stderr, "write region to %s failed: %s\n", tmpfile,
+			strerror(ret));
+	}
+	/* Generate the hsmcli command */
+	if (!ret) {
+		snprintf(tmpsigfile, sizeof(tmpsigfile), "%s.sig", tmpfile);
+		ret = gen_hsmcli_cmd(tmpfile, tmpsigfile, info->keydir,
+				     info->keyname, hsmcli_cmd,
+				     sizeof(hsmcli_cmd));
+		if (ret) {
+			fprintf(stderr, "Generate hsmcli comand failed (%d)\n",
+				ret);
+		}
+	}
+	/* call hsmcli to sign */
+	if (!ret) {
+		ret = system(hsmcli_cmd);
+		if (ret) {
+			fprintf(stderr, "execute [%s] failed: %d\n", hsmcli_cmd,
+				ret);
+		}
+	}
+	/* open the sig file */
+	if (!ret) {
+		fp = fopen(tmpsigfile, "rb");
+		if (!fp) {
+			ret = errno;
+			fprintf(stderr, "open %s failed: %s", tmpsigfile,
+				strerror(ret));
+		}
+	}
+	/* allocate memory for sig */
+	if (!ret) {
+		sig = (uint8_t *)malloc(sigsize);
+		if (!sig) {
+			ret = ENOMEM;
+			fprintf(stderr, "Out of memory\n");
+		}
+	}
+	/* read the sigfile into sig */
+	if (!ret) {
+		buf = sig;
+		remain = sigsize;
+		while (remain) {
+			cnt = fread(buf, 1, remain, fp);
+			if (!cnt) {
+				if (ferror(fp)) {
+					ret = EIO;
+					fprintf(stderr, "Read %s failed.\n",
+					tmpsigfile);
+				}
+				else {
+					ret = ENODATA;
+					fprintf(stderr,
+						"Signature size %d wrong.\n",
+						sigsize - remain);
+				}
+				break;
+			}
+			buf += cnt;
+			remain -= cnt;
+		}
+	}
+	/* deliver the sig otherwise free sig*/
+	if (!ret) {
+		*sigp = sig;
+		*sig_len = sigsize;
+	} else {
+		if (sig)
+			free(sig);
+	}
+	/* clear up */
+	if (fp)
+		fclose(fp);
+	unlink(tmpfile);
+	unlink(tmpsigfile);
+
+	return ret;
+}
+
+int rsa_sign(struct image_sign_info *info, const struct image_region region[],
+	     int region_count, uint8_t **sigp, uint *sig_len)
+{
+	if (!info->engine_id || strcmp(info->engine_id, "FB-HSM")) {
+		return rsa_sign_origin(info, region, region_count, sigp,
+				       sig_len);
+	}
+
+	return rsa_sign_with_hsmcli(info, region, region_count, sigp, sig_len);
 }
 
 /*

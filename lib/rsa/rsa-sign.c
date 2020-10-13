@@ -647,9 +647,9 @@ static int rsa_sign_with_hsmcli(struct image_sign_info *info,
 {
 #define HSMCLI_TMPFILE_TEMPLATE "/tmp/rsa-sign-XXXXXX"
 	int ret = 0;
-	uint8_t *sig, *buf;
+	uint8_t *sig = 0, *buf;
 	size_t cnt, remain, sigsize = 512;
-	FILE *fp;
+	FILE *fp = 0;
 
 	char tmpfile[] = HSMCLI_TMPFILE_TEMPLATE;
 	char tmpsigfile[sizeof(tmpfile) + 8];

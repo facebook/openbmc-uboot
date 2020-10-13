@@ -21,6 +21,9 @@
 #undef CONFIG_ENV_OFFSET
 #define CONFIG_ENV_OFFSET	0xE0000
 
+/* Enable DRAM ECC, going to lose 1/8 of memory */
+#define CONFIG_DRAM_ECC
+
 /* u-boot reset command and reset() is implemented via sysreset
  * which will trigger the WDT to do full-chip reset by default.
  * But WDT Full-chip reset cannot successfully drive the WDTRST_N pin,

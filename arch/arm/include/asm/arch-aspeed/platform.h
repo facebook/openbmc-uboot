@@ -23,6 +23,7 @@
 #define ASPEED_SRAM_BASE	0x1E720000
 #define ASPEED_SRAM_SIZE	0x9000
 #define ASPEED_FMC_CS0_BASE	0x20000000
+#define ASPEED_FMC_BASE 	0x1E620000	/*	Base address of FMC controller */
 #elif defined(CONFIG_ASPEED_AST2500)
 #define ASPEED_MAC_COUNT	2
 #define ASPEED_HW_STRAP1	0x1e6e2070
@@ -35,6 +36,7 @@
 #define ASPEED_SRAM_BASE	0x1E720000
 #define ASPEED_SRAM_SIZE	0x9000
 #define ASPEED_FMC_CS0_BASE	0x20000000
+#define ASPEED_FMC_BASE 	0x1E620000	/*	Base address of FMC controller */
 #elif defined(CONFIG_ASPEED_AST2600)
 #define ASPEED_HW_STRAP1	0x1e6e2500
 #define ASPEED_HW_STRAP2	0x1e6e2510
@@ -47,6 +49,7 @@
 #define ASPEED_SRAM_BASE	0x10000000
 #define ASPEED_SRAM_SIZE	0x10000
 #define ASPEED_FMC_CS0_BASE	0x20000000
+#define ASPEED_FMC_BASE 	0x1E620000	/*	Base address of FMC controller */
 #else
 #err "No define for platform.h"
 #endif

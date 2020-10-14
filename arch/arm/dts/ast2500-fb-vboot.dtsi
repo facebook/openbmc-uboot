@@ -14,7 +14,7 @@
 #ifdef CONFIG_ASPEED_RECOVERY_BUILD
 		bootcmd = "setenv verify no; bootm 201A0000";
 #else
-		bootcmd = "vbs oscheck; bootm 281A0000; vbs 6 60; bootm 201A0000";
+		bootcmd = "vbs oscheck; bootm 281A0000; vbs 6 60; setenv verify no; bootm 201A0000";
 #endif
 	};
 

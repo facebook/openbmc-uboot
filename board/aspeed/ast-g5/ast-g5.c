@@ -789,8 +789,8 @@ static void enable_nic_mux(void)
 
 static int get_fbal_pwrok(void)
 {
-  // GPIOY2
-  return ((__raw_readl(AST_GPIO_BASE + 0x1E0) >> 2) & 1);
+  // GPIOZ1 CPU power good
+  return ((__raw_readl(AST_GPIO_BASE + 0x1E0) >> 9) & 1);
 }
 
 static void set_fbal_pwrbtn(int level)

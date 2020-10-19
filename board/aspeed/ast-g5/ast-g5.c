@@ -759,12 +759,31 @@ static void config_gpioe_pass_through(void) {
 
   //Enable Reset Button
   reg = 1 << 12;
-  __raw_writel(reg, AST_SCU_BASE + 0x8C); 
+  __raw_writel(reg, AST_SCU_BASE + 0x8C);
 }
-
 #endif
 
 #if defined(CONFIG_FBAL)
+static void led_init(void)
+{
+  u32 reg;
+
+  // POSTCODE LED (GPIOH)
+  reg = __raw_readl(AST_GPIO_BASE + 0x24);
+  reg |= 0xFF000000;
+  __raw_writel(reg, AST_GPIO_BASE + 0x24);
+  reg = __raw_readl(AST_GPIO_BASE + 0x20);
+  reg &= ~0xFF000000;
+  __raw_writel(reg, AST_GPIO_BASE + 0x20);
+
+  reg = __raw_readl(AST_GPIO_BASE + 0x68);
+  reg |= 0x01000000;
+  __raw_writel(reg, AST_GPIO_BASE + 0x68);
+  reg = __raw_readl(AST_GPIO_BASE + 0x6C);
+  reg &= ~0x01000000;
+  __raw_writel(reg, AST_GPIO_BASE + 0x6C);
+}
+
 static void enable_nic_mux(void)
 {
   u32 reg;
@@ -1195,6 +1214,7 @@ int board_init(void)
   config_gpioe_pass_through();
   policy_init();
   disable_snoop_interrupt();
+  led_init();
   enable_nic_mux();
   fix_mmc_hold_time_fail();
 #endif

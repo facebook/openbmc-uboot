@@ -71,6 +71,8 @@
  */
 #define AST_SYSRESET_WITH_SOC 0x23FFFF3
 
+#define CONFIG_SPI1_DISABLE
+
 #define CONFIG_PFR_BUS "i2c-bus@140"
 #define CONFIG_PFR_ADDR 0x58
 #define CONFIG_TCA9548_BUS "i2c-bus@100"

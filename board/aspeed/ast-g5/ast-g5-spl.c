@@ -390,6 +390,7 @@ void vboot_reset(struct vbs *vbs) {
 
   if (vbs->rom_handoff == VBS_HANDOFF) {
     printf("U-Boot failed to execute.\n");
+    ast_fmc_spi_check(false);
     vboot_recovery(vbs, VBS_ERROR_TYPE_SPI, VBS_ERROR_EXECUTE_FAILURE);
   }
 

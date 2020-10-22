@@ -8,6 +8,7 @@
 #include <timer.h>
 #include <asm/io.h>
 #include <asm/arch/timer.h>
+#include <asm/arch/fmc_dual_boot_ast2600.h>
 #include <linux/err.h>
 #include <dm/uclass.h>
 
@@ -57,6 +58,10 @@ __weak int board_init(void)
 	int ret;
 
 	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
+
+#if CONFIG_IS_ENABLED(FMC_DUAL_BOOT)
+	fmc_enable_dual_boot();
+#endif
 
 #ifdef ASPEED_RMII_DAUGHTER_CARD
 	reset_eth_phy();

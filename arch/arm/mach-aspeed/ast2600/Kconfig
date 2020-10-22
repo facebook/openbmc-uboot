@@ -3,6 +3,12 @@ if ASPEED_AST2600
 config SYS_CPU
 	default "armv7"
 
+config FMC_DUAL_BOOT
+	bool FMC_DUAL_BOOT
+	default n
+	help
+	  enable/disable fmc watchdog 2 dual boot feature.
+
 choice
 	prompt "AST2600 board select"
 	depends on ASPEED_AST2600

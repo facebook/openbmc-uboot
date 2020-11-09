@@ -812,6 +812,12 @@ static int get_fbal_pwrok(void)
   return ((__raw_readl(AST_GPIO_BASE + 0x1E0) >> 9) & 1);
 }
 
+static int is_fbal_master(void)
+{
+  // GPIOO0 High:Slave Low:Master
+  return (((__raw_readl(AST_GPIO_BASE + 0x078) >> 16) & 1) ? 0 : 1 );
+}
+
 static void set_fbal_pwrbtn(int level)
 {
   u32 reg;
@@ -870,8 +876,8 @@ static void policy_init(void)
 
   // Host Server should power on
   if (to_pwr_on == 1) {
-    // Host Server is not on
-    if (!get_fbal_pwrok()) {
+    // Host Server is not on and Mode is master
+    if ( !get_fbal_pwrok() && is_fbal_master() ) {
       set_fbal_pwrbtn(0);
       udelay(1000*1000);
       set_fbal_pwrbtn(1);

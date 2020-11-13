@@ -62,12 +62,10 @@
 	status = "okay";
 };
 
-/*
 &wdt1 {
 	u-boot,dm-pre-reloc;
 	status = "okay";
 };
-*/
 
 &fmc {
 	status = "okay";

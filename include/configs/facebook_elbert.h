@@ -14,23 +14,18 @@
 #define CONFIG_SYS_UBOOT_BASE		CONFIG_SYS_TEXT_BASE
 
 /* Memory Info */
-#define CONFIG_SYS_LOAD_ADDR	0x83000000
+#define CONFIG_SYS_LOAD_ADDR		0x83000000
 
 #undef CONFIG_ENV_SIZE
-#define CONFIG_ENV_SIZE		0x10000
+#define CONFIG_ENV_SIZE 0x10000
 #undef CONFIG_ENV_OFFSET
-#define CONFIG_ENV_OFFSET	0xE0000
+#define CONFIG_ENV_OFFSET 0xE0000
 
-/* u-boot reset command and reset() is implemented via sysreset
- * which will trigger the WDT to do full-chip reset by default.
- * But WDT Full-chip reset cannot successfully drive the WDTRST_N pin,
- * so define AST_SYSRESET_WITH_SOC to make sysreset use SOC reset,
- * and use AST_SYS_RESET_WITH_SOC as SOC reset mask #1.
- * Notice: For system which loop back the WDTRST_N pin to BMC SRST pin.
- * the value of AST_SYSRESET_WITH_SOC does not matter, because
- * no matter how the BMC will get full reset by SRST pin.
+/*
+ * Autoboot configuration
  */
-#define AST_SYSRESET_WITH_SOC 0x030f1ff1
-
+#define CONFIG_AUTOBOOT_PROMPT		"autoboot in %d seconds (stop with 'Delete' key)...\n"
+#define CONFIG_AUTOBOOT_STOP_STR	"\x1b\x5b\x33\x7e"	/* 'Delete', ESC[3~ */
+#define CONFIG_AUTOBOOT_KEYED
 
 #endif	/* __CONFIG_H */

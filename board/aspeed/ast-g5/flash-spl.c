@@ -90,7 +90,7 @@ inline void fmc_romcs(uchar cs) {
 }
 
 inline void spi_write_enable(heaptimer_t timer, u32 base, u32 ctrl) {
-  WRITEREG(AST_FMC_BASE + ctrl, 0x603);
+  WRITEREG(AST_FMC_BASE + ctrl, 0x03);
   timer(200);
   WRITEB(base, SPI_CMD_WE);
   timer(10);
@@ -125,7 +125,7 @@ inline void spi_write_config(heaptimer_t timer, u32 base, u32 ctrl, uchar p) {
   /* The 'configuration' register on MXIC chips is the second status byte. */
   r1 = spi_status(timer, base, ctrl, false);
 
-  WRITEREG(AST_FMC_BASE + ctrl, 0x603);
+  WRITEREG(AST_FMC_BASE + ctrl, 0x03);
   timer(200);
   WRITEB(base, SPI_CMD_WS);
   timer(10);
@@ -150,7 +150,7 @@ inline uchar spi_config(heaptimer_t timer, u32 base, u32 ctrl) {
 }
 
 inline void spi_write_status(heaptimer_t timer, u32 base, u32 ctrl, uchar p) {
-  WRITEREG(AST_FMC_BASE + ctrl, 0x603);
+  WRITEREG(AST_FMC_BASE + ctrl, 0x03);
   timer(200);
   WRITEB(base, SPI_CMD_WS);
   timer(10);
@@ -160,7 +160,7 @@ inline void spi_write_status(heaptimer_t timer, u32 base, u32 ctrl, uchar p) {
 }
 
 inline void spi_enable4b(heaptimer_t timer, u32 base, u32 ctrl) {
-  WRITEREG(AST_FMC_BASE + ctrl, 0x603);
+  WRITEREG(AST_FMC_BASE + ctrl, 0x03);
   timer(200);
   WRITEB(base, SPI_CMD_4B);
   WRITEREG(AST_FMC_BASE + ctrl, 0x07);

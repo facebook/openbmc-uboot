@@ -51,9 +51,13 @@
 #define SPI_TB (0x1 << 6)
 
 /* Lock top 32MB of CS0 */
-#define SPI_CS0_HW_PROTECTIONS ( SPI_BP1 | SPI_BP3)
+#define SPI_CS0_HW_PROTECTIONS (SPI_BP1 | SPI_BP3)
 /* Lock top 64KB of CS1 */
 #define SPI_CS1_HW_PROTECTIONS (SPI_BP0)
+
+/* Micron Tech */
+#define SPI_BP3_MT (0x1 << 6)
+#define SPI_TB_MT  (0x1 << 5)
 
 #define WRITEREG(r, v) *(volatile u32*)(r) = v
 #define WRITEB(r, b) *(volatile uchar*)(r) = (uchar)b
@@ -222,6 +226,7 @@ int heaptimer_end(void) {
 
 int doheap(heaptimer_t timer, uchar cs, bool should_lock) {
   uchar status_set, status_check;
+  uchar id[3] = {0};
   u32 base;
   u32 ctrl;
   u32 prot;
@@ -236,28 +241,33 @@ int doheap(heaptimer_t timer, uchar cs, bool should_lock) {
     prot = SPI_CS1_HW_PROTECTIONS;
   }
 
+  fmc_romcs(cs);
+
+  /* Set the T/B bit based on the chip vendor. */
+  spi_id(timer, base, ctrl, id);
+
+  if (id[0] == 0xC2) {
+    /* This is MX */
+    spi_write_enable(timer, base, ctrl);
+    spi_status(timer, base, ctrl, true);
+    set_topbottom_mxic(timer, base, ctrl);
+  } else if (id[0] == 0xEF || id[0] == 0xC8) {
+    /* WB or GD */
+    prot |= SPI_TB;
+  } else if (id[0] == 0x20) {
+    /* MT */
+    if (cs == 0) {
+      prot = (SPI_BP3_MT | SPI_BP1);
+    }
+    prot |= SPI_TB_MT;
+  } else {
+    return AST_FMC_ERROR;
+  }
+
   /* Set the status register write disable. Only effective if WP# is low. */
   if (should_lock) {
     prot |= SPI_SRWD;
   }
-
-  fmc_romcs(cs);
-
-    /* Set the T/B bit based on the chip vendor. */
-    uchar id[3];
-    spi_id(timer, base, ctrl, id);
-
-    if (id[0] == 0xC2) {
-      /* This is MX */
-      spi_write_enable(timer, base, ctrl);
-      spi_status(timer, base, ctrl, true);
-      set_topbottom_mxic(timer, base, ctrl);
-    } else if (id[0] == 0xEF || id[0] == 0xC8) {
-      /* WB or GD */
-      prot |= SPI_TB;
-    } else {
-      return AST_FMC_ERROR;
-    }
 
   /* Write enable for CSn */
   spi_write_enable(timer, base, ctrl);

@@ -9,10 +9,10 @@
 #include <asm/arch/ast-sdk/vbs.h>
 #include "tpm-spl.h"
 
-static const u32 RB_NV_PROPERTY_CREATE =
-	(TPMA_NV_PPREAD | TPMA_NV_PPWRITE | TPMA_NV_PLATFORMCREATE);
-static const u32 RB_NV_PROPERTY_PROVISIONED =
-	(RB_NV_PROPERTY_CREATE | TPMA_NV_WRITTEN);
+#define RB_NV_PROPERTY_CREATE \
+	(TPMA_NV_PPREAD | TPMA_NV_PPWRITE | TPMA_NV_PLATFORMCREATE)
+#define RB_NV_PROPERTY_PROVISIONED \
+	(RB_NV_PROPERTY_CREATE | TPMA_NV_WRITTEN)
 #define RB_NV_INDEX_HANDLE                                                     \
 	((TPM_HT_NV_INDEX << 24) | (VBS_TPM_ROLLBACK_INDEX & 0xFFFFF))
 

@@ -14,7 +14,7 @@
 #define CONFIG_SYS_LONGHELP
 #endif
 
-#define CONFIG_BOOTARGS   "debug console=ttyS0,9600n8 root=/dev/ram rw"
+#define CONFIG_BOOTARGS   "console=ttyS0,9600n8 root=/dev/ram rw"
 #define CONFIG_BOOTFILE   "flash-wedge400"
 
 /*

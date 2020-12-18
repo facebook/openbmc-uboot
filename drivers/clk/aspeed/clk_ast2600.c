@@ -33,6 +33,7 @@
 #define RGMII1_TXCK_DUTY	0x64
 
 #define D2PLL_DEFAULT_RATE	(250 * 1000 * 1000)
+#define CHIP_REVISION_ID		GENMASK(23, 16)
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -134,21 +135,40 @@ extern u32 ast2600_get_pll_rate(struct ast2600_scu *scu, int pll_idx)
 
 extern u32 ast2600_get_apll_rate(struct ast2600_scu *scu)
 {
+	u32 hw_rev = readl(&scu->chip_id1);
 	u32 clkin = AST2600_CLK_IN;
 	u32 apll_reg = readl(&scu->a_pll_param);
 	unsigned int mult, div = 1;
 
-	if (apll_reg & BIT(20)) {
-		/* Pass through mode */
-		mult = div = 1;
-	} else {
-		/* F = 25Mhz * (2-od) * [(m + 2) / (n + 1)] */
-		u32 m = (apll_reg >> 5) & 0x3f;
-		u32 od = (apll_reg >> 4) & 0x1;
-		u32 n = apll_reg & 0xf;
+	if (((hw_rev & CHIP_REVISION_ID) >> 16) >= 2) {
+		//after A2 version
+		if (apll_reg & BIT(24)) {
+			/* Pass through mode */
+			mult = 1;
+			div = 1;
+		} else {
+			/* F = 25Mhz * [(m + 1) / (n + 1)] / (p + 1) */
+			u32 m = apll_reg & 0x1fff;
+			u32 n = (apll_reg >> 13) & 0x3f;
+			u32 p = (apll_reg >> 19) & 0xf;
 
-		mult = (2 - od) * (m + 2);
-		div = n + 1;
+			mult = (m + 1);
+			div = (n + 1) * (p + 1);
+		}
+	} else {
+		if (apll_reg & BIT(20)) {
+			/* Pass through mode */
+			mult = 1;
+			div = 1;
+		} else {
+			/* F = 25Mhz * (2-od) * [(m + 2) / (n + 1)] */
+			u32 m = (apll_reg >> 5) & 0x3f;
+			u32 od = (apll_reg >> 4) & 0x1;
+			u32 n = apll_reg & 0xf;
+
+			mult = (2 - od) * (m + 2);
+			div = n + 1;
+		}
 	}
 	return ((clkin * mult)/div);
 }

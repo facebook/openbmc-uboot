@@ -24,9 +24,9 @@
 #define CONFIG_FBAL 1
 
 #ifdef CONFIG_SPL
-#define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw printk.time=1 dual_flash=2"
+#define CONFIG_BOOTARGS          "console=ttyS0,57600n8 root=/dev/ram rw printk.time=1 dual_flash=2"
 #else
-#define CONFIG_BOOTARGS          "debug console=ttyS0,57600n8 root=/dev/ram rw printk.time=1"
+#define CONFIG_BOOTARGS          "console=ttyS0,57600n8 root=/dev/ram rw printk.time=1"
 #endif
 
 #define CONFIG_BOOTFILE          "flash-angelslanding"

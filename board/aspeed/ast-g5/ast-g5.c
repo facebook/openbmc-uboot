@@ -1109,80 +1109,6 @@ static void init_MUX_RESET_PIN(void)
   __raw_writel(reg, AST_GPIO_BASE + 0x1E0);
 }
 
-static int init_tac9539(void)
-{
-  int retry = 2;
-  int ret = -1;
-  struct udevice *bus, *dev;
-  
-  udelay(1000000);
-
-  //i2c bus#3
-  ret = uclass_get_device_by_name(UCLASS_I2C, CONFIG_TCA9548_BUS, &bus);
-  if (ret) {
-    return ret;
-  }
-
-  //Enable TCA9548 channel#5
-  ret = i2c_get_chip(bus, CONFIG_TCA9548_ADDR, 1, &dev);
-  if (ret) {
-    return ret;
-  }
-
-  do {
-    ret = dm_i2c_reg_write(dev, 0x0, 0x20);
-    if (ret && retry) {
-      udelay(10000);
-    }
-  } while (ret && (retry-- > 0));
-
-  retry = 2;
-
-  //Set TCA9539 P0 as output 
-  ret = i2c_get_chip(bus, CONFIG_TCA9539_ADDR, 1, &dev);
-  if (ret) {
-    return ret;
-  }
-
-  do {
-    ret = dm_i2c_reg_write(dev, 0x06, 0x00);
-    if (ret && retry) {
-      udelay(10000);
-    }
-  } while (ret && (retry-- > 0));
-
-  //Enable TCA9548 channel#6
-  ret = i2c_get_chip(bus, CONFIG_TCA9548_ADDR, 1, &dev);
-  if (ret) {
-    return ret;
-  }
-
-  do {
-    ret = dm_i2c_reg_write(dev, 0x0, 0x40);
-    if (ret && retry) {
-      udelay(10000);
-    }
-  } while (ret && (retry-- > 0));
-
-  retry = 2;
-
-  //Set TCA9539 P0 as output 
-  ret = i2c_get_chip(bus, CONFIG_TCA9539_ADDR, 1, &dev);
-  if (ret) {
-    return ret;
-  }
-
-  do {
-    ret = dm_i2c_reg_write(dev, 0x06, 0x00);
-    if (ret && retry) {
-      udelay(10000);
-    }
-  } while (ret && (retry-- > 0));
-
-
-  return 0;
-}
-
 #endif
 
 int board_init(void)
@@ -1247,7 +1173,6 @@ int board_init(void)
   init_SEL_FLASH_PAX();
   init_SKU_ID_PAX();
   init_MUX_RESET_PIN();
-  init_tac9539();
 #endif
 
   gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;

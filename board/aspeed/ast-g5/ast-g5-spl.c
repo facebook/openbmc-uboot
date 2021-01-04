@@ -422,11 +422,21 @@ void vboot_reset(struct vbs *vbs) {
 #endif
   }
 
-  /* Set a handoff and expect U-Boot to clear indicating a clean boot. */
-  vbs->recovery_retries = 0;
-  vbs->rom_handoff = VBS_HANDOFF;
-  /* Store to SRAM in case watchdog kicks before we jump to u-boot */
-  vboot_store(vbs);
+  /* set rom_handoff only if no valid handoff been set yet
+  *  which means this is a clean (re)boot:
+  *   a) AC-Power on
+  *   b) reboot from OpenBMC
+  */
+  if (  (vbs->rom_handoff != VBS_HANDOFF) &&
+	(vbs->rom_handoff != VBS_HANDOFF_TPM_SETUP) &&
+	(vbs->rom_handoff != VBS_HANDOFF_TPM_RST)  &&
+	(vbs->rom_handoff != VBS_HANDOFF_SWAP) ) {
+	/* Set a handoff and expect U-Boot to clear indicating a clean boot. */
+	vbs->recovery_retries = 0;
+	vbs->rom_handoff = VBS_HANDOFF;
+	vboot_store(vbs);
+  }
+
 
 #ifdef CONFIG_ASPEED_TPM
   int tpm_status = ast_tpm_provision(vbs);

@@ -318,9 +318,6 @@ TIME_TABLE_DDR4_1600:
 lowlevel_init:
 
 init_dram:
-    /* save lr */
-    mov   r4, lr
-
     /********************************************
        Initial Reset Procedure : Begin
      *******************************************/
@@ -662,13 +659,9 @@ bypass_USB_init:
     ldr   r0, =0x1e6e0000
     ldr   r1, =0xFC600309
     str   r1, [r0]
-    
-#ifdef CONFIG_SPL_BUILD
-    /* SPL: leave the rest to U-Boot proper */
-    mov   pc, lr
-#else
-    /* skip SDRAM initialization (will be done in C function) */
-    b     platform_exit
+
+#ifdef CONFIG_RAM
+	mov   pc, lr
 #endif
 
     /* Check Scratch Register Bit 6 */
@@ -2275,6 +2268,48 @@ print_DQ_margin_last:
 /* Debug - UART console message */
 
 platform_exit:
+#ifdef CONFIG_DRAM_ECC
+    ldr   r0, =0x1e6e0004
+    ldr   r2, =0x00000880                        @ add cache range control, 2016.09.02
+    ldr   r1, [r0]
+    orr   r1, r1, r2
+    str   r1, [r0]
+
+    ldr   r0, =0x1e6e0054
+    ldr   r1, =CONFIG_DRAM_ECC_SIZE              /* ECC protected memory size */
+    str   r1, [r0]
+
+    ldr   r0, =0x1e6e007C
+    ldr   r1, =0x00000000
+    str   r1, [r0]
+    ldr   r0, =0x1e6e0074
+    str   r1, [r0]
+
+    ldr   r0, =0x1e6e0070
+    ldr   r1, =0x00000221
+    str   r1, [r0]
+
+    ldr   r2, =0x00001000
+ECC_Init_Flag:
+    ldr   r1, [r0]
+    tst   r1, r2                                 @ D[12] = 1, Done
+    beq   ECC_Init_Flag
+
+    ldr   r1, =0x00000000
+    str   r1, [r0]
+
+    ldr   r0, =0x1e6e0050
+    ldr   r1, =0x80000000
+    str   r1, [r0]
+
+    ldr   r0, =0x1e6e0050
+    ldr   r1, =0x00000000
+    str   r1, [r0]
+
+    ldr   r0, =0x1e6e0070
+    ldr   r1, =0x00000400                        @ Enable ECC auto-scrubbing
+    str   r1, [r0]
+#endif
 
 /******************************************************************************
  SPI Timing Calibration
@@ -2474,9 +2509,6 @@ set_D2PLL:
     ldr   r0, =0x1e782038
     ldr   r1, =0xEA
     str   r1, [r0]
-
-    /* restore lr */
-    mov   lr, r4
 
     /* back to arch calling code */
     mov   pc, lr

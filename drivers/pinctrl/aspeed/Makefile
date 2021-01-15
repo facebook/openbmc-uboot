@@ -1,2 +1,3 @@
+obj-$(CONFIG_ASPEED_AST2400_PINCTRL) += pinctrl_ast2400.o
 obj-$(CONFIG_ASPEED_AST2500_PINCTRL) += pinctrl_ast2500.o
 obj-$(CONFIG_ASPEED_AST2600_PINCTRL) += pinctrl_ast2600.o

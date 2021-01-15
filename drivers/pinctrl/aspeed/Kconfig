@@ -1,3 +1,12 @@
+config ASPEED_AST2400_PINCTRL
+  bool "Aspeed AST2400 pin control driver"
+  depends on DM && PINCTRL_GENERIC && ASPEED_AST2400
+  default y
+  help
+    Support pin multiplexing control on Aspeed ast2500 SoC. The driver uses
+        Generic Pinctrl framework and is compatible with the Linux driver,
+        i.e. it uses the same device tree configuration.
+
 config ASPEED_AST2500_PINCTRL
   bool "Aspeed AST2500 pin control driver"
   depends on DM && PINCTRL_GENERIC && ASPEED_AST2500

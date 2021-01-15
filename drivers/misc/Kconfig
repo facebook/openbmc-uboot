@@ -25,6 +25,12 @@ config ASPEED_H2X
         help
           Select this to enable AHB to PCIe bu Bridge driver for Aspeed SoC.
 
+config ASPEED_DP
+	bool "Aspeed Display Port firmware driver"
+	depends on ARCH_ASPEED
+	help
+	  Select this to enable Diplay Port firmware driver
+
 config ASPEED_FSI
 	bool "Enable ASPEED FSI driver"
 	depends on ARCH_ASPEED

@@ -75,6 +75,12 @@
 	 WDT_RESET_PWM | WDT_RESET_PECI | WDT_RESET_JTAG |		\
 	 WDT_RESET_ADC | WDT_RESET_GPIO | WDT_RESET_MISC)
 
+enum aspeed_wdt_model {
+	WDT_AST2400,
+	WDT_AST2500,
+	WDT_AST2600,
+};
+
 #ifndef __ASSEMBLY__
 struct ast_wdt {
 	u32 counter_status;
@@ -85,7 +91,7 @@ struct ast_wdt {
 	u32 clr_timeout_status;
 	u32 reset_width;
 	/* On pre-ast2500 SoCs this register is reserved. */
-	u32 reset_mask;
+	u32 reset_mask1;
 	/* ast2600 registers */
 	u32 reset_mask2;
 	u32 sw_ctrl;

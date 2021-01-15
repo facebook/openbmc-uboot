@@ -259,7 +259,7 @@ static void ast2500_sdrammc_ecc_enable(struct dram_info *info)
 	struct ast2500_sdrammc_regs *regs = info->regs;
 	size_t conf_size;
 	u32 reg;
-
+	
 	conf_size = CONFIG_ASPEED_ECC_SIZE * SDRAM_SIZE_1MB;
 	if (conf_size > info->info.size) {
 		printf("warning: ECC configured %dMB but actual size is %dMB\n",
@@ -403,7 +403,7 @@ static int ast2500_sdrammc_probe(struct udevice *dev)
 		return ret;
 	}
 	priv->scu = devfdt_get_addr_ptr(clk_dev);
-
+	
 	if (IS_ERR(priv->scu)) {
 		debug("%s(): can't get SCU\n", __func__);
 		return PTR_ERR(priv->scu);
@@ -421,7 +421,7 @@ static int ast2500_sdrammc_probe(struct udevice *dev)
 
 		writel(SDRAM_MISC_DDR4_TREFRESH, &priv->regs->misc_control);
 
-#ifdef CONFIG_ASPEED_ECC
+#ifdef CONFIG_ASPEED_ECC		
 		ast2500_sdrammc_ecc_enable(priv);
 #endif
 		return 0;

@@ -19,6 +19,7 @@ DECLARE_GLOBAL_DATA_PTR;
 #define ASPEED_PCIE_LOCK			0x7C
 #define ASPEED_PCIE_LINK			0xC0
 #define ASPEED_PCIE_INT				0xC4
+#define ASPEED_PCIE_LINK_STS		0xD0
 
 /* 	AST_PCIE_CFG2			0x04		*/
 #define PCIE_CFG_CLASS_CODE(x)	(x << 8)
@@ -32,6 +33,10 @@ DECLARE_GLOBAL_DATA_PTR;
 
 /*	AST_PCIE_LINK			0xC0	*/
 #define PCIE_LINK_STS			BIT(5)
+
+/*  ASPEED_PCIE_LINK_STS	0xD0	*/
+#define PCIE_LINK_5G			BIT(17)
+#define PCIE_LINK_2_5G			BIT(16)
 
 struct pcie_aspeed {
 	void *ctrl_base;
@@ -94,7 +99,7 @@ static int pcie_aspeed_probe(struct udevice *dev)
 {
 	void *fdt = (void *)gd->fdt_blob;
 
-	struct reset_ctl reset_ctl0, reset_ctl1;
+	struct reset_ctl reset_ctl;
 	struct pcie_aspeed *pcie = dev_get_priv(dev);
 //	struct udevice *ctrl = pci_get_controller(dev);
 //	struct pci_controller *host = dev_get_uclass_priv(ctrl);
@@ -102,22 +107,15 @@ static int pcie_aspeed_probe(struct udevice *dev)
 	int h2x_of_handle;	
 	int ret = 0;
 
-	ret = reset_get_by_index(dev, 0, &reset_ctl0);
+	ret = reset_get_by_index(dev, 0, &reset_ctl);
 	if (ret) {
 		printf("%s(): Failed to get reset signal\n", __func__);
 		return ret;
 	}
 
-	ret = reset_get_by_index(dev, 0, &reset_ctl1);
-	if (ret) {
-		printf("%s(): Failed to get reset signal\n", __func__);
-		return ret;
-	}
-
-	reset_assert(&reset_ctl0);
-	reset_assert(&reset_ctl1);
+	reset_assert(&reset_ctl);
 	mdelay(100);
-	reset_deassert(&reset_ctl0);
+	reset_deassert(&reset_ctl);
 
 	ret = uclass_get_device_by_driver(UCLASS_MISC, DM_GET_DRIVER(aspeed_ahbc),
 										  &ahbc_dev);
@@ -146,7 +144,13 @@ static int pcie_aspeed_probe(struct udevice *dev)
 
 	/* Don't register host if link is down */
 	if (readl(pcie->ctrl_base + ASPEED_PCIE_LINK) & PCIE_LINK_STS) {
-		printf("PCIE-%d: Link up\n", dev->seq);
+#if 0		
+		printf("PCIE-%d: Link up - ", dev->seq);
+		if(readl(pcie->ctrl_base + ASPEED_PCIE_LINK_STS) & PCIE_LINK_5G)
+			printf("5G \n");
+		if(readl(pcie->ctrl_base + ASPEED_PCIE_LINK_STS) & PCIE_LINK_2_5G)
+			printf("2.5G \n");
+#endif
 		pcie->link_sts = 1;
 	} else {
 		printf("PCIE-%d: Link down\n", dev->seq);

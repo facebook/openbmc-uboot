@@ -13,26 +13,25 @@
 #include <dt-bindings/reset/ast2600-reset.h>
 
 /*
- * MAC Clock Delay settings, taken from Aspeed SDK
+ * MAC Clock Delay settings
  */
-#define RGMII_TXCLK_ODLY	8
-#define RMII_RXCLK_IDLY		2
+#define RGMII_TXCLK_ODLY		8
+#define RMII_RXCLK_IDLY			2
 
-#define MAC_DEF_DELAY_1G	0x0041b75d
-#define MAC_DEF_DELAY_100M	0x00417410
-#define MAC_DEF_DELAY_10M	0x00417410
+#define MAC_DEF_DELAY_1G		0x0041b75d
+#define MAC_DEF_DELAY_100M		0x00417410
+#define MAC_DEF_DELAY_10M		0x00417410
 
-#define MAC34_DEF_DELAY_1G	0x0010438a
+#define MAC34_DEF_DELAY_1G		0x0010438a
 #define MAC34_DEF_DELAY_100M	0x00104208
-#define MAC34_DEF_DELAY_10M	0x00104208
+#define MAC34_DEF_DELAY_10M		0x00104208
 
 /*
  * TGMII Clock Duty constants, taken from Aspeed SDK
  */
-#define RGMII2_TXCK_DUTY	0x66
-#define RGMII1_TXCK_DUTY	0x64
-
-#define D2PLL_DEFAULT_RATE	(250 * 1000 * 1000)
+#define RGMII2_TXCK_DUTY		0x66
+#define RGMII1_TXCK_DUTY		0x64
+#define D2PLL_DEFAULT_RATE		(250 * 1000 * 1000)
 #define CHIP_REVISION_ID		GENMASK(23, 16)
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -50,7 +49,7 @@ DECLARE_GLOBAL_DATA_PTR;
  * yet needed and ignored by clock configurations.
  */
 union ast2600_pll_reg {
-	unsigned int w;
+	u32 w;
 	struct {
 		unsigned int m : 13;		/* bit[12:0]	*/
 		unsigned int n : 6;		/* bit[18:13]	*/
@@ -64,7 +63,7 @@ union ast2600_pll_reg {
 
 struct ast2600_pll_cfg {
 	union ast2600_pll_reg reg;
-	unsigned int ext_reg;
+	u32 ext_reg;
 };
 
 struct ast2600_pll_desc {
@@ -74,28 +73,82 @@ struct ast2600_pll_desc {
 };
 
 static const struct ast2600_pll_desc ast2600_pll_lookup[] = {
-    {.in = AST2600_CLK_IN, .out = 400000000,
-    .cfg.reg.b.m = 95, .cfg.reg.b.n = 2, .cfg.reg.b.p = 1,
-    .cfg.ext_reg = 0x31,
-    },
-    {.in = AST2600_CLK_IN, .out = 200000000,
-    .cfg.reg.b.m = 127, .cfg.reg.b.n = 0, .cfg.reg.b.p = 15,
-    .cfg.ext_reg = 0x3f
-    },
-    {.in = AST2600_CLK_IN, .out = 334000000,
-    .cfg.reg.b.m = 667, .cfg.reg.b.n = 4, .cfg.reg.b.p = 9,
-    .cfg.ext_reg = 0x14d
-    },
+	{
+		.in = AST2600_CLK_IN,
+		.out = 400000000,
+		.cfg.reg.b.m = 95,
+		.cfg.reg.b.n = 2,
+		.cfg.reg.b.p = 1,
+		.cfg.ext_reg = 0x31,
+	}, {
+		.in = AST2600_CLK_IN,
+		.out = 200000000,
+		.cfg.reg.b.m = 127,
+		.cfg.reg.b.n = 0,
+		.cfg.reg.b.p = 15,
+		.cfg.ext_reg = 0x3f,
+	}, {
+		.in = AST2600_CLK_IN,
+		.out = 334000000,
+		.cfg.reg.b.m = 667,
+		.cfg.reg.b.n = 4,
+		.cfg.reg.b.p = 9,
+		.cfg.ext_reg = 0x14d,
+	}, {
+		.in = AST2600_CLK_IN,
+		.out = 1000000000,
+		.cfg.reg.b.m = 119,
+		.cfg.reg.b.n = 2,
+		.cfg.reg.b.p = 0,
+		.cfg.ext_reg = 0x3d,
+	}, {
+		.in = AST2600_CLK_IN,
+		.out = 50000000,
+		.cfg.reg.b.m = 95,
+		.cfg.reg.b.n = 2,
+		.cfg.reg.b.p = 15,
+		.cfg.ext_reg = 0x31,
+	},
+};
 
-    {.in = AST2600_CLK_IN, .out = 1000000000,
-    .cfg.reg.b.m = 119, .cfg.reg.b.n = 2, .cfg.reg.b.p = 0,
-    .cfg.ext_reg = 0x3d
-    },
+union mac_delay_1g {
+	u32 w;
+	struct {
+		unsigned int tx_delay_1		: 6;	/* bit[5:0] */
+		unsigned int tx_delay_2		: 6;	/* bit[11:6] */
+		unsigned int rx_delay_1		: 6;	/* bit[17:12] */
+		unsigned int rx_delay_2		: 6;	/* bit[23:18] */
+		unsigned int rx_clk_inv_1 	: 1;	/* bit[24] */
+		unsigned int rx_clk_inv_2 	: 1;	/* bit[25] */
+		unsigned int rmii_tx_data_at_falling_1 : 1; /* bit[26] */
+		unsigned int rmii_tx_data_at_falling_2 : 1; /* bit[27] */
+		unsigned int rgmiick_pad_dir	: 1;	/* bit[28] */
+		unsigned int rmii_50m_oe_1 	: 1;	/* bit[29] */
+		unsigned int rmii_50m_oe_2	: 1;	/* bit[30] */
+		unsigned int rgmii_125m_o_sel 	: 1;	/* bit[31] */
+	} b;
+};
 
-    {.in = AST2600_CLK_IN, .out = 50000000,
-    .cfg.reg.b.m = 95, .cfg.reg.b.n = 2, .cfg.reg.b.p = 15,
-    .cfg.ext_reg = 0x31
-    },
+union mac_delay_100_10 {
+	u32 w;
+	struct {
+		unsigned int tx_delay_1		: 6;	/* bit[5:0] */
+		unsigned int tx_delay_2		: 6;	/* bit[11:6] */
+		unsigned int rx_delay_1		: 6;	/* bit[17:12] */
+		unsigned int rx_delay_2		: 6;	/* bit[23:18] */
+		unsigned int rx_clk_inv_1 	: 1;	/* bit[24] */
+		unsigned int rx_clk_inv_2 	: 1;	/* bit[25] */
+		unsigned int reserved_0 	: 6;	/* bit[31:26] */
+	} b;
+};
+
+struct mac_delay_config {
+	u32 tx_delay_1000;
+	u32 rx_delay_1000;
+	u32 tx_delay_100;
+	u32 rx_delay_100;
+	u32 tx_delay_10;
+	u32 rx_delay_10;
 };
 
 extern u32 ast2600_get_pll_rate(struct ast2600_scu *scu, int pll_idx)
@@ -104,33 +157,53 @@ extern u32 ast2600_get_pll_rate(struct ast2600_scu *scu, int pll_idx)
 	u32 pll_reg = 0;
 	unsigned int mult, div = 1;
 
-	switch(pll_idx) {
-		case ASPEED_CLK_HPLL:	
-			pll_reg = readl(&scu->h_pll_param);
-			break;
-		case ASPEED_CLK_MPLL:	
-			pll_reg = readl(&scu->m_pll_param);
-			break;
-		case ASPEED_CLK_DPLL:	
-			pll_reg = readl(&scu->d_pll_param);
-			break;		
-		case ASPEED_CLK_EPLL:	
-			pll_reg = readl(&scu->e_pll_param);
-			break;
-
+	switch (pll_idx) {
+	case ASPEED_CLK_HPLL:
+		pll_reg = readl(&scu->h_pll_param);
+		break;
+	case ASPEED_CLK_MPLL:
+		pll_reg = readl(&scu->m_pll_param);
+		break;
+	case ASPEED_CLK_DPLL:
+		pll_reg = readl(&scu->d_pll_param);
+		break;
+	case ASPEED_CLK_EPLL:
+		pll_reg = readl(&scu->e_pll_param);
+		break;
 	}
 	if (pll_reg & BIT(24)) {
 		/* Pass through mode */
-		mult = div = 1;
+		mult = 1;
+		div = 1;
 	} else {
-		/* F = 25Mhz * [(M + 2) / (n + 1)] / (p + 1) */
 		union ast2600_pll_reg reg;
+		/* F = 25Mhz * [(M + 2) / (n + 1)] / (p + 1)
+		 * HPLL Numerator (M) = fix 0x5F when SCU500[10]=1
+		 * Fixed 0xBF when SCU500[10]=0 and SCU500[8]=1
+		 * SCU200[12:0] (default 0x8F) when SCU510[10]=0 and SCU510[8]=0
+		 * HPLL Denumerator (N) =	SCU200[18:13] (default 0x2)
+		 * HPLL Divider (P)	 =	SCU200[22:19] (default 0x0)
+		 * HPLL Bandwidth Adj (NB) =  fix 0x2F when SCU500[10]=1
+		 * Fixed 0x5F when SCU500[10]=0 and SCU500[8]=1
+		 * SCU204[11:0] (default 0x31) when SCU500[10]=0 and SCU500[8]=0
+		 */
 		reg.w = pll_reg;
+		if (pll_idx == ASPEED_CLK_HPLL) {
+			u32 hwstrap1 = readl(&scu->hwstrap1.hwstrap);
+
+			if (hwstrap1 & BIT(10)) {
+				reg.b.m = 0x5F;
+			} else {
+				if (hwstrap1 & BIT(8))
+					reg.b.m = 0xBF;
+				/* Otherwise keep default 0x8F */
+			}
+		}
 		mult = (reg.b.m + 1) / (reg.b.n + 1);
 		div = (reg.b.p + 1);
 	}
-	return ((clkin * mult)/div);
-	
+
+	return ((clkin * mult) / div);
 }
 
 extern u32 ast2600_get_apll_rate(struct ast2600_scu *scu)
@@ -170,19 +243,29 @@ extern u32 ast2600_get_apll_rate(struct ast2600_scu *scu)
 			div = n + 1;
 		}
 	}
-	return ((clkin * mult)/div);
+
+	return ((clkin * mult) / div);
 }
 
 static u32 ast2600_a0_axi_ahb_div_table[] = {
-	2, 2, 3, 4,
+	2,
+	2,
+	3,
+	4,
 };
 
 static u32 ast2600_a1_axi_ahb_div0_table[] = {
-	3, 2, 3, 4,
+	3,
+	2,
+	3,
+	4,
 };
 
 static u32 ast2600_a1_axi_ahb_div1_table[] = {
-	3, 4, 6, 8,
+	3,
+	4,
+	6,
+	8,
 };
 
 static u32 ast2600_a1_axi_ahb_default_table[] = {
@@ -191,30 +274,49 @@ static u32 ast2600_a1_axi_ahb_default_table[] = {
 
 static u32 ast2600_get_hclk(struct ast2600_scu *scu)
 {
-	u32 hw_rev = readl(&scu->chip_id0);
+	u32 hw_rev = readl(&scu->chip_id1);
 	u32 hwstrap1 = readl(&scu->hwstrap1.hwstrap);
 	u32 axi_div = 1;
 	u32 ahb_div = 0;
 	u32 rate = 0;
 
-	if (hw_rev & BIT(16)) {
-		if(hwstrap1 & BIT(16)) {
-			ast2600_a1_axi_ahb_div1_table[0] = ast2600_a1_axi_ahb_default_table[(hwstrap1 >> 8) & 0x3];
+	if ((hw_rev & CHIP_REVISION_ID) >> 16) {
+		//After A0
+		if (hwstrap1 & BIT(16)) {
+			ast2600_a1_axi_ahb_div1_table[0] =
+				ast2600_a1_axi_ahb_default_table[(hwstrap1 >> 8) &
+								 0x3];
 			axi_div = 1;
-			ahb_div = ast2600_a1_axi_ahb_div1_table[(hwstrap1 >> 11) & 0x3];
+			ahb_div =
+				ast2600_a1_axi_ahb_div1_table[(hwstrap1 >> 11) &
+							      0x3];
 		} else {
-			ast2600_a1_axi_ahb_div0_table[0] = ast2600_a1_axi_ahb_default_table[(hwstrap1 >> 8) & 0x3];
+			ast2600_a1_axi_ahb_div0_table[0] =
+				ast2600_a1_axi_ahb_default_table[(hwstrap1 >> 8) &
+								 0x3];
 			axi_div = 2;
-			ahb_div = ast2600_a1_axi_ahb_div0_table[(hwstrap1 >> 11) & 0x3];
+			ahb_div =
+				ast2600_a1_axi_ahb_div0_table[(hwstrap1 >> 11) &
+							      0x3];
 		}
 	} else {
-		//a0 : fix axi = hpll / 2		
+		//A0 : fix axi = hpll / 2
 		axi_div = 2;
 		ahb_div = ast2600_a0_axi_ahb_div_table[(hwstrap1 >> 11) & 0x3];
 	}
+	rate = ast2600_get_pll_rate(scu, ASPEED_CLK_HPLL);
+
+	return (rate / axi_div / ahb_div);
+}
+
+static u32 ast2600_get_bclk_rate(struct ast2600_scu *scu)
+{
+	u32 rate;
+	u32 bclk_sel = (readl(&scu->clk_sel1) >> 20) & 0x7;
 
 	rate = ast2600_get_pll_rate(scu, ASPEED_CLK_HPLL);
-	return (rate / axi_div / ahb_div);
+
+	return (rate / ((bclk_sel + 1) * 4));
 }
 
 static u32 ast2600_hpll_pclk1_div_table[] = {
@@ -249,19 +351,19 @@ static u32 ast2600_get_uxclk_in_rate(struct ast2600_scu *scu)
 	u32 uxclk_sel = readl(&scu->clk_sel5);
 
 	uxclk_sel &= 0x3;
-	switch(uxclk_sel) {
-		case 0:
-			clk_in = ast2600_get_apll_rate(scu) / 4;
-			break;
-		case 1:
-			clk_in = ast2600_get_apll_rate(scu) / 2;
-			break;
-		case 2:
-			clk_in = ast2600_get_apll_rate(scu);
-			break;
-		case 3:
-			clk_in = ast2600_get_hclk(scu);
-			break;
+	switch (uxclk_sel) {
+	case 0:
+		clk_in = ast2600_get_apll_rate(scu) / 4;
+		break;
+	case 1:
+		clk_in = ast2600_get_apll_rate(scu) / 2;
+		break;
+	case 2:
+		clk_in = ast2600_get_apll_rate(scu);
+		break;
+	case 3:
+		clk_in = ast2600_get_hclk(scu);
+		break;
 	}
 
 	return clk_in;
@@ -273,19 +375,19 @@ static u32 ast2600_get_huxclk_in_rate(struct ast2600_scu *scu)
 	u32 huclk_sel = readl(&scu->clk_sel5);
 
 	huclk_sel = ((huclk_sel >> 3) & 0x3);
-	switch(huclk_sel) {
-		case 0:
-			clk_in = ast2600_get_apll_rate(scu) / 4;
-			break;
-		case 1:
-			clk_in = ast2600_get_apll_rate(scu) / 2;
-			break;
-		case 2:
-			clk_in = ast2600_get_apll_rate(scu);
-			break;
-		case 3:
-			clk_in = ast2600_get_hclk(scu);
-			break;
+	switch (huclk_sel) {
+	case 0:
+		clk_in = ast2600_get_apll_rate(scu) / 4;
+		break;
+	case 1:
+		clk_in = ast2600_get_apll_rate(scu) / 2;
+		break;
+	case 2:
+		clk_in = ast2600_get_apll_rate(scu);
+		break;
+	case 3:
+		clk_in = ast2600_get_hclk(scu);
+		break;
 	}
 
 	return clk_in;
@@ -302,7 +404,7 @@ static u32 ast2600_get_uart_uxclk_rate(struct ast2600_scu *scu)
 
 	mult = r;
 	div = (n * 2);
-	return (clk_in * mult)/div;
+	return (clk_in * mult) / div;
 }
 
 static u32 ast2600_get_uart_huxclk_rate(struct ast2600_scu *scu)
@@ -314,10 +416,10 @@ static u32 ast2600_get_uart_huxclk_rate(struct ast2600_scu *scu)
 
 	u32 n = (div_reg >> 8) & 0x3ff;
 	u32 r = div_reg & 0xff;
-	
+
 	mult = r;
 	div = (n * 2);
-	return (clk_in * mult)/div;
+	return (clk_in * mult) / div;
 }
 
 static u32 ast2600_get_sdio_clk_rate(struct ast2600_scu *scu)
@@ -326,11 +428,11 @@ static u32 ast2600_get_sdio_clk_rate(struct ast2600_scu *scu)
 	u32 clk_sel = readl(&scu->clk_sel4);
 	u32 div = (clk_sel >> 28) & 0x7;
 
-	if(clk_sel & BIT(8)) {
+	if (clk_sel & BIT(8))
 		clkin = ast2600_get_apll_rate(scu);
-	} else {
+	else
 		clkin = ast2600_get_hclk(scu);
-	}
+
 	div = (div + 1) << 1;
 
 	return (clkin / div);
@@ -341,7 +443,7 @@ static u32 ast2600_get_emmc_clk_rate(struct ast2600_scu *scu)
 	u32 clkin = ast2600_get_pll_rate(scu, ASPEED_CLK_HPLL);
 	u32 clk_sel = readl(&scu->clk_sel1);
 	u32 div = (clk_sel >> 12) & 0x7;
-	
+
 	div = (div + 1) << 2;
 
 	return (clkin / div);
@@ -350,60 +452,59 @@ static u32 ast2600_get_emmc_clk_rate(struct ast2600_scu *scu)
 static u32 ast2600_get_uart_clk_rate(struct ast2600_scu *scu, int uart_idx)
 {
 	u32 uart_sel = readl(&scu->clk_sel4);
-	u32 uart_sel5 = readl(&scu->clk_sel5);	
+	u32 uart_sel5 = readl(&scu->clk_sel5);
 	ulong uart_clk = 0;
 
-	switch(uart_idx) {
-		case 1:
-		case 2:
-		case 3:
-		case 4:
-		case 6:
-			if(uart_sel & BIT(uart_idx - 1))
-				uart_clk = ast2600_get_uart_huxclk_rate(scu) ;
-			else
-				uart_clk = ast2600_get_uart_uxclk_rate(scu) ;
-			break;
-		case 5: //24mhz is come form usb phy 48Mhz
-			{
-			u8 uart5_clk_sel = 0;
-			//high bit
-			if (readl(&scu->misc_ctrl1) & BIT(12))
-				uart5_clk_sel = 0x2;
-			else
-				uart5_clk_sel = 0x0;
+	switch (uart_idx) {
+	case 1:
+	case 2:
+	case 3:
+	case 4:
+	case 6:
+		if (uart_sel & BIT(uart_idx - 1))
+			uart_clk = ast2600_get_uart_huxclk_rate(scu);
+		else
+			uart_clk = ast2600_get_uart_uxclk_rate(scu);
+		break;
+	case 5: //24mhz is come form usb phy 48Mhz
+	{
+		u8 uart5_clk_sel = 0;
+		//high bit
+		if (readl(&scu->misc_ctrl1) & BIT(12))
+			uart5_clk_sel = 0x2;
+		else
+			uart5_clk_sel = 0x0;
 
-			if (readl(&scu->clk_sel2) & BIT(14))
-				uart5_clk_sel |= 0x1;
-			
-			switch(uart5_clk_sel) {
-				case 0:
-					uart_clk = 24000000;
-					break;
-				case 1:
-					uart_clk = 192000000;
-					break;
-				case 2:
-					uart_clk = 24000000/13;
-					break;
-				case 3:
-					uart_clk = 192000000/13;
-					break;
-			}
-			}
+		if (readl(&scu->clk_sel2) & BIT(14))
+			uart5_clk_sel |= 0x1;
+
+		switch (uart5_clk_sel) {
+		case 0:
+			uart_clk = 24000000;
 			break;
-		case 7:
-		case 8:
-		case 9:
-		case 10:
-		case 11:
-		case 12:
-		case 13:			
-			if(uart_sel5 & BIT(uart_idx - 1))
-				uart_clk = ast2600_get_uart_huxclk_rate(scu);
-			else
-				uart_clk = ast2600_get_uart_uxclk_rate(scu);
+		case 1:
+			uart_clk = 192000000;
 			break;
+		case 2:
+			uart_clk = 24000000 / 13;
+			break;
+		case 3:
+			uart_clk = 192000000 / 13;
+			break;
+		}
+	} break;
+	case 7:
+	case 8:
+	case 9:
+	case 10:
+	case 11:
+	case 12:
+	case 13:
+		if (uart_sel5 & BIT(uart_idx - 1))
+			uart_clk = ast2600_get_uart_huxclk_rate(scu);
+		else
+			uart_clk = ast2600_get_uart_uxclk_rate(scu);
+		break;
 	}
 
 	return uart_clk;
@@ -429,7 +530,7 @@ static ulong ast2600_clk_get_rate(struct clk *clk)
 		break;
 	case ASPEED_CLK_APB2:
 		rate = ast2600_get_pclk2(priv->scu);
-		break;	
+		break;
 	case ASPEED_CLK_APLL:
 		rate = ast2600_get_apll_rate(priv->scu);
 		break;
@@ -448,6 +549,9 @@ static ulong ast2600_clk_get_rate(struct clk *clk)
 	case ASPEED_CLK_GATE_UART5CLK:
 		rate = ast2600_get_uart_clk_rate(priv->scu, 5);
 		break;
+	case ASPEED_CLK_BCLK:
+		rate = ast2600_get_bclk_rate(priv->scu);
+		break;
 	case ASPEED_CLK_SDIO:
 		rate = ast2600_get_sdio_clk_rate(priv->scu);
 		break;
@@ -461,9 +565,8 @@ static ulong ast2600_clk_get_rate(struct clk *clk)
 		rate = ast2600_get_uart_huxclk_rate(priv->scu);
 		break;
 	default:
-		pr_debug("can't get clk rate \n");
+		pr_debug("can't get clk rate\n");
 		return -ENOENT;
-		break;
 	}
 
 	return rate;
@@ -473,9 +576,9 @@ static ulong ast2600_clk_get_rate(struct clk *clk)
  * @brief	lookup PLL divider config by input/output rate
  * @param[in]	*pll - PLL descriptor
  * @return	true - if PLL divider config is found, false - else
- * 
- * The function caller shall fill "pll->in" and "pll->out", then this function
- * will search the lookup table to find a valid PLL divider configuration.
+ * The function caller shall fill "pll->in" and "pll->out",
+ * then this function will search the lookup table
+ * to find a valid PLL divider configuration.
  */
 static bool ast2600_search_clock_config(struct ast2600_pll_desc *pll)
 {
@@ -484,7 +587,8 @@ static bool ast2600_search_clock_config(struct ast2600_pll_desc *pll)
 
 	for (i = 0; i < ARRAY_SIZE(ast2600_pll_lookup); i++) {
 		const struct ast2600_pll_desc *def_cfg = &ast2600_pll_lookup[i];
-		if ((def_cfg->in == pll->in) && (def_cfg->out == pll->out)) {
+
+		if (def_cfg->in == pll->in && def_cfg->out == pll->out) {
 			is_found = true;
 			pll->cfg.reg.w = def_cfg->cfg.reg.w;
 			pll->cfg.ext_reg = def_cfg->cfg.ext_reg;
@@ -493,6 +597,7 @@ static bool ast2600_search_clock_config(struct ast2600_pll_desc *pll)
 	}
 	return is_found;
 }
+
 static u32 ast2600_configure_pll(struct ast2600_scu *scu,
 				 struct ast2600_pll_cfg *p_cfg, int pll_idx)
 {
@@ -529,7 +634,7 @@ static u32 ast2600_configure_pll(struct ast2600_scu *scu,
 	reg &= ~GENMASK(25, 0);
 	reg |= p_cfg->reg.w;
 	writel(reg, addr);
-	
+
 	/* write extend parameter */
 	writel(p_cfg->ext_reg, addr_ext);
 	udelay(100);
@@ -538,23 +643,23 @@ static u32 ast2600_configure_pll(struct ast2600_scu *scu,
 	reg &= ~GENMASK(25, 0);
 	reg |= p_cfg->reg.w;
 	writel(reg, addr);
-
-	/* polling PLL lock status */
-	while(0 == (readl(addr_ext) & BIT(31)));
+	while (!(readl(addr_ext) & BIT(31)))
+		;
 
 	return 0;
 }
+
 static u32 ast2600_configure_ddr(struct ast2600_scu *scu, ulong rate)
 {
 	struct ast2600_pll_desc mpll;
 
 	mpll.in = AST2600_CLK_IN;
 	mpll.out = rate;
-	if (false == ast2600_search_clock_config(&mpll)) {
+	if (ast2600_search_clock_config(&mpll) == false) {
 		printf("error!! unable to find valid DDR clock setting\n");
 		return 0;
 	}
-	ast2600_configure_pll(scu, &(mpll.cfg), ASPEED_CLK_MPLL);
+	ast2600_configure_pll(scu, &mpll.cfg, ASPEED_CLK_MPLL);
 
 	return ast2600_get_pll_rate(scu, ASPEED_CLK_MPLL);
 }
@@ -562,8 +667,8 @@ static u32 ast2600_configure_ddr(struct ast2600_scu *scu, ulong rate)
 static ulong ast2600_clk_set_rate(struct clk *clk, ulong rate)
 {
 	struct ast2600_clk_priv *priv = dev_get_priv(clk->dev);
-
 	ulong new_rate;
+
 	switch (clk->id) {
 	case ASPEED_CLK_MPLL:
 		new_rate = ast2600_configure_ddr(priv->scu, rate);
@@ -575,20 +680,46 @@ static ulong ast2600_clk_set_rate(struct clk *clk, ulong rate)
 	return new_rate;
 }
 
-#define SCU_CLKSTOP_MAC1		(20)
-#define SCU_CLKSTOP_MAC2		(21)
-#define SCU_CLKSTOP_MAC3		(20)
-#define SCU_CLKSTOP_MAC4		(21)
+#define SCU_CLKSTOP_MAC1	(20)
+#define SCU_CLKSTOP_MAC2	(21)
+#define SCU_CLKSTOP_MAC3	(20)
+#define SCU_CLKSTOP_MAC4	(21)
 
-static u32 ast2600_configure_mac12_clk(struct ast2600_scu *scu)
+static u32 ast2600_configure_mac12_clk(struct ast2600_scu *scu, struct udevice *dev)
 {
-	/* scu340[25:0]: 1G default delay */
-	clrsetbits_le32(&scu->mac12_clk_delay, GENMASK(25, 0),
-			MAC_DEF_DELAY_1G);
+	union mac_delay_1g reg_1g;
+	union mac_delay_100_10 reg_100, reg_10;
+	struct mac_delay_config mac1_cfg, mac2_cfg;
+	int ret;
 
-	/* set 100M/10M default delay */
-	writel(MAC_DEF_DELAY_100M, &scu->mac12_clk_delay_100M);
-	writel(MAC_DEF_DELAY_10M, &scu->mac12_clk_delay_10M);
+	reg_1g.w = (readl(&scu->mac12_clk_delay) & ~GENMASK(25, 0)) |
+		   MAC_DEF_DELAY_1G;
+	reg_100.w = MAC_DEF_DELAY_100M;
+	reg_10.w = MAC_DEF_DELAY_10M;
+
+	ret = dev_read_u32_array(dev, "mac0-clk-delay", (u32 *)&mac1_cfg, sizeof(mac1_cfg) / sizeof(u32));
+	if (!ret) {
+		reg_1g.b.tx_delay_1 = mac1_cfg.tx_delay_1000;
+		reg_1g.b.rx_delay_1 = mac1_cfg.rx_delay_1000;
+		reg_100.b.tx_delay_1 = mac1_cfg.tx_delay_100;
+		reg_100.b.rx_delay_1 = mac1_cfg.rx_delay_100;
+		reg_10.b.tx_delay_1 = mac1_cfg.tx_delay_10;
+		reg_10.b.rx_delay_1 = mac1_cfg.rx_delay_10;
+	}
+
+	ret = dev_read_u32_array(dev, "mac1-clk-delay", (u32 *)&mac2_cfg, sizeof(mac2_cfg) / sizeof(u32));
+	if (!ret) {
+		reg_1g.b.tx_delay_2 = mac2_cfg.tx_delay_1000;
+		reg_1g.b.rx_delay_2 = mac2_cfg.rx_delay_1000;
+		reg_100.b.tx_delay_2 = mac2_cfg.tx_delay_100;
+		reg_100.b.rx_delay_2 = mac2_cfg.rx_delay_100;
+		reg_10.b.tx_delay_2 = mac2_cfg.tx_delay_10;
+		reg_10.b.rx_delay_2 = mac2_cfg.rx_delay_10;
+	}
+
+	writel(reg_1g.w, &scu->mac12_clk_delay);
+	writel(reg_100.w, &scu->mac12_clk_delay_100M);
+	writel(reg_10.w, &scu->mac12_clk_delay_10M);
 
 	/* MAC AHB = HPLL / 6 */
 	clrsetbits_le32(&scu->clk_sel1, GENMASK(18, 16), (0x2 << 16));
@@ -596,17 +727,46 @@ static u32 ast2600_configure_mac12_clk(struct ast2600_scu *scu)
 	return 0;
 }
 
-static u32 ast2600_configure_mac34_clk(struct ast2600_scu *scu)
+static u32 ast2600_configure_mac34_clk(struct ast2600_scu *scu, struct udevice *dev)
 {
+	union mac_delay_1g reg_1g;
+	union mac_delay_100_10 reg_100, reg_10;
+	struct mac_delay_config mac3_cfg, mac4_cfg;
+	int ret;
 
 	/*
 	 * scu350[31]   RGMII 125M source: 0 = from IO pin
 	 * scu350[25:0] MAC 1G delay
 	 */
-	clrsetbits_le32(&scu->mac34_clk_delay, (BIT(31) | GENMASK(25, 0)),
-			MAC34_DEF_DELAY_1G);
-	writel(MAC34_DEF_DELAY_100M, &scu->mac34_clk_delay_100M);
-	writel(MAC34_DEF_DELAY_10M, &scu->mac34_clk_delay_10M);
+	reg_1g.w = (readl(&scu->mac34_clk_delay) & ~GENMASK(25, 0)) |
+		   MAC34_DEF_DELAY_1G;
+	reg_1g.b.rgmii_125m_o_sel = 0;
+	reg_100.w = MAC34_DEF_DELAY_100M;
+	reg_10.w = MAC34_DEF_DELAY_10M;
+
+	ret = dev_read_u32_array(dev, "mac2-clk-delay", (u32 *)&mac3_cfg, sizeof(mac3_cfg) / sizeof(u32));
+	if (!ret) {
+		reg_1g.b.tx_delay_1 = mac3_cfg.tx_delay_1000;
+		reg_1g.b.rx_delay_1 = mac3_cfg.rx_delay_1000;
+		reg_100.b.tx_delay_1 = mac3_cfg.tx_delay_100;
+		reg_100.b.rx_delay_1 = mac3_cfg.rx_delay_100;
+		reg_10.b.tx_delay_1 = mac3_cfg.tx_delay_10;
+		reg_10.b.rx_delay_1 = mac3_cfg.rx_delay_10;
+	}
+
+	ret = dev_read_u32_array(dev, "mac3-clk-delay", (u32 *)&mac4_cfg, sizeof(mac4_cfg) / sizeof(u32));
+	if (!ret) {
+		reg_1g.b.tx_delay_2 = mac4_cfg.tx_delay_1000;
+		reg_1g.b.rx_delay_2 = mac4_cfg.rx_delay_1000;
+		reg_100.b.tx_delay_2 = mac4_cfg.tx_delay_100;
+		reg_100.b.rx_delay_2 = mac4_cfg.rx_delay_100;
+		reg_10.b.tx_delay_2 = mac4_cfg.tx_delay_10;
+		reg_10.b.rx_delay_2 = mac4_cfg.rx_delay_10;
+	}
+
+	writel(reg_1g.w, &scu->mac34_clk_delay);
+	writel(reg_100.w, &scu->mac34_clk_delay_100M);
+	writel(reg_10.w, &scu->mac34_clk_delay_10M);
 
 	/*
 	 * clock source seletion and divider
@@ -622,63 +782,60 @@ static u32 ast2600_configure_mac34_clk(struct ast2600_scu *scu)
 	 * scu458[1:0] : MAC3 driving strength
 	 */
 	clrsetbits_le32(&scu->pinmux_ctrl16, GENMASK(3, 0),
-			(0x3 << 2) | (0x3 << 0));	
+			(0x3 << 2) | (0x3 << 0));
 
 	return 0;
 }
 
 /**
  * ast2600 RGMII clock source tree
- * 
- *    125M from external PAD -------->|\
- *    HPLL -->|\                      | |---->RGMII 125M for MAC#1 & MAC#2
- *            | |---->| divider |---->|/                             +
- *    EPLL -->|/                                                     |
- *                                                                   |
- *    +---------<-----------|RGMIICK PAD output enable|<-------------+
- *    |
- *    +--------------------------->|\
- *                                 | |----> RGMII 125M for MAC#3 & MAC#4
- *    HCLK 200M ---->|divider|---->|/
- * 
+ * 125M from external PAD -------->|\
+ * HPLL -->|\                      | |---->RGMII 125M for MAC#1 & MAC#2
+ *         | |---->| divider |---->|/                             +
+ * EPLL -->|/                                                     |
+ *                                                                |
+ * +---------<-----------|RGMIICK PAD output enable|<-------------+
+ * |
+ * +--------------------------->|\
+ *                              | |----> RGMII 125M for MAC#3 & MAC#4
+ * HCLK 200M ---->|divider|---->|/
  * To simplify the control flow:
- * 	1. RGMII 1/2 always use EPLL as the internal clock source
- * 	2. RGMII 3/4 always use RGMIICK pad as the RGMII 125M source
- * 
- *    125M from external PAD -------->|\
- *                                    | |---->RGMII 125M for MAC#1 & MAC#2
- *            EPLL---->| divider |--->|/                             + 
- *                                                                   |
- *    +<--------------------|RGMIICK PAD output enable|<-------------+
- *    |
- *    +--------------------------->RGMII 125M for MAC#3 & MAC#4
-*/
-#define RGMIICK_SRC_PAD			0
-#define RGMIICK_SRC_EPLL		1	/* recommended */
-#define RGMIICK_SRC_HPLL		2
+ * 1. RGMII 1/2 always use EPLL as the internal clock source
+ * 2. RGMII 3/4 always use RGMIICK pad as the RGMII 125M source
+ * 125M from external PAD -------->|\
+ *                                 | |---->RGMII 125M for MAC#1 & MAC#2
+ *         EPLL---->| divider |--->|/                             +
+ *                                                                |
+ * +<--------------------|RGMIICK PAD output enable|<-------------+
+ * |
+ * +--------------------------->RGMII 125M for MAC#3 & MAC#4
+ */
+#define RGMIICK_SRC_PAD		0
+#define RGMIICK_SRC_EPLL	1 /* recommended */
+#define RGMIICK_SRC_HPLL	2
 
-#define RGMIICK_DIV2			1
-#define RGMIICK_DIV3			2
-#define RGMIICK_DIV4			3
-#define RGMIICK_DIV5			4
-#define RGMIICK_DIV6			5
-#define RGMIICK_DIV7			6
-#define RGMIICK_DIV8			7	/* recommended */
+#define RGMIICK_DIV2	1
+#define RGMIICK_DIV3	2
+#define RGMIICK_DIV4	3
+#define RGMIICK_DIV5	4
+#define RGMIICK_DIV6	5
+#define RGMIICK_DIV7	6
+#define RGMIICK_DIV8	7 /* recommended */
 
-#define RMIICK_DIV4			0
-#define RMIICK_DIV8			1
-#define RMIICK_DIV12			2
-#define RMIICK_DIV16			3
-#define RMIICK_DIV20			4	/* recommended */
-#define RMIICK_DIV24			5
-#define RMIICK_DIV28			6
-#define RMIICK_DIV32			7
+#define RMIICK_DIV4		0
+#define RMIICK_DIV8		1
+#define RMIICK_DIV12	2
+#define RMIICK_DIV16	3
+#define RMIICK_DIV20	4 /* recommended */
+#define RMIICK_DIV24	5
+#define RMIICK_DIV28	6
+#define RMIICK_DIV32	7
 
 struct ast2600_mac_clk_div {
-	u32 src;	/* 0=external PAD, 1=internal PLL */
-	u32 fin;	/* divider input speed */
-	u32 n;		/* 0=div2, 1=div2, 2=div3, 3=div4,...,7=div8 */
-	u32 fout;	/* fout = fin / n */
+	u32 src; /* 0=external PAD, 1=internal PLL */
+	u32 fin; /* divider input speed */
+	u32 n; /* 0=div2, 1=div2, 2=div3, 3=div4,...,7=div8 */
+	u32 fout; /* fout = fin / n */
 };
 
 struct ast2600_mac_clk_div rgmii_clk_defconfig = {
@@ -694,27 +851,27 @@ struct ast2600_mac_clk_div rmii_clk_defconfig = {
 	.n = RMIICK_DIV20,
 	.fout = 50000000,
 };
+
 static void ast2600_init_mac_pll(struct ast2600_scu *p_scu,
-				 struct ast2600_mac_clk_div *p_cfg) 
+				 struct ast2600_mac_clk_div *p_cfg)
 {
 	struct ast2600_pll_desc pll;
 
 	pll.in = AST2600_CLK_IN;
 	pll.out = p_cfg->fin;
-	if (false == ast2600_search_clock_config(&pll)) {
-		printf("error!! unable to find valid ETHNET MAC clock "
-		       "setting\n");
+	if (ast2600_search_clock_config(&pll) == false) {
+		pr_err("unable to find valid ETHNET MAC clock setting\n");
 		debug("%s: pll cfg = 0x%08x 0x%08x\n", __func__, pll.cfg.reg.w,
 		      pll.cfg.ext_reg);
 		debug("%s: pll cfg = %02x %02x %02x\n", __func__,
 		      pll.cfg.reg.b.m, pll.cfg.reg.b.n, pll.cfg.reg.b.p);
 		return;
 	}
-	ast2600_configure_pll(p_scu, &(pll.cfg), p_cfg->src);
+	ast2600_configure_pll(p_scu, &pll.cfg, p_cfg->src);
 }
 
 static void ast2600_init_rgmii_clk(struct ast2600_scu *p_scu,
-				   struct ast2600_mac_clk_div *p_cfg) 
+				   struct ast2600_mac_clk_div *p_cfg)
 {
 	u32 reg_304 = readl(&p_scu->clk_sel2);
 	u32 reg_340 = readl(&p_scu->mac12_clk_delay);
@@ -723,40 +880,28 @@ static void ast2600_init_rgmii_clk(struct ast2600_scu *p_scu,
 	reg_340 &= ~GENMASK(31, 29);
 	/* scu340[28]: RGMIICK PAD output enable (to MAC 3/4) */
 	reg_340 |= BIT(28);
-	if ((p_cfg->src == ASPEED_CLK_EPLL) ||
-	    (p_cfg->src == ASPEED_CLK_HPLL)) {
+	if (p_cfg->src == ASPEED_CLK_EPLL || p_cfg->src == ASPEED_CLK_HPLL) {
 		/*
 		 * re-init PLL if the current PLL output frequency doesn't match
 		 * the divider setting
 		 */
-		if (p_cfg->fin != ast2600_get_pll_rate(p_scu, p_cfg->src)) {
+		if (p_cfg->fin != ast2600_get_pll_rate(p_scu, p_cfg->src))
 			ast2600_init_mac_pll(p_scu, p_cfg);
-		}
 		/* scu340[31]: select RGMII 125M from internal source */
 		reg_340 |= BIT(31);
 	}
 
 	reg_304 &= ~GENMASK(23, 20);
-	
+
 	/* set clock divider */
 	reg_304 |= (p_cfg->n & 0x7) << 20;
-	
+
 	/* select internal clock source */
-	if (ASPEED_CLK_HPLL == p_cfg->src) {
+	if (p_cfg->src == ASPEED_CLK_HPLL)
 		reg_304 |= BIT(23);
-	}
 
 	/* RGMII 3/4 clock source select */
 	reg_350 &= ~BIT(31);
-#if 0
-	if (RGMII_3_4_CLK_SRC_HCLK == p_cfg->rgmii_3_4_clk_src) {
-		reg_350 |= BIT(31);
-	}
-
-	/* set clock divider */
-	reg_310 &= ~GENMASK(22, 20);
-	reg_310 |= (p_cfg->hclk_clk_div & 0x7) << 20;
-#endif
 
 	writel(reg_304, &p_scu->clk_sel2);
 	writel(reg_340, &p_scu->mac12_clk_delay);
@@ -765,28 +910,24 @@ static void ast2600_init_rgmii_clk(struct ast2600_scu *p_scu,
 
 /**
  * ast2600 RMII/NCSI clock source tree
- * 
- *    HPLL -->|\                      
- *            | |---->| divider |----> RMII 50M for MAC#1 & MAC#2
- *    EPLL -->|/ 
- * 
- *    HCLK(SCLICLK)---->| divider |----> RMII 50M for MAC#3 & MAC#4
-*/
+ * HPLL -->|\
+ *         | |---->| divider |----> RMII 50M for MAC#1 & MAC#2
+ * EPLL -->|/
+ * HCLK(SCLICLK)---->| divider |----> RMII 50M for MAC#3 & MAC#4
+ */
 static void ast2600_init_rmii_clk(struct ast2600_scu *p_scu,
-				  struct ast2600_mac_clk_div *p_cfg) 
+				  struct ast2600_mac_clk_div *p_cfg)
 {
 	u32 reg_304;
 	u32 reg_310;
 
-	if ((p_cfg->src == ASPEED_CLK_EPLL) ||
-	    (p_cfg->src == ASPEED_CLK_HPLL)) {
+	if (p_cfg->src == ASPEED_CLK_EPLL || p_cfg->src == ASPEED_CLK_HPLL) {
 		/*
 		 * re-init PLL if the current PLL output frequency doesn't match
 		 * the divider setting
 		 */
-		if (p_cfg->fin != ast2600_get_pll_rate(p_scu, p_cfg->src)) {
+		if (p_cfg->fin != ast2600_get_pll_rate(p_scu, p_cfg->src))
 			ast2600_init_mac_pll(p_scu, p_cfg);
-		}
 	}
 
 	reg_304 = readl(&p_scu->clk_sel2);
@@ -798,9 +939,8 @@ static void ast2600_init_rmii_clk(struct ast2600_scu *p_scu,
 	reg_304 |= (p_cfg->n & 0x7) << 16;
 
 	/* RMII clock source selection */
-	if (ASPEED_CLK_HPLL == p_cfg->src) {
+	if (p_cfg->src == ASPEED_CLK_HPLL)
 		reg_304 |= BIT(19);
-	}	
 
 	/* set RMII 3/4 clock divider */
 	reg_310 &= ~GENMASK(18, 16);
@@ -824,7 +964,6 @@ static u32 ast2600_configure_mac(struct ast2600_scu *scu, int index)
 		writel(clkstop_bit, &scu->clk_stop_clr_ctrl1);
 		mdelay(10);
 		writel(reset_bit, &scu->sysreset_clr_ctrl1);
-
 		break;
 	case 2:
 		reset_bit = BIT(ASPEED_RESET_MAC2);
@@ -860,6 +999,21 @@ static u32 ast2600_configure_mac(struct ast2600_scu *scu, int index)
 	return 0;
 }
 
+#define SCU_CLK_ECC_RSA_FROM_HPLL_CLK	BIT(19)
+#define SCU_CLK_ECC_RSA_CLK_MASK		GENMASK(27, 26)
+#define SCU_CLK_ECC_RSA_CLK_DIV(x)		((x) << 26)
+static void ast2600_configure_rsa_ecc_clk(struct ast2600_scu *scu)
+{
+	u32 clk_sel = readl(&scu->clk_sel1);
+
+	/* Configure RSA clock = HPLL/3 */
+	clk_sel |= SCU_CLK_ECC_RSA_FROM_HPLL_CLK;
+	clk_sel &= ~SCU_CLK_ECC_RSA_CLK_MASK;
+	clk_sel |= SCU_CLK_ECC_RSA_CLK_DIV(2);
+
+	writel(clk_sel, &scu->clk_sel1);
+}
+
 #define SCU_CLKSTOP_SDIO 4
 static ulong ast2600_enable_sdclk(struct ast2600_scu *scu)
 {
@@ -872,7 +1026,7 @@ static ulong ast2600_enable_sdclk(struct ast2600_scu *scu)
 	writel(reset_bit, &scu->sysreset_ctrl2);
 
 	udelay(100);
-	//enable clk 
+	//enable clk
 	writel(clkstop_bit, &scu->clk_stop_clr_ctrl2);
 	mdelay(10);
 	writel(reset_bit, &scu->sysreset_clr_ctrl2);
@@ -880,25 +1034,37 @@ static ulong ast2600_enable_sdclk(struct ast2600_scu *scu)
 	return 0;
 }
 
-#define SCU_CLKSTOP_EXTSD 31
+#define SCU_CLKSTOP_EXTSD			31
 #define SCU_CLK_SD_MASK				(0x7 << 28)
-#define SCU_CLK_SD_DIV(x)			(x << 28)
+#define SCU_CLK_SD_DIV(x)			((x) << 28)
+#define SCU_CLK_SD_FROM_APLL_CLK	BIT(8)
 
 static ulong ast2600_enable_extsdclk(struct ast2600_scu *scu)
 {
 	u32 clk_sel = readl(&scu->clk_sel4);
 	u32 enableclk_bit;
+	u32 rate = 0;
+	u32 div = 0;
+	int i = 0;
 
 	enableclk_bit = BIT(SCU_CLKSTOP_EXTSD);
 
-	//default use apll for clock source 800/4 = 200 : controller max is 200mhz
+	/* ast2600 sd controller max clk is 200Mhz :
+	 * use apll for clock source 800/4 = 200 : controller max is 200mhz
+	 */
+	rate = ast2600_get_apll_rate(scu);
+	for (i = 0; i < 8; i++) {
+		div = (i + 1) * 2;
+		if ((rate / div) <= 200000000)
+			break;
+	}
 	clk_sel &= ~SCU_CLK_SD_MASK;
-	clk_sel |= SCU_CLK_SD_DIV(1) | BIT(8);
+	clk_sel |= SCU_CLK_SD_DIV(i) | SCU_CLK_SD_FROM_APLL_CLK;
 	writel(clk_sel, &scu->clk_sel4);
-	
-	//enable clk 
+
+	//enable clk
 	setbits_le32(&scu->clk_sel4, enableclk_bit);
-	
+
 	return 0;
 }
 
@@ -913,7 +1079,7 @@ static ulong ast2600_enable_emmcclk(struct ast2600_scu *scu)
 
 	writel(reset_bit, &scu->sysreset_ctrl1);
 	udelay(100);
-	//enable clk 
+	//enable clk
 	writel(clkstop_bit, &scu->clk_stop_clr_ctrl1);
 	mdelay(10);
 	writel(reset_bit, &scu->sysreset_clr_ctrl1);
@@ -921,41 +1087,47 @@ static ulong ast2600_enable_emmcclk(struct ast2600_scu *scu)
 	return 0;
 }
 
-#define SCU_CLKSTOP_EXTEMMC 15
+#define SCU_CLKSTOP_EXTEMMC			15
 #define SCU_CLK_EMMC_MASK			(0x7 << 12)
-#define SCU_CLK_EMMC_DIV(x)			(x << 12)
+#define SCU_CLK_EMMC_DIV(x)			((x) << 12)
+#define SCU_CLK_EMMC_FROM_MPLL_CLK	BIT(11)
 
 static ulong ast2600_enable_extemmcclk(struct ast2600_scu *scu)
 {
-	u32 revision_id = readl(&scu->chip_id0);
+	u32 revision_id = readl(&scu->chip_id1);
 	u32 clk_sel = readl(&scu->clk_sel1);
-	u32 enableclk_bit;
+	u32 enableclk_bit = BIT(SCU_CLKSTOP_EXTEMMC);
 	u32 rate = 0;
 	u32 div = 0;
 	int i = 0;
 
-	enableclk_bit = BIT(SCU_CLKSTOP_EXTEMMC);
-
-	if(((revision_id & GENMASK(23, 16)) >> 16) == 0x1) {
-		//use mpll to be clk source
+	/*
+	 * ast2600 eMMC controller max clk is 200Mhz
+	 * HPll->1/2->|\
+	 *				|->SCU300[11]->SCU300[14:12][1/N] +
+	 * MPLL------>|/								  |
+	 * +----------------------------------------------+
+	 * |
+	 * +---------> EMMC12C[15:8][1/N]-> eMMC clk
+	 */
+	if (((revision_id & CHIP_REVISION_ID) >> 16)) {
+		//AST2600A1 : use mpll to be clk source
 		rate = ast2600_get_pll_rate(scu, ASPEED_CLK_MPLL);
-		for(i = 0; i < 8; i++) {
+		for (i = 0; i < 8; i++) {
 			div = (i + 1) * 2;
 			if ((rate / div) <= 200000000)
 				break;
 		}
-		
+
 		clk_sel &= ~SCU_CLK_EMMC_MASK;
-		clk_sel |= SCU_CLK_EMMC_DIV(i) | BIT(11);
-		writel(clk_sel, &scu->clk_sel1);	
+		clk_sel |= SCU_CLK_EMMC_DIV(i) | SCU_CLK_EMMC_FROM_MPLL_CLK;
+		writel(clk_sel, &scu->clk_sel1);
 
 	} else {
-	 	//use hpll to be clk source
-
-		//ast2600 eMMC controller max clk is 200Mhz
+		//AST2600A0 : use hpll to be clk source
 		rate = ast2600_get_pll_rate(scu, ASPEED_CLK_HPLL);
 
-		for(i = 0; i < 8; i++) {
+		for (i = 0; i < 8; i++) {
 			div = (i + 1) * 4;
 			if ((rate / div) <= 200000000)
 				break;
@@ -965,8 +1137,6 @@ static ulong ast2600_enable_extemmcclk(struct ast2600_scu *scu)
 		clk_sel |= SCU_CLK_EMMC_DIV(i);
 		writel(clk_sel, &scu->clk_sel1);
 	}
-
-	//enable clk 
 	setbits_le32(&scu->clk_sel1, enableclk_bit);
 
 	return 0;
@@ -983,7 +1153,8 @@ static ulong ast2600_enable_fsiclk(struct ast2600_scu *scu)
 	clkstop_bit = BIT(SCU_CLKSTOP_FSICLK);
 
 	/* The FSI clock is shared between masters. If it's already on
-	 * don't touch it, as that will reset the existing master. */
+	 * don't touch it, as that will reset the existing master.
+	 */
 	if (!(readl(&scu->clk_stop_ctrl2) & clkstop_bit)) {
 		debug("%s: already running, not touching it\n", __func__);
 		return 0;
@@ -991,7 +1162,6 @@ static ulong ast2600_enable_fsiclk(struct ast2600_scu *scu)
 
 	writel(reset_bit, &scu->sysreset_ctrl2);
 	udelay(100);
-	//enable clk
 	writel(clkstop_bit, &scu->clk_stop_clr_ctrl2);
 	mdelay(10);
 	writel(reset_bit, &scu->sysreset_clr_ctrl2);
@@ -1008,8 +1178,7 @@ static ulong ast2600_enable_usbahclk(struct ast2600_scu *scu)
 	clkstop_bit = BIT(14);
 
 	writel(reset_bit, &scu->sysreset_ctrl1);
-		udelay(100);
-	//enable phy clk
+	udelay(100);
 	writel(clkstop_bit, &scu->clk_stop_ctrl1);
 	mdelay(20);
 	writel(reset_bit, &scu->sysreset_clr_ctrl1);
@@ -1026,8 +1195,7 @@ static ulong ast2600_enable_usbbhclk(struct ast2600_scu *scu)
 	clkstop_bit = BIT(7);
 
 	writel(reset_bit, &scu->sysreset_ctrl1);
-			udelay(100);
-	//enable phy clk
+	udelay(100);
 	writel(clkstop_bit, &scu->clk_stop_clr_ctrl1);
 	mdelay(20);
 
@@ -1041,43 +1209,42 @@ static int ast2600_clk_enable(struct clk *clk)
 	struct ast2600_clk_priv *priv = dev_get_priv(clk->dev);
 
 	switch (clk->id) {
-		case ASPEED_CLK_GATE_MAC1CLK:
-			ast2600_configure_mac(priv->scu, 1);
-			break;
-		case ASPEED_CLK_GATE_MAC2CLK:
-			ast2600_configure_mac(priv->scu, 2);
-			break;
-		case ASPEED_CLK_GATE_MAC3CLK:
-			ast2600_configure_mac(priv->scu, 3);
-			break;
-		case ASPEED_CLK_GATE_MAC4CLK:
-			ast2600_configure_mac(priv->scu, 4);
-			break;
-		case ASPEED_CLK_GATE_SDCLK:
-			ast2600_enable_sdclk(priv->scu);
-			break;
-		case ASPEED_CLK_GATE_SDEXTCLK:
-			ast2600_enable_extsdclk(priv->scu);
-			break;
-		case ASPEED_CLK_GATE_EMMCCLK:
-			ast2600_enable_emmcclk(priv->scu);
-			break;
-		case ASPEED_CLK_GATE_EMMCEXTCLK:
-			ast2600_enable_extemmcclk(priv->scu);
-			break;
-		case ASPEED_CLK_GATE_FSICLK:
-			ast2600_enable_fsiclk(priv->scu);
-			break;
-		case ASPEED_CLK_GATE_USBPORT1CLK:
-			ast2600_enable_usbahclk(priv->scu);
-			break;
-		case ASPEED_CLK_GATE_USBPORT2CLK:
-			ast2600_enable_usbbhclk(priv->scu);
-			break;
-		default:
-			pr_debug("can't enable clk \n");
-			return -ENOENT;
-			break;
+	case ASPEED_CLK_GATE_MAC1CLK:
+		ast2600_configure_mac(priv->scu, 1);
+		break;
+	case ASPEED_CLK_GATE_MAC2CLK:
+		ast2600_configure_mac(priv->scu, 2);
+		break;
+	case ASPEED_CLK_GATE_MAC3CLK:
+		ast2600_configure_mac(priv->scu, 3);
+		break;
+	case ASPEED_CLK_GATE_MAC4CLK:
+		ast2600_configure_mac(priv->scu, 4);
+		break;
+	case ASPEED_CLK_GATE_SDCLK:
+		ast2600_enable_sdclk(priv->scu);
+		break;
+	case ASPEED_CLK_GATE_SDEXTCLK:
+		ast2600_enable_extsdclk(priv->scu);
+		break;
+	case ASPEED_CLK_GATE_EMMCCLK:
+		ast2600_enable_emmcclk(priv->scu);
+		break;
+	case ASPEED_CLK_GATE_EMMCEXTCLK:
+		ast2600_enable_extemmcclk(priv->scu);
+		break;
+	case ASPEED_CLK_GATE_FSICLK:
+		ast2600_enable_fsiclk(priv->scu);
+		break;
+	case ASPEED_CLK_GATE_USBPORT1CLK:
+		ast2600_enable_usbahclk(priv->scu);
+		break;
+	case ASPEED_CLK_GATE_USBPORT2CLK:
+		ast2600_enable_usbbhclk(priv->scu);
+		break;
+	default:
+		pr_err("can't enable clk\n");
+		return -ENOENT;
 	}
 
 	return 0;
@@ -1098,21 +1265,22 @@ static int ast2600_clk_probe(struct udevice *dev)
 	if (IS_ERR(priv->scu))
 		return PTR_ERR(priv->scu);
 
-	uart_clk_source = dev_read_u32_default(dev, "uart-clk-source",
-					    0x0);
+	uart_clk_source = dev_read_u32_default(dev, "uart-clk-source", 0x0);
 
-	if(uart_clk_source) {
-		if(uart_clk_source & GENMASK(5, 0))
-			setbits_le32(&priv->scu->clk_sel4, uart_clk_source & GENMASK(5, 0));
-		if(uart_clk_source & GENMASK(12, 6))
-			setbits_le32(&priv->scu->clk_sel5, uart_clk_source & GENMASK(12, 6));
+	if (uart_clk_source) {
+		if (uart_clk_source & GENMASK(5, 0))
+			setbits_le32(&priv->scu->clk_sel4,
+				     uart_clk_source & GENMASK(5, 0));
+		if (uart_clk_source & GENMASK(12, 6))
+			setbits_le32(&priv->scu->clk_sel5,
+				     uart_clk_source & GENMASK(12, 6));
 	}
 
-	
-	ast2600_init_rgmii_clk(priv->scu, &rgmii_clk_defconfig);	
+	ast2600_init_rgmii_clk(priv->scu, &rgmii_clk_defconfig);
 	ast2600_init_rmii_clk(priv->scu, &rmii_clk_defconfig);
-	ast2600_configure_mac12_clk(priv->scu);
-	ast2600_configure_mac34_clk(priv->scu);
+	ast2600_configure_mac12_clk(priv->scu, dev);
+	ast2600_configure_mac34_clk(priv->scu, dev);
+	ast2600_configure_rsa_ecc_clk(priv->scu);
 
 	return 0;
 }
@@ -1129,22 +1297,17 @@ static int ast2600_clk_bind(struct udevice *dev)
 	return 0;
 }
 
-#if CONFIG_IS_ENABLED(CMD_CLK)
 struct aspeed_clks {
 	ulong id;
 	const char *name;
 };
 
 static struct aspeed_clks aspeed_clk_names[] = {
-	{ ASPEED_CLK_HPLL, "hpll" },
-	{ ASPEED_CLK_MPLL, "mpll" },
-	{ ASPEED_CLK_APLL, "apll" },
-	{ ASPEED_CLK_EPLL, "epll" },
-	{ ASPEED_CLK_DPLL, "dpll" },
-	{ ASPEED_CLK_AHB, "hclk" },
-	{ ASPEED_CLK_APB1, "pclk1" },
-	{ ASPEED_CLK_APB2, "pclk2" },
-	{ ASPEED_CLK_UARTX, "uxclk" },
+	{ ASPEED_CLK_HPLL, "hpll" },     { ASPEED_CLK_MPLL, "mpll" },
+	{ ASPEED_CLK_APLL, "apll" },     { ASPEED_CLK_EPLL, "epll" },
+	{ ASPEED_CLK_DPLL, "dpll" },     { ASPEED_CLK_AHB, "hclk" },
+	{ ASPEED_CLK_APB1, "pclk1" },    { ASPEED_CLK_APB2, "pclk2" },
+	{ ASPEED_CLK_BCLK, "bclk" },     { ASPEED_CLK_UARTX, "uxclk" },
 	{ ASPEED_CLK_HUARTX, "huxclk" },
 };
 
@@ -1155,8 +1318,8 @@ int soc_clk_dump(void)
 	unsigned long rate;
 	int i, ret;
 
-	ret = uclass_get_device_by_driver(UCLASS_CLK,
-					  DM_GET_DRIVER(aspeed_scu), &dev);
+	ret = uclass_get_device_by_driver(UCLASS_CLK, DM_GET_DRIVER(aspeed_scu),
+					  &dev);
 	if (ret)
 		return ret;
 
@@ -1181,30 +1344,31 @@ int soc_clk_dump(void)
 			continue;
 		}
 		if (ret < 0) {
-			printf("%s %lu: get_rate err: %d\n",
-			       __func__, aspeed_clk_names[i].id, ret);
+			printf("%s %lu: get_rate err: %d\n", __func__,
+			       aspeed_clk_names[i].id, ret);
 			continue;
 		}
 
-		printf("%s(%3lu):\t%lu\n",
-		       aspeed_clk_names[i].name, aspeed_clk_names[i].id, rate);
+		printf("%s(%3lu):\t%lu\n", aspeed_clk_names[i].name,
+		       aspeed_clk_names[i].id, rate);
 	}
 
 	return 0;
 }
-#endif
 
 static const struct udevice_id ast2600_clk_ids[] = {
-	{ .compatible = "aspeed,ast2600-scu", },
-	{ }
+	{
+		.compatible = "aspeed,ast2600-scu",
+	},
+	{}
 };
 
 U_BOOT_DRIVER(aspeed_scu) = {
-	.name		= "aspeed_scu",
-	.id		= UCLASS_CLK,
-	.of_match	= ast2600_clk_ids,
+	.name = "aspeed_scu",
+	.id = UCLASS_CLK,
+	.of_match = ast2600_clk_ids,
 	.priv_auto_alloc_size = sizeof(struct ast2600_clk_priv),
-	.ops		= &ast2600_clk_ops,
-	.bind		= ast2600_clk_bind,
-	.probe		= ast2600_clk_probe,
+	.ops = &ast2600_clk_ops,
+	.bind = ast2600_clk_bind,
+	.probe = ast2600_clk_probe,
 };

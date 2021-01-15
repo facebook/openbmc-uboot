@@ -460,6 +460,7 @@ static int sdhci_set_ios(struct mmc *mmc)
 #endif
 	u32 ctrl;
 	u32 gen_addr, gen_ctrl;
+	u16 ctrl_2;
 	struct sdhci_host *host = mmc->priv;
 
 	if (host->ops && host->ops->set_control_reg)
@@ -517,6 +518,13 @@ static int sdhci_set_ios(struct mmc *mmc)
 		ctrl &= ~SDHCI_CTRL_HISPD;
 
 	sdhci_writeb(host, ctrl, SDHCI_HOST_CONTROL);
+
+	if ((SDHCI_GET_VERSION(host) >= SDHCI_SPEC_300)) {
+		ctrl_2 = sdhci_readw(host, SDHCI_HOST_CONTROL_2);
+		ctrl_2 &= ~SDHCI_DRIVER_STRENGTH_MASK;
+		ctrl_2 |= host->mmc->drv_type << SDHCI_DRIVER_STRENGTH_SHIFT;
+		sdhci_writew(host, ctrl_2, SDHCI_HOST_CONTROL_2);
+	}
 
 	/* If available, call the driver specific "post" set_ios() function */
 	if (host->ops && host->ops->set_ios_post)

@@ -5,6 +5,7 @@
  */
 
 #include <common.h>
+#include <malloc.h>
 #include <asm/io.h>
 #include <linux/kernel.h>
 #include <asm/arch/aspeed_verify.h>
@@ -13,12 +14,7 @@ static int aspeed_digest_verify(struct aspeed_verify_info *info)
 {
 	int digest_length = 64;
 	int ret = 0;
-	u8 *digest_result = info->verify_dram_offset;
-
-	enable_crypto();
-	ret = digest_object(info->image, info->image_size, digest_result, info->sha_mode);
-	if (ret)
-		goto err;
+	u8 *digest_result;
 
 	switch (info->sha_mode) {
 	case ASPEED_SHA224:
@@ -35,26 +31,28 @@ static int aspeed_digest_verify(struct aspeed_verify_info *info)
 		break;
 	}
 
-	ret = memcmp(info->digest, info->verify_dram_offset, digest_length);
+	enable_crypto();
+	digest_result = memalign(8, digest_length);
+	ret = digest_object(info->image, info->image_size, digest_result, info->sha_mode);
+	if (ret)
+		goto err;
+
+
+	ret = memcmp(info->digest, digest_result, digest_length);
 err:
 	return ret;
 }
 
 static int aspeed_signature_verify(struct aspeed_verify_info *info)
 {
-	int digest_length = 64;
+	int digest_length;
 	int ret = 0;
 	int m_bits;
-	u8 *digest_result = info->verify_dram_offset;
-	u8 *rsa_result = digest_result + 0x40;
-	u8 *contex_buf = rsa_result + 0x200;
+	u8 *digest_result;
+	u8 *rsa_result;
+	u8 *contex_buf;
 	u8 *rsa_m;
 	u8 *rsa_e;
-
-	enable_crypto();
-	ret = digest_object(info->image, info->image_size, digest_result, info->sha_mode);
-	if (ret)
-		goto err;
 
 	switch (info->sha_mode) {
 	case ASPEED_SHA224:
@@ -69,11 +67,22 @@ static int aspeed_signature_verify(struct aspeed_verify_info *info)
 	case ASPEED_SHA512:
 		digest_length = 64;
 		break;
+	default:
+		digest_length = 0;
 	}
 
+	digest_result = memalign(8, digest_length);
+	enable_crypto();
+	ret = digest_object(info->image, info->image_size, digest_result, info->sha_mode);
+	if (ret)
+		goto err;
+
+	contex_buf = malloc(0x600);
 	memset(contex_buf, 0, 0x600);
 
+	rsa_result = malloc(0x200);
 	rsa_m = info->rsa_key;
+	rsa_e = NULL;
 
 	switch (info->rsa_mode) {
 	case ASPEED_RSA1024:
@@ -92,6 +101,9 @@ static int aspeed_signature_verify(struct aspeed_verify_info *info)
 		m_bits = 4096;
 		rsa_e = info->rsa_key + 0x200;
 		break;
+	default:
+		m_bits = 0;
+		rsa_e = NULL;
 	}
 
 	ret = rsa_alg(info->signature, m_bits / 8, rsa_m, m_bits, rsa_e, info->e_len, rsa_result, contex_buf);
@@ -202,40 +214,41 @@ static void print_verification_data(const struct aspeed_verify_info *info,
 	}
 }
 
-/**
- * Aspeed verified boot
- *
- * \param bl2_image	u-boot image offset
- * \param bl1_image	spl image offset
- */
-
-int aspeed_bl2_verify(void *bl2_image, void *bl1_image)
+int _aspeed_verify_boot(u32 cot_alg, u8 *cot_info, void *verify_image)
 {
 	struct aspeed_verify_info info;
-	u8 *bl1_info = (u8 *) * (u32 *)(bl1_image + ASPEED_VERIFY_INFO_OFFSET);
-	u32 bl1_header = * (u32 *)(bl1_image + ASPEED_VERIFY_HEADER);
-	u32 sing_offset;
+	struct aspeed_secboot_header *sbh;
 	int ret = 0;
 
-	info.image = bl2_image;
-	info.verify_dram_offset = (u8 *)ALIGN((u32) CONFIG_SYS_SDRAM_BASE, 16);
-	info.image_size = *(u32 *)(bl2_image + ASPEED_VERIFY_SIZE);
-	info.sha_mode = ASPEED_VERIFY_SHA(bl1_header);
-	info.verify_mode = ASPEED_VERIFY_MODE(bl1_header);
+	sbh = (struct aspeed_secboot_header *)verify_image;
+
+	if (strcmp((char *)sbh->sbh_magic, ASPEED_SECBOOT_MAGIC_STR)) {
+		debug("secure_boot: cannot find secure boot header\n");
+		return -EPERM;
+	}
+
+	info.rsa_mode = 0;
+	info.signature = NULL;
+	info.image = verify_image;
+	info.image_size = sbh->sbh_img_size;
+	info.sha_mode = ASPEED_VERIFY_SHA(cot_alg);
+	info.verify_mode = ASPEED_VERIFY_MODE(cot_alg);
+	info.digest = NULL;
+	info.rsa_key = NULL;
+
 	printf("## Starting verify image.\n");
 	switch (info.verify_mode) {
 	case DIGEST_MODE:
 		printf("   Verifing Hash Integrity ... ");
-		info.digest = bl1_info;
+		info.digest = cot_info;
 		ret = aspeed_digest_verify(&info);
 		break;
 	case SIGN_MODE:
 		printf("   Verifing Signature ... ");
-		info.rsa_mode = ASPEED_VERIFY_RSA(bl1_header);
-		info.e_len = ASPEED_VERIFY_E_LEN(bl1_header);
-		info.rsa_key = bl1_info;
-		sing_offset = * (u32 *)(bl2_image + ASPEED_VERIFY_SIGN_OFFSET);
-		info.signature = (u8 *)(sing_offset + (u32)bl2_image);
+		info.rsa_mode = ASPEED_VERIFY_RSA(cot_alg);
+		info.e_len = ASPEED_VERIFY_E_LEN(cot_alg);
+		info.rsa_key = cot_info;
+		info.signature = verify_image + sbh->sbh_sig_off;
 		ret = aspeed_signature_verify(&info);
 		break;
 	}
@@ -243,7 +256,36 @@ int aspeed_bl2_verify(void *bl2_image, void *bl1_image)
 		printf("Failed to verify.\n");
 	} else {
 		printf("OK.\n");
-		print_verification_data(&info, "     ");
 	}
+
+	print_verification_data(&info, "     ");
 	return ret;
+}
+
+int aspeed_verify_boot(void *cur_image, void *next_image)
+{
+	struct aspeed_secboot_header *cur_sbh;
+	u32 cot_alg;
+	u8 *cot_info;
+
+	cur_sbh = (struct aspeed_secboot_header *)cur_image;
+	cot_alg = cur_sbh->sbh_cot_alg;
+	cot_info = cur_image + cur_sbh->sbh_cot_info_off;
+
+
+	return _aspeed_verify_boot(cot_alg, cot_info, next_image);
+}
+
+/**
+ * Aspeed verified boot
+ *
+ * \param bl2_image	u-boot image offset
+ * \param bl1_image	spl image offset
+ */
+int aspeed_bl2_verify(void *bl2_image, void *bl1_image)
+{
+	u32 cot_alg = * (u32 *)(bl1_image + ASPEED_VERIFY_HEADER);
+	u8 *cot_info = (u8 *) * (u32 *)(bl1_image + ASPEED_VERIFY_INFO_OFFSET);
+
+	return _aspeed_verify_boot(cot_alg, cot_info, bl2_image);
 }

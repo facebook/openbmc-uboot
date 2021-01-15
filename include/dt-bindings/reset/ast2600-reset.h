@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
+// SPDX-License-Identifier: GPL-2.0+ 
 /*
  * Copyright (C) ASPEED Technology Inc.
  */
@@ -34,7 +34,6 @@
 #define ASPEED_RESET_I2C		(34)
 #define ASPEED_RESET_RESERVED33		(33)
 #define ASPEED_RESET_LPC_ESPI		(32)
-
 #define ASPEED_RESET_H2X		(31)
 #define ASPEED_RESET_GP_MCU		(30)
 #define ASPEED_RESET_DP_MCU		(29)
@@ -45,10 +44,10 @@
 #define ASPEED_RESET_DEV_MCTP		(24)
 #define ASPEED_RESET_RC_MCTP		(23)
 #define ASPEED_RESET_JTAG_MASTER	(22)
-#define ASPEED_RESET_PCIE_DEV_O		(21)
-#define ASPEED_RESET_PCIE_DEV_OE	(20)
-#define ASPEED_RESET_PCIE_RC_O		(19)
-#define ASPEED_RESET_PCIE_RC_OE		(18)
+#define ASPEED_RESET_PCIE_DEV_OE	(21)
+#define ASPEED_RESET_PCIE_DEV_O		(20)
+#define ASPEED_RESET_PCIE_RC_OE		(19)
+#define ASPEED_RESET_PCIE_RC_O		(18)
 #define ASPEED_RESET_RESERVED17		(17)
 #define ASPEED_RESET_EMMC		(16)
 #define ASPEED_RESET_UHCI		(15)

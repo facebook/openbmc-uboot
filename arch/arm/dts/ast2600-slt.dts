@@ -61,6 +61,9 @@
 
 &mdio {
 	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <	&pinctrl_mdio1_default &pinctrl_mdio2_default
+			&pinctrl_mdio3_default &pinctrl_mdio4_default>;
 	#address-cells = <1>;
 	#size-cells = <0>;
 	ethphy1: ethernet-phy@1 {
@@ -85,7 +88,7 @@
 	phy-mode = "rgmii";
 	phy-handle = <&ethphy1>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_rgmii1_default &pinctrl_mac1link_default &pinctrl_mdio1_default>;
+	pinctrl-0 = <&pinctrl_rgmii1_default>;
 };
 
 &mac1 {
@@ -93,7 +96,7 @@
 	phy-mode = "rgmii";
 	phy-handle = <&ethphy2>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_rgmii2_default &pinctrl_mac2link_default &pinctrl_mdio2_default>;
+	pinctrl-0 = <&pinctrl_rgmii2_default>;
 };
 
 &mac2 {
@@ -101,7 +104,7 @@
 	phy-mode = "rgmii";
 	phy-handle = <&ethphy3>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_rgmii3_default &pinctrl_mac3link_default &pinctrl_mdio3_default>;	
+	pinctrl-0 = <&pinctrl_rgmii3_default>;	
 };
 
 &mac3 {
@@ -109,7 +112,7 @@
 	phy-mode = "rgmii";
 	phy-handle = <&ethphy4>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_rgmii4_default &pinctrl_mac4link_default &pinctrl_mdio4_default>;	
+	pinctrl-0 = <&pinctrl_rgmii4_default>;	
 };
 
 &fmc {
@@ -200,11 +203,20 @@
 	};
 };
 
+&emmc {
+	timing-phase = <0x700ff>;
+};
+
 &emmc_slot0 {
 	status = "okay";
 	bus-width = <4>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_emmc_default>;
+	sdhci-drive-type = <1>;
+};
+
+&sdhci {
+	timing-phase = <0xc6ffff>;
 };
 
 &sdhci_slot0 {
@@ -214,6 +226,7 @@
 	pwr-sw-gpios = <&gpio0 ASPEED_GPIO(V, 1) GPIO_ACTIVE_HIGH>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_sd1_default>;
+	sdhci-drive-type = <1>;
 };
 
 &sdhci_slot1 {
@@ -223,6 +236,7 @@
 	pwr-sw-gpios = <&gpio0 ASPEED_GPIO(V, 3) GPIO_ACTIVE_HIGH>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_sd2_default>;
+	sdhci-drive-type = <1>;
 };
 
 &i2c4 {

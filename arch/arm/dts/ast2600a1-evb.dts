@@ -3,6 +3,9 @@
 #include "ast2600-u-boot.dtsi"
 
 / {
+        model = "AST2600 EVB";
+        compatible = "aspeed,ast2600-evb", "aspeed,ast2600";
+
 	memory {
 		device_type = "memory";
 		reg = <0x80000000 0x40000000>;
@@ -45,17 +48,14 @@
 };
 
 &wdt1 {
-	u-boot,dm-pre-reloc;
 	status = "okay";
 };
 
 &wdt2 {
-	u-boot,dm-pre-reloc;
 	status = "okay";
 };
 
 &wdt3 {
-	u-boot,dm-pre-reloc;
 	status = "okay";
 };
 
@@ -88,7 +88,7 @@
 	phy-mode = "rgmii";
 	phy-handle = <&ethphy0>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_rgmii1_default &pinctrl_mac1link_default>;
+	pinctrl-0 = <&pinctrl_rgmii1_default>;
 };
 
 &mac1 {
@@ -96,7 +96,7 @@
 	phy-mode = "rgmii";
 	phy-handle = <&ethphy1>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_rgmii2_default &pinctrl_mac2link_default>;
+	pinctrl-0 = <&pinctrl_rgmii2_default>;
 };
 
 &mac2 {
@@ -203,11 +203,22 @@
 	};
 };
 
+&emmc {
+	u-boot,dm-pre-reloc;
+	timing-phase = <0x700ff>;
+};
+
 &emmc_slot0 {
+	u-boot,dm-pre-reloc;
 	status = "okay";
 	bus-width = <4>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_emmc_default>;
+	sdhci-drive-type = <1>;
+};
+
+&sdhci {
+	timing-phase = <0xc6ffff>;
 };
 
 &sdhci_slot0 {
@@ -217,6 +228,7 @@
 	pwr-sw-gpios = <&gpio0 ASPEED_GPIO(V, 1) GPIO_ACTIVE_HIGH>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_sd1_default>;
+	sdhci-drive-type = <1>;
 };
 
 &sdhci_slot1 {
@@ -226,6 +238,7 @@
 	pwr-sw-gpios = <&gpio0 ASPEED_GPIO(V, 3) GPIO_ACTIVE_HIGH>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_sd2_default>;
+	sdhci-drive-type = <1>;
 };
 
 &i2c4 {
@@ -283,4 +296,23 @@
 
 &ehci1 {
 	status = "okay";
+};
+
+&display_port {
+	status = "okay";
+};
+
+&scu {
+	mac0-clk-delay = <0x1d 0x1c
+			  0x10 0x17
+			  0x10 0x17>;
+	mac1-clk-delay = <0x1d 0x10
+			  0x10 0x10
+			  0x10 0x10>;
+	mac2-clk-delay = <0x0a 0x04
+			  0x08 0x04
+			  0x08 0x04>;
+	mac3-clk-delay = <0x0a 0x04
+			  0x08 0x04
+			  0x08 0x04>;
 };

@@ -294,19 +294,18 @@ static int aspeed_gpio_probe(struct udevice *dev)
 {
 	struct gpio_dev_priv *uc_priv = dev_get_uclass_priv(dev);
 	struct aspeed_gpio_priv *priv = dev_get_priv(dev);
-	ulong driver_data = dev_get_driver_data(dev);
 
 	uc_priv->bank_name = dev->name;
-    uc_priv->gpio_count = driver_data;
-
+	ofnode_read_u32(dev_ofnode(dev), "ngpios", &uc_priv->gpio_count);
 	priv->regs = devfdt_get_addr_ptr(dev);
 
     return 0;
 }
 
 static const struct udevice_id aspeed_gpio_ids[] = {
-	{ .compatible = "aspeed,ast2500-gpio",	.data = 232 },
-	{ .compatible = "aspeed,ast2600-gpio",	.data = 208 },
+	{ .compatible = "aspeed,ast2400-gpio",  },
+	{ .compatible = "aspeed,ast2500-gpio",	},
+	{ .compatible = "aspeed,ast2600-gpio",	},
 	{ }
 };
 

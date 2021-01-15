@@ -5,5 +5,6 @@
 obj-$(CONFIG_DISPLAY_CPUINFO) += cpuinfo.o
 obj-$(CONFIG_ARCH_ASPEED) += ast_wdt.o
 obj-$(CONFIG_ASPEED_SPI_DMA) += ast_flash.o
+obj-$(CONFIG_ASPEED_AST2400) += ast2400/
 obj-$(CONFIG_ASPEED_AST2500) += ast2500/
 obj-$(CONFIG_ASPEED_AST2600) += ast2600/

@@ -143,9 +143,9 @@ void aspeed_print_sysrst_info(void)
 		printf("RST : WDT2 - 2nd Boot \n");
 		writel(readl(ASPEED_SYS_RESET_CTRL) & ~SYS_WDT2_RESET, ASPEED_SYS_RESET_CTRL);
 		if(readl(0x1e785030) & BIT(1))
-			puts("default boot\n");
+			puts("second boot\n");
 		else
-			puts("second boot\n");		
+			puts("default boot\n");
 	}
 	if (rest & SYS_WDT3_RESET) {
 		printf("RST : WDT3 - Boot\n");
@@ -213,8 +213,12 @@ void aspeed_print_espi_mode(void)
 void aspeed_print_mac_info(void)
 {
 	int i;
-	printf("Eth :\n");
-	for (i = 0; i < ASPEED_MAC_COUNT; i++)
-		printf("    MAC%d: %s\n", i,
+	printf("Eth : ");
+	for (i = 0; i < ASPEED_MAC_COUNT; i++) {
+		printf("MAC%d: %s, ", i,
 				aspeed_get_mac_phy_interface(i) ? "RGMII" : "RMII/NCSI");
+		if (i != (ASPEED_MAC_COUNT -1))
+			printf(", ");
+	}
+	printf("\n");
 }

@@ -36,6 +36,12 @@
 #define ASPEED_HACE_HASH_DATA_LEN	(ASPEED_HACE_BASE + 0x2C)
 #define ASPEED_HACE_HASH_CMD		(ASPEED_HACE_BASE + 0x30)
 
+struct aspeed_sg_list {
+	u32 len;
+	u32 phy_addr;
+} __packed;
+
+extern int aspeed_sg_digest(struct aspeed_sg_list *src_list, u32 list_length, u32 length, u8 *digest, u32 method);
 extern int digest_object(u8 *src, u32 length, u8 *digest, u32 method);
 extern int aes256ctr_decrypt_object(u8 *src, u8 *dst, u32 length, u8 *context);
 extern int rsa_alg(u8 *data, int data_bytes, u8 *m, int m_bits, u8 *e, int e_bits, u8 *dst, void *contex_buf);

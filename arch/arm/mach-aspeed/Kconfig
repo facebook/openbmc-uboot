@@ -11,6 +11,14 @@ choice
 	depends on ARCH_ASPEED
 	default ASPEED_AST2500
 
+config ASPEED_AST2400
+        bool "Support Aspeed AST2400 SoC"
+        select CPU_ARM926EJS
+        help
+          The Aspeed AST2400 is a ARM-based SoC with arm926ejs CPU.
+          It is used as Board Management Controller on many server boards,
+          which is enabled by support of LPC and eSPI peripherals.
+
 config ASPEED_AST2500
 	bool "Support Aspeed AST2500 SoC"
 	select CPU_ARM1176
@@ -27,6 +35,7 @@ config ASPEED_AST2600
 	select ARCH_SUPPORT_PSCI
 	select SYS_ARCH_TIMER
 	select SUPPORT_SPL
+	select ENABLE_ARM_SOC_BOOT0_HOOK
 	help
 	  The Aspeed AST2600 is a ARM-based SoC with Cortex-A7 CPU.
 	  It is used as Board Management Controller on many server boards,
@@ -48,23 +57,113 @@ config ASPEED_PALLADIUM
 	  This is mainly for internal verification and investigation
 	  on HW design. If not sure, say N.
 
-config SECURE_BOOT
+config ASPEED_SSP_RERV_MEM
+	hex "Reserve memory for SSP"
+	default 0x0
+	help
+	  The size in bytes of reserve memory for ASPEED SoC SSP run.
+
+config ASPEED_SECURE_BOOT
 	bool "Support Aspeed secure boot feature"
 	depends on SPL && ASPEED_AST2600
-	select POSITION_INDEPENDENT
 	select ENABLE_ARM_SOC_BOOT0_HOOK
-	select FIT_SIGNATURE
+	select CMD_BOOTS
 	help
 	  This option enables the support for secure boot.
 
-config SECURE_BOOT_TEXT_BASE
-	hex "Secure boot text base"
-	depends on SECURE_BOOT
-	default 0x90000000
+config ASPEED_SECURE_BOOT_DEBUG
+	bool "Enable debug support with secure boot"
+	default y
+	depends on ASPEED_SECURE_BOOT
 	help
-	  The address in memory where the secure boot verification
-	  on U-Boot image will be performed.
+	  This option allows the bootm command use
 
+config ASPEED_UBOOT_MMC_PART
+	int "U-Boot eMMC partition"
+	default 0
+	help
+	  The partition number of the U-Boot
+	  image in the eMMC device. This is not
+	  the user data partition number.
+
+config ASPEED_UBOOT_SPI_BASE
+	hex "U-Boot SPI base address"
+	default 0x0
+	help
+	  The base address of the U-Boot image in
+	  the memory mapped SPI space
+
+config ASPEED_UBOOT_SPI_SIZE
+	hex "U-Boot SPI size in bytes"
+	default 0x0
+	help
+	  The size in bytes of the U-Boot image in
+	  the memory mapped SPI space
+
+config ASPEED_UBOOT_MMC_BASE
+	hex "U-Boot eMMC base block"
+	default 0x0
+	help
+	  The base block number of the U-Boot
+	  image in the eMMC device
+
+config ASPEED_UBOOT_MMC_SIZE
+	hex "U-Boot eMMC size in blocks"
+	default 0x0
+	help
+	  The size in block count of the U-Boot
+	  image in the eMMC device
+
+config ASPEED_UBOOT_UART_SIZE
+	hex "U-Boot UART size in bytes"
+	default 0x0
+	help
+	  The size of U-Boot image to be recevied
+	  from UART device
+
+config ASPEED_UBOOT_DRAM_BASE
+	hex "U-Boot DRAM base address"
+	default 0x0
+	help
+	  The DRAM address where the U-Boot image
+	  will be loaded if XIP is not supported
+
+config ASPEED_KERNEL_FIT_SPI_BASE
+	hex "Kernel FIT SPI base address"
+	default 0x0
+	help
+	  The base address of the kernel FIT image in
+	  the memory mapped SPI space
+
+config ASPEED_KERNEL_FIT_SPI_SIZE
+	hex "Kernel FIT SPI size in bytes"
+	default 0x0
+	help
+	  The size in bytes of the kernel FIT image in
+	  the memory mapped SPI space
+
+config ASPEED_KERNEL_FIT_MMC_BASE
+	hex "Kernel FIT eMMC base block #"
+	default 0x0
+	help
+	  The base block number of the kernel FIT
+	  image in the eMMC device
+
+config ASPEED_KERNEL_FIT_MMC_SIZE
+	hex "Kernel FIT eMMC size in blocks"
+	default 0x0
+	help
+	  The size in block count of the kernel FIT
+	  image in the eMMC device
+
+config ASPEED_KERNEL_FIT_DRAM_BASE
+	hex "Kernel FIT DRAM base address"
+	default 0x0
+	help
+	  The DRAM address where the Kernel FIT image
+	  will be loaded if XIP is not supported
+
+source "arch/arm/mach-aspeed/ast2400/Kconfig"
 source "arch/arm/mach-aspeed/ast2500/Kconfig"
 source "arch/arm/mach-aspeed/ast2600/Kconfig"
 

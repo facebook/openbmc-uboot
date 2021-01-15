@@ -639,6 +639,7 @@ struct mmc {
 				  * accessing the boot partitions
 				  */
 	u32 quirks;
+	int drv_type;
 };
 
 struct mmc_hwpart_conf {

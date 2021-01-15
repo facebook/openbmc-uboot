@@ -1,0 +1,44 @@
+#include <dt-bindings/clock/ast2400-clock.h>
+#include <dt-bindings/reset/ast2400-reset.h>
+
+#include "ast2400.dtsi"
+
+/ {
+	scu: clock-controller@1e6e2000 {
+		compatible = "aspeed,ast2400-scu";
+		reg = <0x1e6e2000 0x1000>;
+		u-boot,dm-pre-reloc;
+		#clock-cells = <1>;
+		#reset-cells = <1>;
+	};
+
+	rst: reset-controller {
+		u-boot,dm-pre-reloc;
+		compatible = "aspeed,ast2400-reset";
+		aspeed,wdt = <&wdt1>;
+		#reset-cells = <1>;
+	};
+
+	sdrammc: sdrammc@1e6e0000 {
+		u-boot,dm-pre-reloc;
+		compatible = "aspeed,ast2400-sdrammc";
+		reg = <0x1e6e0000 0x174
+			0x1e6e0200 0x1d4 >;
+		#reset-cells = <1>;
+		clocks = <&scu ASPEED_CLK_MPLL>;
+		resets = <&rst ASPEED_RESET_SDRAM>;
+	};
+
+	ahb {
+		u-boot,dm-pre-reloc;
+
+		apb {
+			u-boot,dm-pre-reloc;
+		};
+
+	};
+};
+
+&timer {
+	u-boot,dm-pre-reloc;
+};

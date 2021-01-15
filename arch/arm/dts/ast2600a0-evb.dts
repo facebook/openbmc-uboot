@@ -3,6 +3,9 @@
 #include "ast2600-u-boot.dtsi"
 
 / {
+        model = "AST2600 EVB";
+        compatible = "aspeed,ast2600-evb", "aspeed,ast2600";
+
 	memory {
 		device_type = "memory";
 		reg = <0x80000000 0x40000000>;

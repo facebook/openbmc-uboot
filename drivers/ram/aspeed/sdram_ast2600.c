@@ -30,12 +30,15 @@
 #define AST_SCU_MPLL_EXT	0x224
 #define AST_SCU_FPGA_PLL	0x400
 #define AST_SCU_HW_STRAP	0x500
+#define AST_SCU_EFUSE_DATA	0x594
 
 
 /* bit-field of AST_SCU_HW_STRAP */
 #define SCU_HWSTRAP_VGAMEM_SHIFT	13
 #define SCU_HWSTRAP_VGAMEM_MASK		GENMASK(14, 13)
 
+/* bit-field of AST_SCU_EFUSE_DATA */
+#define SCU_EFUSE_DATA_VGA_DIS_MASK	BIT(14)
 
 /* bit-field of AST_SCU_HANDSHAKE */
 #define SCU_SDRAM_INIT_READY_MASK	BIT(6)
@@ -48,7 +51,7 @@
 #define SCU_MPLL_FREQ_MASK		GENMASK(22, 0)
 
 #define SCU_MPLL_FREQ_400M		0x0008405F
-#define SCU_MPLL_EXT_400M		0x00000031
+#define SCU_MPLL_EXT_400M		0x0000002F
 //#define SCU_MPLL_FREQ_400M		0x0038007F
 //#define SCU_MPLL_EXT_400M		0x0000003F
 #define SCU_MPLL_FREQ_333M		0x00488299
@@ -149,7 +152,7 @@ static const u32 ddr4_ac_timing[4] = {0x040e0307, 0x0f4711f1, 0x0e060304,
 
 static const u32 ddr_max_grant_params[4] = {0x44444444, 0x44444444, 0x44444444,
                                             0x44444444};
-#endif  
+#endif
 
 struct dram_info {
 	struct ram_info info;
@@ -175,7 +178,7 @@ static void ast2600_sdramphy_kick_training(struct dram_info *info)
 
 	while (1) {
 		data = readl(&regs->phy_ctrl[0]) & SDRAM_PHYCTRL0_INIT;
-		if (~data) {			
+		if (~data) {
 			break;
 		}
 	}
@@ -183,7 +186,7 @@ static void ast2600_sdramphy_kick_training(struct dram_info *info)
 #if 0
 	while (1) {
 		data = readl(0x1e6e0400) & BIT(1);
-		if (data) {			
+		if (data) {
 			break;
 		}
 	}
@@ -195,10 +198,10 @@ static void ast2600_sdramphy_kick_training(struct dram_info *info)
  * @brief	load DDR-PHY configurations table to the PHY registers
  * @param[in]	p_tbl - pointer to the configuration table
  * @param[in]	info - pointer to the DRAM info struct
- * 
- * There are two sets of MRS (Mode Registers) configuration in ast2600 memory 
- * system: one is in the SDRAM MC (memory controller) which is used in run 
- * time, and the other is in the DDR-PHY IP which is used during DDR-PHY 
+ *
+ * There are two sets of MRS (Mode Registers) configuration in ast2600 memory
+ * system: one is in the SDRAM MC (memory controller) which is used in run
+ * time, and the other is in the DDR-PHY IP which is used during DDR-PHY
  * training.
 */
 static void ast2600_sdramphy_init(u32 *p_tbl, struct dram_info *info)
@@ -213,8 +216,6 @@ static void ast2600_sdramphy_init(u32 *p_tbl, struct dram_info *info)
 	udelay(10);
 	//writel(SDRAM_PHYCTRL0_NRST, &regs->phy_ctrl[0]);
 
-	debug("%s:reg base = 0x%08x, 1st addr = 0x%08x\n", __func__, reg_base,
-               addr);
 
         /* load PHY configuration table into PHY-setting registers */
         while (1) {
@@ -237,7 +238,7 @@ static void ast2600_sdramphy_init(u32 *p_tbl, struct dram_info *info)
 	data = readl(info->phy_setting + 0x84) & ~GENMASK(16, 0);
 	data |= DDR4_PHY_TRAIN_TRFC;
 	writel(data, info->phy_setting + 0x84);
-#endif        
+#endif
 }
 
 static int ast2600_sdramphy_check_status(struct dram_info *info)
@@ -246,20 +247,20 @@ static int ast2600_sdramphy_check_status(struct dram_info *info)
         u32 value, tmp;
         u32 reg_base = (u32)info->phy_status;
 	int need_retrain = 0;
-	
+
 	debug("\nSDRAM PHY training report:\n");
 	/* training status */
-        value = readl(reg_base + 0x00);
+	value = readl(reg_base + 0x00);
 	debug("rO_DDRPHY_reg offset 0x00 = 0x%08x\n", value);
-        if (value & BIT(3)) {
-                debug("\tinitial PVT calibration fail\n");
-        }
-        if (value & BIT(5)) {
-                debug("\truntime calibration fail\n");
-        }
+	if (value & BIT(3)) {
+		debug("\tinitial PVT calibration fail\n");
+	}
+	if (value & BIT(5)) {
+		debug("\truntime calibration fail\n");
+	}
 
 	/* PU & PD */
-	value = readl(reg_base + 0x30);	
+	value = readl(reg_base + 0x30);
 	debug("rO_DDRPHY_reg offset 0x30 = 0x%08x\n", value);
         debug("  PU = 0x%02x\n", value & 0xff);
         debug("  PD = 0x%02x\n", (value >> 16) & 0xff);
@@ -275,7 +276,7 @@ static int ast2600_sdramphy_check_status(struct dram_info *info)
 	tmp = (((value & GENMASK(7, 0)) >> 0) * 100) / 255;
 	debug("    B0:%d%%\n", tmp);
 	tmp = (((value & GENMASK(15, 8)) >> 8) * 100) / 255;
-        debug("    B1:%d%%\n", tmp);	
+        debug("    B1:%d%%\n", tmp);
 
 	value = readl(reg_base + 0xC8);
 	debug("rO_DDRPHY_reg offset 0xC8 = 0x%08x\n", value);
@@ -313,7 +314,7 @@ static int ast2600_sdramphy_check_status(struct dram_info *info)
 #if 0
 	tmp = (((value & GENMASK(5, 0)) >> 0) * 100) / 127;
         debug("  write Vref training result = %d%%\n", tmp);
-#endif	
+#endif
 
         /* gate train */
 	value = readl(reg_base + 0x50);
@@ -321,25 +322,25 @@ static int ast2600_sdramphy_check_status(struct dram_info *info)
 	    (0 == (value & GENMASK(31, 16)))) {
 		need_retrain = 1;
 	}
-#if 0		
+#if 0
 	if (((value >> 24) & 0xff) < 3)
 		need_retrain = 1;
 	else
-		need_retrain = 0;		
+		need_retrain = 0;
 #endif
 	debug("rO_DDRPHY_reg offset 0x50 = 0x%08x\n", value);
-#if 0	
+#if 0
 	debug("  gate training pass window\n");
 	tmp = (((value & GENMASK(7, 0)) >> 0) * 100) / 255;
-	debug("    module 0: %d.%03d\n", (value >> 8) & 0xff, tmp);        
+	debug("    module 0: %d.%03d\n", (value >> 8) & 0xff, tmp);
         tmp = (((value & GENMASK(23, 16)) >> 0) * 100) / 255;
 	debug("    module 1: %d.%03d\n", (value >> 24) & 0xff, tmp);
-#endif	
+#endif
 
 	return need_retrain;
 #else
-	return 0;	
-#endif              
+	return 0;
+#endif
 }
 #ifndef CONFIG_ASPEED_BYPASS_SELFTEST
 #define MC_TEST_PATTERN_N 8
@@ -391,7 +392,7 @@ int ast2600_sdrammc_cbr_test(struct dram_info *info)
 	for (i=0; i<8; i++) {
   		if(!ast2600_sdrammc_dg_test(info, i, 0))   return(0);
 	}
-	
+
 	/* burst */
 	for (i=0; i<8; i++) {
   		if(!ast2600_sdrammc_dg_test(info, i, i))   return(0);
@@ -400,7 +401,7 @@ int ast2600_sdrammc_cbr_test(struct dram_info *info)
 	return(1);
 }
 
-static int ast2600_sdrammc_test(struct dram_info *info) 
+static int ast2600_sdrammc_test(struct dram_info *info)
 {
 	struct ast2600_sdrammc_regs *regs = info->regs;
 
@@ -417,7 +418,7 @@ static int ast2600_sdrammc_test(struct dram_info *info)
 		pattern = as2600_sdrammc_test_pattern[i++];
 		i = i % MC_TEST_PATTERN_N;
 		debug("  pattern = %08X : ",pattern);
-		writel(pattern, regs->test_init_val);
+		writel(pattern, &regs->test_init_val);
 
 		if (!ast2600_sdrammc_cbr_test(info)) {
 			debug("fail\n");
@@ -456,13 +457,21 @@ static size_t ast2600_sdrammc_get_vga_mem_size(struct dram_info *info)
 
 	vga_hwconf =
 	    (readl(info->scu + AST_SCU_HW_STRAP) & SCU_HWSTRAP_VGAMEM_MASK) >>
-	    SCU_HWSTRAP_VGAMEM_SHIFT;	
+	    SCU_HWSTRAP_VGAMEM_SHIFT;
 
-	vga_hwconf = (vga_hwconf == 0) ? 1 : vga_hwconf;
+	if (vga_hwconf == 0) {
+		vga_hwconf = 1;
+		writel(vga_hwconf << SCU_HWSTRAP_VGAMEM_SHIFT,
+		       info->scu + AST_SCU_HW_STRAP);
+	}
 
 	clrsetbits_le32(&info->regs->config, SDRAM_CONF_VGA_SIZE_MASK,
 			((vga_hwconf << SDRAM_CONF_VGA_SIZE_SHIFT) &
-			 SDRAM_CONF_VGA_SIZE_MASK));	    
+			 SDRAM_CONF_VGA_SIZE_MASK));
+
+	/* no need to reserve VGA memory if efuse[VGA disable] is set */
+	if (readl(info->scu + AST_SCU_EFUSE_DATA) & SCU_EFUSE_DATA_VGA_DIS_MASK)
+		return 0;
 
 	return vga_mem_size_base << vga_hwconf;
 }
@@ -472,12 +481,12 @@ static void ast2600_sdrammc_fpga_set_pll(struct dram_info *info)
         u32 data;
         u32 scu_base = (u32)info->scu;
 
-        writel(0x00000303, scu_base + AST_SCU_FPGA_PLL);                                
-        
+        writel(0x00000303, scu_base + AST_SCU_FPGA_PLL);
+
         do {
                 data = readl(scu_base + AST_SCU_FPGA_STATUS);
         } while (!(data & 0x100));
-        
+
         writel(0x00000103, scu_base + AST_SCU_FPGA_PLL);
 }
 
@@ -485,7 +494,7 @@ static int ast2600_sdrammc_search_read_window(struct dram_info *info)
 {
         u32 pll, pll_min, pll_max, dat1, offset;
         u32 win = 0x03, gwin = 0, gwinsize = 0;
-        u32 phy_setting = (u32)info->phy_setting;                
+        u32 phy_setting = (u32)info->phy_setting;
 
 #ifdef CONFIG_ASPEED_PALLADIUM
 	writel(0xc, phy_setting + 0x0000);
@@ -652,7 +661,8 @@ static void ast2600_sdrammc_calc_size(struct dram_info *info)
 			 << SDRAM_AC_TRFC_SHIFT));
 
 	info->info.base = CONFIG_SYS_SDRAM_BASE;
-	info->info.size = ram_size - ast2600_sdrammc_get_vga_mem_size(info);
+	info->info.size = ram_size - ast2600_sdrammc_get_vga_mem_size(info) - CONFIG_ASPEED_SSP_RERV_MEM;
+
 	clrsetbits_le32(
 	    &info->regs->config, SDRAM_CONF_CAP_MASK,
 	    ((cap_param << SDRAM_CONF_CAP_SHIFT) & SDRAM_CONF_CAP_MASK));
@@ -669,7 +679,7 @@ static int ast2600_sdrammc_init_ddr4(struct dram_info *info)
 	ast2600_sdramphy_init(ast2600_sdramphy_config, info);
         writel((MCR34_CKE_EN | MCR34_MREQI_DIS | MCR34_RESETN_DIS),
                &info->regs->power_ctrl);
-	udelay(5);	       
+	udelay(5);
 	ast2600_sdramphy_kick_training(info);
 	udelay(500);
         writel(SDRAM_RESET_DLL_ZQCL_EN, &info->regs->refresh_timing);
@@ -752,7 +762,7 @@ static void ast2600_sdrammc_common_init(struct ast2600_sdrammc_regs *regs)
         writel(0xFFBBFFF4, &regs->req_limit_mask);
 
 	for (i = 0; i < ARRAY_SIZE(ddr_max_grant_params); ++i)
-                writel(ddr_max_grant_params[i], &regs->max_grant_len[i]);	
+                writel(ddr_max_grant_params[i], &regs->max_grant_len[i]);
 
         writel(MCR50_RESET_ALL_INTR, &regs->intr_ctrl);
 
@@ -784,14 +794,33 @@ static void ast2600_sdrammc_common_init(struct ast2600_sdrammc_regs *regs)
 	writel(DDR4_MR45_MODE, &regs->mr45_mode_setting);
 	writel(DDR4_MR6_MODE, &regs->mr6_mode_setting);
 }
+/*
+ * Update size info according to the ECC HW setting
+ *
+ * Assume SDRAM has been initialized by SPL or the host.  To get the RAM size, we
+ * don't need to calculate the ECC size again but read from MCR04 and derive the
+ * size from its value.
+ */
+static void ast2600_sdrammc_update_size(struct dram_info *info)
+{
+	struct ast2600_sdrammc_regs *regs = info->regs;
+	size_t hw_size;
 
+	if (0 == (readl(&regs->config) & SDRAM_CONF_ECC_SETUP))
+		return;
+
+	hw_size = readl(&regs->ecc_range_ctrl) & GENMASK(30, 20);
+	hw_size += (1 << 20);
+
+	info->info.size = hw_size;
+}
 #ifdef CONFIG_ASPEED_ECC
 static void ast2600_sdrammc_ecc_enable(struct dram_info *info)
 {
 	struct ast2600_sdrammc_regs *regs = info->regs;
 	size_t conf_size;
 	u32 reg;
-	
+
 	conf_size = CONFIG_ASPEED_ECC_SIZE * SDRAM_SIZE_1MB;
 	if (conf_size > info->info.size) {
 		printf("warning: ECC configured %dMB but actual size is %dMB\n",
@@ -804,8 +833,7 @@ static void ast2600_sdrammc_ecc_enable(struct dram_info *info)
 
 	info->info.size = (((conf_size / 9) * 8) >> 20) << 20;
 	writel(((info->info.size >> 20) - 1) << 20, &regs->ecc_range_ctrl);
-	reg = readl(&regs->config) |
-	      (SDRAM_CONF_ECC_EN | SDRAM_CONF_ECC_AUTO_SCRUBBING);
+	reg = readl(&regs->config) | SDRAM_CONF_ECC_SETUP;
 	writel(reg, &regs->config);
 
 	writel(0, &regs->test_init_val);
@@ -816,7 +844,6 @@ static void ast2600_sdrammc_ecc_enable(struct dram_info *info)
 	writel(0, &regs->ecc_test_ctrl);
 	writel(BIT(31), &regs->intr_ctrl);
 	writel(0, &regs->intr_ctrl);
-	printf("ECC enable, ");
 }
 #endif
 
@@ -845,9 +872,7 @@ static int ast2600_sdrammc_probe(struct udevice *dev)
 	if (readl(priv->scu + AST_SCU_HANDSHAKE) & SCU_SDRAM_INIT_READY_MASK) {
 		printf("already initialized, ");
 		ast2600_sdrammc_calc_size(priv);
-#ifdef CONFIG_ASPEED_ECC		
-		ast2600_sdrammc_ecc_enable(priv);
-#endif
+		ast2600_sdrammc_update_size(priv);
 		return 0;
 	}
 
@@ -888,12 +913,12 @@ static int ast2600_sdrammc_probe(struct udevice *dev)
 
 	ast2600_sdrammc_unlock(priv);
 	ast2600_sdrammc_common_init(regs);
-L_ast2600_sdramphy_train:		
+L_ast2600_sdramphy_train:
 	ast2600_sdrammc_init_ddr4(priv);
 
 #if defined(CONFIG_FPGA_ASPEED) || defined(CONFIG_ASPEED_PALLADIUM)
         ast2600_sdrammc_search_read_window(priv);
-#else	
+#else
 	/* make sure DDR-PHY is ready before access */
 	do {
 		reg = readl(priv->phy_status) & BIT(1);
@@ -912,11 +937,11 @@ L_ast2600_sdramphy_train:
 		printf("%s: DDR4 init fail\n", __func__);
 		return -EINVAL;
 	}
-#endif	
+#endif
 
 #ifdef CONFIG_ASPEED_ECC
 	ast2600_sdrammc_ecc_enable(priv);
-#endif	
+#endif
 
 	writel(readl(priv->scu + AST_SCU_HANDSHAKE) | SCU_SDRAM_INIT_READY_MASK,
 	       priv->scu + AST_SCU_HANDSHAKE);

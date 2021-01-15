@@ -21,7 +21,7 @@
 #define ASPEED_VGA_HANDSHAKE0	0x1e6e2040	/*	VGA fuction handshake register */
 #define ASPEED_DRAM_BASE	0x40000000
 #define ASPEED_SRAM_BASE	0x1E720000
-#define ASPEED_SRAM_SIZE	0x9000
+#define ASPEED_SRAM_SIZE	0x8000
 #define ASPEED_FMC_CS0_BASE	0x20000000
 #define ASPEED_FMC_BASE 	0x1E620000	/*	Base address of FMC controller */
 #elif defined(CONFIG_ASPEED_AST2500)
@@ -38,13 +38,20 @@
 #define ASPEED_FMC_CS0_BASE	0x20000000
 #define ASPEED_FMC_BASE 	0x1E620000	/*	Base address of FMC controller */
 #elif defined(CONFIG_ASPEED_AST2600)
+#define ASPEED_FMC_WDT2		0x1e620064
+#define ASPEED_SPI1_BOOT_CTRL	0x1e630064
+#define ASPEED_MULTI_CTRL10	0x1e6e2438
 #define ASPEED_HW_STRAP1	0x1e6e2500
 #define ASPEED_HW_STRAP2	0x1e6e2510
 #define ASPEED_REVISION_ID0	0x1e6e2004
 #define ASPEED_REVISION_ID1	0x1e6e2014
+#define ASPEED_EMMC_WDT_CTRL	0x1e6f20a0
 #define ASPEED_SYS_RESET_CTRL	0x1e6e2064
 #define ASPEED_SYS_RESET_CTRL3	0x1e6e206c
+#define ASPEED_GPIO_YZ_DATA	0x1e7801e0
 #define ASPEED_VGA_HANDSHAKE0	0x1e6e2100	/*	VGA fuction handshake register */
+#define ASPEED_SB_STS		0x1e6f2014
+#define ASPEED_OTP_QSR		0x1e6f2040
 #define ASPEED_MAC_COUNT	4
 #define ASPEED_DRAM_BASE	0x80000000
 #define ASPEED_SRAM_BASE	0x10000000
@@ -54,5 +61,5 @@
 #else
 #err "No define for platform.h"
 #endif
- 
+
 #endif

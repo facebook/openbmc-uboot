@@ -10,6 +10,7 @@
 #include <fdtdec.h>
 #include <asm/io.h>
 #include <asm/arch/ahbc_aspeed.h>
+#include <linux/types.h>
 
 #define AHBC_UNLOCK	0xaeed1a03
 struct aspeed_ahbc_priv {
@@ -18,8 +19,12 @@ struct aspeed_ahbc_priv {
 
 extern void aspeed_ahbc_remap_enable(struct aspeed_ahbc_reg *ahbc)
 {
+	uint32_t tmp_val;
+
+	tmp_val = readl(&ahbc->addr_remap);
+	tmp_val |= 0x20;
 	writel(AHBC_UNLOCK, &ahbc->protection_key);
-	writel(0x20, &ahbc->addr_remap);
+	writel(tmp_val, &ahbc->addr_remap);
 	writel(0x1, &ahbc->protection_key);
 }
 

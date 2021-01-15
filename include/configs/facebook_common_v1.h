@@ -220,8 +220,12 @@
 #define CONFIG_SPL_I2C_SUPPORT
 
 /* Verified boot required features. */
+#ifndef CONFIG_SPL_CRYPTO_SUPPORT
 #define CONFIG_SPL_CRYPTO_SUPPORT
+#endif
+#ifndef CONFIG_SPL_HASH_SUPPORT
 #define CONFIG_SPL_HASH_SUPPORT
+#endif
 #define CONFIG_SPL_SHA256_SUPPORT
 #define CONFIG_SPL_SHA256
 #define CONFIG_SPL_SHA1

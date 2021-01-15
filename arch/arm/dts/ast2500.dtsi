@@ -65,6 +65,7 @@
 			status = "disabled";
 			interrupts = <19>;
 			clocks = <&scu ASPEED_CLK_AHB>;
+			num-cs = <3>;
 			flash@0 {
 				reg = < 0 >;
 				compatible = "jedec,spi-nor";
@@ -90,6 +91,7 @@
 			compatible = "aspeed,ast2500-spi";
 			clocks = <&scu ASPEED_CLK_AHB>;
 			status = "disabled";
+			num-cs = <2>;
 			flash@0 {
 				reg = < 0 >;
 				compatible = "jedec,spi-nor";
@@ -110,6 +112,7 @@
 			compatible = "aspeed,ast2500-spi";
 			clocks = <&scu ASPEED_CLK_AHB>;
 			status = "disabled";
+			num-cs = <2>;
 			flash@0 {
 				reg = < 0 >;
 				compatible = "jedec,spi-nor";
@@ -253,6 +256,7 @@
 				reg = <0x1e780000 0x1000>;
 				interrupts = <20>;
 				gpio-ranges = <&pinctrl 0 0 220>;
+				ngpios = <228>;
 				interrupt-controller;
 			};
 

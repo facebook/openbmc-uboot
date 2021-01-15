@@ -93,6 +93,8 @@ static int aspeed_sdhci_probe(struct udevice *dev)
 	host->mmc = &plat->mmc;
 	if (ret)
 		return ret;
+
+	host->mmc->drv_type = dev_read_u32_default(dev, "sdhci-drive-type", 0);
 	host->mmc->priv = host;
 	host->mmc->dev = dev;
 	upriv->mmc = host->mmc;

@@ -10,10 +10,6 @@
 #include <asm/arch/wdt.h>
 #include <dt-bindings/wdt/aspeed.h>
 
-#define WDT_AST2600	2600
-#define WDT_AST2500	2500
-#define WDT_AST2400	2400
-
 struct ast_wdt_priv {
 	struct ast_wdt *regs;
 	u32 wdtrst[3];
@@ -62,7 +58,7 @@ static int ast_wdt_start(struct udevice *dev, u64 timeout_ms, ulong flags)
 
 	if (driver_data == WDT_AST2500 && reset_mode == WDT_CTRL_RESET_SOC)
 		writel(ast_reset_mask_from_flags(flags),
-		       &priv->regs->reset_mask);
+		       &priv->regs->reset_mask1);
 
 	writel(timeout_us, &priv->regs->counter_reload_val);
 	writel(WDT_COUNTER_RESTART_VAL, &priv->regs->counter_restart);
@@ -96,12 +92,11 @@ static int ast_wdt_stop(struct udevice *dev)
 	dev_info(dev, "Watch Dog stopped.\n");
 	clrbits_le32(&priv->regs->ctrl, WDT_CTRL_EN);
 
-        if(driver_data == WDT_AST2600) {
-		writel(0x030f1ff1, &priv->regs->reset_mask);
+	if(driver_data == WDT_AST2600) {
+		writel(0x030f1ff1, &priv->regs->reset_mask1);
 		writel(0x3fffff1, &priv->regs->reset_mask2);
-	} else {
-		writel(WDT_RESET_DEFAULT, &priv->regs->reset_mask);
-	}
+	} else
+		writel(WDT_RESET_DEFAULT, &priv->regs->reset_mask1);
 
 	return 0;
 }

@@ -341,7 +341,7 @@
 						0x82000000 0x0 0x70000000 0x70000000 0x0 0x10000000>; /* non-prefetchable memory */
 				device_type = "pci";
 				bus-range = <0x00 0xff>;
-				resets = <&rst ASPEED_RESET_PCIE_RC_OE>, <&rst ASPEED_RESET_PCIE_RC_O>;
+				resets = <&rst ASPEED_RESET_PCIE_RC_O>;
 				cfg-handle = <&pcie_cfg1>;
 				pinctrl-names = "default";
 				pinctrl-0 = <&pinctrl_pcie1rc_default>;
@@ -405,15 +405,15 @@
 			};
 
 			h2x: h2x@1e770000 {
-			compatible = "aspeed,ast2600-h2x";
-			reg = <0x1e770000 0x100>;
-			interrupts = <GIC_SPI 29 IRQ_TYPE_LEVEL_HIGH>;
-			resets = <&rst ASPEED_RESET_H2X>;
-			#address-cells = <1>;
-			#size-cells = <1>;
-			ranges = <0x0 0x1e770000 0x100>;
+				compatible = "aspeed,ast2600-h2x";
+				reg = <0x1e770000 0x100>;
+				interrupts = <GIC_SPI 29 IRQ_TYPE_LEVEL_HIGH>;
+				resets = <&rst ASPEED_RESET_H2X>;
+				#address-cells = <1>;
+				#size-cells = <1>;
+				ranges = <0x0 0x1e770000 0x100>;
 
-			status = "disabled";
+				status = "disabled";
 
 				pcie_cfg0: cfg0@80 {
 					reg = <0x80 0x80>;
@@ -428,12 +428,13 @@
 
 			gpio0: gpio@1e780000 {
 				compatible = "aspeed,ast2600-gpio";
-				reg = <0x1e780000 0x1000>;
+				reg = <0x1e780000 0x400>;
 				interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>;
 				#gpio-cells = <2>;
 				gpio-controller;
 				interrupt-controller;
-				gpio-ranges = <&pinctrl 0 0 220>;
+				gpio-ranges = <&pinctrl 0 0 208>;
+				ngpios = <208>;
 			};
 
 			gpio1: gpio@1e780800 {
@@ -443,7 +444,8 @@
 				#gpio-cells = <2>;
 				gpio-controller;
 				interrupt-controller;
-				gpio-ranges = <&pinctrl 0 0 208>;
+				gpio-ranges = <&pinctrl 0 208 36>;
+				ngpios = <36>;
 			};
 
 			uart1: serial@1e783000 {
@@ -745,7 +747,13 @@
 				status = "disabled";
 			};
 
-
+			display_port: dp@1e6eb000 {
+				compatible = "aspeed,ast2600-displayport";
+				reg = <0x1e6eb000 0x200>;
+				interrupts = <GIC_SPI 30 IRQ_TYPE_LEVEL_HIGH>;
+				resets = <&rst ASPEED_RESET_DP> ,<&rst ASPEED_RESET_DP_MCU>;
+				status = "disabled";
+			};
 
 		};
 
@@ -1384,6 +1392,26 @@
         pinctrl_rmii4_default: rmii4_default {
                 function = "RMII4";
                 groups = "RMII4";
+        };
+
+        pinctrl_rmii1rclk_default: rmii1rclk_default {
+                function = "RMII1RCLK";
+                groups = "RMII1RCLK";
+        };
+
+        pinctrl_rmii2rclk_default: rmii2rclk_default {
+                function = "RMII2RCLK";
+                groups = "RMII2RCLK";
+        };
+
+        pinctrl_rmii3rclk_default: rmii3rclk_default {
+                function = "RMII3RCLK";
+                groups = "RMII3RCLK";
+        };
+
+        pinctrl_rmii4rclk_default: rmii4rclk_default {
+                function = "RMII4RCLK";
+                groups = "RMII4RCLK";
         };
 
 	pinctrl_ncts1_default: ncts1_default {

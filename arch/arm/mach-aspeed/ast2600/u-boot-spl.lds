@@ -40,6 +40,29 @@ SECTIONS
 
 	. = ALIGN(4);
 
+	.image_copy_end :
+	{
+		*(.__image_copy_end)
+	}
+
+#ifndef CONFIG_SPL_SKIP_RELOCATE
+	.rel_dyn_start :
+	{
+		*(.__rel_dyn_start)
+	} > flash
+
+	.rel.dyn : {
+		*(.rel*)
+	} > flash
+
+	.rel_dyn_end :
+	{
+		*(.__rel_dyn_end)
+	} > flash
+#endif
+
+	. = ALIGN(4);
+
 	.end_align : { *(.end_align*) } > flash
 	__spl_flash_end = .;
 

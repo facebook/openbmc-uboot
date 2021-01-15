@@ -8,7 +8,8 @@
 
 #if defined(CONFIG_ARCH_OMAP2PLUS) \
 	|| defined(CONFIG_EXYNOS4) || defined(CONFIG_EXYNOS5) \
-	|| defined(CONFIG_EXYNOS4210) || defined(CONFIG_ARCH_K3)
+	|| defined(CONFIG_EXYNOS4210) || defined(CONFIG_ARCH_K3) \
+	|| defined(CONFIG_ARCH_ASPEED)
 /* Platform-specific defines */
 #include <asm/arch/spl.h>
 

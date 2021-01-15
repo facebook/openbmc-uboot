@@ -1,8 +1,5 @@
 if TARGET_SLT_AST2600
 
-config SYS_TEXT_BASE
-	default 0x00000000
-
 config SYS_BOARD
 	default "slt_ast2600"
 

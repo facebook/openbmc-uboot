@@ -1,0 +1,22 @@
+if ASPEED_AST2400
+
+config SYS_CPU
+	default "arm926"
+
+choice
+	prompt "AST2400 target select"
+	depends on ASPEED_AST2400
+	default TARGET_EVB_AST2400
+
+config TARGET_EVB_AST2400
+	bool "EVB-AST2400"
+	help
+	  Evb-AST2400 is Aspeed evaluation board for AST2400 chip.
+	  It has 512M of RAM, 32M of SPI flash, two Ethernet ports,
+	  4 Serial ports, 4 USB ports, VGA port, PCIe, SD card slot,
+	  20 pin JTAG, pinouts for 14 I2Cs, 3 SPIs and eSPI, 8 PWMs.
+endchoice
+
+source "board/aspeed/evb_ast2400/Kconfig"
+
+endif

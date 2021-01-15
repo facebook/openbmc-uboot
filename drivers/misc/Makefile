@@ -10,6 +10,7 @@ obj-$(CONFIG_CROS_EC_LPC) += cros_ec_lpc.o
 obj-$(CONFIG_CROS_EC_I2C) += cros_ec_i2c.o
 obj-$(CONFIG_CROS_EC_SANDBOX) += cros_ec_sandbox.o
 obj-$(CONFIG_CROS_EC_SPI) += cros_ec_spi.o
+obj-$(CONFIG_ASPEED_DP) += aspeed_dp.o
 endif
 
 ifdef CONFIG_DM_I2C

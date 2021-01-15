@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) ASPEED Technology Inc.
  */
@@ -13,7 +13,7 @@ struct ast2600_clk_priv {
 };
 
 struct hw_strap {
-	u32 hwstrap;	/* 0x508 */
+	u32 hwstrap;			/* 0x500 */
 	u32 hwstrap_clr;		/* 0x504 */	
 	u32 hwstrap_protect;	/* 0x508 */
 };

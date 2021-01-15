@@ -43,19 +43,17 @@
 #define AST_SCU_DEBUG_CTRL2             (AST_SCU_BASE + 0x0D8)
 #define AST_SCU_HPLL_PARAM		(AST_SCU_BASE + 0x200)
 #define AST_SCU_HPLL_PARAM_EXT		(AST_SCU_BASE + 0x204)
-#define AST_SCU_MFP_CTRL7		(AST_SCU_BASE + 0x41C)
-#define AST_SCU_MFP_CTRL15		(AST_SCU_BASE + 0x454)
+#define AST_SCU_MFP_CTRL7              (AST_SCU_BASE + 0x41C)
+#define AST_SCU_MFP_CTRL15             (AST_SCU_BASE + 0x454)
 #define AST_SCU_HW_STRAP1		(AST_SCU_BASE + 0x500)
 #define AST_SCU_HW_STRAP2		(AST_SCU_BASE + 0x510)
-#define AST_SCU_CA7_CTRL		(AST_SCU_BASE + 0x800)
-#define AST_SCU_CA7_AXI_PREFETCH_START	(AST_SCU_BASE + 0x808)
-#define AST_SCU_CA7_AXI_PREFETCH_END	(AST_SCU_BASE + 0x80C)
 #define AST_SCU_CA7_PARITY_CHK		(AST_SCU_BASE + 0x820)
 #define AST_SCU_CA7_PARITY_CLR		(AST_SCU_BASE + 0x824)
 #define AST_SCU_MMIO_DEC_SET		(AST_SCU_BASE + 0xC24)
 
 #define AST_FMC_BASE		(0x1E620000)
 #define AST_FMC_CE0_CTRL	(AST_FMC_BASE + 0x010)
+#define AST_FMC_SW_RST_CTRL	(AST_FMC_BASE + 0x050)
 #define AST_FMC_WDT1_CTRL_MODE	(AST_FMC_BASE + 0x060)
 #define AST_FMC_WDT2_CTRL_MODE	(AST_FMC_BASE + 0x064)
 
@@ -78,8 +76,8 @@
 
 .macro timer_init
 #ifdef CONFIG_FPGA_ASPEED
-	movw	r0, #0xF080
-	movt	r0, #0x2FA
+	movw	r0, #0xf080
+	movt	r0, #0x02fa
 #else
 	ldr	r0, =AST_SCU_REV_ID
 	ldr	r0, [r0]
@@ -87,10 +85,40 @@
 	ldr	r1, =REV_ID_AST2600A0
 	cmp	r0, r1
 
-	movweq 	r0, #0x32C0
+	beq	timer_init_a0
+
+	ldr	r1, =AST_SCU_HW_STRAP1
+	ldr	r1, [r1]
+	and	r1, #0x700
+	lsr	r1, #0x8
+
+	cmp	r1, #0x0
+	movweq	r0, #0x8c00
+	movteq	r0, #0x4786
+
+	cmp	r1, #0x1
+	movweq	r0, #0x1000
+	movteq	r0, #0x5f5e
+
+	cmp	r1, #0x2
+	movweq	r0, #0x8c00
+	movteq	r0, #0x4786
+
+	cmp	r1, #0x3
+	movweq	r0, #0x1000
+	movteq	r0, #0x5f5e
+
+	cmp	r1, #0x4
+	movwge	r0, #0x0800
+	movtge	r0, #0x2faf
+
+	b	timer_init_out
+
+timer_init_a0:
+	movweq 	r0, #0x32c0
 	movteq	r0, #0x4013
-	movwne	r0, #0x8C00
-	movtne	r0, #0x4786
+
+timer_init_out:
 #endif
 	mcr	p15, 0, r0, c14, c0, 0	@; update CNTFRQ
 .endm
@@ -182,20 +210,6 @@ wait_lock:
 	b 1f
 
 0:
-	/* enable AXI prefetch (A1 only) */
-	ldr	r0, =AST_SCU_CA7_AXI_PREFETCH_START
-	ldr r1, =ASPEED_DRAM_BASE
-	str r1, [r0]
-
-	ldr	r0, =AST_SCU_CA7_AXI_PREFETCH_END
-	ldr	r1, =0xFFFFFFFF
-	str r1, [r0]
-
-	ldr	r0, =AST_SCU_CA7_CTRL
-	ldr	r1, [r0]
-	orr	r1, #0x8000
-	str	r1, [r0]
-
 	/* LPC/eSPI mode selection (A1 only) */
 	ldr	r0, =AST_GPIOYZ_DATA_VALUE
 	ldr	r0, [r0]
@@ -209,12 +223,6 @@ wait_lock:
 	str	r1, [r0]
 
 1:
-	/* release display port reset */
-	ldr	r0, =AST_SCU_SYSRST_CTRL_CLR
-	movw	r1, #0x0000
-	movt	r1, #0x3000
-	str	r1, [r0]
-
 	/* MMIO decode setting */
 	ldr	r0, =AST_SCU_MMIO_DEC_SET
 	mov	r1, #0x2000
@@ -225,8 +233,7 @@ wait_lock:
 	ldr	r1, =AST_SCU_CA7_PARITY_CLR
 	str	r0, [r1]
 
-	/* disable SRAM parity check to prevent AST2620 A1 hang */
-	mov	r0, #0x01
+	mov	r0, #0x1
 	ldr	r1, =AST_SCU_CA7_PARITY_CHK
 	str	r0, [r1]
 
@@ -234,7 +241,20 @@ wait_lock:
 	ldr	r1, =AST_FMC_WDT2_CTRL_MODE
 	str	r0, [r1]
 #endif
-	/* tune up SPI clock with default 4B address mode */
+
+	/* do not fill FMC50[1] if boot from eMMC */
+	ldr	r0, =AST_SCU_HW_STRAP1
+	ldr	r1, [r0]
+	ands	r1, #0x04
+	bne	skip_fill_wip_bit
+
+	/* fill FMC50[1] for waiting WIP idle */
+	mov	r0, #0x02
+	ldr	r1, =AST_FMC_SW_RST_CTRL
+	str	r0, [r1]
+skip_fill_wip_bit:
+
+	/* tune up SPI clock */
 	movw	r0, #0x0600
 	movt	r0, #0x0000
 	ldr	r1, =AST_FMC_CE0_CTRL
@@ -259,6 +279,7 @@ wait_lock:
 	str     r1, [r0]
 #endif
 
+#if 1 /* revisit this hack from fuji */
 	/* Enable UART1: Set Multi-function Pin for UART1 */
 	ldr     r0, =AST_SCU_MFP_CTRL7
 	ldr     r1, [r0]
@@ -269,13 +290,14 @@ wait_lock:
 	ldr   r0, =AST_HI_CTRL9
 	ldr   r1, =0x20
 	str   r1, [r0]
+#endif
 
 	/* Strongest LADESPID Driving Strngth */
-	ldr	r0, =AST_SCU_MFP_CTRL15
-	ldr	r1, [r0]
+	ldr     r0, =AST_SCU_MFP_CTRL15
+	ldr     r1, [r0]
 	mov r2, #0xff00
 	orr r1, r2, lsl #16
-	str	r1, [r0]
+	str     r1, [r0]
 
 	/* relocate mailbox insn. for cpuN polling SMP go signal */
 	adrl	r0, mailbox_insn

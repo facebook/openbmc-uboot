@@ -328,6 +328,8 @@ static int set_4byte(struct spi_nor *nor, const struct flash_info *info,
 		need_wren = true;
 	case SNOR_MFR_MACRONIX:
 	case SNOR_MFR_WINBOND:
+	case SNOR_MFR_GIGADEVICE:
+	case SNOR_MFR_ISSI:
 		if (need_wren)
 			write_enable(nor);
 
@@ -1985,6 +1987,7 @@ static int spi_nor_init_params(struct spi_nor *nor,
 #endif
 		case SNOR_MFR_ST:
 		case SNOR_MFR_MICRON:
+		case SNOR_MFR_ISSI:
 			break;
 
 		default:

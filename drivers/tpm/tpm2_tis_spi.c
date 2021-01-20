@@ -640,6 +640,13 @@ static int tpm_tis_spi_probe(struct udevice *dev)
 		return ret;
 	}
 
+	if ((chip->vend_dev & 0xFFFF) == 0xFFFF ||
+		(chip->vend_dev & 0xFFFF) == 0x0000) {
+		log(LOGC_NONE, LOGL_ERR,
+		    "Invalid VendorID: %04x\n", chip->vend_dev & 0xFFFF);
+		return -ENODEV;
+	}
+
 	log(LOGC_NONE, LOGL_ERR,
 	    "SPI TPMv2.0 found (vid:%04x, did:%04x, rid:%02x)\n",
 	    chip->vend_dev & 0xFFFF, chip->vend_dev >> 16, chip->rid);

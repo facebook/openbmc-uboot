@@ -2,6 +2,30 @@
 
 #include "ast2500-fb-vboot.dtsi"
 
+#if CONFIG_IS_ENABLED(TPM_V2)
+/ {
+	spi_gpio: spi-gpio {
+		status = "okay";
+		compatible = "spi-gpio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		gpio-sck = <&gpio ASPEED_GPIO(I, 5) GPIO_ACTIVE_HIGH>;
+		gpio-mosi = <&gpio ASPEED_GPIO(I, 6) GPIO_ACTIVE_HIGH>;
+		gpio-miso = <&gpio ASPEED_GPIO(I, 7) GPIO_ACTIVE_HIGH>;
+		num-chipselects = <1>;
+		cs-gpios = <&gpio ASPEED_GPIO(I, 4) GPIO_ACTIVE_LOW>;
+		u-boot,dm-pre-reloc;
+
+		tpmdev@0 {
+			compatible = "tis,tpm2-spi";
+			spi-max-frequency = <33000000>;
+			reg = <0>;
+			u-boot,dm-pre-reloc;
+		};
+	};
+};
+#else
 &i2c9 {
 	status = "okay";
 	u-boot,dm-pre-reloc;
@@ -13,4 +37,4 @@
 		u-boot,dm-pre-reloc;
 	};
 };
-
+#endif

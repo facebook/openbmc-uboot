@@ -26,15 +26,18 @@ enum {
 /* Useful debugging function */
 void i2c_dump_msgs(struct i2c_msg *msg, int nmsgs)
 {
-	int i;
+	int i, j;
 
 	for (i = 0; i < nmsgs; i++) {
 		struct i2c_msg *m = &msg[i];
 
 		printf("   %s %x len=%x", m->flags & I2C_M_RD ? "R" : "W",
-		       msg->addr, msg->len);
-		if (!(m->flags & I2C_M_RD))
-			printf(": %x", m->buf[0]);
+		       m->addr, m->len);
+		if (!(m->flags & I2C_M_RD)) {
+			printf(": ");
+			for (j = 0; j < m->len; j++)
+				printf("%x ", m->buf[j]);
+		}
 		printf("\n");
 	}
 }

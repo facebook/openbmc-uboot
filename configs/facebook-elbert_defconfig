@@ -52,7 +52,16 @@ CONFIG_SPI=y
 CONFIG_DM_SPI=y
 CONFIG_SYSRESET=y
 CONFIG_WDT=y
+CONFIG_ABR_BOOT=y
 CONFIG_FMC_DUAL_BOOT=y
+
+#
+# Confirmed with ASPEED: DCACHE doesn't work in u-boot because it needs
+# MMU support but MMU is not enabled in u-boot environment.
+# Our observation is turning on DCACHE would lead to OTP programming
+# failures on AST2620-A2 boards, hence let's disable it explicitly.
+#
+CONFIG_SYS_DCACHE_OFF=y
 
 #
 # Board specific config.

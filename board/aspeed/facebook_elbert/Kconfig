@@ -10,4 +10,7 @@ config SYS_CONFIG_NAME
 	string "board configuration name"
 	default "facebook_elbert"
 
+config ABR_BOOT
+    bool "enable/disable abr boot flag"
+	default "n"
 endif

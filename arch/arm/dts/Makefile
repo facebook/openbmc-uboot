@@ -713,6 +713,7 @@ dtb-$(CONFIG_ARCH_MEDIATEK) += \
 dtb-$(CONFIG_TARGET_FB_AST_GEN_5) += \
 	fbal.dtb \
 	fbcmm.dtb \
+	fbminipack.dtb \
 	fbep.dtb \
 	fbcc.dtb \
 	fbwedge400.dtb \

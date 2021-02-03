@@ -2,12 +2,6 @@
 
 #if CONFIG_IS_ENABLED(PFR_SUPPORT)
 #include "ast2500-fb-pfr.dtsi"
-
-&i2c12 {
-	status = "okay";
-	/* mailbox */
-};
-
 #else
 #include "ast2500-fb-vboot.dtsi"
 #endif
@@ -57,6 +51,11 @@
 	flash@0 {
 		spi-max-frequency = <40000000>;
 	};
+};
+
+&i2c12 {
+	status = "okay";
+	/* baseboard CPLD */
 };
 
 #include <dt-bindings/gpio/aspeed-gpio.h>

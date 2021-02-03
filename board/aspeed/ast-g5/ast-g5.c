@@ -1069,7 +1069,7 @@ static void init_SKU_ID_PAX(void)
   reg |= 0x00000041;
   // __raw_writel(reg, AST_GPIO_BASE + 0x0CC);
   __raw_writel(reg, AST_GPIO_BASE + 0x078);
-  
+
   // set GPIOAC0 AC2 direction output
   reg = __raw_readl(AST_GPIO_BASE + 0x1EC);
   reg |= 0x5;
@@ -1098,7 +1098,6 @@ static void init_MUX_RESET_PIN(void)
   reg |= 0x20000000;
   __raw_writel(reg, AST_GPIO_BASE + 0x070);
 
-
     // set GPIOY0 direction output
   reg = __raw_readl(AST_GPIO_BASE + 0x1E4);
   reg |= 0x00000001;
@@ -1107,6 +1106,26 @@ static void init_MUX_RESET_PIN(void)
   reg = __raw_readl(AST_GPIO_BASE + 0x1E0);
   reg |= 0x00000001;
   __raw_writel(reg, AST_GPIO_BASE + 0x1E0);
+}
+
+static void init_CPLD_POWER_ON(void)
+{
+  u32 reg;
+
+  // enable GPIOAC1
+  reg = __raw_readl(AST_SCU_BASE + 0xAC);
+  reg &= ~0x02;
+  __raw_writel(reg, AST_SCU_BASE + 0xAC);
+
+  // set GPIOAC1 direction output
+  reg = __raw_readl(AST_GPIO_BASE + 0x1EC);
+  reg |= 0x00000002;
+  __raw_writel(reg, AST_GPIO_BASE + 0x1EC);
+
+  reg = __raw_readl(AST_GPIO_BASE + 0x1E8);
+  reg &= 0xFFFFFFFD;
+  // set GPIOAC1 value 0
+  __raw_writel(reg, AST_GPIO_BASE + 0x1E8);
 }
 
 #endif
@@ -1173,6 +1192,7 @@ int board_init(void)
   init_SEL_FLASH_PAX();
   init_SKU_ID_PAX();
   init_MUX_RESET_PIN();
+  init_CPLD_POWER_ON();
 #endif
 
   gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;

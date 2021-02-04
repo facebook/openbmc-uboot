@@ -997,24 +997,6 @@ static void policy_init(void)
 #endif
 
 #if defined(CONFIG_FBEP)
-static void fan_init(void)
-{
-  u32 reg;
-  // Disable reset PWM controller
-  // EXTRST
-  reg = __raw_readl(AST_SCU_BASE + 0x9C);
-  reg &= ~(1 << 17);
-  __raw_writel(reg, AST_SCU_BASE + 0x9C);
-  // WDT1
-  reg = __raw_readl(AST_WDT_BASE + 0x1C);
-  reg &= ~(1 << 17);
-  __raw_writel(reg, AST_WDT_BASE + 0x1C);
-
-  // Set PWM A/B/C/D to 70%
-  __raw_writel(0x43004300, AST_PWM_BASE + 0x08);
-  __raw_writel(0x43004300, AST_PWM_BASE + 0x0C);
-}
-
 static void led_init(void)
 {
   u32 reg;
@@ -1025,6 +1007,185 @@ static void led_init(void)
   reg = __raw_readl(AST_GPIO_BASE + 0x7C);
   reg |= (0x1 << 1);
   __raw_writel(reg, AST_GPIO_BASE + 0x7C);
+}
+
+static int init_LINKCFG_ASIC(void)
+{
+  struct udevice *dev, *bus;
+  int retry = 2;
+  int ret;
+  u8 addr;
+
+  ret = uclass_get_device_by_name(UCLASS_I2C, "i2c-bus@300", &bus);
+  if (ret) {
+    printf("i2c-7 is not enabled\n");
+    return ret;
+  }
+
+  for (addr = 0x20; addr <= 0x27; addr++) {
+    ret = i2c_get_chip(bus, addr, 1, &dev);
+    if (ret) {
+      printf("Can't find GPIO expander at 0x%02X\n", addr);
+      break;
+    }
+
+    do {
+      // LINK_CONFIG[4:0] = b'01010
+      ret = dm_i2c_reg_write(dev, 0x2, 0xEA);
+      if (ret && retry) {
+	udelay(10000);
+      }
+      ret = dm_i2c_reg_write(dev, 0x6, 0xEA);
+      if (ret && retry) {
+	udelay(10000);
+      }
+
+    } while (ret && (retry-- > 0));
+  }
+
+  return ret;
+}
+
+static int init_PAX_FLASH(void)
+{
+  u32 reg;
+
+  // SPI MUX: GPIOAA0/GPIOAA1/GPIOAA5/GPIOAA6
+  // To output-low
+  reg = __raw_readl(AST_GPIO_BASE + 0x1E0);
+  reg = reg & ~((0x1 << 16) | (0x1 << 17) | (0x1 << 21) | (0x1 << 22));
+  __raw_writel(reg, AST_GPIO_BASE + 0x1E0);
+  reg = __raw_readl(AST_GPIO_BASE + 0x1E4);
+  reg = reg | ((0x1 << 16) | (0x1 << 17) | (0x1 << 21) | (0x1 << 22));
+  __raw_writel(reg, AST_GPIO_BASE + 0x1E4);
+
+  return 0;
+}
+
+static int setup_SKU_ID(int server_type)
+{
+  u32 reg;
+
+  // Switch GPIOAC0 GPIOAC2 to GPIO function
+  reg = __raw_readl(AST_SCU_BASE + 0xAC);
+  reg = reg & ~((0x1 << 0) | (0x1 << 2));
+  __raw_writel(reg, AST_SCU_BASE + 0xAC);
+
+  // SKU ID0: GPIOB0/GPIOB4/GPIOAC0/GPIOAC2
+  // SKU ID1: GPIOB6/GPIOB7/GPIOM0/GPIOM6
+  // To ouput
+  reg = __raw_readl(AST_GPIO_BASE + 0x04);
+  reg = reg | ((0x1 << 8) | (0x1 << 12) | (0x1 << 14) | (0x1 << 15));
+  __raw_writel(reg, AST_GPIO_BASE + 0x04);
+  reg = __raw_readl(AST_GPIO_BASE + 0x7C);
+  reg = reg | ((0x1 << 0) | 0x1 << 6);
+  __raw_writel(reg, AST_GPIO_BASE + 0x7C);
+  reg = __raw_readl(AST_GPIO_BASE + 0x1EC);
+  reg = reg | ((0x1 << 0) | 0x1 << 2);
+  __raw_writel(reg, AST_GPIO_BASE + 0x1EC);
+
+  reg = __raw_readl(AST_GPIO_BASE + 0x00);
+  reg = reg & ~((0x1 << 14) | 0x1 << 15);
+  __raw_writel(reg, AST_GPIO_BASE + 0x00);
+  reg = __raw_readl(AST_GPIO_BASE + 0x78);
+  reg = reg & ~((0x1 << 0) | 0x1 << 6);
+  __raw_writel(reg, AST_GPIO_BASE + 0x78);
+
+  if (server_type == 4 || server_type == 8) {
+    // 0
+    reg = __raw_readl(AST_GPIO_BASE + 0x00);
+    reg = reg & ~((0x1 << 8) | 0x1 << 12);
+    __raw_writel(reg, AST_GPIO_BASE + 0x00);
+
+    reg = __raw_readl(AST_GPIO_BASE + 0x1E8);
+    reg = reg & ~((0x1 << 0) | 0x1 << 2);
+    __raw_writel(reg, AST_GPIO_BASE + 0x1E8);
+
+  } else if (server_type == 2) {
+    // 1
+    reg = __raw_readl(AST_GPIO_BASE + 0x00);
+    reg = reg | ((0x1 << 8) | 0x1 << 12);
+    __raw_writel(reg, AST_GPIO_BASE + 0x00);
+
+    reg = __raw_readl(AST_GPIO_BASE + 0x1E8);
+    reg = reg | ((0x1 << 0) | 0x1 << 2);
+    __raw_writel(reg, AST_GPIO_BASE + 0x1E8);
+
+  } else {
+    return -1;
+  }
+
+  return 0;
+}
+
+static int init_SKU_ID_PAX(void)
+{
+  struct udevice *dev, *bus;
+  int server_type = -1;
+  int retry = 2;
+  int ret;
+
+  ret = uclass_get_device_by_name(UCLASS_I2C, "i2c-bus@1c0", &bus);
+  if (ret) {
+    printf("i2c-6 is not enabled\n");
+    return ret;
+  }
+
+  ret = i2c_get_chip(bus, 0x54, 2, &dev);
+  if (ret) {
+    printf("Can't find MB EEPROM\n");
+    return ret;
+  }
+
+  do {
+    server_type = dm_i2c_reg_read(dev, 1030);
+    if (server_type < 0 && retry) {
+      udelay(10000);
+    }
+  } while (server_type < 0 && (retry-- > 0));
+
+  printf("Server type: ");
+  if (server_type == 2 || server_type == 4 || server_type == 8) {
+    printf("%d Socket mode\n", server_type);
+    return setup_SKU_ID(server_type);
+  } else {
+    printf("Unknown\n");
+    return -1;
+  }
+}
+
+static void init_ASIC_PAX(void)
+{
+  u32 reg;
+
+  // Release AST SMBus reset
+  reg = __raw_readl(AST_SCU_BASE + 0x04);
+  reg &= ~(0x1 << 2);
+  __raw_writel(reg, AST_SCU_BASE + 0x04);
+
+  if (init_LINKCFG_ASIC() < 0 ||
+      init_SKU_ID_PAX() < 0 ||
+      init_PAX_FLASH() < 0)
+    return;
+
+  // Assume server is present
+  // GPIOM1 (PWR_CTRL) to output-low
+  reg = __raw_readl(AST_GPIO_BASE + 0x78);
+  reg |= (0x1 << 1);
+  __raw_writel(reg, AST_GPIO_BASE + 0x78);
+
+  reg = __raw_readl(AST_GPIO_BASE + 0x7C);
+  reg &= ~(0x1 << 1);
+  __raw_writel(reg, AST_GPIO_BASE + 0x7C);
+
+  // GPIOB2 (BMC_READY) to output-low
+  reg = __raw_readl(AST_GPIO_BASE + 0x04);
+  reg |= (0x1 << 10);
+  __raw_writel(reg, AST_GPIO_BASE + 0x04);
+
+  reg = __raw_readl(AST_GPIO_BASE + 0x00);
+  reg &= ~(0x1 << 10);
+  __raw_writel(reg, AST_GPIO_BASE + 0x00);
 }
 #endif
 
@@ -1179,9 +1340,9 @@ int board_init(void)
 #endif
 
 #if defined(CONFIG_FBEP)
-  fan_init();
   led_init();
   fix_mmc_hold_time_fail();
+  init_ASIC_PAX();
 #endif
 
 #if defined(CONFIG_FBY3)

@@ -997,18 +997,6 @@ static void policy_init(void)
 #endif
 
 #if defined(CONFIG_FBEP)
-static void led_init(void)
-{
-  u32 reg;
-  // ID_LED (GPIOM1) output-high
-  reg = __raw_readl(AST_GPIO_BASE + 0x78);
-  reg |= (0x1 << 1);
-  __raw_writel(reg, AST_GPIO_BASE + 0x78);
-  reg = __raw_readl(AST_GPIO_BASE + 0x7C);
-  reg |= (0x1 << 1);
-  __raw_writel(reg, AST_GPIO_BASE + 0x7C);
-}
-
 static int init_LINKCFG_ASIC(void)
 {
   struct udevice *dev, *bus;
@@ -1170,13 +1158,12 @@ static void init_ASIC_PAX(void)
 
   // Assume server is present
   // GPIOM1 (PWR_CTRL) to output-low
-  reg = __raw_readl(AST_GPIO_BASE + 0x78);
-  reg |= (0x1 << 1);
-  __raw_writel(reg, AST_GPIO_BASE + 0x78);
-
   reg = __raw_readl(AST_GPIO_BASE + 0x7C);
-  reg &= ~(0x1 << 1);
+  reg |= (0x1 << 1);
   __raw_writel(reg, AST_GPIO_BASE + 0x7C);
+  reg = __raw_readl(AST_GPIO_BASE + 0x78);
+  reg &= ~(0x1 << 1);
+  __raw_writel(reg, AST_GPIO_BASE + 0x78);
 
   // GPIOB2 (BMC_READY) to output-low
   reg = __raw_readl(AST_GPIO_BASE + 0x04);
@@ -1340,7 +1327,6 @@ int board_init(void)
 #endif
 
 #if defined(CONFIG_FBEP)
-  led_init();
   fix_mmc_hold_time_fail();
   init_ASIC_PAX();
 #endif

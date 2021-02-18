@@ -713,7 +713,7 @@ static int rsa_sign_with_hsmcli(struct image_sign_info *info,
 				else {
 					ret = ENODATA;
 					fprintf(stderr,
-						"Signature size %d wrong.\n",
+						"Signature size %ld wrong.\n",
 						sigsize - remain);
 				}
 				break;

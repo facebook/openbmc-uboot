@@ -63,6 +63,8 @@
 
 /* Revision ID */
 #define REV_ID_AST2600A0	0x05000303
+#define REV_ID_AST2600A1	0x05010303
+#define REV_ID_AST2620A1	0x05020203
 
 .macro scu_unlock
 	movw	r0, #0xA8A8
@@ -76,8 +78,8 @@
 
 .macro timer_init
 #ifdef CONFIG_FPGA_ASPEED
-	movw	r0, #0xf080
-	movt	r0, #0x02fa
+	movw	r0, #0x6c00
+	movt	r0, #0x02dc
 #else
 	ldr	r0, =AST_SCU_REV_ID
 	ldr	r0, [r0]
@@ -115,7 +117,7 @@
 	b	timer_init_out
 
 timer_init_a0:
-	movweq 	r0, #0x32c0
+	movweq	r0, #0x32c0
 	movteq	r0, #0x4013
 
 timer_init_out:
@@ -207,14 +209,27 @@ wait_lock:
 	beq	wait_lock
 
 	/* skip A1 only area */
-	b 1f
+	b 2f
 
 0:
-	/* LPC/eSPI mode selection (A1 only) */
+	/* identify AST2600/AST2620 A1 */
+	ldr	r0, =AST_SCU_REV_ID
+	ldr	r0, [r0]
+
+	ldr	r1, =REV_ID_AST2600A1
+	cmp	r0, r1
+	beq	1f
+
+	ldr	r1, =REV_ID_AST2620A1
+	cmp	r0, r1
+	bne	2f
+
+1:
+	/* LPC/eSPI mode selection by SW (AST2600/AST2620 A1 only) */
 	ldr	r0, =AST_GPIOYZ_DATA_VALUE
 	ldr	r0, [r0]
 	tst	r0, #0x1000
-	beq	1f
+	beq	2f
 
 	/* switch to LPC mode if GPIOZ[4]=1 */
 	ldr	r0, =AST_SCU_HW_STRAP2
@@ -222,7 +237,7 @@ wait_lock:
 	orr	r1, #0x40
 	str	r1, [r0]
 
-1:
+2:
 	/* MMIO decode setting */
 	ldr	r0, =AST_SCU_MMIO_DEC_SET
 	mov	r1, #0x2000
@@ -271,7 +286,7 @@ skip_fill_wip_bit:
 	ldr     r1, [r0]
 	orr     r1, #0x03
 	str     r1, [r0]
-	
+
 	/* disable UART-based SoC Debug Interface UART1 and LPC2AHB bridge */
 	ldr     r0, =AST_SCU_DEBUG_CTRL2
 	ldr     r1, [r0]

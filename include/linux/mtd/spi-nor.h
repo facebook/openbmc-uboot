@@ -27,6 +27,7 @@
 #define SNOR_MFR_SST		CFI_MFR_SST
 #define SNOR_MFR_WINBOND	0xef /* Also used by some Spansion */
 #define SNOR_MFR_ISSI		0x9d
+#define SNOR_MFR_CYPRESS	0x34
 
 /*
  * Note on opcode nomenclature: some opcodes have a format like
@@ -108,6 +109,8 @@
 #define SPINOR_OP_BRWR		0x17	/* Bank register write */
 #define SPINOR_OP_BRRD		0x16	/* Bank register read */
 #define SPINOR_OP_CLSR		0x30	/* Clear status register 1 */
+#define SPINOR_OP_WRAR		0x71	/* Write any register */
+#define SPINOR_REG_ADDR_CFR1V	0x00800002
 
 /* Used for Micron flashes only. */
 #define SPINOR_OP_RD_EVCR      0x65    /* Read EVCR register */

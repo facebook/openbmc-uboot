@@ -57,6 +57,21 @@ __weak int board_init(void)
 	struct udevice *dev;
 	int i;
 	int ret;
+	u64 rev_id;
+	u32 tmp_val;
+
+	/* disable address remapping for A1 to prevent secure boot reboot failure */
+	rev_id = readl(ASPEED_REVISION_ID0);
+	rev_id = ((u64)readl(ASPEED_REVISION_ID1) << 32) | rev_id;
+
+	if (rev_id == 0x0501030305010303 || rev_id == 0x0501020305010203) {
+		if ((readl(ASPEED_SB_STS) & BIT(6))) {
+			tmp_val = readl(0x1e60008c) & (~BIT(0));
+			writel(0xaeed1a03, 0x1e600000);
+			writel(tmp_val, 0x1e60008c);
+			writel(0x1, 0x1e600000);
+		}
+	}
 
 	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
 

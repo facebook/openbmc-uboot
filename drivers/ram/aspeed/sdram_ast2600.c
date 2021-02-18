@@ -150,7 +150,7 @@ static const u32 ddr_max_grant_params[4] = {0x88888888, 0x88888888, 0x88888888,
 static const u32 ddr4_ac_timing[4] = {0x040e0307, 0x0f4711f1, 0x0e060304,
                                       0x00001240};
 
-static const u32 ddr_max_grant_params[4] = {0x44444444, 0x44444444, 0x44444444,
+static const u32 ddr_max_grant_params[4] = {0x44444444, 0x44444466, 0x44444444,
                                             0x44444444};
 #endif
 
@@ -805,6 +805,28 @@ static void ast2600_sdrammc_update_size(struct dram_info *info)
 {
 	struct ast2600_sdrammc_regs *regs = info->regs;
 	size_t hw_size;
+	size_t ram_size = SDRAM_MAX_SIZE;
+	u32 cap_param;
+
+	cap_param = (readl(&info->regs->config) & SDRAM_CONF_CAP_MASK) >> SDRAM_CONF_CAP_SHIFT;
+	switch (cap_param)
+	{
+	case SDRAM_CONF_CAP_2048M:
+		ram_size = 2048 * SDRAM_SIZE_1MB;
+		break;
+	case SDRAM_CONF_CAP_1024M:
+		ram_size = 1024 * SDRAM_SIZE_1MB;
+		break;
+	case SDRAM_CONF_CAP_512M:
+		ram_size = 512 * SDRAM_SIZE_1MB;
+		break;
+	case SDRAM_CONF_CAP_256M:
+		ram_size = 256 * SDRAM_SIZE_1MB;
+		break;
+	}
+
+	info->info.base = CONFIG_SYS_SDRAM_BASE;
+	info->info.size = ram_size - ast2600_sdrammc_get_vga_mem_size(info) - CONFIG_ASPEED_SSP_RERV_MEM;
 
 	if (0 == (readl(&regs->config) & SDRAM_CONF_ECC_SETUP))
 		return;
@@ -871,7 +893,6 @@ static int ast2600_sdrammc_probe(struct udevice *dev)
 
 	if (readl(priv->scu + AST_SCU_HANDSHAKE) & SCU_SDRAM_INIT_READY_MASK) {
 		printf("already initialized, ");
-		ast2600_sdrammc_calc_size(priv);
 		ast2600_sdrammc_update_size(priv);
 		return 0;
 	}

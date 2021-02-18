@@ -2076,6 +2076,7 @@ static int do_ast_otp(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 		info_cb.key_info_len = ARRAY_SIZE(a2_key_type);
 		break;
 	default:
+		printf("SOC is not supported\n");
 		return CMD_RET_FAILURE;
 	}
 

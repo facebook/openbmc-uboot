@@ -285,7 +285,7 @@ static u32 ast2600_get_hclk(struct ast2600_scu *scu)
 		if (hwstrap1 & BIT(16)) {
 			ast2600_a1_axi_ahb_div1_table[0] =
 				ast2600_a1_axi_ahb_default_table[(hwstrap1 >> 8) &
-								 0x3];
+								 0x7] * 2;
 			axi_div = 1;
 			ahb_div =
 				ast2600_a1_axi_ahb_div1_table[(hwstrap1 >> 11) &
@@ -293,7 +293,7 @@ static u32 ast2600_get_hclk(struct ast2600_scu *scu)
 		} else {
 			ast2600_a1_axi_ahb_div0_table[0] =
 				ast2600_a1_axi_ahb_default_table[(hwstrap1 >> 8) &
-								 0x3];
+								 0x7];
 			axi_div = 2;
 			ahb_div =
 				ast2600_a1_axi_ahb_div0_table[(hwstrap1 >> 11) &
@@ -1006,10 +1006,10 @@ static void ast2600_configure_rsa_ecc_clk(struct ast2600_scu *scu)
 {
 	u32 clk_sel = readl(&scu->clk_sel1);
 
-	/* Configure RSA clock = HPLL/3 */
+	/* Configure RSA clock = HPLL/4 */
 	clk_sel |= SCU_CLK_ECC_RSA_FROM_HPLL_CLK;
 	clk_sel &= ~SCU_CLK_ECC_RSA_CLK_MASK;
-	clk_sel |= SCU_CLK_ECC_RSA_CLK_DIV(2);
+	clk_sel |= SCU_CLK_ECC_RSA_CLK_DIV(3);
 
 	writel(clk_sel, &scu->clk_sel1);
 }

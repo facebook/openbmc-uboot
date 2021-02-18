@@ -298,6 +298,7 @@ static void spi_nor_set_4byte_opcodes(struct spi_nor *nor,
 	/* Do some manufacturer fixups first */
 	switch (JEDEC_MFR(info)) {
 	case SNOR_MFR_SPANSION:
+	case SNOR_MFR_CYPRESS:
 		/* No small sector erase for 4-byte command set */
 		nor->erase_opcode = SPINOR_OP_SE;
 		nor->mtd.erasesize = info->sector_size;
@@ -330,6 +331,7 @@ static int set_4byte(struct spi_nor *nor, const struct flash_info *info,
 	case SNOR_MFR_WINBOND:
 	case SNOR_MFR_GIGADEVICE:
 	case SNOR_MFR_ISSI:
+	case SNOR_MFR_CYPRESS:
 		if (need_wren)
 			write_enable(nor);
 
@@ -592,6 +594,71 @@ erase_err:
 
 	return ret;
 }
+
+#ifdef CONFIG_SPI_FLASH_SPANSION
+/*
+ * Erase for Spansion/Cypress Flash devices that has overlaid 4KB sectors at
+ * the top and/or bottom.
+ */
+static int spansion_overlaid_erase(struct mtd_info *mtd,
+				   struct erase_info *instr)
+{
+	struct spi_nor *nor = mtd_to_spi_nor(mtd);
+	struct erase_info instr_4k;
+	u8 opcode;
+	u32 erasesize;
+	int ret;
+
+	/* Perform default erase operation (non-overlaid portion is erased) */
+	ret = spi_nor_erase(mtd, instr);
+	if (ret)
+		return ret;
+
+	/* Backup default erase opcode and size */
+	opcode = nor->erase_opcode;
+	erasesize = mtd->erasesize;
+
+	/*
+	 * Erase 4KB sectors. Use the possible max length of 4KB sector region.
+	 * The Flash just ignores the command if the address is not configured
+	 * as 4KB sector and reports ready status immediately.
+	 */
+	instr_4k.len = SZ_128K;
+	nor->erase_opcode = SPINOR_OP_BE_4K_4B;
+	mtd->erasesize = SZ_4K;
+	if (instr->addr == 0) {
+		instr_4k.addr = 0;
+		ret = spi_nor_erase(mtd, &instr_4k);
+	}
+	if (!ret && instr->addr + instr->len == mtd->size) {
+		instr_4k.addr = mtd->size - instr_4k.len;
+		ret = spi_nor_erase(mtd, &instr_4k);
+	}
+
+	/* Restore erase opcode and size */
+	nor->erase_opcode = opcode;
+	mtd->erasesize = erasesize;
+
+	return ret;
+}
+
+static bool cypress_s25hx_t(const struct flash_info *info)
+{
+	if (JEDEC_MFR(info) == SNOR_MFR_CYPRESS) {
+		switch (info->id[1]) {
+		case 0x2a: /* S25HL (QSPI, 3.3V) */
+		case 0x2b: /* S25HS (QSPI, 1.8V) */
+			return true;
+			break;
+
+		default:
+			break;
+		}
+	}
+
+	return false;
+}
+#endif
 
 #if defined(CONFIG_SPI_FLASH_STMICRO) || defined(CONFIG_SPI_FLASH_SST)
 /* Write status register and ensure bits in mask match written values */
@@ -1338,6 +1405,62 @@ struct spi_nor_flash_parameter {
 	int (*quad_enable)(struct spi_nor *nor);
 };
 
+#ifdef CONFIG_SPI_FLASH_SPANSION
+/**
+ * spansion_quad_enable_volatile() - enable Quad I/O mode in volatile register.
+ * @nor:	pointer to a 'struct spi_nor'
+ *
+ * It is recommended to update volatile registers in the field application due
+ * to a risk of the non-volatile registers corruption by power interrupt. This
+ * function sets Quad Enable bit in CFR1 volatile.
+ *
+ * Return: 0 on success, -errno otherwise.
+ */
+static int spansion_quad_enable_volatile(struct spi_nor *nor)
+{
+	struct spi_mem_op op =
+			SPI_MEM_OP(SPI_MEM_OP_CMD(SPINOR_OP_WRAR, 1),
+				   SPI_MEM_OP_ADDR(nor->addr_width,
+						   SPINOR_REG_ADDR_CFR1V, 1),
+				   SPI_MEM_OP_NO_DUMMY,
+				   SPI_MEM_OP_DATA_OUT(1, NULL, 1));
+	u8 cr;
+	int ret;
+
+	/* Check current Quad Enable bit value. */
+	ret = read_cr(nor);
+	if (ret < 0) {
+		dev_dbg(nor->dev,
+			"error while reading configuration register\n");
+		return -EINVAL;
+	}
+
+	if (ret & CR_QUAD_EN_SPAN)
+		return 0;
+
+	cr = ret | CR_QUAD_EN_SPAN;
+
+	write_enable(nor);
+
+	ret = spi_nor_read_write_reg(nor, &op, &cr);
+
+	if (ret < 0) {
+		dev_dbg(nor->dev,
+			"error while writing configuration register\n");
+		return -EINVAL;
+	}
+
+	/* Read back and check it. */
+	ret = read_cr(nor);
+	if (!(ret > 0 && (ret & CR_QUAD_EN_SPAN))) {
+		dev_dbg(nor->dev, "Spansion Quad bit not set\n");
+		return -EINVAL;
+	}
+
+	return 0;
+}
+#endif
+
 static void
 spi_nor_set_read_settings(struct spi_nor_read_command *read,
 			  u8 num_mode_clocks,
@@ -1382,13 +1505,16 @@ static int spi_nor_read_sfdp(struct spi_nor *nor, u32 addr,
 			     size_t len, void *buf)
 {
 	u8 addr_width, read_opcode, read_dummy;
+	enum spi_nor_protocol	read_proto;
 	int ret;
 
 	read_opcode = nor->read_opcode;
 	addr_width = nor->addr_width;
 	read_dummy = nor->read_dummy;
+	read_proto = nor->read_proto;
 
 	nor->read_opcode = SPINOR_OP_RDSFDP;
+	nor->read_proto = SNOR_PROTO_1_1_1;
 	nor->addr_width = 3;
 	nor->read_dummy = 8;
 
@@ -1411,6 +1537,7 @@ read_err:
 	nor->read_opcode = read_opcode;
 	nor->addr_width = addr_width;
 	nor->read_dummy = read_dummy;
+	nor->read_proto = read_proto;
 
 	return ret;
 }
@@ -1949,6 +2076,10 @@ static int spi_nor_init_params(struct spi_nor *nor,
 		spi_nor_set_read_settings(&params->reads[SNOR_CMD_READ_FAST],
 					  0, 8, SPINOR_OP_READ_FAST,
 					  SNOR_PROTO_1_1_1);
+#ifdef CONFIG_SPI_FLASH_SPANSION
+		if (cypress_s25hx_t(info))
+			params->reads[SNOR_CMD_READ_FAST].num_mode_clocks = 8;
+#endif
 	}
 
 	if (info->flags & SPI_NOR_DUAL_READ) {
@@ -1989,6 +2120,13 @@ static int spi_nor_init_params(struct spi_nor *nor,
 		case SNOR_MFR_MICRON:
 		case SNOR_MFR_ISSI:
 			break;
+#ifdef CONFIG_SPI_FLASH_SPANSION
+		case SNOR_MFR_CYPRESS:
+			if (info->id[1] == 0x2a || info->id[1] == 0x2b) {
+				params->quad_enable = spansion_quad_enable_volatile;
+			}
+			break;
+#endif
 
 		default:
 #if defined(CONFIG_SPI_FLASH_SPANSION) || defined(CONFIG_SPI_FLASH_WINBOND)
@@ -2012,6 +2150,20 @@ static int spi_nor_init_params(struct spi_nor *nor,
 			nor->mtd.erasesize = 0;
 		} else {
 			memcpy(params, &sfdp_params, sizeof(*params));
+#ifdef CONFIG_SPI_FLASH_SPANSION
+			if (cypress_s25hx_t(info)) {
+				/* Default page size is 256-byte, but BFPT reports 512-byte */
+				params->page_size = 256;
+				/* Reset erase size in case it is set to 4K from BFPT */
+				nor->mtd.erasesize = info->sector_size ;
+				/* READ_FAST_4B (0Ch) requires mode cycles*/
+				params->reads[SNOR_CMD_READ_FAST].num_mode_clocks = 8;
+				/* PP_1_1_4 is not supported */
+				params->hwcaps.mask &= ~SNOR_HWCAPS_PP_1_1_4;
+				/* Use volatile register to enable quad */
+				params->quad_enable = spansion_quad_enable_volatile;
+			}
+#endif
 		}
 	}
 
@@ -2162,9 +2314,15 @@ static int spi_nor_setup(struct spi_nor *nor, const struct flash_info *info,
 	shared_mask = hwcaps->mask & params->hwcaps.mask;
 
 	/* SPI n-n-n protocols are not supported yet. */
-	ignored_mask = (SNOR_HWCAPS_READ_2_2_2 |
+	ignored_mask = (SNOR_HWCAPS_READ_1_1_1_DTR |
+			SNOR_HWCAPS_READ_1_2_2 |
+			SNOR_HWCAPS_READ_1_2_2_DTR |
+			SNOR_HWCAPS_READ_2_2_2 |
+			SNOR_HWCAPS_READ_1_4_4 |
+			SNOR_HWCAPS_READ_1_4_4_DTR |
 			SNOR_HWCAPS_READ_4_4_4 |
 			SNOR_HWCAPS_READ_8_8_8 |
+			SNOR_HWCAPS_PP_1_4_4 |
 			SNOR_HWCAPS_PP_4_4_4 |
 			SNOR_HWCAPS_PP_8_8_8);
 	if (shared_mask & ignored_mask) {
@@ -2235,6 +2393,7 @@ static int spi_nor_init(struct spi_nor *nor)
 
 	if (nor->addr_width == 4 &&
 	    (JEDEC_MFR(nor->info) != SNOR_MFR_SPANSION)) {
+
 		/*
 		 * If the RESET# pin isn't hooked up properly, or the system
 		 * otherwise doesn't perform a reset command in the boot
@@ -2339,6 +2498,24 @@ int spi_nor_scan(struct spi_nor *nor)
 	nor->page_size = params.page_size;
 	mtd->writebufsize = nor->page_size;
 
+#ifdef CONFIG_SPI_FLASH_SPANSION
+	if (cypress_s25hx_t(info)) {
+		/*
+		 * The Cypress Semper family has transparent ECC. To preserve
+		 * ECC enabled, multi-pass programming within the same 16-byte
+		 * ECC data unit needs to be avoided. Set writesize to the page
+		 * size and remove the MTD_BIT_WRITEABLE flag in mtd_info to
+		 * prevent multi-pass programming.
+		 */
+		nor->mtd.writesize = params.page_size;
+		nor->mtd.flags &= ~MTD_BIT_WRITEABLE;
+
+		/* Emulate uniform sector architecure by this erase hook*/
+		nor->mtd._erase = spansion_overlaid_erase;
+		set_4byte(nor, info, true);
+	}
+#endif
+
 	/* Some devices cannot do fast-read, no matter what DT tells us */
 	if ((info->flags & SPI_NOR_NO_FR) || (spi->mode & SPI_RX_SLOW))
 		params.hwcaps.mask &= ~SNOR_HWCAPS_READ_FAST;
@@ -2362,7 +2539,9 @@ int spi_nor_scan(struct spi_nor *nor)
 #ifndef CONFIG_SPI_FLASH_BAR
 		/* enable 4-byte addressing if the device exceeds 16MiB */
 		nor->addr_width = 4;
-		spi_nor_set_4byte_opcodes(nor, info);
+		if (JEDEC_MFR(info) == SNOR_MFR_SPANSION ||
+		    info->flags & SPI_NOR_4B_OPCODES)
+			spi_nor_set_4byte_opcodes(nor, info);
 #else
 		/* Configure the BAR - discover bank cmds and read current bank */
 		nor->addr_width = 3;

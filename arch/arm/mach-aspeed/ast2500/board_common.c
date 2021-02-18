@@ -71,7 +71,7 @@ static const u32 aspeed_vram_table[] = {
 static u32
 ast_sdmc_get_vram_size(void)
 {
-	u32 size_conf = SDMC_CONFIG_VRAM_GET(SDMC_CONFIG_VRAM_GET(readl(0x1e6e0004)));
+	u32 size_conf = SDMC_CONFIG_VRAM_GET(readl(0x1e6e0004));
 	return aspeed_vram_table[size_conf];
 }
 #endif

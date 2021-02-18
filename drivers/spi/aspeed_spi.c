@@ -73,6 +73,7 @@ struct aspeed_spi_regs {
 #define CE_CTRL_IO_MODE_MASK		GENMASK(31, 28)
 #define CE_CTRL_IO_QPI_DATA			BIT(31)
 #define CE_CTRL_IO_DUAL_DATA		BIT(29)
+#define CE_CTRL_IO_SINGLE			0
 #define CE_CTRL_IO_DUAL_ADDR_DATA	(BIT(29) | BIT(28))
 #define CE_CTRL_IO_QUAD_DATA		BIT(30)
 #define CE_CTRL_IO_QUAD_ADDR_DATA	(BIT(30) | BIT(28))
@@ -100,6 +101,9 @@ struct aspeed_spi_regs {
 #define	  CE_CTRL_FREADMODE		0x1
 #define	  CE_CTRL_WRITEMODE		0x2
 #define	  CE_CTRL_USERMODE		0x3
+
+#define SPI_READ_FROM_FLASH		0x00000001
+#define SPI_WRITE_TO_FLASH		0x00000002
 
 /* Auto Soft-Reset Command Control */
 #define SOFT_RST_CMD_EN     GENMASK(1, 0)
@@ -162,7 +166,8 @@ struct aspeed_spi_flash {
 	u32		ahb_size;	/* AHB Window segment size */
 	u32		ce_ctrl_user;	/* CE Control Register for USER mode */
 	u32		ce_ctrl_fread;	/* CE Control Register for FREAD mode */
-	u32		iomode;
+	u32 	read_iomode;
+	u32 	write_iomode;
 
 	struct spi_flash *spi;		/* Associated SPI Flash device */
 };
@@ -634,7 +639,7 @@ static int aspeed_spi_write_reg(struct aspeed_spi_priv *priv,
 
 static void aspeed_spi_send_cmd_addr(struct aspeed_spi_priv *priv,
 				     struct aspeed_spi_flash *flash,
-				     const u8 *cmdbuf, unsigned int cmdlen)
+				     const u8 *cmdbuf, unsigned int cmdlen, uint32_t flag)
 {
 	int i;
 	u8 byte0 = 0x0;
@@ -643,8 +648,10 @@ static void aspeed_spi_send_cmd_addr(struct aspeed_spi_priv *priv,
 	/* First, send the opcode */
 	aspeed_spi_write_to_ahb(flash->ahb_base, &cmdbuf[0], 1);
 
-	if(flash->iomode == CE_CTRL_IO_QUAD_ADDR_DATA)
-		writel(flash->ce_ctrl_user | flash->iomode, &priv->regs->ce_ctrl[flash->cs]);
+	if(flash->write_iomode == CE_CTRL_IO_QUAD_ADDR_DATA && (flag & SPI_WRITE_TO_FLASH))
+		writel(flash->ce_ctrl_user | flash->write_iomode, &priv->regs->ce_ctrl[flash->cs]);
+	else if(flash->read_iomode == CE_CTRL_IO_QUAD_ADDR_DATA && (flag & SPI_READ_FROM_FLASH))
+		writel(flash->ce_ctrl_user | flash->read_iomode, &priv->regs->ce_ctrl[flash->cs]);
 
 	/*
 	 * The controller is configured for 4BYTE address mode. Fix
@@ -671,15 +678,15 @@ static ssize_t aspeed_spi_read_user(struct aspeed_spi_priv *priv,
 
 	/* cmd buffer = cmd + addr + dummies */
 	aspeed_spi_send_cmd_addr(priv, flash, cmdbuf,
-				 cmdlen - (flash->spi->read_dummy/8));
+				 cmdlen - (flash->spi->read_dummy/8), SPI_READ_FROM_FLASH);
 
 	for (i = 0 ; i < (flash->spi->read_dummy/8); i++)
 		aspeed_spi_write_to_ahb(flash->ahb_base, &dummy, 1);
 
-	if (flash->iomode) {
+	if (flash->read_iomode) {
 		clrbits_le32(&priv->regs->ce_ctrl[flash->cs],
 			     CE_CTRL_IO_MODE_MASK);
-		setbits_le32(&priv->regs->ce_ctrl[flash->cs], flash->iomode);
+		setbits_le32(&priv->regs->ce_ctrl[flash->cs], flash->read_iomode);
 	}
 
 	aspeed_spi_read_from_ahb(flash->ahb_base, read_buf, len);
@@ -696,11 +703,11 @@ static ssize_t aspeed_spi_write_user(struct aspeed_spi_priv *priv,
 	aspeed_spi_start_user(priv, flash);
 
 	/* cmd buffer = cmd + addr : normally cmd is use signle mode*/
-	aspeed_spi_send_cmd_addr(priv, flash, cmdbuf, cmdlen);
+	aspeed_spi_send_cmd_addr(priv, flash, cmdbuf, cmdlen, SPI_WRITE_TO_FLASH);
 
 	/* data will use io mode */
-	if(flash->iomode == CE_CTRL_IO_QUAD_DATA)
-		writel(flash->ce_ctrl_user | flash->iomode, &priv->regs->ce_ctrl[flash->cs]);
+	if(flash->write_iomode == CE_CTRL_IO_QUAD_DATA)
+		writel(flash->ce_ctrl_user | flash->write_iomode, &priv->regs->ce_ctrl[flash->cs]);
 
 	aspeed_spi_write_to_ahb(flash->ahb_base, write_buf, len);
 
@@ -873,13 +880,7 @@ static int aspeed_spi_flash_init(struct aspeed_spi_priv *priv,
 	struct spi_slave *slave = dev_get_parent_priv(dev);
 	u32 read_hclk;
 
-
-	/*
-	 * The SPI flash device slave should not change, so initialize
-	 * it only once.
-	 */
-	if (flash->init)
-		return 0;
+	flash->spi = spi_flash;
 
 	/*
 	 * The flash device has not been probed yet. Initial transfers
@@ -887,6 +888,13 @@ static int aspeed_spi_flash_init(struct aspeed_spi_priv *priv,
 	 * default settings of the registers.
 	 */
 	if (!spi_flash->name)
+		return 0;
+
+	/*
+	 * The SPI flash device slave should not change, so initialize
+	 * it only once.
+	 */
+	if (flash->init)
 		return 0;
 
 	debug("CS%u: init %s flags:%x size:%d page:%d sector:%d erase:%d "
@@ -898,8 +906,6 @@ static int aspeed_spi_flash_init(struct aspeed_spi_priv *priv,
 	      spi_flash->read_opcode, spi_flash->program_opcode,
 	      spi_flash->read_dummy);
 
-	flash->spi = spi_flash;
-
 	flash->ce_ctrl_user = CE_CTRL_USERMODE;
 
 	if(priv->new_ver)
@@ -910,28 +916,44 @@ static int aspeed_spi_flash_init(struct aspeed_spi_priv *priv,
 	switch(flash->spi->read_opcode) {
 		case SPINOR_OP_READ_1_1_2:
 		case SPINOR_OP_READ_1_1_2_4B:
-			flash->iomode = CE_CTRL_IO_DUAL_DATA;
+			flash->read_iomode = CE_CTRL_IO_DUAL_DATA;
 			break;
 		case SPINOR_OP_READ_1_1_4:
 		case SPINOR_OP_READ_1_1_4_4B:
-			flash->iomode = CE_CTRL_IO_QUAD_DATA;
+			flash->read_iomode = CE_CTRL_IO_QUAD_DATA;
 			break;
 		case SPINOR_OP_READ_1_4_4:
 		case SPINOR_OP_READ_1_4_4_4B:
-			flash->iomode = CE_CTRL_IO_QUAD_ADDR_DATA;
+			flash->read_iomode = CE_CTRL_IO_QUAD_ADDR_DATA;
+			printf("need modify dummy for 3 bytes\n");
+			break;
+	}
+
+	switch(flash->spi->program_opcode) {
+		case SPINOR_OP_PP:
+		case SPINOR_OP_PP_4B:
+			flash->write_iomode = CE_CTRL_IO_SINGLE;
+			break;
+		case SPINOR_OP_PP_1_1_4:
+		case SPINOR_OP_PP_1_1_4_4B:
+			flash->write_iomode = CE_CTRL_IO_QUAD_DATA;
+			break;
+		case SPINOR_OP_PP_1_4_4:
+		case SPINOR_OP_PP_1_4_4_4B:
+			flash->write_iomode = CE_CTRL_IO_QUAD_ADDR_DATA;
 			printf("need modify dummy for 3 bytes");
 			break;
 	}
 
 	if(priv->new_ver) {
 		flash->ce_ctrl_fread = CE_G6_CTRL_CLOCK_FREQ(read_hclk) |
-			flash->iomode |
+			flash->read_iomode |
 			CE_CTRL_CMD(flash->spi->read_opcode) |
 			CE_CTRL_DUMMY((flash->spi->read_dummy/8)) |
 			CE_CTRL_FREADMODE;
 	} else {
 		flash->ce_ctrl_fread = CE_CTRL_CLOCK_FREQ(read_hclk) |
-			flash->iomode |
+			flash->read_iomode |
 			CE_CTRL_CMD(flash->spi->read_opcode) |
 			CE_CTRL_DUMMY((flash->spi->read_dummy/8)) |
 			CE_CTRL_FREADMODE;

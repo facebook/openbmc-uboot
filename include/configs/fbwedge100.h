@@ -12,7 +12,7 @@
 
 #define CONFIG_SYS_LONGHELP
 
-#define CONFIG_BOOTARGS   "debug console=ttyS2,9600n8 root=/dev/ram rw"
+#define CONFIG_BOOTARGS   "console=ttyS2,9600n8 root=/dev/ram rw"
 #define CONFIG_BOOTFILE   "flash-wedge100"
 
 /*

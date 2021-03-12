@@ -64,7 +64,7 @@
 /* Revision ID */
 #define REV_ID_AST2600A0	0x05000303
 #define REV_ID_AST2600A1	0x05010303
-#define REV_ID_AST2620A1	0x05020203
+#define REV_ID_AST2620A1	0x05010203
 
 .macro scu_unlock
 	movw	r0, #0xA8A8

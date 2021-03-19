@@ -13,7 +13,7 @@
 
 #include <asm/arch/ast-sdk/ast_scu.h>
 #include <asm/arch/ast-sdk/ast-sdmc.h>
-#include <asm/arch/ast-sdk/vbs.h>
+#include <asm/arch/vbs.h>
 #include <asm/io.h>
 #include <asm/gpio.h>
 #include <asm/arch/gpio.h>

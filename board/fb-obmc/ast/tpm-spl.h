@@ -6,7 +6,7 @@
 
 #include <common.h>
 
-#include <asm/arch/ast-sdk/vbs.h>
+#include <asm/arch/vbs.h>
 
 /* Years the next upgrade must occur, protect against timestamp DoS */
 #define AST_TPM_MAX_YEARS 5

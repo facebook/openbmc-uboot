@@ -15,8 +15,7 @@
 #endif
 
 #include <asm/io.h>
-#include <asm/arch/ast-sdk/ast_scu.h>
-#include <asm/arch/ast-sdk/vbs.h>
+#include <asm/arch/vbs.h>
 
 extern int get_tpm(struct udevice **devp);
 
@@ -36,6 +35,7 @@ static void put_vbs(volatile struct vbs *vbs)
 static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
   volatile struct vbs *vbs = (volatile struct vbs*)AST_SRAM_VBS_BASE;
+#ifdef CONFIG_ASPEED_TPM
   struct udevice* dev;
   int err;
 
@@ -43,6 +43,7 @@ static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
   if (err) {
 	  return err;
   }
+#endif
 
   if (argc == 3) {
     ulong t = simple_strtoul(argv[1], NULL, 10);

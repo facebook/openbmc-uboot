@@ -3,18 +3,17 @@
  *
  * SPDX-License-Identifier: GPL-2.0+
  */
-
-
 #include <common.h>
 #include <malloc.h>
 #include <timer.h>
 #include <stdio.h>
 
-#include <asm/arch/ast-sdk/ast_g5_platform.h>
-#include <asm/arch/ast-sdk/ast_scu.h>
-#include <asm/arch/ast-sdk/regs-scu.h>
-
+#include <asm/arch/platform.h>
 #include "flash-spl.h"
+
+/* defines migrate to upsteam/new-sdk */
+#define ASPEED_FMC_CS1_BASE	(ASPEED_FMC_CS0_BASE + 0x8000000)
+
 #define AST_FMC_WRITE_ENABLE 0x800f0000
 
 #if defined(CONFIG_FBAL) || defined(CONFIG_FBEP) || defined(CONFIG_FBY3) || defined(CONFIG_FBCC)
@@ -73,32 +72,35 @@ typedef int (*heapstatus_t)(heaptimer_t, uchar, bool);
 inline void fmc_enable_write(void) {
   /* If FMC00:{16, 17, 18} is 0 then it needs to be enabled with FMCA4. */
   /* Set FMCA4 to |= 2AA */
-  WRITEREG(AST_FMC_BASE, READREG(AST_FMC_BASE) | AST_FMC_WRITE_ENABLE);
+  WRITEREG(ASPEED_FMC_BASE, READREG(ASPEED_FMC_BASE) | AST_FMC_WRITE_ENABLE);
 }
 
 inline void fmc_reset(u32 ctrl) {
-  WRITEREG(AST_FMC_BASE + ctrl, AST_FMC_STATUS_RESET);
+  WRITEREG(ASPEED_FMC_BASE + ctrl, AST_FMC_STATUS_RESET);
 }
 
 inline void fmc_enable4b(uchar cs) {
-  WRITEREG(AST_SCU_BASE + 0x70, READREG(AST_SCU_BASE + 0x70) | 0x10);
-  WRITEREG(AST_FMC_BASE + AST_FMC_CE_CONTROL,
-    READREG(AST_FMC_BASE + AST_FMC_CE_CONTROL) | (0x01 << cs));
+  WRITEREG(ASPEED_SCU_BASE + 0x70, READREG(ASPEED_SCU_BASE + 0x70) | 0x10);
+  WRITEREG(ASPEED_FMC_BASE + AST_FMC_CE_CONTROL,
+    READREG(ASPEED_FMC_BASE + AST_FMC_CE_CONTROL) | (0x01 << cs));
 }
 
+#define AST_SCU_FUN_PIN_CTRL3	0x88
+#define SCU_FUN_PIN_ROMCS(x)	(0x1 << (23+x))
 inline void fmc_romcs(uchar cs) {
-  u32 function_pin = READREG(AST_SCU_BASE + AST_SCU_FUN_PIN_CTRL3);
+
+  u32 function_pin = READREG(ASPEED_SCU_BASE + AST_SCU_FUN_PIN_CTRL3);
   function_pin |= SCU_FUN_PIN_ROMCS(cs);
-  WRITEREG(AST_SCU_BASE, SCU_PROTECT_UNLOCK);
-  WRITEREG(AST_SCU_BASE + AST_SCU_FUN_PIN_CTRL3, function_pin);
+  WRITEREG(ASPEED_SCU_BASE, SCU_PROTECT_UNLOCK);
+  WRITEREG(ASPEED_SCU_BASE + AST_SCU_FUN_PIN_CTRL3, function_pin);
 }
 
 inline void spi_write_enable(heaptimer_t timer, u32 base, u32 ctrl) {
-  WRITEREG(AST_FMC_BASE + ctrl, 0x03);
+  WRITEREG(ASPEED_FMC_BASE + ctrl, 0x03);
   timer(200);
   WRITEB(base, SPI_CMD_WE);
   timer(10);
-  WRITEREG(AST_FMC_BASE + ctrl, 0x07);
+  WRITEREG(ASPEED_FMC_BASE + ctrl, 0x07);
   timer(200);
 }
 
@@ -106,7 +108,7 @@ inline uchar spi_status(heaptimer_t timer, u32 base, u32 ctrl, bool wel) {
   uchar r1;
   u32 timeout;
 
-  WRITEREG(AST_FMC_BASE + ctrl, 0x03);
+  WRITEREG(ASPEED_FMC_BASE + ctrl, 0x03);
   timer(200);
   WRITEB(base, SPI_CMD_RS);
   timer(10);
@@ -118,7 +120,7 @@ inline uchar spi_status(heaptimer_t timer, u32 base, u32 ctrl, bool wel) {
     }
     r1 = READB(base);
   } while ((wel && !(r1 & SPI_WEL)) || (!wel && (r1 & SPI_WIP)));
-  WRITEREG(AST_FMC_BASE + ctrl, 0x07);
+  WRITEREG(ASPEED_FMC_BASE + ctrl, 0x07);
   timer(200);
   return r1;
 }
@@ -129,50 +131,50 @@ inline void spi_write_config(heaptimer_t timer, u32 base, u32 ctrl, uchar p) {
   /* The 'configuration' register on MXIC chips is the second status byte. */
   r1 = spi_status(timer, base, ctrl, false);
 
-  WRITEREG(AST_FMC_BASE + ctrl, 0x03);
+  WRITEREG(ASPEED_FMC_BASE + ctrl, 0x03);
   timer(200);
   WRITEB(base, SPI_CMD_WS);
   timer(10);
   /* Must write the status register first. */
   WRITEB(base, r1);
   WRITEB(base, p);
-  WRITEREG(AST_FMC_BASE + ctrl, 0x07);
+  WRITEREG(ASPEED_FMC_BASE + ctrl, 0x07);
   timer(200);
 }
 
 inline uchar spi_config(heaptimer_t timer, u32 base, u32 ctrl) {
   uchar r1;
 
-  WRITEREG(AST_FMC_BASE + ctrl, 0x03);
+  WRITEREG(ASPEED_FMC_BASE + ctrl, 0x03);
   timer(200);
   WRITEB(base, SPI_CMD_RC);
   timer(10);
   r1 = READB(base);
-  WRITEREG(AST_FMC_BASE + ctrl, 0x07);
+  WRITEREG(ASPEED_FMC_BASE + ctrl, 0x07);
   timer(200);
   return r1;
 }
 
 inline void spi_write_status(heaptimer_t timer, u32 base, u32 ctrl, uchar p) {
-  WRITEREG(AST_FMC_BASE + ctrl, 0x03);
+  WRITEREG(ASPEED_FMC_BASE + ctrl, 0x03);
   timer(200);
   WRITEB(base, SPI_CMD_WS);
   timer(10);
   WRITEB(base, p);
-  WRITEREG(AST_FMC_BASE + ctrl, 0x07);
+  WRITEREG(ASPEED_FMC_BASE + ctrl, 0x07);
   timer(200);
 }
 
 inline void spi_enable4b(heaptimer_t timer, u32 base, u32 ctrl) {
-  WRITEREG(AST_FMC_BASE + ctrl, 0x03);
+  WRITEREG(ASPEED_FMC_BASE + ctrl, 0x03);
   timer(200);
   WRITEB(base, SPI_CMD_4B);
-  WRITEREG(AST_FMC_BASE + ctrl, 0x07);
+  WRITEREG(ASPEED_FMC_BASE + ctrl, 0x07);
   timer(200);
 }
 
 inline void spi_id(heaptimer_t timer, u32 base, u32 ctrl, uchar* ch) {
-  WRITEREG(AST_FMC_BASE + ctrl, 0x03);
+  WRITEREG(ASPEED_FMC_BASE + ctrl, 0x03);
   timer(200);
   WRITEB(base, SPI_CMD_ID);
   timer(10);
@@ -181,7 +183,7 @@ inline void spi_id(heaptimer_t timer, u32 base, u32 ctrl, uchar* ch) {
   ch[1] = READB(base);
   timer(10);
   ch[2] = READB(base);
-  WRITEREG(AST_FMC_BASE + ctrl, 0x07);
+  WRITEREG(ASPEED_FMC_BASE + ctrl, 0x07);
   timer(200);
 }
 
@@ -195,6 +197,7 @@ inline void set_topbottom_mxic(heaptimer_t timer, u32 base, u32 ctrl) {
   (void)spi_status(timer, base, ctrl, false);
 }
 
+#define ASPEED_TIMER1_STS_REG (ASPEED_TIMER_BASE)
 int heaptimer(unsigned long usec) {
   ulong last;
   ulong clks;
@@ -207,9 +210,9 @@ int heaptimer(unsigned long usec) {
 
   elapsed = 0;
   now = 0;
-  last = READREG(AST_TIMER_BASE);
+  last = READREG(ASPEED_TIMER1_STS_REG);
   while (clks > elapsed) {
-    now = READREG(AST_TIMER_BASE);
+    now = READREG(ASPEED_TIMER1_STS_REG);
     if (now <= last) {
       elapsed += last - now;
     } else {
@@ -232,11 +235,11 @@ int doheap(heaptimer_t timer, uchar cs, bool should_lock) {
   u32 prot;
 
   if (cs == 0) {
-    base = AST_FMC_CS0_BASE;
+    base = ASPEED_FMC_CS0_BASE;
     ctrl = AST_FMC_CE0_CONTROL;
     prot = SPI_CS0_HW_PROTECTIONS;
   } else {
-    base = AST_FMC_CS1_BASE;
+    base = ASPEED_FMC_CS1_BASE;
     ctrl = AST_FMC_CE1_CONTROL;
     prot = SPI_CS1_HW_PROTECTIONS;
   }
@@ -316,6 +319,7 @@ int ast_fmc_spi_check(bool should_lock) {
   heapstatus_t spi_check;
 
   ret = dm_timer_init();
+
   if (ret) {
      debug("timer init failed (%d)\n", ret);
   }

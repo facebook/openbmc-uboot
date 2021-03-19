@@ -6,7 +6,7 @@
 #include <common.h>
 #include <dm.h>
 #include <tpm-v2.h>
-#include <asm/arch/ast-sdk/vbs.h>
+#include <asm/arch/vbs.h>
 #include "tpm-spl.h"
 
 #define RB_NV_PROPERTY_CREATE \

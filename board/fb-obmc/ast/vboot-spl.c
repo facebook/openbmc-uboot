@@ -14,9 +14,8 @@
 #include <image.h>
 #include <linux/libfdt.h>
 
-#include <asm/arch/ast-sdk/aspeed.h>
-#include <asm/arch/ast-sdk/ast_scu.h>
-#include <asm/arch/ast-sdk/vbs.h>
+#include <asm/arch/platform.h>
+#include <asm/arch/vbs.h>
 #include <asm/io.h>
 
 #include "flash-spl.h"

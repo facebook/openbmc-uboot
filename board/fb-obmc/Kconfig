@@ -21,4 +21,4 @@ config ASPEED_WRITE_DEFAULT_ENV
 	bool "Enable write default environment"
 	default n
 
-source "board/aspeed/ast-g5/Kconfig"
+source "board/fb-obmc/ast/Kconfig"

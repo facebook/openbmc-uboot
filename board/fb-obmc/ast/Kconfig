@@ -1,11 +1,11 @@
-if ASPEED_GEN_5
+if TARGET_FB_AST_GEN_5
 config SYS_BOARD
 	string "board name"
-	default "ast-g5"
+	default "ast"
 
 config SYS_VENDOR
 	string "board vendor"
-	default "aspeed"
+	default "fb-obmc"
 
 
 config SYS_TEXT_BASE

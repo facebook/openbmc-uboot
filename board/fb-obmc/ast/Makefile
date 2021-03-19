@@ -1,9 +1,11 @@
 
-ifeq ($(CONFIG_SPL_BUILD),y)
-obj-y   = vboot-spl.o flash-spl.o
+ifeq ($(CONFIG_SPL_BUILD), y)
+obj-y += vboot-spl.o flash-spl.o
 else
-obj-y   = ast-g5.o 
+obj-$(CONFIG_TARGET_FB_AST_GEN_5) += ast-g5.o
+obj-$(CONFIG_TARGET_FB_AST_GEN_6) += ast-g6.o
 endif
+
 ifeq ($(CONFIG_TPM_V2), y)
 obj-$(CONFIG_ASPEED_TPM) += tpm2-spl.o
 else

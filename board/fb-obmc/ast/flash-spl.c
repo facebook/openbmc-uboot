@@ -3,10 +3,13 @@
  *
  * SPDX-License-Identifier: GPL-2.0+
  */
+
+#define DEBUG
 #include <common.h>
 #include <malloc.h>
 #include <timer.h>
 #include <stdio.h>
+#include <asm/io.h>
 
 #include <asm/arch/platform.h>
 #include "flash-spl.h"
@@ -85,6 +88,7 @@ inline void fmc_enable4b(uchar cs) {
     READREG(ASPEED_FMC_BASE + AST_FMC_CE_CONTROL) | (0x01 << cs));
 }
 
+#if !defined(CONFIG_ASPEED_AST2600) /* AST2600 did not multi-func FMC-CS pins*/
 #define AST_SCU_FUN_PIN_CTRL3	0x88
 #define SCU_FUN_PIN_ROMCS(x)	(0x1 << (23+x))
 inline void fmc_romcs(uchar cs) {
@@ -94,6 +98,9 @@ inline void fmc_romcs(uchar cs) {
   WRITEREG(ASPEED_SCU_BASE, SCU_PROTECT_UNLOCK);
   WRITEREG(ASPEED_SCU_BASE + AST_SCU_FUN_PIN_CTRL3, function_pin);
 }
+#else
+#define fmc_romcs(cs)
+#endif
 
 inline void spi_write_enable(heaptimer_t timer, u32 base, u32 ctrl) {
   WRITEREG(ASPEED_FMC_BASE + ctrl, 0x03);
@@ -309,6 +316,30 @@ int doheap_end(void) {
   return 0;
 }
 
+#if defined(CONFIG_ASPEED_AST2600)
+#define ASPEED_TIMER1_RELOAD_VAL 	0xFFFFFFFF
+#define ASPEED_TIMER1_RELOAD_REG	(ASPEED_TIMER_BASE + 0x04)
+#define ASPEED_TIMER_CTRL_REG		(ASPEED_TIMER_BASE + 0x30)
+#define ASPEED_TIMER_CLER_REG		(ASPEED_TIMER_BASE + 0x3C)
+#define ASPEED_TIMER1_EN 		(1 << 0)
+#define ASPEED_TIMER1_1MHZ 		(1 << 1)
+
+static int ast2600_start_timer1(void) {
+	writel(ASPEED_TIMER1_RELOAD_VAL, ASPEED_TIMER1_RELOAD_REG);
+
+	/*
+	 * Stop the timer. This will also load reload_val into
+	 * the status register.
+	 */
+	setbits_le32(ASPEED_TIMER_CLER_REG, ASPEED_TIMER1_EN);
+	/* Start the timer from the fixed 1MHz clock. */
+	setbits_le32(ASPEED_TIMER_CTRL_REG,
+		(ASPEED_TIMER1_EN | ASPEED_TIMER1_1MHZ) );
+
+	return 0;
+}
+#endif
+
 int ast_fmc_spi_check(bool should_lock) {
   u32 function_size;
   uchar *buffer;
@@ -318,8 +349,11 @@ int ast_fmc_spi_check(bool should_lock) {
   heaptimer_t timer_fp;
   heapstatus_t spi_check;
 
+#if defined(CONFIG_ASPEED_AST2600)
+	ret = ast2600_start_timer1();
+#else
   ret = dm_timer_init();
-
+#endif
   if (ret) {
      debug("timer init failed (%d)\n", ret);
   }

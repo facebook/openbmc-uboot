@@ -3,6 +3,8 @@
  *
  * SPDX-License-Identifier: GPL-2.0+
  */
+
+#define DEBUG
 #include <common.h>
 #include <spl.h>
 #include <asm/spl.h>
@@ -535,6 +537,12 @@ void vboot_load_fit(volatile void* from) {
 
 void board_init_f(ulong bootflag)
 {
+#if defined(CONFIG_ASPEED_AST2600)
+	spl_early_init();
+	preloader_console_init();
+	timer_init();
+	debug("fdt = %p\n", gd->fdt_blob);
+#else
   /* Must set up console for printing/logging. */
   preloader_console_init();
   /* Must set up global data pointers for local device tree. */
@@ -547,6 +555,7 @@ void board_init_f(ulong bootflag)
 //  ast_wdt_reset(120 * AST_WDT_CLK, 0x3 | 0x08);
 //#endif
 	watchdog_init(300);
+#endif
   /*
    * This will never be relocated, so jump directly to the U-boot.
    */

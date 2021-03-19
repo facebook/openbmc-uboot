@@ -1,4 +1,4 @@
-if TARGET_FB_AST_GEN_5
+if TARGET_FB_AST_GEN_5 || TARGET_FB_AST_GEN_6
 config SYS_BOARD
 	string "board name"
 	default "ast"

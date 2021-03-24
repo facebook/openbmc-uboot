@@ -62,14 +62,25 @@
 /* SRAM */
 #define CONFIG_SYS_INIT_RAM_ADDR	(ASPEED_SRAM_BASE)
 #define CONFIG_SYS_INIT_RAM_SIZE	(ASPEED_SRAM_SIZE)
+#define SYS_INIT_RAM_END \
+  ( CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_RAM_SIZE)
 
-/* The first 4KB is reserved for vboot, vbs is located at offset 0x200 */
-#define VBOOT_RESERVE_SZ   0x1000 // 4KB
+/* The Top 2KB is reserved for VBS */
+#define VBOOT_RESERVE_SZ   0x800 // 2KB
+/*
+ * common/board_init.c::board_init_f_alloc_reserve will allocate
+ * (SPL)_SYS_MALLOC_F_LEN = 12K for malloc and GD from
+ * CONFIG_SYS_INIT_SP_ADDR, and let stack growing down
+ * from base of GD.
+ * To reserve space for VBS,
+ * CONFIG_SYS_INIT_SP_ADDR=SYS_INIT_RAM_END - VBOOT_RESERVE_SZ
+ * CONFIG_SPL_SYS_MALLOC_F_LEN by default equal SYS_MALLOC_F_LEN
+ * which must define in kconfig, while CONFIG_MALLOC_F_ADDR still
+ * need define in config header file
+ */
+#define CONFIG_SYS_INIT_SP_ADDR \
+	(SYS_INIT_RAM_END - VBOOT_RESERVE_SZ)
 
-/* The next 12KB is reserved for simple malloc both SPL and proper pre-reolc
- * CONFIG_SPL_SYS_MALLOC_F_LEN by default equal SYS_MALLOC_F_LEN, in kconfig
- * CONFIG_MALLOC_F_ADDR still need define in config header file here
-*/
 #define SRAM_HEAP_MINI_SIZE     0x3000 // 12KB
 #ifdef CONFIG_SPL_SYS_MALLOC_F_LEN
 # if (CONFIG_SPL_SYS_MALLOC_F_LEN < SRAM_HEAP_MINI_SIZE )
@@ -78,17 +89,7 @@
 #else
 # define CONFIG_SPL_SYS_MALLOC_F_LEN SRAM_HEAP_MINI_SIZE
 #endif
-# define CONFIG_MALLOC_F_ADDR (CONFIG_SYS_INIT_RAM_ADDR + VBOOT_RESERVE_SZ)
-
-
-/* Stack in SRAM the same as proper pre-relocate, growing down from gdt */
-#define SYS_INIT_RAM_END \
-	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_RAM_SIZE)
-#define CONFIG_SYS_INIT_SP_ADDR \
-	(SYS_INIT_RAM_END - GENERATED_GBL_DATA_SIZE)
-
-
-
+# define CONFIG_MALLOC_F_ADDR (CONFIG_SYS_INIT_SP_ADDR - CONFIG_SPL_SYS_MALLOC_F_LEN)
 
 
 

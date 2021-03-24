@@ -541,7 +541,11 @@ void board_init_f(ulong bootflag)
 	spl_early_init();
 	preloader_console_init();
 	timer_init();
-	debug("fdt = %p\n", gd->fdt_blob);
+	debug("SYS_INIT_RAM_END=%x \n", SYS_INIT_RAM_END);
+	debug("CONFIG_SYS_INIT_SP_ADDR=%x\n", CONFIG_SYS_INIT_SP_ADDR);
+	debug("CONFIG_MALLOC_F_ADDR=%x\n", CONFIG_MALLOC_F_ADDR);
+	debug("gd = sp = %p\n", gd);
+	debug("fdt=%p\n", gd->fdt_blob);
 #else
   /* Must set up console for printing/logging. */
   preloader_console_init();

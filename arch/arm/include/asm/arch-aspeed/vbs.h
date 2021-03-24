@@ -8,7 +8,13 @@
 #define _VBS_H_
 
 /* Location in SRAM used for verified boot content/flags. */
+#if defined(CONFIG_TARGET_FB_AST_GEN_5)
 #define AST_SRAM_VBS_BASE   0x1E720200
+#elif defined(CONFIG_TARGET_FB_AST_GEN_6)
+#define AST_SRAM_VBS_BASE CONFIG_SYS_INIT_SP_ADDR
+#else
+#error "VBoot not supported target"
+#endif
 
 #define VBS_SUCCESS            0
 #define VBS_ERROR_TYPE_HW      1

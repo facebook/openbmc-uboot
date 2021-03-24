@@ -19,7 +19,6 @@
 
 	aliases {
 		spi0 = &fmc;
-		ethernet1 = &mac1;
 	};
 
 	cpus {
@@ -40,18 +39,6 @@
 &wdt1 {
 	u-boot,dm-pre-reloc;
 	status = "okay";
-};
-
-&mdio {
-	status = "okay";
-};
-
-&mac1 {
-	status = "okay";
-
-	phy-mode = "rgmii";
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_mac2link_default &pinctrl_mdio2_default>;
 };
 
 &fmc {

@@ -10,13 +10,6 @@
 /*============= Copy from aspeed_common.h ==========================*/
 #include <asm/arch/platform.h>
 
-#define CONFIG_BOOTFILE		"all.bin"
-
-#define CONFIG_GATEWAYIP	192.168.0.1
-#define CONFIG_NETMASK		255.255.255.0
-#define CONFIG_IPADDR		192.168.0.45
-#define CONFIG_SERVERIP		192.168.0.81
-
 #define CONFIG_STANDALONE_LOAD_ADDR 0x83000000
 
 /* Misc CPU related */
@@ -179,12 +172,15 @@
 #define CONFIG_ENV_OFFSET		0xE0000
 #define CONFIG_ENV_SECT_SIZE	 (64 << 10) /* 64 KiB */
 
-#define ENV_INITRD_HIGH "initrd_high=a0000000\0"
+#ifndef PAL_EXTRA_ENV
+#define PAL_EXTRA_ENV ""
+#endif
+
 #define CONFIG_EXTRA_ENV_SETTINGS                       \
     "verify=no\0"                                       \
     "spi_dma=no\0"                                      \
-    "updatefile=" CONFIG_BOOTFILE ".fit\0"              \
-    ENV_INITRD_HIGH                                     \
+    "initrd_high=a0000000\0"                            \
+    PAL_EXTRA_ENV                                       \
     ""
 
 

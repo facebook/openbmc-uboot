@@ -546,6 +546,13 @@ void board_init_f(ulong bootflag)
 	debug("CONFIG_MALLOC_F_ADDR=%x\n", CONFIG_MALLOC_F_ADDR);
 	debug("gd = sp = %p\n", gd);
 	debug("fdt=%p\n", gd->fdt_blob);
+	debug("Setup flash: write enable, addr4B, CE1 AHB 64MB window\n");
+	setbits_le32(ASPEED_FMC_BASE,(7<<16));
+	udelay(1000);
+	setbits_le32(ASPEED_FMC_BASE + 0x4, 0x33);
+	udelay(1000);
+	writel(0x2BF02800, ASPEED_FMC_BASE + 0x34);
+	udelay(1000);
 #else
   /* Must set up console for printing/logging. */
   preloader_console_init();

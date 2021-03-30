@@ -351,6 +351,7 @@ int ast_fmc_spi_check(bool should_lock) {
 
 #if defined(CONFIG_ASPEED_AST2600)
 	ret = ast2600_start_timer1();
+	return AST_FMC_WP_OFF;
 #else
   ret = dm_timer_init();
 #endif
@@ -381,6 +382,7 @@ int ast_fmc_spi_check(bool should_lock) {
   /* Protect and detect the hardware protection for CS0 */
   cs0_status = spi_check(timer_fp, 0, should_lock);
 
+	debug("cs0_status = %d, cs1_status = %d\n", cs0_status, cs1_status);
   /* Return an ERROR indicating PROM status issues. */
   return (cs1_status == AST_FMC_ERROR) ? AST_FMC_ERROR : cs0_status;
 }

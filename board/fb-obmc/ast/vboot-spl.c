@@ -438,6 +438,10 @@ void vboot_reset(struct vbs *vbs) {
 	vboot_store(vbs);
   }
 
+#ifdef CONFIG_TEST_ASPEED_WATCHDOG_SPL
+	printf("Testing SPL hang recovery ...\n");
+	hang();
+#endif
 
 #ifdef CONFIG_ASPEED_TPM
   int tpm_status = ast_tpm_provision(vbs);
@@ -565,8 +569,8 @@ void board_init_f(ulong bootflag)
 //#ifdef CONFIG_ASPEED_ENABLE_WATCHDOG
 //  ast_wdt_reset(120 * AST_WDT_CLK, 0x3 | 0x08);
 //#endif
-	watchdog_init(300);
 #endif
+	watchdog_init(CONFIG_ASPEED_WATCHDOG_SPL_TIMEOUT);
   /*
    * This will never be relocated, so jump directly to the U-boot.
    */

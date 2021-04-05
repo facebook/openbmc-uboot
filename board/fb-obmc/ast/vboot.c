@@ -11,6 +11,13 @@ static void vboot_finish(void)
 {
 	/* Clean the handoff marker from ROM. */
 	volatile struct vbs *vbs = (volatile struct vbs *)AST_SRAM_VBS_BASE;
+
+#if 	defined(CONFIG_TEST_ASPEED_WATCHDOG_UBOOT) && \
+	!defined(CONFIG_ASPEED_RECOVERY_BUILD)
+	printf("Testing U-Boot hang recovery ...");
+	hang();
+#endif
+
 	vbs->rom_handoff = 0x0;
 
 #ifdef CONFIG_ASPEED_TPM
@@ -21,6 +28,7 @@ static void vboot_finish(void)
 	}
 	ast_tpm_finish();
 #endif
+
 }
 
 char *fit_cert_store(void)

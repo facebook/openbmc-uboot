@@ -62,7 +62,8 @@ static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
     if (strncmp(argv[1], "interrupt", sizeof("interrupt")) == 0) {
 #ifdef CONFIG_ASPEED_ENABLE_WATCHDOG
       /* This will disable the WTD1. */
-      writel(readl(AST_WDT_BASE + 0x0C) & ~1, AST_WDT_BASE + 0x0C);
+      printf("Disable WDT\n");
+      writel(readl(ASPEED_WDT_BASE + 0x0C) & ~1, ASPEED_WDT_BASE + 0x0C);
 #endif
       vbs->rom_handoff = 0x0;
       return 0;

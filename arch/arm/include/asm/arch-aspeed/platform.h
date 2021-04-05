@@ -15,6 +15,7 @@
 #define SCU_PROTECT_UNLOCK      0x1688A8A8
 #define ASPEED_SCU_BASE         0x1E6E2000
 #define ASPEED_TIMER_BASE       0x1E782000
+#define ASPEED_WDT_BASE         0x1E785000
 
 /*********************************************************************************/
 #if defined(CONFIG_ASPEED_AST2400)

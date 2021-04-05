@@ -84,11 +84,7 @@
 #endif
 # define CONFIG_MALLOC_F_ADDR (CONFIG_SYS_INIT_SP_ADDR - CONFIG_SPL_SYS_MALLOC_F_LEN)
 
-
-
-
-
-
+/*============= UBoot Common setup ===============*/
 
 #define CONFIG_SYS_MEMTEST_START	(CONFIG_SYS_SDRAM_BASE + 0x300000)
 #define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_MEMTEST_START + 0x5000000)
@@ -98,7 +94,21 @@
 /* Memory Info */
 #define CONFIG_SYS_LOAD_ADDR		0x83000000
 
+/*============= Watch dog configuration ===============*/
+#define CONFIG_ASPEED_ENABLE_WATCHDOG
 
+#if defined(CONFIG_TEST_ASPEED_WATCHDOG_SPL)
+# define CONFIG_ASPEED_WATCHDOG_SPL_TIMEOUT	(50)    /* 50 seconds */
+#else
+# define CONFIG_ASPEED_WATCHDOG_SPL_TIMEOUT	(5*60)    /* 5 minutes */
+#endif
+
+#if defined(CONFIG_TEST_ASPEED_WATCHDOG_UBOOT) && \
+    !defined(CONFIG_ASPEED_RECOVERY_BUILD)
+# define CONFIG_ASPEED_WATCHDOG_TIMEOUT	(50)    /* 50 seconds */
+#else
+# define CONFIG_ASPEED_WATCHDOG_TIMEOUT	(5*60) /* 5 minutes */
+#endif
 
 /* u-boot reset command and reset() is implemented via sysreset
  * which will trigger the WDT to do full-chip reset by default.

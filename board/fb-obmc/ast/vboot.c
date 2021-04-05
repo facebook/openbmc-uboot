@@ -33,3 +33,13 @@ void arch_preboot_os(void)
 {
 	vboot_finish();
 }
+
+void vboot_check_enforce(void)
+{
+	/* Clean the handoff marker from ROM. */
+	volatile struct vbs *vbs = (volatile struct vbs *)AST_SRAM_VBS_BASE;
+	if (vbs->hardware_enforce) {
+		/* If we are hardware-enforcing then this U-Boot is verified. */
+		env_set("verify", "yes");
+	}
+}

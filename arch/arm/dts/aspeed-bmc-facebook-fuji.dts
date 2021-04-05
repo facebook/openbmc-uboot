@@ -46,12 +46,18 @@
 	status = "okay";
 };
 
-&mac1 {
+&mac3 {
 	status = "okay";
 
 	phy-mode = "rgmii";
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_mac2link_default &pinctrl_mdio2_default>;
+
+	pinctrl-0 = <&pinctrl_mac4link_default &pinctrl_mdio2_default>;
+
+	fixed-link {
+		speed = <1000>;
+		full-duplex;
+	};
 };
 
 &fmc {

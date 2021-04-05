@@ -542,6 +542,7 @@ void vboot_load_fit(volatile void* from) {
 void board_init_f(ulong bootflag)
 {
 #if defined(CONFIG_ASPEED_AST2600)
+	u32 fmc_ce_ctrl;
 	spl_early_init();
 	preloader_console_init();
 	timer_init();
@@ -553,11 +554,25 @@ void board_init_f(ulong bootflag)
 	debug("Setup flash: write enable, addr4B, CE1 AHB 64MB window\n");
 	setbits_le32(ASPEED_FMC_BASE,(7<<16));
 	udelay(1000);
-	setbits_le32(ASPEED_FMC_BASE + 0x4, 0x33);
-	udelay(1000);
+	if (IS_ENABLED(CONFIG_QEMU_BUILD)) {
+		/* QEMU SPI flash always 3B before probing */
+		clrbits_le32(ASPEED_FMC_BASE + 0x4, 0x33);
+		udelay(1000);
+		fmc_ce_ctrl = readl(ASPEED_FMC_BASE + 0x4);
+		printf("!!!QEMU!!! FMC_CE_CTRL = 0x%08X\n", fmc_ce_ctrl);
+	} else {
+		/* H/W SPI flash can always use 4B before probing
+		* Winbond: manufacturing set 4B to NV-status register
+		* Macronix: accept 4B addr cmd w/o need explict EN4B
+		*/
+		setbits_le32(ASPEED_FMC_BASE + 0x4, 0x33);
+		udelay(1000);
+		fmc_ce_ctrl = readl(ASPEED_FMC_BASE + 0x4);
+		debug("Setup FMC_CE_CTRL = 0x%08X\n", fmc_ce_ctrl);
+	}
 	writel(0x2BF02800, ASPEED_FMC_BASE + 0x34);
 	udelay(1000);
-#else
+#else /* CONFIG_ASPEED_AST2600 */
   /* Must set up console for printing/logging. */
   preloader_console_init();
   /* Must set up global data pointers for local device tree. */

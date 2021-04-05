@@ -172,8 +172,15 @@
 #endif
 
 /*======= vboot and non-vboot common configuration ========*/
+#ifdef CONFIG_QEMU_BUILD
+# define QEMU_FMC_WORKAROUND "sf probe 0:0; "
+#else
+# define QEMU_FMC_WORKAROUND ""
+#endif
+
 #define CONFIG_USE_BOOTCOMMAND
 #define CONFIG_BOOTCOMMAND                                \
+  QEMU_FMC_WORKAROUND                                     \
   "bootm " CONFIG_KERNEL_LOAD "; " /* Location of FIT */  \
   CONFIG_POSTBOOT
 

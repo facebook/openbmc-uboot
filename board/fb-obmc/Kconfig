@@ -21,8 +21,13 @@ config ASPEED_WRITE_DEFAULT_ENV
 	bool "Enable write default environment"
 	default n
 
+config QEMU_BUILD
+	bool "build for QEMU test"
+	default n
+
 config QEMU_VBOOT
 	bool "build for QEMU VBoot test machine"
+	select QEMU_BUILD
 	default n
 
 if SPL

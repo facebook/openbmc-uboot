@@ -14,6 +14,41 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#ifdef CONFIG_FBGC
+static void system_status_led_init(void)
+{
+	/* GPIO088: GPIO_U/V/W/X Data Value Register
+	 * 31:24 Port GPIOX[7:0] data register
+	 * 23:16 Port GPIOW[7:0] data register
+	 * 15:8 Port GPIOV[7:0] data register
+	 * 7:0 Port GPIOU[7:0] data register
+	 */
+	u32 value = readl(0x1e780088);
+	/* GPIO08C: GPIO_U/V/W/X Direction Value Register
+	 * 31:24 Port GPIOX[7:0] direction control
+	 * 0: Select input mode 1: Select output mode
+	 * 23:16 Port GPIOW[7:0] direction control
+	 * 0: Select input mode 1: Select output mode
+	 * 15:8 Port GPIOV[7:0] direction control
+	 * 0: Select input mode 1: Select output mode
+	 * 7:0 Reserved
+	 * GPIOU is input only
+	 */
+	u32 direction = readl(0x1e78008C);
+
+	/* GPIOV4: BMC_LED_STATUS_BLUE_EN_R
+	 * 0: LED OFF 1:LED ON BLUE
+	 * GPIOV5: BMC_LED_STATUS_YELLOW_EN_R
+	 * 0: LED ON YELLOW 1:LED OFF
+	 */
+	direction |= 0x3000; // set GPIOV4 & GPIOV5 direction output
+	value &= 0xFFFFCFFF; // set GPIOV4 & GPIOV5 value 0
+	writel(direction, 0x1e78008C);
+	writel(value, 0x1e780088);
+}
+
+#endif  /* CONFIG_FBGC */
+
 int board_init(void)
 {
 	struct udevice *dev;
@@ -59,6 +94,10 @@ int board_init(void)
 
 
 	vboot_check_enforce();
+
+#ifdef CONFIG_FBGC
+	system_status_led_init();
+#endif /* CONFIG_FBGC */
 
 	return 0;
 }

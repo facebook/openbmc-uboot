@@ -6,7 +6,6 @@
 #include <common.h>
 #include <asm/io.h>
 #include <asm/arch/timer.h>
-#include <asm/arch/fmc_dual_boot_ast2600.h>
 #include <linux/bitops.h>
 #include <linux/err.h>
 #include <dm/uclass.h>
@@ -72,10 +71,10 @@ int board_init(void)
 
 	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
 
+#if CONFIG_IS_ENABLED(ASPEED_ENABLE_DUAL_BOOT_WATCHDOG)
+	dual_boot_watchdog_init(CONFIG_ASPEED_WATCHDOG_TIMEOUT);
+#else
 	watchdog_init(CONFIG_ASPEED_WATCHDOG_TIMEOUT);
-
-#if CONFIG_IS_ENABLED(FMC_DUAL_BOOT)
-	fmc_enable_dual_boot();
 #endif
 
 	/*

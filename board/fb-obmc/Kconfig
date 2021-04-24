@@ -30,6 +30,20 @@ config QEMU_VBOOT
 	select QEMU_BUILD
 	default n
 
+config ASPEED_ENABLE_DUAL_BOOT_WATCHDOG
+	bool "enable dual boot feature"
+	default n
+	help
+		Enable this will override CONFIG_ASPEED_ENABLE_WATCHDOG
+		use dual boot dedicated watchdog to protect booting up
+		on AST26xx platform it is FMCWDT2
+		on AST24xx and AST25xx platform we select wdt2
+		so please make sure configuring wdt2 with boot2nd in dts
+		&wdt2 {
+			status = "okay";
+			boot2nd = <1>;
+		};
+
 if SPL
 
 config SYS_TEXT_BASE

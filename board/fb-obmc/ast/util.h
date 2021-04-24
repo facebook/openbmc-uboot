@@ -13,4 +13,6 @@ int pfr_checkpoint(uint cmd);
 void vboot_check_enforce(void);
 #endif
 
+int dual_boot_watchdog_init(uint32_t timeout_sec);
+
 #endif/*_BOARD_ASPEED_AST_UTIL_H*/

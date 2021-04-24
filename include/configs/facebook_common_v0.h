@@ -181,10 +181,15 @@
 /*
  * Command to run in if CLI is used.
  */
-#if defined(CONFIG_CMD_VBS) && defined(CONFIG_SPL)
-#define CONFIG_PRECLICOMMAND "vbs interrupt; "
-#endif
-
+#if CONFIG_IS_ENABLED(ASPEED_ENABLE_DUAL_BOOT_WATCHDOG)
+# if defined(CONFIG_ASPEED_AST2600) /* stop fmcwdt2 */
+#   define CONFIG_PRECLICOMMAND "echo stop fmcwdt2; mw 1e620064 0; "
+# else /* stop wdt2 */
+#   define CONFIG_PRECLICOMMAND "echo stop wdt2; mw 1e78502c 0; "
+# endif
+#else /* stop wdt1 */
+# define CONFIG_PRECLICOMMAND "echo stop wdt1; mw 1e78500c 0; "
+#endif /* ASPEED_ENABLE_DUAL_BOOT_WATCHDOG */
 /*
  * Lock the BMC TPM during provisioning (perform 1-time operations)
  */

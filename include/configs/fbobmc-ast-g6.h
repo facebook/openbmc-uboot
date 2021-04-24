@@ -159,7 +159,11 @@
   /* define commands */
 # undef CONFIG_PREBOOT
 # define CONFIG_POSTBOOT "vbs 6 60; bootm " CONFIG_CS0_SPL_KERNEL_LOAD "; "
-# define CONFIG_PRECLICOMMAND "vbs interrupt; "
+#if CONFIG_IS_ENABLED(ASPEED_ENABLE_DUAL_BOOT_WATCHDOG) /* stop fmcwdt2 */
+# define CONFIG_PRECLICOMMAND "echo stop fmcwdt2; mw 1e620064 0; "
+#else /* stop wdt1 */
+# define CONFIG_PRECLICOMMAND "echo stop wdt1; mw 1e78500c 0; "
+#endif /* ASPEED_ENABLE_DUAL_BOOT_WATCHDOG */
 
 /*====== non-vboot configuration ========*/
 #else

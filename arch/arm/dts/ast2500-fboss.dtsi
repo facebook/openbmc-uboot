@@ -32,4 +32,9 @@ when we fully migrate from ast-sdk to upstream u-boot
         };
 };
 
+&wdt2 {
+	status = "okay";
+	boot2nd = <1>;
+};
+
 

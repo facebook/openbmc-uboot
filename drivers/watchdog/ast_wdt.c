@@ -49,7 +49,7 @@ static int ast_wdt_start(struct udevice *dev, u64 timeout_ms, ulong flags)
 	u32 timeout_us = (u32)timeout_ms * 1000;
 	u32 wdt_ctrl;
 
-	dev_info(dev, "wdt%u set timeout after %uus\n", dev->seq, timeout_us);
+	dev_info(dev, "%s set timeout after %uus ", dev->name, timeout_us);
 
 	clrsetbits_le32(&priv->regs->ctrl,
 			WDT_CTRL_EN |
@@ -71,14 +71,15 @@ static int ast_wdt_start(struct udevice *dev, u64 timeout_ms, ulong flags)
 	clrbits_le32(&priv->regs->ctrl, WDT_CTRL_2ND_BOOT | WDT_CTRL_EXT);
 	wdt_ctrl = WDT_CTRL_EN | WDT_CTRL_RESET | WDT_CTRL_CLK1MHZ;
 	if (priv->wdtrst[2]) {
-		dev_info(dev, "trig pulse width = %d \n", priv->wdtrst[2]);
+		dev_info(dev, "; trig pulse width = %d ", priv->wdtrst[2]);
 		writel(priv->wdtrst[2], &priv->regs->reset_width);
 		wdt_ctrl |= WDT_CTRL_EXT;
 	}
 	if (priv->boot2nd) {
-		dev_info(dev, "trig 2nd boot\n");
+		dev_info(dev, "; enable 2nd boot");
 		wdt_ctrl |= WDT_CTRL_2ND_BOOT;
 	}
+	dev_info(dev, "\n");
 	setbits_le32(&priv->regs->ctrl, wdt_ctrl);
 
 	return 0;
@@ -146,7 +147,7 @@ static int ast_wdt_ofdata_to_platdata(struct udevice *dev)
 	priv->boot2nd = 0;
 	dev_read_u32(dev, "boot2nd", &priv->boot2nd);
 	if (priv->boot2nd) {
-		dev_info(dev, "wdt trig boot2nd\n");
+		dev_dbg(dev, "boot2nd = <%d>\n", priv->boot2nd);
 	}
 
 	return 0;

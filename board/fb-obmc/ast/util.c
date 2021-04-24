@@ -86,7 +86,27 @@ int pfr_checkpoint(uint cmd) {
 #if defined(CONFIG_ASPEED_AST2500)
 int dual_boot_watchdog_init(uint32_t timeout_sec)
 {
-	// TODO: enable WDT2
+	struct udevice *wdt;
+	int ret;
+	u32 timeout_ms = timeout_sec * 1000;
+
+	ret = uclass_get_device_by_name(UCLASS_WDT, "watchdog@1e785020", &wdt);
+	if (ret) {
+		printf("cannot find watchdog@1e785020(wdt2): %d\n", ret);
+		return ret;
+	}
+#ifdef AST_SYSRESET_WITH_SOC
+	ret = wdt_start(wdt, timeout_ms, WDT_CTRL_RESET_SOC);
+#else
+	ret = wdt_start(wdt, timeout_ms, WDT_CTRL_RESET_CHIP);
+#endif
+	if (ret) {
+		printf("Start WDT%u %us failed: %d\n",
+		       wdt->seq, timeout_sec, ret);
+		return ret;
+	}
+
+	printf("Watchdog: %us\n", timeout_sec);
 	return 0;
 }
 #endif /* CONFIG_ASPEED_AST2500 */

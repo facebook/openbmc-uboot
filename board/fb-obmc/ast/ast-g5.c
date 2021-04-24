@@ -1280,7 +1280,11 @@ static void init_CPLD_POWER_ON(void)
 
 int board_init(void)
 {
+#if CONFIG_IS_ENABLED(ASPEED_ENABLE_DUAL_BOOT_WATCHDOG)
+	dual_boot_watchdog_init(CONFIG_ASPEED_WATCHDOG_TIMEOUT);
+#else
 	watchdog_init(CONFIG_ASPEED_WATCHDOG_TIMEOUT);
+#endif
 	vboot_check_enforce();
 
 #if defined(CONFIG_FBTP) || defined(CONFIG_PWNEPTUNE)

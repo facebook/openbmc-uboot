@@ -40,7 +40,7 @@
 	pinctrl-0 = <&pinctrl_rgmii4_default>;
 
         fixed-link {
-           speed = <100>;
+           speed = <1000>;
            full-duplex;
         };
 };
@@ -89,4 +89,10 @@
 
 &sdrammc {
 	clock-frequency = <400000000>;
+};
+
+&scu {
+   mac3-clk-delay = <0x09 0x04
+                     0x09 0x04
+                     0x09 0x04>;
 };

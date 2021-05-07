@@ -3,6 +3,16 @@ config ASPEED_TPM
 	default n
 	depends on SPL
 
+config ASPEED_TPM_LOCK
+	bool "lock the TPM"
+	default y
+	depends on ASPEED_TPM
+	help
+		Disable the modify of NVRAM to protect user from modifying
+		the rollback protection information
+		TPM1.2 platform disable physical presence command
+		TPM2.0 platform disable the platform hierarchy
+
 config ASPEED_RECOVERY_BUILD
 	bool "Build a recovery environment"
 	default n

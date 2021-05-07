@@ -395,6 +395,7 @@ int ast_tpm_try_version(struct vbs *vbs, uint8_t image, uint32_t version,
 
 int ast_tpm_finish(void)
 {
+#ifdef CONFIG_ASPEED_TPM_LOCK
 	uint32_t result;
 	struct udevice *dev;
 	int err;
@@ -404,7 +405,7 @@ int ast_tpm_finish(void)
 	if (err) {
 		return err;
 	}
-#ifdef CONFIG_ASPEED_TPM_LOCK
+
 	if (vbs->hardware_enforce) {
 		printf("disabling platform hierarchy\n");
 		result = tpm2_hierarchy_control(dev, NULL, 0, TPM2_RH_PLATFORM,

@@ -190,10 +190,12 @@
 #else /* stop wdt1 */
 # define CONFIG_PRECLICOMMAND "echo stop wdt1; mw 1e78500c 0; "
 #endif /* ASPEED_ENABLE_DUAL_BOOT_WATCHDOG */
+
 /*
  * Lock the BMC TPM during provisioning (perform 1-time operations)
+ * move to Kconfig
+  #define CONFIG_ASPEED_TPM_LOCK
  */
-#define CONFIG_ASPEED_TPM_LOCK
 
 #ifdef CONFIG_SPL
 #ifdef CONFIG_SPL_BUILD

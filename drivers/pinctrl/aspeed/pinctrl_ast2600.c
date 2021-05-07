@@ -429,6 +429,44 @@ static int ast2600_pinctrl_group_set(struct udevice *dev, unsigned selector,
 	return 0;
 }
 
+static int
+ast2600_pinctrl_restore_to_gpio(struct udevice *dev, int gpio_offset)
+{
+	struct ast2600_pinctrl_priv *priv = dev_get_priv(dev);
+	u32 ctrl_reg = (u32)priv->scu;
+	u32 reg_off, reg_bit;
+	bool bit_set = false;
+
+	switch(gpio_offset) {
+		case 184: reg_off = 0x434; reg_bit = BIT(24); break; /* GPIOX0 */
+		case 187: reg_off = 0x434; reg_bit = BIT(27); break; /* GPIOX3 */
+		case 188: reg_off = 0x434; reg_bit = BIT(28); break; /* GPIOX4 */
+		case 189: reg_off = 0x434; reg_bit = BIT(29); break; /* GPIOX5 */
+		default:
+			dev_warn(dev, "TODO: restore pin-%u to GPIO%c%u\n",
+				gpio_offset, 'A' + (gpio_offset >> 3) % 26,
+				gpio_offset & 0x7);
+			return -EINVAL;
+	}
+	dev_info(dev, "restore pin-%u to GPIO%c%u\n", gpio_offset,
+		'A' + (gpio_offset >> 3) % 26, gpio_offset & 0x7);
+	if (bit_set)
+		setbits_le32(ctrl_reg + reg_off, reg_bit);
+	else
+		clrbits_le32(ctrl_reg + reg_off, reg_bit);
+	return 0;
+}
+
+static int
+ast2600_pinctrl_request(struct udevice *dev, int func, int flags)
+{
+	if (!flags) {
+		return ast2600_pinctrl_restore_to_gpio(dev, func);
+	}
+	dev_err(dev, "unknown flags %d", flags);
+	return -EINVAL;
+}
+
 static struct pinctrl_ops ast2600_pinctrl_ops = {
 	.set_state = pinctrl_generic_set_state,
 	.get_groups_count = ast2600_pinctrl_get_groups_count,
@@ -436,6 +474,7 @@ static struct pinctrl_ops ast2600_pinctrl_ops = {
 	.get_functions_count = ast2600_pinctrl_get_groups_count,
 	.get_function_name = ast2600_pinctrl_get_group_name,
 	.pinmux_group_set = ast2600_pinctrl_group_set,
+	.request = ast2600_pinctrl_request,
 };
 
 static const struct udevice_id ast2600_pinctrl_ids[] = {

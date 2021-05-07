@@ -6,6 +6,9 @@
 /dts-v1/;
 
 #include "ast2600-u-boot.dtsi"
+#ifdef CONFIG_ASPEED_TPM
+#include "fbobmc-ast-g6-tpm2.dtsi"
+#endif
 
 / {
 	memory {
@@ -71,3 +74,4 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_emmc_default>;
 };
+

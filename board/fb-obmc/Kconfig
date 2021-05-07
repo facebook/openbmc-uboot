@@ -1,7 +1,11 @@
 config ASPEED_TPM
-	bool "Perform TPM provisioning"
+	bool "TPM based feature"
 	default n
+	select TPM
 	depends on SPL
+	help
+		Enable TPM based feature:
+		measurement and rollback protection
 
 config ASPEED_TPM_LOCK
 	bool "lock the TPM"

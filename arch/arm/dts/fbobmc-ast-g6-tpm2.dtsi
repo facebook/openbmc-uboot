@@ -1,0 +1,51 @@
+// SPDX-License-Identifier: GPL-2.0+
+/*
+ * Copyright (c) 2020 Facebook Inc.
+ */
+
+&syscon {
+	u-boot,dm-pre-reloc;
+};
+
+&pinctrl {
+	u-boot,dm-pre-reloc;
+};
+
+&gpio0 {
+	u-boot,dm-pre-reloc;
+};
+
+#include <dt-bindings/gpio/aspeed-gpio.h>
+/ {
+	spi_gpio: spi-gpio {
+		status = "okay";
+		compatible = "spi-gpio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		gpio-sck = <&gpio0 ASPEED_GPIO(X, 3) GPIO_ACTIVE_HIGH>;
+		gpio-mosi = <&gpio0 ASPEED_GPIO(X, 4) GPIO_ACTIVE_HIGH>;
+		gpio-miso = <&gpio0 ASPEED_GPIO(X, 5) GPIO_ACTIVE_HIGH>;
+		num-chipselects = <1>;
+		cs-gpios = <&gpio0 ASPEED_GPIO(X, 0) GPIO_ACTIVE_LOW>;
+		u-boot,dm-pre-reloc;
+
+		tpmdev@0 {
+			compatible = "tis,tpm2-spi";
+			spi-max-frequency = <33000000>;
+			reg = <0>;
+			u-boot,dm-pre-reloc;
+		};
+	};
+};
+
+#include <dt-bindings/wdt/aspeed.h>
+&pinctrl_wdtrst1_default {
+	u-boot,dm-pre-reloc;
+};
+
+&wdt1 {
+	wdtrst = <WDTRST_POLARITY_H WDTRST_OPEN_DRAIN 0xFF>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_wdtrst1_default>;
+};

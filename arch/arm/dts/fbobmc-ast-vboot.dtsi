@@ -1,0 +1,24 @@
+// SPDX-License-Identifier: GPL-2.0+
+/*
+ * Copyright (c) 2020 Facebook Inc.
+ */
+
+/ {
+	config {
+		/* short term solution not enable bootsecure option,
+		 * hardcode the bootcmd list in fdt, which will be verfied by SPL.
+		 * long term shall enable bootsecure option and
+		 * have vbs command to implement all verified-boot
+		 */
+		bootsecure = <0>;
+#ifdef CONFIG_ASPEED_RECOVERY_BUILD
+		bootcmd = "setenv verify no; bootm 201A0000";
+#else
+		bootcmd = "vbs oscheck; bootm 281A0000; vbs 6 60; setenv verify no; bootm 201A0000";
+#endif
+	};
+
+	aliases {
+		spi0 = &fmc;
+	};
+};

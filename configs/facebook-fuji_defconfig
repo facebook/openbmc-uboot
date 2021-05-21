@@ -66,6 +66,11 @@ CONFIG_FMC_DUAL_BOOT=y
 CONFIG_SYS_DCACHE_OFF=y
 
 #
+# Enable DRAM ECC
+#
+CONFIG_ASPEED_ECC=y
+
+#
 # Board specific config.
 #
 CONFIG_USE_BOOTARGS=y

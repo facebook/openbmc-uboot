@@ -188,7 +188,11 @@
 #   define CONFIG_PRECLICOMMAND "echo stop wdt2; mw 1e78502c 0; "
 # endif
 #else /* stop wdt1 */
-# define CONFIG_PRECLICOMMAND "echo stop wdt1; mw 1e78500c 0; "
+# if defined(CONFIG_CMD_VBS)
+#   define CONFIG_PRECLICOMMAND "vbs interrupt; "
+# else
+#   define CONFIG_PRECLICOMMAND "echo stop wdt1; mw 1e78500c 0; "
+# endif
 #endif /* ASPEED_ENABLE_DUAL_BOOT_WATCHDOG */
 
 /*

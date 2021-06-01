@@ -159,20 +159,15 @@
 #endif
 
 /*
- * Recovery boot flow
+ *  Make sure we did not define preboot for verified-boot
  */
-#ifdef CONFIG_ASPEED_RECOVERY_BUILD
-#define CONFIG_PREBOOT "setenv verify no; "
-#else
-#ifdef CONFIG_CMD_VBS
-#define CONFIG_PREBOOT "vbs oscheck; "
-#else
-#define CONFIG_PREBOOT " "
-#endif
+#if defined(CONFIG_CMD_VBS) && defined(CONFIG_SPL)
+#undef CONFIG_PREBOOT
 #endif
 
 /*
  * Basic boot command configuration based on flash
+ * For verified-boot the command will be overridden in fdt
  */
 #define CONFIG_BOOTCOMMAND                                \
   "bootm " CONFIG_KERNEL_LOAD "; " /* Location of FIT */  \

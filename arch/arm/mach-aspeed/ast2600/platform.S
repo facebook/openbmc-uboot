@@ -253,6 +253,14 @@ wait_lock:
 	movt    r1, #0x0000
 	str     r1, [r0]
 
+	/* PCIeRC/E2M8 power-on reset comes from SCU040
+	But SCU04018 default value is 0x0.
+	It should be 0x1 to reset PCIeRC/E2M8.*/
+	ldr     r0, =AST_SCU_SYSRST_CTRL
+	movw    r1, #0x0000
+	movt    r1, #0x0004
+	str     r1, [r0]
+
 	/* MMIO decode setting */
 	ldr	r0, =AST_SCU_MMIO_DEC_SET
 	mov	r1, #0x2000

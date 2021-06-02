@@ -25,7 +25,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#define OTP_VER				"1.0.1"
+#define OTP_VER				"1.0.3"
 
 #define OTP_PASSWD			0x349fe38a
 #define RETRY				20
@@ -71,6 +71,7 @@ DECLARE_GLOBAL_DATA_PTR;
 #define OTP_AST2600A0		0
 #define OTP_AST2600A1		1
 #define OTP_AST2600A2		2
+#define OTP_AST2600A3		3
 
 struct otp_header {
 	u8	otp_magic[8];
@@ -186,6 +187,12 @@ static uint32_t  chip_version(void)
 	} else if (rev_id == 0x0502010305010103) {
 		/* AST2605-A2 */
 		return OTP_AST2600A2;
+	} else if (rev_id == 0x0503030305030303) {
+		/* AST2600-A3 */
+		return OTP_AST2600A3;
+	} else if (rev_id == 0x0503020305030203) {
+		/* AST2620-A3 */
+		return OTP_AST2600A3;
 	}
 
 	return -1;
@@ -210,7 +217,8 @@ static void otp_write(uint32_t otp_addr, uint32_t data)
 
 static void otp_soak(int soak)
 {
-	if (info_cb.version == OTP_AST2600A2) {
+	if (info_cb.version == OTP_AST2600A2 ||
+		info_cb.version == OTP_AST2600A3) {
 		switch (soak) {
 		case 0: //default
 			otp_write(0x3000, 0x0210); // Write MRA
@@ -439,7 +447,8 @@ static void _otp_prog_bit(uint32_t value, uint32_t prog_address, uint32_t bit_of
 		else
 			return;
 	} else {
-		prog_address |= 1 << 15;
+		if (info_cb.version != OTP_AST2600A3)
+			prog_address |= 1 << 15;
 		if (!value)
 			prog_bit = 0x1 << bit_offset;
 		else
@@ -490,7 +499,8 @@ static void otp_prog_dw(uint32_t value, uint32_t ignore, uint32_t prog_address)
 			else
 				continue;
 		} else {
-			prog_address |= 1 << 15;
+			if (info_cb.version != OTP_AST2600A3)
+				prog_address |= 1 << 15;
 			if (bit_value)
 				continue;
 			else
@@ -1600,6 +1610,12 @@ static int do_otp_prog(int addr, int nconfirm)
 		image_layout.strap_reg_pro = image_layout.strap + image_layout.strap_length;
 		image_layout.strap_pro = image_layout.strap + 2 * image_layout.strap_length;
 		image_layout.strap_ignore = image_layout.strap + 3 * image_layout.strap_length;
+	} else if (!strcmp("A3", (char *)otp_header->otp_version)) {
+		image_version = OTP_AST2600A3;
+		image_layout.strap_length = (int)(OTP_REGION_SIZE(otp_header->strap_info) / 4);
+		image_layout.strap_reg_pro = image_layout.strap + image_layout.strap_length;
+		image_layout.strap_pro = image_layout.strap + 2 * image_layout.strap_length;
+		image_layout.strap_ignore = image_layout.strap + 3 * image_layout.strap_length;
 	} else {
 		puts("Version is not supported\n");
 		return OTP_FAILURE;
@@ -2068,6 +2084,15 @@ static int do_ast_otp(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 		break;
 	case OTP_AST2600A2:
 		info_cb.version = OTP_AST2600A2;
+		info_cb.conf_info = a2_conf_info;
+		info_cb.conf_info_len = ARRAY_SIZE(a2_conf_info);
+		info_cb.strap_info = a2_strap_info;
+		info_cb.strap_info_len = ARRAY_SIZE(a2_strap_info);
+		info_cb.key_info = a2_key_type;
+		info_cb.key_info_len = ARRAY_SIZE(a2_key_type);
+		break;
+	case OTP_AST2600A3:
+		info_cb.version = OTP_AST2600A3;
 		info_cb.conf_info = a2_conf_info;
 		info_cb.conf_info_len = ARRAY_SIZE(a2_conf_info);
 		info_cb.strap_info = a2_strap_info;

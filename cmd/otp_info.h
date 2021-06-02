@@ -3,7 +3,7 @@
  * Do not edit it.
  */
 
-#define OTP_INFO_VER		"1.0.1"
+#define OTP_INFO_VER		"1.0.2"
 #define OTP_REG_RESERVED	-1
 #define OTP_REG_VALUE		-2
 #define OTP_REG_VALID_BIT	-3
@@ -54,8 +54,8 @@ static const struct otpstrap_info a0_strap_info[] = {
 	{ 15, 1, 1, "CPU/AXI clock ratio : 1:1" },
 	{ 16, 1, 0, "Enable ARM JTAG debug" },
 	{ 16, 1, 1, "Disable ARM JTAG debug" },
-	{ 17, 1, 0, "VGA class code : video_device" },
-	{ 17, 1, 1, "VGA class code : vga_device" },
+	{ 17, 1, 0, "VGA class code : vga_device" },
+	{ 17, 1, 1, "VGA class code : video_device" },
 	{ 18, 1, 0, "Enable debug interfaces 0" },
 	{ 18, 1, 1, "Disable debug interfaces 0" },
 	{ 19, 1, 0, "Boot from eMMC speed mode : normal" },
@@ -177,8 +177,8 @@ static const struct otpstrap_info a1_strap_info[] = {
 	{ 15, 1, 1, "CPU/AXI clock ratio : 1:1" },
 	{ 16, 1, 0, "Enable ARM JTAG debug" },
 	{ 16, 1, 1, "Disable ARM JTAG debug" },
-	{ 17, 1, 0, "VGA class code : video_device" },
-	{ 17, 1, 1, "VGA class code : vga_device" },
+	{ 17, 1, 0, "VGA class code : vga_device" },
+	{ 17, 1, 1, "VGA class code : video_device" },
 	{ 18, 1, 0, "Enable debug interfaces 0" },
 	{ 18, 1, 1, "Disable debug interfaces 0" },
 	{ 19, 1, 0, "Boot from eMMC speed mode : normal" },
@@ -300,8 +300,8 @@ static const struct otpstrap_info a2_strap_info[] = {
 	{ 15, 1, 1, "CPU/AXI clock ratio : 1:1" },
 	{ 16, 1, 0, "Enable ARM JTAG debug" },
 	{ 16, 1, 1, "Disable ARM JTAG debug" },
-	{ 17, 1, 0, "VGA class code : video_device" },
-	{ 17, 1, 1, "VGA class code : vga_device" },
+	{ 17, 1, 0, "VGA class code : vga_device" },
+	{ 17, 1, 1, "VGA class code : video_device" },
 	{ 18, 1, 0, "Enable debug interfaces 0" },
 	{ 18, 1, 1, "Disable debug interfaces 0" },
 	{ 19, 1, 0, "Boot from eMMC speed mode : normal" },
@@ -462,8 +462,8 @@ static const struct otpconf_info a1_conf_info[] = {
 	{ 0, 12, 2, 1, "SHA mode : SHA256" },
 	{ 0, 12, 2, 2, "SHA mode : SHA384" },
 	{ 0, 12, 2, 3, "SHA mode : SHA512" },
-	{ 0, 14, 1, 0, "Enable patch code" },
-	{ 0, 14, 1, 1, "Disable patch code" },
+	{ 0, 14, 1, 0, "Disable patch code" },
+	{ 0, 14, 1, 1, "Enable patch code" },
 	{ 0, 15, 1, 0, "Enable Boot from Uart" },
 	{ 0, 15, 1, 1, "Disable Boot from Uart" },
 	{ 0, 16, 6, OTP_REG_VALUE, "Secure Region size (DW): 0x%x" },
@@ -495,8 +495,8 @@ static const struct otpconf_info a1_conf_info[] = {
 };
 
 static const struct otpconf_info a2_conf_info[] = {
-	{ 0, 1, 1, 0, "Enable OTP Memory BIST Mode" },
-	{ 0, 1, 1, 1, "Disable OTP Memory BIST Mode" },
+	{ 0, 0, 1, 0, "Enable OTP Memory BIST Mode" },
+	{ 0, 0, 1, 1, "Disable OTP Memory BIST Mode" },
 	{ 0, 1, 1, 0, "Disable Secure Boot" },
 	{ 0, 1, 1, 1, "Enable Secure Boot" },
 	{ 0, 3, 1, 0, "User region ECC disable" },

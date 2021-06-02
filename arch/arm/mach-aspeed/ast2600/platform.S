@@ -61,6 +61,10 @@
 #define AST_GPIOYZ_DATA_VALUE	(AST_GPIO_BASE + 0x1E0)
 #define AST_HI_CTRL9            (AST_GPIO_BASE + 0x9098)
 
+#define AST_LPC_BASE		(0x1E789000)
+#define AST_HICR9		(AST_LPC_BASE + 0x98)
+#define AST_HICRA		(AST_LPC_BASE + 0x9C)
+
 /* Revision ID */
 #define REV_ID_AST2600A0	0x05000303
 #define REV_ID_AST2600A1	0x05010303
@@ -238,6 +242,17 @@ wait_lock:
 	str	r1, [r0]
 
 2:
+	/* Fix UART1 route problem on A3 */
+	ldr     r0, =AST_HICR9
+	movw    r1, #0x0a30
+	movt    r1, #0x0000
+	str     r1, [r0]
+
+	ldr     r0, =AST_HICRA
+	movw    r1, #0x0000
+	movt    r1, #0x0000
+	str     r1, [r0]
+
 	/* MMIO decode setting */
 	ldr	r0, =AST_SCU_MMIO_DEC_SET
 	mov	r1, #0x2000

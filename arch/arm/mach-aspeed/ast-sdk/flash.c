@@ -1052,6 +1052,13 @@ static ulong flash_get_size (const char *id, ulong base, flash_info_t *info)
 			info->dualport = 1;
 			info->dummybyte = 1;
 			info->iomode = IOMODEx2_dummy;
+#elif   defined(CONFIG_FLASH_SPIx4_Dummy)
+                        info->readcmd = 0xeb;
+                        info->dummybyte = 3;
+                        info->dualport = 0;
+                        info->iomode = IOMODEx4_dummy;
+                        info->quadport = 1;
+                        info->dummydata = 0xaa;
 #endif
 			break;
 

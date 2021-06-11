@@ -1,0 +1,13 @@
+if TARGET_FACEBOOK_FBY35
+
+config SYS_BOARD
+	default "facebook_fby35"
+
+config SYS_VENDOR
+	default "aspeed"
+
+config SYS_CONFIG_NAME
+	string "board configuration name"
+	default "facebook_fby35"
+
+endif

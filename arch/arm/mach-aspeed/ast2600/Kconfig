@@ -62,6 +62,12 @@ config TARGET_FACEBOOK_GRANDCANYON
 	help
 	  FACEBOOK-GRANDCANYON is BMC board with AST2620 chip.
 
+config TARGET_FACEBOOK_FBY35
+        bool "FACEBOOK-FBY35"
+        depends on ASPEED_AST2600
+        help
+          FACEBOOK-FBY35 is BMC board with AST2620 chip.
+
 config TARGET_FB_AST_GEN_6
 	bool "Facebook ast26xx based platform"
 	select FB_AST_GEN_6
@@ -75,6 +81,7 @@ source "board/aspeed/facebook_cloudripper/Kconfig"
 source "board/aspeed/facebook_elbert/Kconfig"
 source "board/aspeed/facebook_fuji/Kconfig"
 source "board/aspeed/facebook_grandcanyon/Kconfig"
+source "board/aspeed/facebook_fby35/Kconfig"
 source "board/fb-obmc/Kconfig"
 
 endif

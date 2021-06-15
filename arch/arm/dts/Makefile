@@ -704,6 +704,7 @@ dtb-$(CONFIG_TARGET_FACEBOOK_FBY35) += \
 dtb-$(CONFIG_TARGET_FB_AST_GEN_6) += \
 	aspeed-bmc-facebook-cloudripper.dtb \
 	aspeed-bmc-facebook-elbert.dtb \
+	aspeed-bmc-facebook-elbertvboot.dtb \
 	aspeed-bmc-facebook-fuji.dtb \
 	aspeed-bmc-facebook-grandcanyon.dtb \
 	aspeed-bmc-facebook-fby35.dtb

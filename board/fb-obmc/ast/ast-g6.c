@@ -46,7 +46,11 @@ static void system_status_led_init(void)
 	writel(value, 0x1e780088);
 }
 
-#endif  /* CONFIG_FBGC */
+#endif /* CONFIG_FBGC */
+
+#ifdef CONFIG_ELBERTVBOOT
+extern void configureBcm53134(void);
+#endif
 
 int board_init(void)
 {
@@ -91,12 +95,14 @@ int board_init(void)
 			break;
 	}
 
-
 	vboot_check_enforce();
 
 #ifdef CONFIG_FBGC
 	system_status_led_init();
 #endif /* CONFIG_FBGC */
 
+#ifdef CONFIG_ELBERVBOOT
+	configureBcm53134();
+#endif /* ELBERT specific */
 	return 0;
 }

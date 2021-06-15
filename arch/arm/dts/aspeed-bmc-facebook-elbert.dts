@@ -96,3 +96,10 @@
                      0x09 0x04
                      0x09 0x04>;
 };
+
+#ifdef CONFIG_ELBERTVBOOT
+#	include "fbobmc-ast-vboot.dtsi"
+#	ifdef CONFIG_ASPEED_TPM
+#		include "fbobmc-ast-g6-tpm2.dtsi"
+#	endif
+#endif

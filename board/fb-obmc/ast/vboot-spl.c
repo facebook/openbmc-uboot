@@ -585,6 +585,10 @@ void board_init_f(ulong bootflag)
 //  ast_wdt_reset(120 * AST_WDT_CLK, 0x3 | 0x08);
 //#endif
 #endif
+#if CONFIG_ELBERTVBOOT
+	printf("STOP FMCWDT2\n");
+	writel(0, 0x1E620064);
+#endif
 	watchdog_init(CONFIG_ASPEED_WATCHDOG_SPL_TIMEOUT);
   /*
    * This will never be relocated, so jump directly to the U-boot.

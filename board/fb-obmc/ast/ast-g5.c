@@ -1066,38 +1066,62 @@ static int setup_SKU_ID(int server_type)
   reg = reg | ((0x1 << 8) | (0x1 << 12) | (0x1 << 14) | (0x1 << 15));
   __raw_writel(reg, AST_GPIO_BASE + 0x04);
   reg = __raw_readl(AST_GPIO_BASE + 0x7C);
-  reg = reg | ((0x1 << 0) | 0x1 << 6);
+  reg = reg | ((0x1 << 0) | (0x1 << 6));
   __raw_writel(reg, AST_GPIO_BASE + 0x7C);
   reg = __raw_readl(AST_GPIO_BASE + 0x1EC);
-  reg = reg | ((0x1 << 0) | 0x1 << 2);
+  reg = reg | ((0x1 << 0) | (0x1 << 2));
   __raw_writel(reg, AST_GPIO_BASE + 0x1EC);
 
-  reg = __raw_readl(AST_GPIO_BASE + 0x00);
-  reg = reg & ~((0x1 << 14) | 0x1 << 15);
-  __raw_writel(reg, AST_GPIO_BASE + 0x00);
-  reg = __raw_readl(AST_GPIO_BASE + 0x78);
-  reg = reg & ~((0x1 << 0) | 0x1 << 6);
-  __raw_writel(reg, AST_GPIO_BASE + 0x78);
-
-  if (server_type == 4 || server_type == 8) {
-    // 0
+  if (server_type == 8) {
+    // 4S: SKU ID[0:1] = 01'b
     reg = __raw_readl(AST_GPIO_BASE + 0x00);
-    reg = reg & ~((0x1 << 8) | 0x1 << 12);
+    reg = reg & ~((0x1 << 8) | (0x1 << 12));
     __raw_writel(reg, AST_GPIO_BASE + 0x00);
 
     reg = __raw_readl(AST_GPIO_BASE + 0x1E8);
-    reg = reg & ~((0x1 << 0) | 0x1 << 2);
+    reg = reg & ~((0x1 << 0) | (0x1 << 2));
     __raw_writel(reg, AST_GPIO_BASE + 0x1E8);
+
+    reg = __raw_readl(AST_GPIO_BASE + 0x00);
+    reg = reg | ((0x1 << 14) | (0x1 << 15));
+    __raw_writel(reg, AST_GPIO_BASE + 0x00);
+    reg = __raw_readl(AST_GPIO_BASE + 0x78);
+    reg = reg | ((0x1 << 0) | (0x1 << 6));
+    __raw_writel(reg, AST_GPIO_BASE + 0x78);
+
+  } else if (server_type == 4) {
+    // 4SEX: SKU ID[0:1] = 00'b
+    reg = __raw_readl(AST_GPIO_BASE + 0x00);
+    reg = reg & ~((0x1 << 8) | (0x1 << 12));
+    __raw_writel(reg, AST_GPIO_BASE + 0x00);
+
+    reg = __raw_readl(AST_GPIO_BASE + 0x1E8);
+    reg = reg & ~((0x1 << 0) | (0x1 << 2));
+    __raw_writel(reg, AST_GPIO_BASE + 0x1E8);
+
+    reg = __raw_readl(AST_GPIO_BASE + 0x00);
+    reg = reg & ~((0x1 << 14) | (0x1 << 15));
+    __raw_writel(reg, AST_GPIO_BASE + 0x00);
+    reg = __raw_readl(AST_GPIO_BASE + 0x78);
+    reg = reg & ~((0x1 << 0) | (0x1 << 6));
+    __raw_writel(reg, AST_GPIO_BASE + 0x78);
 
   } else if (server_type == 2) {
-    // 1
+    // 2S: SKU ID[0:1] = 10'b
     reg = __raw_readl(AST_GPIO_BASE + 0x00);
-    reg = reg | ((0x1 << 8) | 0x1 << 12);
+    reg = reg | ((0x1 << 8) | (0x1 << 12));
     __raw_writel(reg, AST_GPIO_BASE + 0x00);
 
     reg = __raw_readl(AST_GPIO_BASE + 0x1E8);
-    reg = reg | ((0x1 << 0) | 0x1 << 2);
+    reg = reg | ((0x1 << 0) | (0x1 << 2));
     __raw_writel(reg, AST_GPIO_BASE + 0x1E8);
+
+    reg = __raw_readl(AST_GPIO_BASE + 0x00);
+    reg = reg & ~((0x1 << 14) | (0x1 << 15));
+    __raw_writel(reg, AST_GPIO_BASE + 0x00);
+    reg = __raw_readl(AST_GPIO_BASE + 0x78);
+    reg = reg & ~((0x1 << 0) | (0x1 << 6));
+    __raw_writel(reg, AST_GPIO_BASE + 0x78);
 
   } else {
     return -1;
@@ -1112,6 +1136,7 @@ static int init_SKU_ID_PAX(void)
   int server_type = -1;
   int retry = 2;
   int ret;
+  char mode[8] = {0};
 
   ret = uclass_get_device_by_name(UCLASS_I2C, "i2c-bus@1c0", &bus);
   if (ret) {
@@ -1133,13 +1158,18 @@ static int init_SKU_ID_PAX(void)
   } while (server_type < 0 && (retry-- > 0));
 
   printf("Server type: ");
-  if (server_type == 2 || server_type == 4 || server_type == 8) {
-    printf("%d Socket mode\n", server_type);
-    return setup_SKU_ID(server_type);
+  if (server_type == 2) {
+    snprintf(mode, sizeof(mode), "2S");
+  } else if (server_type == 4) {
+    snprintf(mode, sizeof(mode), "4SEX");
+  } else if (server_type == 8) {
+    snprintf(mode, sizeof(mode), "4S");
   } else {
     printf("Unknown\n");
     return -1;
   }
+  printf("%s Socket mode\n", mode);
+  return setup_SKU_ID(server_type);
 }
 
 static void init_ASIC_PAX(void)

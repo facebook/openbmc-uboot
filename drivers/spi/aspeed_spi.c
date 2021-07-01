@@ -749,7 +749,8 @@ static ssize_t aspeed_spi_read(struct aspeed_spi_priv *priv,
 	 * - if read offset is smaller than the decoded start address
 	 *   and the decoded range is not multiple of flash size
 	 */
-	if ((offset + len >= flash->ahb_size) || \
+	if ((flash->spi->size == 0) || \
+		(offset + len >= flash->ahb_size) || \
 		(offset < ((int)flash->ahb_base & 0x0FFFFFFF) && \
 		(((int)flash->ahb_base & 0x0FFFFFFF) % flash->spi->size) != 0)) {
 		return aspeed_spi_read_user(priv, flash, cmdlen, cmdbuf,

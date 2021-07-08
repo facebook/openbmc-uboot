@@ -62,6 +62,7 @@ void main_loop(void)
 #ifdef CONFIG_CMD_MEMTEST2
 	mtest = env_get("do_mtest");
 	if(!(strcmp(mtest,"obmtest"))) {
+		watchdog_init(30*60);
 		run_command(mtest,0);
 		watchdog_init(CONFIG_ASPEED_WATCHDOG_TIMEOUT); // Cover the time consumed by mtest
 	}

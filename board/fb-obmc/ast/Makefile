@@ -1,4 +1,5 @@
 obj-$(CONFIG_ELBERTVBOOT) += elbert.o 
+obj-$(CONFIG_SPL) += vboot-abb.o
 ifeq ($(CONFIG_SPL_BUILD), y)
 obj-y += vboot-spl.o flash-spl.o
 else

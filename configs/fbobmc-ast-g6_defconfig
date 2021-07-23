@@ -1,7 +1,7 @@
 CONFIG_ARM=y
 CONFIG_SYS_CONFIG_NAME="fbobmc-ast-g6"
 CONFIG_SYS_DCACHE_OFF=y
-# CONFIG_SPL_LDSCRIPT="arch/$(ARCH)/mach-aspeed/ast2600/u-boot-spl.lds"
+CONFIG_SPL_LDSCRIPT="board/fb-obmc/ast/vboot-spl.lds"
 CONFIG_ARCH_ASPEED=y
 CONFIG_SYS_TEXT_BASE=0
 CONFIG_ASPEED_AST2600=y

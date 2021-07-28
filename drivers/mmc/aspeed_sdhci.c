@@ -35,6 +35,7 @@ static int aspeed_sdhci_probe(struct udevice *dev)
 	struct aspeed_sdhci_priv *prv = dev_get_priv(dev);
 	struct sdhci_host *host = prv->host;
 	unsigned long clock;
+	unsigned long f_max;
 	struct clk clk;
 	int ret;
 #ifndef CONFIG_SPL_BUILD
@@ -82,13 +83,14 @@ static int aspeed_sdhci_probe(struct udevice *dev)
 #endif
 //	host->quirks = SDHCI_QUIRK_WAIT_SEND_CMD;
 	host->max_clk = clock;
+	f_max = dev_read_u32_default(dev, "max-frequency", clock);
 
 	host->bus_width = dev_read_u32_default(dev, "bus-width", 4);
 
 	if (host->bus_width == 8)
 		host->host_caps |= MMC_MODE_8BIT;
 
-	ret = sdhci_setup_cfg(&plat->cfg, host, host->max_clk, EMMC_MIN_FREQ);
+	ret = sdhci_setup_cfg(&plat->cfg, host, f_max, EMMC_MIN_FREQ);
 
 	host->mmc = &plat->mmc;
 	if (ret)

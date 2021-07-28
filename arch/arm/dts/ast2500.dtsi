@@ -150,16 +150,22 @@
 		};
 
 		ehci0: usb@1e6a1000 {
-			compatible = "aspeed,ast2500-ehci", "generic-ehci";
+			compatible = "aspeed,aspeed-ehci";
 			reg = <0x1e6a1000 0x100>;
 			interrupts = <5>;
+			clocks = <&scu ASPEED_CLK_GATE_USBPORT1CLK>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_usb2ah_default>;
 			status = "disabled";
 		};
 
 		ehci1: usb@1e6a3000 {
-			compatible = "aspeed,ast2500-ehci", "generic-ehci";
+			compatible = "aspeed,aspeed-ehci";
 			reg = <0x1e6a3000 0x100>;
 			interrupts = <13>;
+			clocks = <&scu ASPEED_CLK_GATE_USBPORT2CLK>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_usb2bh_default>;
 			status = "disabled";
 		};
 

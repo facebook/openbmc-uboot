@@ -427,24 +427,35 @@ static u32 ast2600_get_sdio_clk_rate(struct ast2600_scu *scu)
 	u32 clkin = 0;
 	u32 clk_sel = readl(&scu->clk_sel4);
 	u32 div = (clk_sel >> 28) & 0x7;
+	u32 hw_rev = readl(&scu->chip_id1);
 
 	if (clk_sel & BIT(8))
 		clkin = ast2600_get_apll_rate(scu);
 	else
 		clkin = ast2600_get_hclk(scu);
 
-	div = (div + 1) << 1;
+	div = (1 + div) * 2;
+	if (((hw_rev & GENMASK(23, 16)) >> 16) >= 2)
+		div = (div & 0xf) ? div : 1;
 
 	return (clkin / div);
 }
 
 static u32 ast2600_get_emmc_clk_rate(struct ast2600_scu *scu)
 {
-	u32 clkin = ast2600_get_pll_rate(scu, ASPEED_CLK_HPLL);
+	u32 mmc_clk_src = readl(&scu->clk_sel1);
+	u32 clkin;
 	u32 clk_sel = readl(&scu->clk_sel1);
 	u32 div = (clk_sel >> 12) & 0x7;
 
-	div = (div + 1) << 2;
+	if (mmc_clk_src & BIT(11)) {
+		/* emmc clock comes from MPLL */
+		clkin = ast2600_get_pll_rate(scu, ASPEED_CLK_MPLL);
+		div = (div + 1) * 2;
+	} else {
+		clkin = ast2600_get_pll_rate(scu, ASPEED_CLK_HPLL);
+		div = (div + 1) << 2;
+	}
 
 	return (clkin / div);
 }
@@ -1204,6 +1215,37 @@ static ulong ast2600_enable_usbbhclk(struct ast2600_scu *scu)
 	return 0;
 }
 
+/* also known as yclk */
+static ulong ast2600_enable_haceclk(struct ast2600_scu *scu)
+{
+	u32 reset_bit;
+	u32 clkstop_bit;
+
+	reset_bit = BIT(ASPEED_RESET_HACE);
+	clkstop_bit = BIT(13);
+
+	writel(reset_bit, &scu->sysreset_ctrl1);
+	udelay(100);
+	writel(clkstop_bit, &scu->clk_stop_clr_ctrl1);
+	mdelay(20);
+
+	writel(reset_bit, &scu->sysreset_clr_ctrl1);
+
+	return 0;
+}
+
+static ulong ast2600_enable_rsaeccclk(struct ast2600_scu *scu)
+{
+	u32 clkstop_bit;
+
+	clkstop_bit = BIT(24);
+
+	writel(clkstop_bit, &scu->clk_stop_clr_ctrl1);
+	mdelay(20);
+
+	return 0;
+}
+
 static int ast2600_clk_enable(struct clk *clk)
 {
 	struct ast2600_clk_priv *priv = dev_get_priv(clk->dev);
@@ -1241,6 +1283,12 @@ static int ast2600_clk_enable(struct clk *clk)
 		break;
 	case ASPEED_CLK_GATE_USBPORT2CLK:
 		ast2600_enable_usbbhclk(priv->scu);
+		break;
+	case ASPEED_CLK_GATE_YCLK:
+		ast2600_enable_haceclk(priv->scu);
+		break;
+	case ASPEED_CLK_GATE_RSAECCCLK:
+		ast2600_enable_rsaeccclk(priv->scu);
 		break;
 	default:
 		pr_err("can't enable clk\n");

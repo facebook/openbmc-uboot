@@ -1,5 +1,28 @@
 menu "Hardware crypto devices"
 
+config ASPEED_HACE
+	bool "ASPEED Hash and Crypto Engine"
+	depends on ASPEED_AST2600
+	imply SHA_HW_ACCEL
+	imply SHA_PROG_HW_ACCEL
+	imply CMD_HASH
+	help
+	 Select this option to enable a driver for using the SHA engine in
+	 the ASPEED BMC SoCs.
+
+	 Enabling this allows the use of SHA operations in hardware without requiring the
+	 SHA software implementations, saving code size.
+
+config ASPEED_ARCY
+	bool "ASPEED ECC/RSA Engine"
+	depends on ASPEED_AST2600
+	help
+	 Select this option to enable a driver for using the ECC/RSA engine in
+	 the ASPEED BMC SoCs.
+
+	 Enabling this allows the use of ECC/RSA operations in hardware without requiring the
+	 software implementations, saving code size.
+
 source drivers/crypto/fsl/Kconfig
 
 endmenu

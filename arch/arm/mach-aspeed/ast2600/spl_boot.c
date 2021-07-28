@@ -46,6 +46,7 @@ static int aspeed_spl_mmc_load_image(struct spl_image_info *spl_image,
 				      struct spl_boot_device *bootdev)
 {
 	int err;
+	int part = CONFIG_ASPEED_UBOOT_MMC_PART;
 	u32 count;
 
 	struct mmc *mmc = NULL;
@@ -77,6 +78,13 @@ static int aspeed_spl_mmc_load_image(struct spl_image_info *spl_image,
 	}
 
 	bd = mmc_get_blk_desc(mmc);
+
+	if (part) {
+		if (CONFIG_IS_ENABLED(MMC_TINY))
+			err = mmc_switch_part(mmc, part);
+		else
+			err = blk_dselect_hwpart(bd, part);
+	}
 
 	count = blk_dread(bd, CONFIG_ASPEED_UBOOT_MMC_BASE, CONFIG_ASPEED_UBOOT_MMC_SIZE,
 			(void *)CONFIG_ASPEED_UBOOT_DRAM_BASE);

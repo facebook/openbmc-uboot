@@ -304,6 +304,24 @@
 
 			};
 
+			hace: hace@1e6d0000 {
+				compatible = "aspeed,ast2600-hace";
+				reg = <0x1e6d0000 0x200>;
+				interrupts = <GIC_SPI 4 IRQ_TYPE_LEVEL_HIGH>;
+				clocks = <&scu ASPEED_CLK_GATE_YCLK>;
+				clock-names = "yclk";
+				status = "disabled";
+			};
+
+			arcy: arcy@1e6fa000 {
+				compatible = "aspeed,ast2600-arcy";
+				reg = <0x1e6fa000 0x1000>;
+				interrupts = <GIC_SPI 160 IRQ_TYPE_LEVEL_HIGH>;
+				clocks = <&scu ASPEED_CLK_GATE_RSAECCCLK>;
+				clock-names = "rsaeccclk";
+				status = "disabled";
+			};
+
 			smp-memram@0 {
 				compatible = "aspeed,ast2600-smpmem", "syscon";
 				reg = <0x1e6e2180 0x40>;

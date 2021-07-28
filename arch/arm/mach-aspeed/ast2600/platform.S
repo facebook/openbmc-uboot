@@ -47,6 +47,7 @@
 #define AST_SCU_MFP_CTRL15             (AST_SCU_BASE + 0x454)
 #define AST_SCU_HW_STRAP1		(AST_SCU_BASE + 0x500)
 #define AST_SCU_HW_STRAP2		(AST_SCU_BASE + 0x510)
+#define AST_SCU_HW_STRAP3		(AST_SCU_BASE + 0x51C)
 #define AST_SCU_CA7_PARITY_CHK		(AST_SCU_BASE + 0x820)
 #define AST_SCU_CA7_PARITY_CLR		(AST_SCU_BASE + 0x824)
 #define AST_SCU_MMIO_DEC_SET		(AST_SCU_BASE + 0xC24)
@@ -242,23 +243,23 @@ wait_lock:
 	str	r1, [r0]
 
 2:
-	/* Fix UART1 route problem on A3 */
-	ldr     r0, =AST_HICR9
-	movw    r1, #0x0a30
-	movt    r1, #0x0000
-	str     r1, [r0]
-
-	ldr     r0, =AST_HICRA
-	movw    r1, #0x0000
-	movt    r1, #0x0000
-	str     r1, [r0]
-
 	/* PCIeRC/E2M8 power-on reset comes from SCU040
 	But SCU04018 default value is 0x0.
 	It should be 0x1 to reset PCIeRC/E2M8.*/
 	ldr     r0, =AST_SCU_SYSRST_CTRL
 	movw    r1, #0x0000
 	movt    r1, #0x0004
+	str     r1, [r0]
+
+	/* Fix UART1 route problem on A3 */
+	ldr     r0, =0x1e789098
+	movw    r1, #0x0a30
+	movt    r1, #0x0000
+	str     r1, [r0]
+
+	ldr     r0, =0x1e78909c
+	movw    r1, #0x0000
+	movt    r1, #0x0000
 	str     r1, [r0]
 
 	/* MMIO decode setting */
@@ -303,19 +304,21 @@ skip_fill_wip_bit:
 	ldr	r1, =AST_FMC_WDT1_CTRL_MODE
 	str	r0, [r1]
 
-#if 0
-	/* disable UART-based SoC Debug Interface UART5 and P2A bridge*/
-	ldr     r0, =AST_SCU_DEBUG_CTRL
-	ldr     r1, [r0]
-	orr     r1, #0x03
-	str     r1, [r0]
+	/* disable backdoor for A1/A2 to align A3 design */
+	ldr	r0, =AST_SCU_HW_STRAP3
+	ldr	r0, [r0]
+	tst	r0, #0x1
 
-	/* disable UART-based SoC Debug Interface UART1 and LPC2AHB bridge */
-	ldr     r0, =AST_SCU_DEBUG_CTRL2
-	ldr     r1, [r0]
-	orr     r1, #0x0A
-	str     r1, [r0]
-#endif
+	ldr	r0, =AST_SCU_DEBUG_CTRL
+	movwne	r1, #0x0ffd
+	movweq	r1, #0x0fff
+	movt	r1, #0x0000
+	str	r1, [r0]
+
+	ldr	r0, =AST_SCU_DEBUG_CTRL2
+	movne	r1, #0xf7
+	moveq	r1, #0xff
+	str	r1, [r0]
 
 #if 1 /* revisit this hack from fuji */
 	/* Enable UART1: Set Multi-function Pin for UART1 */

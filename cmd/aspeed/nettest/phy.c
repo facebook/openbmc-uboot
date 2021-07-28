@@ -15,9 +15,7 @@
 
 #ifdef PHY_DEBUG
 #undef DbgPrn_PHYRW
-#undef DbgPrn_PHYName
 #define DbgPrn_PHYRW		1
-#define DbgPrn_PHYName		1
 #endif
 
 #ifdef PHY_DEBUG_SET_CLR
@@ -260,8 +258,9 @@ void phy_delay (int dt)
 //------------------------------------------------------------
 void phy_basic_setting(MAC_ENGINE *eng)
 {
-	phy_clrset(eng, 0, 0x7140, eng->phy.PHY_00h);
-
+	uint32_t clr = GENMASK(14, 10) | BIT(6);
+	
+	phy_clrset(eng, 0, clr, eng->phy.PHY_00h);
 	if (DbgPrn_PHYRW) {
 		printf("[Set]00: 0x%04x (%02d:%08x)\n",
 		       phy_read(eng, PHY_REG_BMCR), eng->phy.Adr,
@@ -372,10 +371,6 @@ void recov_phy_marvell (MAC_ENGINE *eng) {//88E1111
 //------------------------------------------------------------
 void phy_marvell (MAC_ENGINE *eng) 
 {//88E1111
-
-        if ( DbgPrn_PHYName )
-                printf("--->(%04x %04x)[Marvell] %s\n", eng->phy.id1, eng->phy.id2, eng->phy.phy_name);
-
         if ( eng->run.tm_tx_only ) {
                 phy_reset( eng );
         }
@@ -428,9 +423,6 @@ void recov_phy_marvell0 (MAC_ENGINE *eng) {//88E1310
 //------------------------------------------------------------
 void phy_marvell0 (MAC_ENGINE *eng) {//88E1310
 //      int        Retry;
-
-        if ( DbgPrn_PHYName )
-                printf("--->(%04x %04x)[Marvell] %s\n", eng->phy.id1, eng->phy.id2, eng->phy.phy_name);
 
         phy_write( eng, 22, 0x0002 );
 
@@ -506,9 +498,6 @@ void phy_marvell1 (MAC_ENGINE *eng) {//88E6176
 //      uint32_t      PHY_01h;
         int8_t       phy_addr_org;
 
-        if ( DbgPrn_PHYName )
-                printf("--->(%04x %04x)[Marvell] %s\n", eng->phy.id1, eng->phy.id2, eng->phy.phy_name);
-
         if ( eng->run.tm_tx_only ) {
                 printf("This mode doesn't support in 88E6176.\n");
         } else {
@@ -555,25 +544,22 @@ void recov_phy_marvell2 (MAC_ENGINE *eng) {//88E1512//88E15 10/12/14/18
 }
 
 //------------------------------------------------------------
-void phy_marvell2 (MAC_ENGINE *eng) {//88E1512//88E15 10/12/14/18
-//      int        Retry = 0;
-//      uint32_t      temp_reg;
+//88E1512//88E15 10/12/14/18
+void phy_marvell2 (MAC_ENGINE *eng) 
+{
+	/* switch to page 2 */
+	phy_write(eng, 22, 0x0002);
+	eng->phy.PHY_15h = phy_read(eng, 21);
+	eng->phy.PHY_15h &= ~GENMASK(5, 4);
+	if (eng->arg.ctrl.b.phy_tx_delay_en)
+		eng->phy.PHY_15h |= BIT(4);
+	if (eng->arg.ctrl.b.phy_rx_delay_en)
+		eng->phy.PHY_15h |= BIT(5);
 
-        if ( DbgPrn_PHYName )
-                printf("--->(%04x %04x)[Marvell] %s\n", eng->phy.id1, eng->phy.id2, eng->phy.phy_name);
+	phy_write(eng, 21, eng->phy.PHY_15h);
 
-        // switch page 2
-        phy_write( eng, 22, 0x0002 );
-        eng->phy.PHY_15h = phy_read( eng, 21 );
-        if ( eng->phy.PHY_15h & 0x0030 ) {
-                printf("\n\n[Warning] Page2, Register 21, bit 4~5 must be 0 [Reg15h_2:%04x]\n\n", eng->phy.PHY_15h);
-                if ( eng->run.TM_IOTiming ) PRINTF( FP_IO, "\n\n[Warning] Page2, Register 21, bit 4~5 must be 0 [Reg15h_2:%04x]\n\n", eng->phy.PHY_15h );
-                if ( !eng->run.tm_tx_only ) PRINTF( FP_LOG, "\n\n[Warning] Page2, Register 21, bit 4~5 must be 0 [Reg15h_2:%04x]\n\n", eng->phy.PHY_15h );
-
-                phy_write( eng, 21, eng->phy.PHY_15h & 0xffcf );
-        }
-        phy_write( eng, 22, 0x0000 );
-
+	/* switch to page 0 */
+	phy_write(eng, 22, 0x0000);
 
         if ( eng->run.tm_tx_only ) {
                 phy_reset( eng );
@@ -648,11 +634,6 @@ void phy_marvell2 (MAC_ENGINE *eng) {//88E1512//88E15 10/12/14/18
 void phy_marvell3 (MAC_ENGINE *eng) 
 {//88E3019
 
-        if ( DbgPrn_PHYName ) {
-                printf("--->(%04x %04x)[Marvell] %s\n", eng->phy.id1, eng->phy.id2, eng->phy.phy_name);
-                if ( !eng->run.tm_tx_only ) PRINTF( FP_LOG, "--->(%04x %04x)[Marvell] %s\n", eng->phy.id1, eng->phy.id2, eng->phy.phy_name);
-        }
-
         //Reg1ch[11:10]: MAC Interface Mode
         // 00 => RGMII where receive clock trnasitions when data transitions
         // 01 => RGMII where receive clock trnasitions when data is stable
@@ -687,11 +668,9 @@ void phy_marvell3 (MAC_ENGINE *eng)
 }
 
 //------------------------------------------------------------
-void phy_broadcom (MAC_ENGINE *eng) {//BCM5221
-    uint32_t      reg;
-
-        if ( DbgPrn_PHYName )
-                printf("--->(%04x %04x)[Broadcom] %s\n", eng->phy.id1, eng->phy.id2, eng->phy.phy_name);
+void phy_broadcom (MAC_ENGINE *eng) 
+{//BCM5221
+	uint32_t      reg;
 
         phy_reset( eng );
 
@@ -741,11 +720,9 @@ void recov_phy_broadcom0 (MAC_ENGINE *eng) {//BCM54612
 //internal loop 1G  : no  loopback stub
 //internal loop 100M: Don't support(?)
 //internal loop 10M : Don't support(?)
-void phy_broadcom0 (MAC_ENGINE *eng) {//BCM54612
-        uint32_t      PHY_new;
-
-        if ( DbgPrn_PHYName )
-                printf("--->(%04x %04x)[Broadcom] %s\n", eng->phy.id1, eng->phy.id2, eng->phy.phy_name);
+void phy_broadcom0 (MAC_ENGINE *eng)
+{
+	uint32_t PHY_new;
 
 	phy_reset(eng);
 
@@ -754,100 +731,57 @@ void phy_broadcom0 (MAC_ENGINE *eng) {//BCM54612
 
 	phy_write( eng, 0, eng->phy.PHY_00h & ~BIT(10));
 
-        phy_write( eng, 24, 0x7007 );//read reg 18h, shadow value 111
-        eng->phy.PHY_18h = phy_read( eng, 24 );
-        phy_write( eng, 28, 0x0c00 );//read reg 1Ch, shadow value 00011
-        eng->phy.PHY_1ch = phy_read( eng, 28 );
+	/*
+	 * RX interface delay: reg 0x18, shadow value b'0111: misc control
+	 * bit[8] RGMII RXD to RXC skew
+	 */
+	phy_write(eng, 0x18, (0x7 << 12) | 0x7);
+	eng->phy.PHY_18h = phy_read(eng, 0x18);
+	PHY_new = eng->phy.PHY_18h & ~((0x7 << 12) | 0x7 | BIT(8));
+	PHY_new |= (0x7 << 12) | 0x7 | BIT(15);
+	if (eng->arg.ctrl.b.phy_rx_delay_en)
+		PHY_new |= BIT(8);
+	phy_write(eng, 0x18, PHY_new);
 
-        if ( eng->phy.PHY_18h & 0x0100 ) {
-                PHY_new = ( eng->phy.PHY_18h & 0x0af0 ) | 0xf007;
-                printf("\n\n[Warning] Shadow value 111, Register 24, bit 8 must be 0 [Reg18h_7:%04x->%04x]\n\n", eng->phy.PHY_18h, PHY_new);
-                if ( eng->run.TM_IOTiming ) PRINTF( FP_IO, "\n\n[Warning] Shadow value 111, Register 24, bit 8 must be 0 [Reg18h_7:%04x->%04x]\n\n", eng->phy.PHY_18h, PHY_new );
-                if ( !eng->run.tm_tx_only ) PRINTF( FP_LOG, "\n\n[Warning] Shadow value 111, Register 24, bit 8 must be 0 [Reg18h_7:%04x->%04x]\n\n", eng->phy.PHY_18h, PHY_new );
-
-                phy_write( eng, 24, PHY_new ); // Disable RGMII RXD to RXC Skew
-        }
-        if ( eng->phy.PHY_1ch & 0x0200 ) {
-                PHY_new = ( eng->phy.PHY_1ch & 0x0000 ) | 0x8c00;
-                printf("\n\n[Warning] Shadow value 00011, Register 28, bit 9 must be 0 [Reg1ch_3:%04x->%04x]\n\n", eng->phy.PHY_1ch, PHY_new);
-                if ( eng->run.TM_IOTiming ) PRINTF( FP_IO, "\n\n[Warning] Shadow value 00011, Register 28, bit 9 must be 0 [Reg1ch_3:%04x->%04x]\n\n", eng->phy.PHY_1ch, PHY_new );
-                if ( !eng->run.tm_tx_only ) PRINTF( FP_LOG, "\n\n[Warning] Shadow value 00011, Register 28, bit 9 must be 0 [Reg1ch_3:%04x->%04x]\n\n", eng->phy.PHY_1ch, PHY_new );
-
-                phy_write( eng, 28, PHY_new );// Disable GTXCLK Clock Delay Enable
-        }
+	/*
+	 * TX interface delay: reg 0x1c, shadow value b'0011: clock alignment 
+	 * control
+	 * bit[9] GTXCLK clock delay enable
+	 */
+	phy_write(eng, 0x1c, 0x3 << 10);
+	eng->phy.PHY_1ch = phy_read(eng, 0x1c);
+	PHY_new = eng->phy.PHY_1ch & ~((0x1f << 10) | BIT(9));
+	PHY_new |= (0x3 << 10) | BIT(15);
+	if (eng->arg.ctrl.b.phy_tx_delay_en)
+		PHY_new |= BIT(9);
+	phy_write(eng, 0x1c, PHY_new);
 
         if ( eng->run.tm_tx_only ) {
-                phy_basic_setting( eng );
-        }
-        else if ( eng->phy.loopback ) {
-                phy_basic_setting( eng );
-
-                // Enable Internal Loopback mode
-                // Page 58, BCM54612EB1KMLG_Spec.pdf
-                phy_write( eng,  0, 0x5140 );
-#ifdef Delay_PHYRst
-                phy_delay( Delay_PHYRst );
-#endif
-                /* Only 1G Test is PASS, 100M and 10M is 0 @20130619 */
-
-// Waiting for BCM FAE's response
-//              if ( eng->run.speed_sel[ 0 ] ) {
-//                      // Speed 1G
-//                      // Enable Internal Loopback mode
-//                      // Page 58, BCM54612EB1KMLG_Spec.pdf
-//                      phy_write( eng,  0, 0x5140 );
-//              }
-//              else if ( eng->run.speed_sel[ 1 ] ) {
-//                      // Speed 100M
-//                      // Enable Internal Loopback mode
-//                      // Page 58, BCM54612EB1KMLG_Spec.pdf
-//                      phy_write( eng,  0, 0x7100 );
-//                      phy_write( eng, 30, 0x1000 );
-//              }
-//              else if ( eng->run.speed_sel[ 2 ] ) {
-//                      // Speed 10M
-//                      // Enable Internal Loopback mode
-//                      // Page 58, BCM54612EB1KMLG_Spec.pdf
-//                      phy_write( eng,  0, 0x5100 );
-//                      phy_write( eng, 30, 0x1000 );
-//              }
-//
-#ifdef Delay_PHYRst
-//              phy_delay( Delay_PHYRst );
-#endif
-        }
-        else {
-
-                if ( eng->run.speed_sel[ 0 ] ) {
-                        // Page 60, BCM54612EB1KMLG_Spec.pdf
-                        // need to insert loopback plug
-                        phy_write( eng,  9, 0x1800 );
-                        phy_write( eng,  0, 0x0140 );
-                        phy_write( eng, 24, 0x8400 ); // Enable Transmit test mode
-                }
-                else if ( eng->run.speed_sel[ 1 ] ) {
-                        // Page 60, BCM54612EB1KMLG_Spec.pdf
-                        // need to insert loopback plug
-                        phy_write( eng,  0, 0x2100 );
-                        phy_write( eng, 24, 0x8400 ); // Enable Transmit test mode
-                }
-                else {
-                        // Page 60, BCM54612EB1KMLG_Spec.pdf
-                        // need to insert loopback plug
-                        phy_write( eng,  0, 0x0100 );
-                        phy_write( eng, 24, 0x8400 ); // Enable Transmit test mode
-                }
-#ifdef Delay_PHYRst
-                phy_delay( Delay_PHYRst );
-                phy_delay( Delay_PHYRst );
-#endif                
-        }
+                phy_basic_setting(eng);
+        } else if (eng->phy.loopback) {
+		phy_basic_setting(eng);
+		/* reg1E[12]: force-link */
+		if (strncmp((char *)eng->phy.phy_name, "BCM5421x", strlen("BCM5421x")) == 0)
+			phy_write(eng, 0x1e, BIT(12));
+	} else {
+		if (eng->run.speed_sel[0]) {
+			phy_write(eng, 0x9, 0x1800);
+			phy_write(eng, 0x0, 0x0140);
+			phy_write(eng, 0x18, 0x8400);
+		} else if (eng->run.speed_sel[1]) {
+			phy_write(eng, 0x0, 0x2100);
+			phy_write(eng, 0x18, 0x8400);
+		} else {
+			phy_write(eng, 0x0, 0x0100);
+			phy_write(eng, 0x18, 0x8400);
+		}
+	}
+	mdelay(100);
 }
 
 //------------------------------------------------------------
-void phy_realtek (MAC_ENGINE *eng) {//RTL8201N
-        if ( DbgPrn_PHYName )
-                printf("--->(%04x %04x)[Realtek] %s\n", eng->phy.id1, eng->phy.id2, eng->phy.phy_name);
+void phy_realtek (MAC_ENGINE *eng)
+{//RTL8201N
 
         phy_reset( eng );
 }
@@ -855,9 +789,8 @@ void phy_realtek (MAC_ENGINE *eng) {//RTL8201N
 //------------------------------------------------------------
 //internal loop 100M: Don't support
 //internal loop 10M : no  loopback stub
-void phy_realtek0 (MAC_ENGINE *eng) {//RTL8201E
-        if ( DbgPrn_PHYName )
-                printf("--->(%04x %04x)[Realtek] %s\n", eng->phy.id1, eng->phy.id2, eng->phy.phy_name);
+void phy_realtek0 (MAC_ENGINE *eng)
+{//RTL8201E
 
         eng->phy.RMIICK_IOMode |= PHY_Flag_RMIICK_IOMode_RTL8201E;
 
@@ -978,9 +911,8 @@ void recov_phy_realtek1 (MAC_ENGINE *eng) {//RTL8211D
 //internal loop 1G  : no  loopback stub
 //internal loop 100M: no  loopback stub
 //internal loop 10M : no  loopback stub
-void phy_realtek1 (MAC_ENGINE *eng) {//RTL8211D
-        if ( DbgPrn_PHYName )
-                printf("--->(%04x %04x)[Realtek] %s\n", eng->phy.id1, eng->phy.id2, eng->phy.phy_name);
+void phy_realtek1 (MAC_ENGINE *eng)
+{//RTL8211D
 
         if ( eng->run.tm_tx_only ) {
                 if ( eng->run.TM_IEEE ) {
@@ -1196,10 +1128,7 @@ void phy_realtek2 (MAC_ENGINE *eng)
 
 	RTK_DBG_PRINTF("\nSet RTL8211E [Start] =====>\n");
 
-	rtk_dbg_gpio_init();	
-
-        if ( DbgPrn_PHYName )
-                printf("--->(%04x %04x)[Realtek] %s\n", eng->phy.id1, eng->phy.id2, eng->phy.phy_name);
+	rtk_dbg_gpio_init();
 
 #ifdef RTK_DEBUG
 #else
@@ -1418,9 +1347,8 @@ void recov_phy_realtek3 (MAC_ENGINE *eng) {//RTL8211C
 }
 
 //------------------------------------------------------------
-void phy_realtek3 (MAC_ENGINE *eng) {//RTL8211C
-        if ( DbgPrn_PHYName )
-                printf("--->(%04x %04x)[Realtek] %s\n", eng->phy.id1, eng->phy.id2, eng->phy.phy_name);
+void phy_realtek3 (MAC_ENGINE *eng)
+{//RTL8211C
 
         if ( eng->run.tm_tx_only ) {
                 if ( eng->run.TM_IEEE ) {
@@ -1521,8 +1449,6 @@ void phy_realtek3 (MAC_ENGINE *eng) {//RTL8211C
 //internal loop 100M: no  loopback stub
 //internal loop 10M : no  loopback stub
 void phy_realtek4 (MAC_ENGINE *eng) {//RTL8201F
-        if ( DbgPrn_PHYName )
-                printf("--->(%04x %04x)[Realtek] %s\n", eng->phy.id1, eng->phy.id2, eng->phy.phy_name);
 
         eng->phy.RMIICK_IOMode |= PHY_Flag_RMIICK_IOMode_RTL8201F;
 
@@ -1702,11 +1628,31 @@ void recov_phy_realtek5 (MAC_ENGINE *eng)
 //------------------------------------------------------------
 void phy_realtek5 (MAC_ENGINE *eng) {//RTL8211F
 	uint16_t check_value;
+	uint16_t reg;
 
 	RTK_DBG_PRINTF("\nSet RTL8211F [Start] =====>\n");
-	if (DbgPrn_PHYName)
-		printf("--->(%04x %04x)[Realtek] %s\n", eng->phy.id1,
-		       eng->phy.id2, eng->phy.phy_name);
+
+	/* select page 0xd08 to configure TX and RX delay */
+	phy_write(eng, 0x1f, 0xd08);
+
+	/* page 0xd08, reg 0x11[8] TX delay enable */
+	reg = phy_read(eng, 0x11);
+	if (eng->arg.ctrl.b.phy_tx_delay_en)
+		reg |= BIT(8);
+	else
+		reg &= ~BIT(8);
+	phy_write(eng, 0x11, reg);
+
+	/* page 0xd08, reg 0x15[3] RX delay enable */
+	reg = phy_read(eng, 0x15);
+	if (eng->arg.ctrl.b.phy_rx_delay_en)
+		reg |= BIT(3);
+	else
+		reg &= ~BIT(3);
+	phy_write(eng, 0x15, reg);
+
+	/* restore page 0 */
+	phy_write(eng, 0x1f, 0x0);
 
 	if (eng->run.tm_tx_only) {
 		if (eng->run.TM_IEEE) {
@@ -1834,9 +1780,6 @@ void phy_realtek5 (MAC_ENGINE *eng) {//RTL8211F
 //It is a LAN Switch, only support 1G internal loopback test.
 void phy_realtek6 (MAC_ENGINE *eng) 
 {//RTL8363S
-	if (DbgPrn_PHYName)
-		printf("--->(%04x %04x)[Realtek] %s\n", eng->phy.id1,
-		       eng->phy.id2, eng->phy.phy_name);
 
 	if (eng->run.tm_tx_only) {
 		printf("This mode doesn't support in RTL8363S.\n");
@@ -1860,18 +1803,12 @@ void phy_realtek6 (MAC_ENGINE *eng)
 //------------------------------------------------------------
 void phy_smsc (MAC_ENGINE *eng) 
 {//LAN8700
-	if (DbgPrn_PHYName)
-		printf("--->(%04x %04x)[SMSC] %s\n", eng->phy.id1,
-		       eng->phy.id2, eng->phy.phy_name);
-
 	phy_reset(eng);
 }
 
 //------------------------------------------------------------
 void phy_micrel (MAC_ENGINE *eng) 
 {//KSZ8041
-        if ( DbgPrn_PHYName )
-                printf("--->(%04x %04x)[Micrel] %s\n", eng->phy.id1, eng->phy.id2, eng->phy.phy_name);
 
         phy_reset( eng );
 
@@ -1879,9 +1816,8 @@ void phy_micrel (MAC_ENGINE *eng)
 }
 
 //------------------------------------------------------------
-void phy_micrel0 (MAC_ENGINE *eng) {//KSZ8031/KSZ8051
-        if ( DbgPrn_PHYName )
-                printf("--->(%04x %04x)[Micrel] %s\n", eng->phy.id1, eng->phy.id2, eng->phy.phy_name);
+void phy_micrel0 (MAC_ENGINE *eng)
+{//KSZ8031/KSZ8051
 
         //For KSZ8051RNL only
         //Reg1Fh[7] = 0(default): 25MHz Mode, XI, XO(pin 9, 8) is 25MHz(crystal/oscilator).
@@ -1922,9 +1858,6 @@ void phy_micrel0 (MAC_ENGINE *eng) {//KSZ8031/KSZ8051
 void phy_micrel1 (MAC_ENGINE *eng) 
 {//KSZ9031
 //      int        temp;
-
-        if ( DbgPrn_PHYName )
-                printf("--->(%04x %04x)[Micrel] %s\n", eng->phy.id1, eng->phy.id2, eng->phy.phy_name);
 
 /*
         phy_write( eng, 13, 0x0002 );
@@ -1987,8 +1920,6 @@ printf("Reg2.8 = %04x -> %04x\n", temp, phy_read( eng, 14 ));
 //internal loop 10M : no  loopback stub
 void phy_micrel2 (MAC_ENGINE *eng) 
 {//KSZ8081
-        if ( DbgPrn_PHYName )
-                printf("--->(%04x %04x)[Micrel] %s\n", eng->phy.id1, eng->phy.id2, eng->phy.phy_name);
 
         if ( eng->run.tm_tx_only ) {
                 if ( eng->run.TM_IEEE ) {
@@ -2028,9 +1959,8 @@ void recov_phy_vitesse (MAC_ENGINE *eng) {//VSC8601
 }
 
 //------------------------------------------------------------
-void phy_vitesse (MAC_ENGINE *eng) {//VSC8601
-        if ( DbgPrn_PHYName )
-                printf("--->(%04x %04x)[VITESSE] %s\n", eng->phy.id1, eng->phy.id2, eng->phy.phy_name);
+void phy_vitesse (MAC_ENGINE *eng)
+{//VSC8601
 
         if ( eng->run.tm_tx_only ) {
                 if ( eng->run.TM_IEEE ) {
@@ -2079,19 +2009,6 @@ void recov_phy_atheros (MAC_ENGINE *eng) {//AR8035
 //------------------------------------------------------------
 void phy_atheros (MAC_ENGINE *eng) 
 {
-#ifdef PHY_DEBUG
-	if (1) {
-#else
-	if (DbgPrn_PHYName) {
-#endif
-		printf("--->(%04x %04x)[ATHEROS] %s\n", eng->phy.id1,
-		       eng->phy.id2, eng->phy.phy_name);
-		if (!eng->run.tm_tx_only)
-			PRINTF(FP_LOG, "--->(%04x %04x)[ATHEROS] %s\n",
-			       eng->phy.id1, eng->phy.id2,
-			       eng->phy.phy_name);
-	}
-
 	// Reg0b[15]: Power saving
 	phy_write(eng, 29, 0x000b);
 	eng->phy.PHY_1eh = phy_read(eng, 30);
@@ -2211,10 +2128,6 @@ void phy_default (MAC_ENGINE *eng)
 {
 	nt_log_func_name();
 
-	if (DbgPrn_PHYName)
-		printf("--->(%04x %04x)%s\n", eng->phy.id1,
-		       eng->phy.id2, eng->phy.phy_name);
-
 	phy_reset(eng);
 }
 
@@ -2291,37 +2204,16 @@ uint32_t phy_find_addr(MAC_ENGINE *eng)
 void phy_set00h (MAC_ENGINE *eng) 
 {
 	nt_log_func_name();
-	if (eng->run.tm_tx_only) {
-		if (eng->run.TM_IEEE) {
-			if (eng->run.speed_sel[0])
-				eng->phy.PHY_00h = 0x0140;
-			else if (eng->run.speed_sel[1])
-				eng->phy.PHY_00h = 0x2100;
-			else
-				eng->phy.PHY_00h = 0x0100;
-		} else {
-			if (eng->run.speed_sel[0])
-				eng->phy.PHY_00h = 0x0140;
-			else if (eng->run.speed_sel[1])
-				eng->phy.PHY_00h = 0x2100;
-			else
-				eng->phy.PHY_00h = 0x0100;
-		}
-	} else if (eng->phy.loopback) {
-		if (eng->run.speed_sel[0])
-			eng->phy.PHY_00h = 0x4140;
-		else if (eng->run.speed_sel[1])
-			eng->phy.PHY_00h = 0x6100;
-		else
-			eng->phy.PHY_00h = 0x4100;
-	} else {
-		if (eng->run.speed_sel[0])
-			eng->phy.PHY_00h = 0x0140;
-		else if (eng->run.speed_sel[1])
-			eng->phy.PHY_00h = 0x2100;
-		else
-			eng->phy.PHY_00h = 0x0100;
-	}
+
+	eng->phy.PHY_00h = BIT(8);
+
+	if (eng->run.speed_sel[0])
+		eng->phy.PHY_00h |= BIT(6);
+	else if (eng->run.speed_sel[1])
+		eng->phy.PHY_00h |= BIT(13);
+
+	if (eng->phy.loopback)
+		eng->phy.PHY_00h |= BIT(14);
 }
 
 static uint32_t phy_check_id(MAC_ENGINE *p_eng, const struct phy_desc *p_phy) 

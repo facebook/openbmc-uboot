@@ -41,7 +41,6 @@
 #define DbgPrn_BufdatDetail		0
 #define DbgPrn_PHYRW			0
 #define DbgPrn_PHYInit			0
-#define DbgPrn_PHYName			0
 #define DbgPrn_DumpMACCnt		0
 #define DbgPrn_Info			    0
 #define DbgPrn_FRAME_LEN		0

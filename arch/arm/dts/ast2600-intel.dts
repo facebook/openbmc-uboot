@@ -1,10 +1,11 @@
+// SPDX-License-Identifier: GPL-2.0+
 /dts-v1/;
 
 #include "ast2600-u-boot.dtsi"
 
 / {
-        model = "AST2600 EVB";
-        compatible = "aspeed,ast2600-evb", "aspeed,ast2600";
+	model = "AST2600 Intel EGS server board";
+	compatible = "aspeed,ast2600-intel", "aspeed,ast2600";
 
 	memory {
 		device_type = "memory";
@@ -30,10 +31,10 @@
 
 	cpus {
 		cpu@0 {
-			clock-frequency = <800000000>;
+			clock-frequency = <1200000000>;
 		};
 		cpu@1 {
-			clock-frequency = <800000000>;
+			clock-frequency = <1200000000>;
 		};
 	};
 };
@@ -85,7 +86,7 @@
 
 &mac0 {
 	status = "okay";
-	phy-mode = "rgmii-rxid";
+	phy-mode = "rgmii";
 	phy-handle = <&ethphy0>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_rgmii1_default>;
@@ -93,7 +94,7 @@
 
 &mac1 {
 	status = "okay";
-	phy-mode = "rgmii-rxid";
+	phy-mode = "rgmii";
 	phy-handle = <&ethphy1>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_rgmii2_default>;
@@ -104,7 +105,7 @@
 	phy-mode = "rgmii";
 	phy-handle = <&ethphy2>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_rgmii3_default &pinctrl_mac3link_default>;	
+	pinctrl-0 = <&pinctrl_rgmii3_default>;
 };
 
 &mac3 {
@@ -112,7 +113,7 @@
 	phy-mode = "rgmii";
 	phy-handle = <&ethphy3>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_rgmii4_default &pinctrl_mac4link_default>;	
+	pinctrl-0 = <&pinctrl_rgmii4_default>;
 };
 
 &fmc {
@@ -205,7 +206,7 @@
 
 &emmc {
 	u-boot,dm-pre-reloc;
-	timing-phase = <0x000700bf>;
+	timing-phase = <0x700ff>;
 };
 
 &emmc_slot0 {
@@ -218,7 +219,7 @@
 };
 
 &sdhci {
-	timing-phase = <0x01084747>;
+	timing-phase = <0xc6ffff>;
 };
 
 &sdhci_slot0 {
@@ -303,16 +304,26 @@
 };
 
 &scu {
-	mac0-clk-delay = <0x10 0x0a
+	mac0-clk-delay = <0x1d 0x1c
+			  0x10 0x17
+			  0x10 0x17>;
+	mac1-clk-delay = <0x1d 0x10
 			  0x10 0x10
 			  0x10 0x10>;
-	mac1-clk-delay = <0x10 0x0a
-			  0x10 0x10
-			  0x10 0x10>;
-	mac2-clk-delay = <0x08 0x04
+	mac2-clk-delay = <0x0a 0x04
 			  0x08 0x04
 			  0x08 0x04>;
-	mac3-clk-delay = <0x08 0x04
+	mac3-clk-delay = <0x0a 0x04
 			  0x08 0x04
 			  0x08 0x04>;
+};
+
+&hace {
+	u-boot,dm-pre-reloc;
+	status = "okay";
+};
+
+&arcy {
+	u-boot,dm-pre-reloc;
+	status = "okay";
 };

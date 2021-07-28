@@ -32,8 +32,28 @@ void board_init_f(ulong dummy)
 #endif
 }
 
+#ifdef CONFIG_SPL_BOARD_INIT
+void spl_board_init(void)
+{
+	struct udevice *dev;
+
+	if (uclass_get_device_by_driver(UCLASS_MISC,
+					DM_GET_DRIVER(aspeed_hace),
+					&dev)) {
+		debug("Warning: HACE initialization failure\n");
+	}
+
+	if (uclass_get_device_by_driver(UCLASS_MISC,
+					DM_GET_DRIVER(aspeed_arcy),
+					&dev)) {
+		debug("Warning: ARCY initialization failure\n");
+	}
+}
+#endif
+
 u32 spl_boot_device(void)
 {
+#ifdef CONFIG_ASPEED_LOADERS
 	switch (aspeed_bootmode()) {
 	case AST_BOOTMODE_EMMC:
 		return (IS_ENABLED(CONFIG_ASPEED_SECURE_BOOT))?
@@ -47,6 +67,18 @@ u32 spl_boot_device(void)
 	default:
 		break;
 	}
+#else
+	switch (aspeed_bootmode()) {
+	case AST_BOOTMODE_EMMC:
+		return BOOT_DEVICE_MMC1;
+	case AST_BOOTMODE_SPI:
+		return BOOT_DEVICE_RAM;
+	case AST_BOOTMODE_UART:
+		return BOOT_DEVICE_UART;
+	default:
+		break;
+	}
+#endif
 
 	return BOOT_DEVICE_NONE;
 }

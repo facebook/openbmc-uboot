@@ -81,6 +81,16 @@ config ASPEED_SECURE_BOOT_DEBUG
 	help
 	  This option allows the bootm command use
 
+config ASPEED_LOADERS
+	bool "Aspeed custom loaders"
+	depends on SPL
+	default y
+	help
+	  Enable the custom payload loading methods used by ASPEED. This is requited to
+	  use ASPEED's proprietary secure boot feature.
+
+if ASPEED_LOADERS
+
 config ASPEED_UBOOT_MMC_PART
 	int "U-Boot eMMC partition"
 	default 0
@@ -165,6 +175,8 @@ config ASPEED_KERNEL_FIT_DRAM_BASE
 	help
 	  The DRAM address where the Kernel FIT image
 	  will be loaded if XIP is not supported
+
+endif
 
 source "arch/arm/mach-aspeed/ast2400/Kconfig"
 source "arch/arm/mach-aspeed/ast2500/Kconfig"

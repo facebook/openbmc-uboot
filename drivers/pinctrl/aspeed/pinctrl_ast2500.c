@@ -134,6 +134,15 @@ static struct aspeed_sig_desc spi1_link[] = {
 	{ 0x70, BIT(12), 0},
 };
 
+static struct aspeed_sig_desc usb2ah_link[] = {
+	{ 0x90, BIT(29), 0},
+};
+
+static struct aspeed_sig_desc usb2bh_link[] = {
+	{ 0x94, BIT(14), 0},
+	{ 0x94, BIT(13), 1},
+};
+
 static const struct aspeed_group_config ast2500_groups[] = {
 	{ "MAC1LINK", 1, mac1_link },
 	{ "MAC2LINK", 1, mac2_link },
@@ -156,6 +165,8 @@ static const struct aspeed_group_config ast2500_groups[] = {
 	{ "WDTRST1", 3, wdtrst1_link},
 	{ "SPI1", 1, spi1_link},
 	{ "SPI1CS1", 1, spi1cs1_link},
+	{ "USB2AH", 1, usb2ah_link },
+	{ "USB2BH", 2, usb2bh_link },
 };
 
 static struct aspeed_sig_desc gpior2_link[] = {

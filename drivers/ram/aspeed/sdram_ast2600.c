@@ -43,6 +43,10 @@
 /* bit-field of AST_SCU_HANDSHAKE */
 #define SCU_SDRAM_INIT_READY_MASK	BIT(6)
 #define SCU_SDRAM_INIT_BY_SOC_MASK	BIT(7)
+#define SCU_P2A_BRIDGE_DISABLE		BIT(12)
+#define SCU_HANDSHAKE_MASK                                                     \
+	(SCU_SDRAM_INIT_READY_MASK | SCU_SDRAM_INIT_BY_SOC_MASK |              \
+	 SCU_P2A_BRIDGE_DISABLE)
 
 /* bit-field of AST_SCU_MPLL */
 #define SCU_MPLL_RESET			BIT(25)
@@ -141,17 +145,17 @@ DECLARE_GLOBAL_DATA_PTR;
  * These are hardcoded settings taken from Aspeed SDK.
  */
 #if defined(CONFIG_FPGA_ASPEED) || defined(CONFIG_ASPEED_PALLADIUM)
-static const u32 ddr4_ac_timing[4] = {0x030C0207, 0x04451133, 0x0E010200,
-                                      0x00000140};
+static const u32 ddr4_ac_timing[4] = { 0x030C0207, 0x04451133, 0x0E010200,
+				       0x00000140 };
 
-static const u32 ddr_max_grant_params[4] = {0x88888888, 0x88888888, 0x88888888,
-                                            0x88888888};
+static const u32 ddr_max_grant_params[4] = { 0x88888888, 0x88888888, 0x88888888,
+					     0x88888888 };
 #else
-static const u32 ddr4_ac_timing[4] = {0x040e0307, 0x0f4711f1, 0x0e060304,
-                                      0x00001240};
+static const u32 ddr4_ac_timing[4] = { 0x040e0307, 0x0f4711f1, 0x0e060304,
+				       0x00001240 };
 
-static const u32 ddr_max_grant_params[4] = {0x44444444, 0x44444466, 0x44444444,
-                                            0x44444444};
+static const u32 ddr_max_grant_params[4] = { 0x44444488, 0x444444ee, 0x44444444,
+					     0x44444444 };
 #endif
 
 struct dram_info {
@@ -209,31 +213,30 @@ static void ast2600_sdramphy_init(u32 *p_tbl, struct dram_info *info)
 #if !defined(CONFIG_FPGA_ASPEED) && !defined(CONFIG_ASPEED_PALLADIUM)
 	u32 reg_base = (u32)info->phy_setting;
 	u32 addr = p_tbl[0];
-        u32 data;
-        int i = 1;
+	u32 data;
+	int i = 1;
 
 	writel(0, &info->regs->phy_ctrl[0]);
 	udelay(10);
 	//writel(SDRAM_PHYCTRL0_NRST, &regs->phy_ctrl[0]);
 
+	/* load PHY configuration table into PHY-setting registers */
+	while (1) {
+		if (addr < reg_base) {
+			debug("invalid DDR-PHY addr: 0x%08x\n", addr);
+			break;
+		}
+		data = p_tbl[i++];
 
-        /* load PHY configuration table into PHY-setting registers */
-        while (1) {
-                if (addr < reg_base) {
-                        debug("invalid DDR-PHY addr: 0x%08x\n", addr);
-                        break;
-                }
-                data = p_tbl[i++];
-
-                if (DDR_PHY_TBL_END == data) {
-                        break;
-                } else if (DDR_PHY_TBL_CHG_ADDR == data) {
-                        addr = p_tbl[i++];
-                } else {
-                        writel(data, addr);
-                        addr += 4;
-                }
-        }
+		if (data == DDR_PHY_TBL_END) {
+			break;
+		} else if (data == DDR_PHY_TBL_CHG_ADDR) {
+			addr = p_tbl[i++];
+		} else {
+			writel(data, addr);
+			addr += 4;
+		}
+	}
 
 	data = readl(info->phy_setting + 0x84) & ~GENMASK(16, 0);
 	data |= DDR4_PHY_TRAIN_TRFC;
@@ -244,8 +247,8 @@ static void ast2600_sdramphy_init(u32 *p_tbl, struct dram_info *info)
 static int ast2600_sdramphy_check_status(struct dram_info *info)
 {
 #if !defined(CONFIG_FPGA_ASPEED) && !defined(CONFIG_ASPEED_PALLADIUM)
-        u32 value, tmp;
-        u32 reg_base = (u32)info->phy_status;
+	u32 value, tmp;
+	u32 reg_base = (u32)info->phy_status;
 	int need_retrain = 0;
 
 	debug("\nSDRAM PHY training report:\n");
@@ -262,11 +265,11 @@ static int ast2600_sdramphy_check_status(struct dram_info *info)
 	/* PU & PD */
 	value = readl(reg_base + 0x30);
 	debug("rO_DDRPHY_reg offset 0x30 = 0x%08x\n", value);
-        debug("  PU = 0x%02x\n", value & 0xff);
-        debug("  PD = 0x%02x\n", (value >> 16) & 0xff);
+	debug("  PU = 0x%02x\n", value & 0xff);
+	debug("  PD = 0x%02x\n", (value >> 16) & 0xff);
 
 	/* read eye window */
-        value = readl(reg_base + 0x68);
+	value = readl(reg_base + 0x68);
 	if (0 == (value & GENMASK(7, 0))) {
 		need_retrain = 1;
 	}
@@ -276,7 +279,7 @@ static int ast2600_sdramphy_check_status(struct dram_info *info)
 	tmp = (((value & GENMASK(7, 0)) >> 0) * 100) / 255;
 	debug("    B0:%d%%\n", tmp);
 	tmp = (((value & GENMASK(15, 8)) >> 8) * 100) / 255;
-        debug("    B1:%d%%\n", tmp);
+	debug("    B1:%d%%\n", tmp);
 
 	value = readl(reg_base + 0xC8);
 	debug("rO_DDRPHY_reg offset 0xC8 = 0x%08x\n", value);
@@ -284,10 +287,10 @@ static int ast2600_sdramphy_check_status(struct dram_info *info)
 	tmp = (((value & GENMASK(7, 0)) >> 0) * 100) / 255;
 	debug("    B0:%d%%\n", tmp);
 	tmp = (((value & GENMASK(15, 8)) >> 8) * 100) / 255;
-        debug("    B1:%d%%\n", tmp);
+	debug("    B1:%d%%\n", tmp);
 
-        /* write eye window */
-        value = readl(reg_base + 0x7c);
+	/* write eye window */
+	value = readl(reg_base + 0x7c);
 	if (0 == (value & GENMASK(7, 0))) {
 		need_retrain = 1;
 	}
@@ -297,26 +300,26 @@ static int ast2600_sdramphy_check_status(struct dram_info *info)
 	tmp = (((value & GENMASK(7, 0)) >> 0) * 100) / 255;
 	debug("    B0:%d%%\n", tmp);
 	tmp = (((value & GENMASK(15, 8)) >> 8) * 100) / 255;
-        debug("    B1:%d%%\n", tmp);
+	debug("    B1:%d%%\n", tmp);
 
 	/* read Vref training result */
-        value = readl(reg_base + 0x88);
+	value = readl(reg_base + 0x88);
 	debug("rO_DDRPHY_reg offset 0x88 = 0x%08x\n", value);
-        debug("  read Vref training result\n");
+	debug("  read Vref training result\n");
 	tmp = (((value & GENMASK(7, 0)) >> 0) * 100) / 127;
 	debug("    B0:%d%%\n", tmp);
 	tmp = (((value & GENMASK(15, 8)) >> 8) * 100) / 127;
-        debug("    B1:%d%%\n", tmp);
+	debug("    B1:%d%%\n", tmp);
 
-        /* write Vref training result */
-        value = readl(reg_base + 0x90);
+	/* write Vref training result */
+	value = readl(reg_base + 0x90);
 	debug("rO_DDRPHY_reg offset 0x90 = 0x%08x\n", value);
 #if 0
 	tmp = (((value & GENMASK(5, 0)) >> 0) * 100) / 127;
         debug("  write Vref training result = %d%%\n", tmp);
 #endif
 
-        /* gate train */
+	/* gate train */
 	value = readl(reg_base + 0x50);
 	if ((0 == (value & GENMASK(15, 0))) ||
 	    (0 == (value & GENMASK(31, 16)))) {
@@ -345,8 +348,9 @@ static int ast2600_sdramphy_check_status(struct dram_info *info)
 #ifndef CONFIG_ASPEED_BYPASS_SELFTEST
 #define MC_TEST_PATTERN_N 8
 static u32 as2600_sdrammc_test_pattern[MC_TEST_PATTERN_N] = {
-    0xcc33cc33, 0xff00ff00, 0xaa55aa55, 0x88778877,
-    0x92cc4d6e, 0x543d3cde, 0xf1e843c7, 0x7c61d253};
+	0xcc33cc33, 0xff00ff00, 0xaa55aa55, 0x88778877,
+	0x92cc4d6e, 0x543d3cde, 0xf1e843c7, 0x7c61d253
+};
 
 #define TIMEOUT_DRAM	5000000
 int ast2600_sdrammc_dg_test(struct dram_info *info, unsigned int datagen, u32 mode)
@@ -356,29 +360,28 @@ int ast2600_sdrammc_dg_test(struct dram_info *info, unsigned int datagen, u32 mo
 	struct ast2600_sdrammc_regs *regs = info->regs;
 
 	writel(0, &regs->ecc_test_ctrl);
-	if (mode == 0) {
+	if (mode == 0)
 		writel(0x00000085 | (datagen << 3), &regs->ecc_test_ctrl);
-	} else {
+	else
 		writel(0x000000C1 | (datagen << 3), &regs->ecc_test_ctrl);
-	}
 
 	do {
 		data = readl(&regs->ecc_test_ctrl) & GENMASK(13, 12);
 
 		if (data & BIT(13))
-			return (0);
+			return 0;
 
 		if (++timeout > TIMEOUT_DRAM) {
 			printf("Timeout!!\n");
 			writel(0, &regs->ecc_test_ctrl);
 
-			return (0);
+			return 0;
 		}
 	} while (!data);
 
 	writel(0, &regs->ecc_test_ctrl);
 
-	return (1);
+	return 1;
 }
 
 int ast2600_sdrammc_cbr_test(struct dram_info *info)
@@ -389,13 +392,15 @@ int ast2600_sdrammc_cbr_test(struct dram_info *info)
 	clrsetbits_le32(&regs->test_addr, GENMASK(30, 4), 0x7ffff0);
 
 	/* single */
-	for (i=0; i<8; i++) {
-  		if(!ast2600_sdrammc_dg_test(info, i, 0))   return(0);
+	for (i = 0; i < 8; i++) {
+		if (!ast2600_sdrammc_dg_test(info, i, 0))
+			return (0);
 	}
 
 	/* burst */
-	for (i=0; i<8; i++) {
-  		if(!ast2600_sdrammc_dg_test(info, i, i))   return(0);
+	for (i = 0; i < 8; i++) {
+		if (!ast2600_sdrammc_dg_test(info, i, i))
+			return (0);
 	}
 
 	return(1);
@@ -417,7 +422,7 @@ static int ast2600_sdrammc_test(struct dram_info *info)
 	while (finish == false) {
 		pattern = as2600_sdrammc_test_pattern[i++];
 		i = i % MC_TEST_PATTERN_N;
-		debug("  pattern = %08X : ",pattern);
+		debug("  pattern = %08X : ", pattern);
 		writel(pattern, &regs->test_init_val);
 
 		if (!ast2600_sdrammc_cbr_test(info)) {
@@ -433,7 +438,7 @@ static int ast2600_sdrammc_test(struct dram_info *info)
 		}
 	}
 	debug("statistics: pass/fail/total:%d/%d/%d\n", pass_cnt, fail_cnt,
-	       target_cnt);
+	      target_cnt);
 	return fail_cnt;
 }
 #endif
@@ -452,12 +457,12 @@ static int ast2600_sdrammc_test(struct dram_info *info)
 */
 static size_t ast2600_sdrammc_get_vga_mem_size(struct dram_info *info)
 {
-        u32 vga_hwconf;
-        size_t vga_mem_size_base = 8 * 1024 * 1024;
+	u32 vga_hwconf;
+	size_t vga_mem_size_base = 8 * 1024 * 1024;
 
-	vga_hwconf =
-	    (readl(info->scu + AST_SCU_HW_STRAP) & SCU_HWSTRAP_VGAMEM_MASK) >>
-	    SCU_HWSTRAP_VGAMEM_SHIFT;
+	vga_hwconf = (readl(info->scu + AST_SCU_HW_STRAP) &
+		      SCU_HWSTRAP_VGAMEM_MASK) >>
+		     SCU_HWSTRAP_VGAMEM_SHIFT;
 
 	if (vga_hwconf == 0) {
 		vga_hwconf = 1;
@@ -478,143 +483,142 @@ static size_t ast2600_sdrammc_get_vga_mem_size(struct dram_info *info)
 #if defined(CONFIG_FPGA_ASPEED) || defined(CONFIG_ASPEED_PALLADIUM)
 static void ast2600_sdrammc_fpga_set_pll(struct dram_info *info)
 {
-        u32 data;
-        u32 scu_base = (u32)info->scu;
+	u32 data;
+	u32 scu_base = (u32)info->scu;
 
-        writel(0x00000303, scu_base + AST_SCU_FPGA_PLL);
+	writel(0x00000303, scu_base + AST_SCU_FPGA_PLL);
 
-        do {
-                data = readl(scu_base + AST_SCU_FPGA_STATUS);
-        } while (!(data & 0x100));
+	do {
+		data = readl(scu_base + AST_SCU_FPGA_STATUS);
+	} while (!(data & 0x100));
 
-        writel(0x00000103, scu_base + AST_SCU_FPGA_PLL);
+	writel(0x00000103, scu_base + AST_SCU_FPGA_PLL);
 }
 
 static int ast2600_sdrammc_search_read_window(struct dram_info *info)
 {
-        u32 pll, pll_min, pll_max, dat1, offset;
-        u32 win = 0x03, gwin = 0, gwinsize = 0;
-        u32 phy_setting = (u32)info->phy_setting;
+	u32 pll, pll_min, pll_max, dat1, offset;
+	u32 win = 0x03, gwin = 0, gwinsize = 0;
+	u32 phy_setting = (u32)info->phy_setting;
 
 #ifdef CONFIG_ASPEED_PALLADIUM
 	writel(0xc, phy_setting + 0x0000);
-	return (1);
+	return 1;
 #endif
-        writel(SEARCH_RDWIN_PTRN_0, SEARCH_RDWIN_ANCHOR_0);
-        writel(SEARCH_RDWIN_PTRN_1, SEARCH_RDWIN_ANCHOR_1);
+	writel(SEARCH_RDWIN_PTRN_0, SEARCH_RDWIN_ANCHOR_0);
+	writel(SEARCH_RDWIN_PTRN_1, SEARCH_RDWIN_ANCHOR_1);
 
-        while (gwin == 0) {
-                while (!(win & 0x80)) {
-                        debug("Window = 0x%X\n", win);
-                        writel(win, phy_setting + 0x0000);
+	while (gwin == 0) {
+		while (!(win & 0x80)) {
+			debug("Window = 0x%X\n", win);
+			writel(win, phy_setting + 0x0000);
 
-                        dat1 = readl(SEARCH_RDWIN_ANCHOR_0);
-                        dat1 += readl(SEARCH_RDWIN_ANCHOR_1);
-                        while (dat1 == SEARCH_RDWIN_PTRN_SUM) {
-                                ast2600_sdrammc_fpga_set_pll(info);
-                                dat1 = readl(SEARCH_RDWIN_ANCHOR_0);
-                                dat1 += readl(SEARCH_RDWIN_ANCHOR_1);
-                        }
+			dat1 = readl(SEARCH_RDWIN_ANCHOR_0);
+			dat1 += readl(SEARCH_RDWIN_ANCHOR_1);
+			while (dat1 == SEARCH_RDWIN_PTRN_SUM) {
+				ast2600_sdrammc_fpga_set_pll(info);
+				dat1 = readl(SEARCH_RDWIN_ANCHOR_0);
+				dat1 += readl(SEARCH_RDWIN_ANCHOR_1);
+			}
 
-                        pll_min = 0xfff;
-                        pll_max = 0x0;
-                        pll = 0;
-                        while (pll_max > 0 || pll < 256) {
-                                ast2600_sdrammc_fpga_set_pll(info);
-                                dat1 = readl(SEARCH_RDWIN_ANCHOR_0);
-                                dat1 += readl(SEARCH_RDWIN_ANCHOR_1);
-                                if (dat1 == SEARCH_RDWIN_PTRN_SUM) {
-                                        if (pll_min > pll) {
-                                                pll_min = pll;
-                                        }
-                                        if (pll_max < pll) {
-                                                pll_max = pll;
-                                        }
-                                        debug("%3d_(%3d:%3d)\n", pll, pll_min,
-                                               pll_max);
-                                } else if (pll_max > 0) {
-                                        pll_min = pll_max - pll_min;
-                                        if (gwinsize < pll_min) {
-                                                gwin = win;
-                                                gwinsize = pll_min;
-                                        }
-                                        break;
-                                }
-                                pll += 1;
-                        }
+			pll_min = 0xfff;
+			pll_max = 0x0;
+			pll = 0;
+			while (pll_max > 0 || pll < 256) {
+				ast2600_sdrammc_fpga_set_pll(info);
+				dat1 = readl(SEARCH_RDWIN_ANCHOR_0);
+				dat1 += readl(SEARCH_RDWIN_ANCHOR_1);
+				if (dat1 == SEARCH_RDWIN_PTRN_SUM) {
+					if (pll_min > pll)
+						pll_min = pll;
 
-                        if (gwin != 0 && pll_max == 0) {
-                                break;
-                        }
-                        win = win << 1;
-                }
-                if (gwin == 0) {
-                        win = 0x7;
-                }
-        }
-        debug("Set PLL Read Gating Window = %x\n", gwin);
-        writel(gwin, phy_setting + 0x0000);
+					if (pll_max < pll)
+						pll_max = pll;
 
-        debug("PLL Read Window training\n");
-        pll_min = 0xfff;
-        pll_max = 0x0;
+					debug("%3d_(%3d:%3d)\n", pll, pll_min,
+					      pll_max);
+				} else if (pll_max > 0) {
+					pll_min = pll_max - pll_min;
+					if (gwinsize < pll_min) {
+						gwin = win;
+						gwinsize = pll_min;
+					}
+					break;
+				}
+				pll += 1;
+			}
 
-        debug("Search Window Start\n");
-        dat1 = readl(SEARCH_RDWIN_ANCHOR_0);
-        dat1 += readl(SEARCH_RDWIN_ANCHOR_1);
-        while (dat1 == SEARCH_RDWIN_PTRN_SUM) {
-                ast2600_sdrammc_fpga_set_pll(info);
-                dat1 = readl(SEARCH_RDWIN_ANCHOR_0);
-                dat1 += readl(SEARCH_RDWIN_ANCHOR_1);
-        }
+			if (gwin != 0 && pll_max == 0)
+				break;
 
-        debug("Search Window Margin\n");
-        pll = 0;
-        while (pll_max > 0 || pll < 256) {
-                ast2600_sdrammc_fpga_set_pll(info);
-                dat1 = readl(SEARCH_RDWIN_ANCHOR_0);
-                dat1 += readl(SEARCH_RDWIN_ANCHOR_1);
-                if (dat1 == SEARCH_RDWIN_PTRN_SUM) {
-                        if (pll_min > pll) {
-                                pll_min = pll;
-                        }
-                        if (pll_max < pll) {
-                                pll_max = pll;
-                        }
-                        debug("%3d_(%3d:%3d)\n", pll, pll_min, pll_max);
-                } else if (pll_max > 0 && (pll_max - pll_min) > 20) {
-                        break;
-                } else if (pll_max > 0) {
-                        pll_min = 0xfff;
-                        pll_max = 0x0;
-                }
-                pll += 1;
-        }
-        if (pll_min < pll_max) {
-                debug("PLL Read window = %d\n", (pll_max - pll_min));
-                offset = (pll_max - pll_min) >> 1;
-                pll_min = 0xfff;
-                pll = 0;
-                while (pll < (pll_min + offset)) {
-                        ast2600_sdrammc_fpga_set_pll(info);
-                        dat1 = readl(SEARCH_RDWIN_ANCHOR_0);
-                        dat1 += readl(SEARCH_RDWIN_ANCHOR_1);
-                        if (dat1 == SEARCH_RDWIN_PTRN_SUM) {
-                                if (pll_min > pll) {
-                                        pll_min = pll;
-                                }
-                                debug("%d\n", pll);
-                        } else {
-                                pll_min = 0xfff;
-                                pll_max = 0x0;
-                        }
-                        pll += 1;
-                }
-                return (1);
-        } else {
-                debug("PLL Read window training fail\n");
-                return (0);
-        }
+			win = win << 1;
+		}
+		if (gwin == 0)
+			win = 0x7;
+	}
+	debug("Set PLL Read Gating Window = %x\n", gwin);
+	writel(gwin, phy_setting + 0x0000);
+
+	debug("PLL Read Window training\n");
+	pll_min = 0xfff;
+	pll_max = 0x0;
+
+	debug("Search Window Start\n");
+	dat1 = readl(SEARCH_RDWIN_ANCHOR_0);
+	dat1 += readl(SEARCH_RDWIN_ANCHOR_1);
+	while (dat1 == SEARCH_RDWIN_PTRN_SUM) {
+		ast2600_sdrammc_fpga_set_pll(info);
+		dat1 = readl(SEARCH_RDWIN_ANCHOR_0);
+		dat1 += readl(SEARCH_RDWIN_ANCHOR_1);
+	}
+
+	debug("Search Window Margin\n");
+	pll = 0;
+	while (pll_max > 0 || pll < 256) {
+		ast2600_sdrammc_fpga_set_pll(info);
+		dat1 = readl(SEARCH_RDWIN_ANCHOR_0);
+		dat1 += readl(SEARCH_RDWIN_ANCHOR_1);
+		if (dat1 == SEARCH_RDWIN_PTRN_SUM) {
+			if (pll_min > pll)
+				pll_min = pll;
+
+			if (pll_max < pll)
+				pll_max = pll;
+
+			debug("%3d_(%3d:%3d)\n", pll, pll_min, pll_max);
+		} else if (pll_max > 0 && (pll_max - pll_min) > 20) {
+			break;
+		} else if (pll_max > 0) {
+			pll_min = 0xfff;
+			pll_max = 0x0;
+		}
+		pll += 1;
+	}
+	if (pll_min < pll_max) {
+		debug("PLL Read window = %d\n", (pll_max - pll_min));
+		offset = (pll_max - pll_min) >> 1;
+		pll_min = 0xfff;
+		pll = 0;
+		while (pll < (pll_min + offset)) {
+			ast2600_sdrammc_fpga_set_pll(info);
+			dat1 = readl(SEARCH_RDWIN_ANCHOR_0);
+			dat1 += readl(SEARCH_RDWIN_ANCHOR_1);
+			if (dat1 == SEARCH_RDWIN_PTRN_SUM) {
+				if (pll_min > pll) {
+					pll_min = pll;
+				}
+				debug("%d\n", pll);
+			} else {
+				pll_min = 0xfff;
+				pll_max = 0x0;
+			}
+			pll += 1;
+		}
+		return (1);
+	} else {
+		debug("PLL Read window training fail\n");
+		return 0;
+	}
 }
 #endif /* end of "#if defined(CONFIG_FPGA_ASPEED) ||                           \
 	  defined(CONFIG_ASPEED_PALLADIUM)" */
@@ -670,69 +674,69 @@ static void ast2600_sdrammc_calc_size(struct dram_info *info)
 
 static int ast2600_sdrammc_init_ddr4(struct dram_info *info)
 {
-        const u32 power_ctrl = MCR34_CKE_EN | MCR34_AUTOPWRDN_EN |
-                               MCR34_MREQ_BYPASS_DIS | MCR34_RESETN_DIS |
-                               MCR34_ODT_EN | MCR34_ODT_AUTO_ON |
-                               (0x1 << MCR34_ODT_EXT_SHIFT);
+	const u32 power_ctrl = MCR34_CKE_EN | MCR34_AUTOPWRDN_EN |
+			       MCR34_MREQ_BYPASS_DIS | MCR34_RESETN_DIS |
+			       MCR34_ODT_EN | MCR34_ODT_AUTO_ON |
+			       (0x1 << MCR34_ODT_EXT_SHIFT);
 
-        /* init SDRAM-PHY only on real chip */
+	/* init SDRAM-PHY only on real chip */
 	ast2600_sdramphy_init(ast2600_sdramphy_config, info);
-        writel((MCR34_CKE_EN | MCR34_MREQI_DIS | MCR34_RESETN_DIS),
-               &info->regs->power_ctrl);
+	writel((MCR34_CKE_EN | MCR34_MREQI_DIS | MCR34_RESETN_DIS),
+	       &info->regs->power_ctrl);
 	udelay(5);
 	ast2600_sdramphy_kick_training(info);
 	udelay(500);
-        writel(SDRAM_RESET_DLL_ZQCL_EN, &info->regs->refresh_timing);
+	writel(SDRAM_RESET_DLL_ZQCL_EN, &info->regs->refresh_timing);
 
-        writel(MCR30_SET_MR(3), &info->regs->mode_setting_control);
-        writel(MCR30_SET_MR(6), &info->regs->mode_setting_control);
-        writel(MCR30_SET_MR(5), &info->regs->mode_setting_control);
-        writel(MCR30_SET_MR(4), &info->regs->mode_setting_control);
-        writel(MCR30_SET_MR(2), &info->regs->mode_setting_control);
-        writel(MCR30_SET_MR(1), &info->regs->mode_setting_control);
-        writel(MCR30_SET_MR(0) | MCR30_RESET_DLL_DELAY_EN,
-               &info->regs->mode_setting_control);
-
-#if defined(CONFIG_FPGA_ASPEED) || defined(CONFIG_ASPEED_PALLADIUM)
-
-        writel(SDRAM_REFRESH_EN | SDRAM_RESET_DLL_ZQCL_EN |
-                   (0x5d << SDRAM_REFRESH_PERIOD_SHIFT),
-               &info->regs->refresh_timing);
-#else
-        writel(SDRAM_REFRESH_EN | SDRAM_RESET_DLL_ZQCL_EN |
-                   (0x5f << SDRAM_REFRESH_PERIOD_SHIFT),
-               &info->regs->refresh_timing);
-#endif
-
-        /* wait self-refresh idle */
-        while (readl(&info->regs->power_ctrl) & MCR34_SELF_REFRESH_STATUS_MASK)
-                ;
+	writel(MCR30_SET_MR(3), &info->regs->mode_setting_control);
+	writel(MCR30_SET_MR(6), &info->regs->mode_setting_control);
+	writel(MCR30_SET_MR(5), &info->regs->mode_setting_control);
+	writel(MCR30_SET_MR(4), &info->regs->mode_setting_control);
+	writel(MCR30_SET_MR(2), &info->regs->mode_setting_control);
+	writel(MCR30_SET_MR(1), &info->regs->mode_setting_control);
+	writel(MCR30_SET_MR(0) | MCR30_RESET_DLL_DELAY_EN,
+	       &info->regs->mode_setting_control);
 
 #if defined(CONFIG_FPGA_ASPEED) || defined(CONFIG_ASPEED_PALLADIUM)
-        writel(SDRAM_REFRESH_EN | SDRAM_LOW_PRI_REFRESH_EN |
-                   SDRAM_REFRESH_ZQCS_EN |
-                   (0x5d << SDRAM_REFRESH_PERIOD_SHIFT) |
-                   (0x4000 << SDRAM_REFRESH_PERIOD_ZQCS_SHIFT),
-               &info->regs->refresh_timing);
+
+	writel(SDRAM_REFRESH_EN | SDRAM_RESET_DLL_ZQCL_EN |
+		       (0x5d << SDRAM_REFRESH_PERIOD_SHIFT),
+	       &info->regs->refresh_timing);
 #else
-        writel(SDRAM_REFRESH_EN | SDRAM_LOW_PRI_REFRESH_EN |
-                   SDRAM_REFRESH_ZQCS_EN |
-                   (0x5f << SDRAM_REFRESH_PERIOD_SHIFT) |
-                   (0x42aa << SDRAM_REFRESH_PERIOD_ZQCS_SHIFT),
-               &info->regs->refresh_timing);
+	writel(SDRAM_REFRESH_EN | SDRAM_RESET_DLL_ZQCL_EN |
+		       (0x5f << SDRAM_REFRESH_PERIOD_SHIFT),
+	       &info->regs->refresh_timing);
 #endif
 
-        writel(power_ctrl, &info->regs->power_ctrl);
+	/* wait self-refresh idle */
+	while (readl(&info->regs->power_ctrl) & MCR34_SELF_REFRESH_STATUS_MASK)
+		;
+
+#if defined(CONFIG_FPGA_ASPEED) || defined(CONFIG_ASPEED_PALLADIUM)
+	writel(SDRAM_REFRESH_EN | SDRAM_LOW_PRI_REFRESH_EN |
+		       SDRAM_REFRESH_ZQCS_EN |
+		       (0x5d << SDRAM_REFRESH_PERIOD_SHIFT) |
+		       (0x4000 << SDRAM_REFRESH_PERIOD_ZQCS_SHIFT),
+	       &info->regs->refresh_timing);
+#else
+	writel(SDRAM_REFRESH_EN | SDRAM_LOW_PRI_REFRESH_EN |
+		       SDRAM_REFRESH_ZQCS_EN |
+		       (0x5f << SDRAM_REFRESH_PERIOD_SHIFT) |
+		       (0x42aa << SDRAM_REFRESH_PERIOD_ZQCS_SHIFT),
+	       &info->regs->refresh_timing);
+#endif
+
+	writel(power_ctrl, &info->regs->power_ctrl);
 	udelay(500);
 
 #if defined(CONFIG_FPGA_ASPEED)
-        /* toggle Vref training */
-        setbits_le32(&info->regs->mr6_mode_setting, 0x80);
-        writel(MCR30_RESET_DLL_DELAY_EN | MCR30_SET_MR(6),
-               &info->regs->mode_setting_control);
-        clrbits_le32(&info->regs->mr6_mode_setting, 0x80);
-        writel(MCR30_RESET_DLL_DELAY_EN | MCR30_SET_MR(6),
-               &info->regs->mode_setting_control);
+	/* toggle Vref training */
+	setbits_le32(&info->regs->mr6_mode_setting, 0x80);
+	writel(MCR30_RESET_DLL_DELAY_EN | MCR30_SET_MR(6),
+	       &info->regs->mode_setting_control);
+	clrbits_le32(&info->regs->mr6_mode_setting, 0x80);
+	writel(MCR30_RESET_DLL_DELAY_EN | MCR30_SET_MR(6),
+	       &info->regs->mode_setting_control);
 #endif
 	return 0;
 }
@@ -755,29 +759,33 @@ static void ast2600_sdrammc_common_init(struct ast2600_sdrammc_regs *regs)
 {
 	int i;
 
-        writel(MCR34_MREQI_DIS | MCR34_RESETN_DIS, &regs->power_ctrl);
-        writel(SDRAM_VIDEO_UNLOCK_KEY, &regs->gm_protection_key);
-        writel(0x10 << MCR38_RW_MAX_GRANT_CNT_RQ_SHIFT,
-               &regs->arbitration_ctrl);
-        writel(0xFFBBFFF4, &regs->req_limit_mask);
+	writel(MCR34_MREQI_DIS | MCR34_RESETN_DIS, &regs->power_ctrl);
+	writel(SDRAM_VIDEO_UNLOCK_KEY, &regs->gm_protection_key);
+	/* [6:0] : Group 1 request queued number = 20
+	 * [14:8] : Group 2 request queued number = 20
+	 * [20:16] : R/W max-grant count for RQ output arbitration = 16
+	 */
+	writel(0x101414, &regs->arbitration_ctrl);
+	/* Request Queued Limitation for REQ8/9 USB1/2 */
+	writel(0x0FFFFCFF, &regs->req_limit_mask);
 
 	for (i = 0; i < ARRAY_SIZE(ddr_max_grant_params); ++i)
-                writel(ddr_max_grant_params[i], &regs->max_grant_len[i]);
+		writel(ddr_max_grant_params[i], &regs->max_grant_len[i]);
 
-        writel(MCR50_RESET_ALL_INTR, &regs->intr_ctrl);
+	writel(MCR50_RESET_ALL_INTR, &regs->intr_ctrl);
 
-        /* FIXME: the sample code does NOT match the datasheet */
-        writel(0x07FFFFFF, &regs->ecc_range_ctrl);
+	/* FIXME: the sample code does NOT match the datasheet */
+	writel(0x07FFFFFF, &regs->ecc_range_ctrl);
 
-        writel(0, &regs->ecc_test_ctrl);
-        writel(0x80000001, &regs->test_addr);
-        writel(0, &regs->test_fail_dq_bit);
-        writel(0, &regs->test_init_val);
+	writel(0, &regs->ecc_test_ctrl);
+	writel(0x80000001, &regs->test_addr);
+	writel(0, &regs->test_fail_dq_bit);
+	writel(0, &regs->test_init_val);
 
-        writel(0xFFFFFFFF, &regs->req_input_ctrl);
-        writel(0, &regs->req_high_pri_ctrl);
+	writel(0xFFFFFFFF, &regs->req_input_ctrl);
+	writel(0x0, &regs->req_high_pri_ctrl);
 
-        udelay(600);
+	udelay(600);
 
 #ifdef CONFIG_ASPEED_DDR4_DUALX8
 	writel(0x37, &regs->config);
@@ -879,7 +887,7 @@ static int ast2600_sdrammc_probe(struct udevice *dev)
 
 	/* find SCU base address from clock device */
 	ret = uclass_get_device_by_driver(UCLASS_CLK, DM_GET_DRIVER(aspeed_scu),
-                                          &clk_dev);
+					  &clk_dev);
 	if (ret) {
 		debug("clock device not defined\n");
 		return ret;
@@ -893,6 +901,7 @@ static int ast2600_sdrammc_probe(struct udevice *dev)
 
 	if (readl(priv->scu + AST_SCU_HANDSHAKE) & SCU_SDRAM_INIT_READY_MASK) {
 		printf("already initialized, ");
+		setbits_le32(priv->scu + AST_SCU_HANDSHAKE, SCU_HANDSHAKE_MASK);
 		ast2600_sdrammc_update_size(priv);
 		return 0;
 	}
@@ -902,11 +911,12 @@ static int ast2600_sdrammc_probe(struct udevice *dev)
 	reg &= ~(BIT(24) | GENMASK(22, 0));
 	reg |= (BIT(25) | BIT(23) | SCU_MPLL_FREQ_CFG);
 	writel(reg, priv->scu + AST_SCU_MPLL);
-        writel(SCU_MPLL_EXT_CFG, priv->scu + AST_SCU_MPLL_EXT);
+	writel(SCU_MPLL_EXT_CFG, priv->scu + AST_SCU_MPLL_EXT);
 	udelay(100);
 	reg &= ~(BIT(25) | BIT(23));
 	writel(reg, priv->scu + AST_SCU_MPLL);
-	while(0 == (readl(priv->scu + AST_SCU_MPLL_EXT) & BIT(31)));
+	while (0 == (readl(priv->scu + AST_SCU_MPLL_EXT) & BIT(31)))
+		;
 #else
 	ret = clk_get_by_index(dev, 0, &priv->ddr_clk);
 	if (ret) {
@@ -938,12 +948,12 @@ L_ast2600_sdramphy_train:
 	ast2600_sdrammc_init_ddr4(priv);
 
 #if defined(CONFIG_FPGA_ASPEED) || defined(CONFIG_ASPEED_PALLADIUM)
-        ast2600_sdrammc_search_read_window(priv);
+	ast2600_sdrammc_search_read_window(priv);
 #else
 	/* make sure DDR-PHY is ready before access */
 	do {
 		reg = readl(priv->phy_status) & BIT(1);
-	} while(reg == 0);
+	} while (reg == 0);
 #endif
 
 	if (0 != ast2600_sdramphy_check_status(priv)) {
@@ -963,10 +973,7 @@ L_ast2600_sdramphy_train:
 #ifdef CONFIG_ASPEED_ECC
 	ast2600_sdrammc_ecc_enable(priv);
 #endif
-
-	writel(readl(priv->scu + AST_SCU_HANDSHAKE) | SCU_SDRAM_INIT_READY_MASK,
-	       priv->scu + AST_SCU_HANDSHAKE);
-
+	setbits_le32(priv->scu + AST_SCU_HANDSHAKE, SCU_HANDSHAKE_MASK);
 	clrbits_le32(&regs->intr_ctrl, MCR50_RESET_ALL_INTR);
 	ast2600_sdrammc_lock(priv);
 	return 0;

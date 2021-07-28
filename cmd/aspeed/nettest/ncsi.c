@@ -808,9 +808,10 @@ char phy_ncsi (MAC_ENGINE *eng)
 	uint32_t pkg_idx;
 	uint32_t chl_idx;
 	uint32_t select_flag[MAX_PACKAGE_NUM];
+#ifdef NCSI_VERBOSE_TEST
 	uint32_t Re_Send;
 	uint32_t Link_Status;
-
+#endif
 	eng->dat.NCSI_RxEr = 0;
 	eng->dat.number_chl = 0;
 	eng->dat.number_pak = 0;
@@ -894,6 +895,7 @@ char phy_ncsi (MAC_ENGINE *eng)
 
 					// Get Version and Capabilities
 					Get_Version_ID_SLT( eng );          //Command:0x15
+#ifdef NCSI_VERBOSE_TEST
 					Get_Capabilities_SLT( eng );        //Command:0x16
 					Select_Active_Package_SLT( eng );   //Command:0x01
 					Enable_Set_MAC_Address_SLT( eng );  //Command:0x0e
@@ -931,6 +933,7 @@ char phy_ncsi (MAC_ENGINE *eng)
 							PRINTF( FP_LOG, "        This Channel is LINK_DOWN (MFC:%d, UFC:%d, CC:%d)\n", eng->ncsi_cap.Mixed_Filter_Count, eng->ncsi_cap.Unicast_Filter_Count, eng->ncsi_cap.Channel_Count);
 						}
 					}
+#endif	/* endof "#ifdef NCSI_VERBOSE_TEST" */
 
 #ifdef NCSI_Skip_DiSChannel
 #else

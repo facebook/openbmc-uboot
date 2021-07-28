@@ -216,7 +216,8 @@ static void print_arg_ctrl(MAC_ENGINE *p_eng)
 	printf("%20s| bit3     : reserved\n", "");
 	printf("%20s| bit4     : PHY internal loopback\n", "");
 	printf("%20s| bit5     : MAC internal loopback\n", "");	
-	printf("%20s| bit7~6   : reserved\n", "");
+	printf("%20s| bit6     : Enable PHY RX delay\n", "");
+	printf("%20s| bit7     : Enable PHY TX delay\n", "");
 	printf("%20s| bit8     : RMII 50MHz Output enable\n", "");
 	printf("%20s| bit9     : RMII REFCLK pin input enable\n", "");
 	printf("%20s| bit10    : inverse RGMII RXCLK\n", "");
@@ -867,6 +868,10 @@ static uint32_t setup_running(MAC_ENGINE *p_eng)
 				break;
 			}
 		}
+
+		if (p_eng->arg.ctrl.b.single_packet)
+			p_eng->dat.Des_Num = 1;
+
 		/* keep in order: Des_Num -> DMABuf_Size -> DMABuf_Num */
 		p_eng->dat.Des_Num_Org = p_eng->dat.Des_Num;
 		p_eng->dat.DMABuf_Size = DMA_BufSize;

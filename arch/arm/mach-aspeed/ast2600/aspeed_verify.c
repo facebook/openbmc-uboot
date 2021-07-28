@@ -52,7 +52,8 @@ static int aspeed_signature_verify(struct aspeed_verify_info *info)
 	u8 *rsa_result;
 	u8 *contex_buf;
 	u8 *rsa_m;
-	u8 *rsa_e;
+	const char *rsa_e = "\x01\x00\x01";
+	int e_len = 17;
 
 	switch (info->sha_mode) {
 	case ASPEED_SHA224:
@@ -82,31 +83,26 @@ static int aspeed_signature_verify(struct aspeed_verify_info *info)
 
 	rsa_result = malloc(0x200);
 	rsa_m = info->rsa_key;
-	rsa_e = NULL;
 
 	switch (info->rsa_mode) {
 	case ASPEED_RSA1024:
 		m_bits = 1024;
-		rsa_e = info->rsa_key + 0x80;
 		break;
 	case ASPEED_RSA2048:
 		m_bits = 2048;
-		rsa_e = info->rsa_key + 0x100;
 		break;
 	case ASPEED_RSA3072:
 		m_bits = 3072;
-		rsa_e = info->rsa_key + 0x180;
 		break;
 	case ASPEED_RSA4096:
 		m_bits = 4096;
-		rsa_e = info->rsa_key + 0x200;
 		break;
 	default:
 		m_bits = 0;
 		rsa_e = NULL;
 	}
 
-	ret = rsa_alg(info->signature, m_bits / 8, rsa_m, m_bits, rsa_e, info->e_len, rsa_result, contex_buf);
+	ret = rsa_alg(info->signature, m_bits / 8, rsa_m, m_bits, (u8 *)rsa_e, e_len, rsa_result, contex_buf);
 	if (ret)
 		goto err;
 

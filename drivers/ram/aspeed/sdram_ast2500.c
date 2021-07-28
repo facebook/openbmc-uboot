@@ -204,6 +204,31 @@ static size_t ast2500_sdrammc_get_vga_mem_size(struct dram_info *info)
 	return vga_mem_size_base << vga_hwconf;
 }
 
+static void ast2500_sdrammc_update_size(struct dram_info *info)
+{
+	struct ast2500_sdrammc_regs *regs = info->regs;
+	size_t hw_size;
+	size_t ram_size_tbl[4] = { 128 * SDRAM_SIZE_1MB,
+				   256 * SDRAM_SIZE_1MB,
+				   512 * SDRAM_SIZE_1MB,
+				   1024 * SDRAM_SIZE_1MB };
+	size_t ram_size = SDRAM_MAX_SIZE;
+	u32 cap_param;
+
+	cap_param = (readl(&info->regs->config) & SDRAM_CONF_CAP_MASK) >> SDRAM_CONF_CAP_SHIFT;
+	ram_size = ram_size_tbl[cap_param];
+
+	info->info.base = CONFIG_SYS_SDRAM_BASE;
+	info->info.size = ram_size - ast2500_sdrammc_get_vga_mem_size(info);
+
+	if (0 == (readl(&regs->config) & SDRAM_CONF_ECC_EN))
+		return;
+
+	hw_size = readl(&regs->ecc_range_ctrl) & GENMASK(29, 20);
+	hw_size += (1 << 20);
+
+	info->info.size = hw_size;
+}
 /*
  * Find out RAM size and save it in dram_info
  *
@@ -410,20 +435,18 @@ static int ast2500_sdrammc_probe(struct udevice *dev)
 	}
 
 	if (readl(&priv->scu->vga_handshake[0]) & (0x1 << 6)) {
-		printf("already initialized, ");
-		ast2500_sdrammc_calc_size(priv);
+		ast2500_sdrammc_update_size(priv);
 
-		setbits_le32(&priv->regs->config, SDRAM_CONF_CACHE_INIT_EN);
-		while (
-		    !(readl(&priv->regs->config) & SDRAM_CONF_CACHE_INIT_DONE))
-			;
-		setbits_le32(&priv->regs->config, SDRAM_CONF_CACHE_EN);
+		if (!(readl(&priv->regs->config) & SDRAM_CONF_CACHE_EN)) {
+			setbits_le32(&priv->regs->config,
+				     SDRAM_CONF_CACHE_INIT_EN);
+			while (!(readl(&priv->regs->config) &
+				 SDRAM_CONF_CACHE_INIT_DONE))
+				;
+			setbits_le32(&priv->regs->config, SDRAM_CONF_CACHE_EN);
+		}
 
 		writel(SDRAM_MISC_DDR4_TREFRESH, &priv->regs->misc_control);
-
-#ifdef CONFIG_ASPEED_ECC		
-		ast2500_sdrammc_ecc_enable(priv);
-#endif
 		return 0;
 	}
 
@@ -462,6 +485,8 @@ static int ast2500_sdrammc_probe(struct udevice *dev)
 
 	clrbits_le32(&regs->intr_ctrl, SDRAM_ICR_RESET_ALL);
 	ast2500_sdrammc_lock(priv);
+
+	setbits_le32(&priv->scu->vga_handshake[0], BIT(6) | BIT(7));
 
 	return 0;
 }

@@ -1,0 +1,13 @@
+if TARGET_AST2600_INTEL
+
+config SYS_BOARD
+	default "ast2600_intel"
+
+config SYS_VENDOR
+	default "aspeed"
+
+config SYS_CONFIG_NAME
+	string "board configuration name"
+	default "ast2600_intel"
+
+endif

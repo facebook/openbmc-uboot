@@ -1,5 +1,6 @@
 if RAM || SPL_RAM
 
+if ASPEED_AST2600
 choice
 	prompt "DDR4 target data rate"
 	default ASPEED_DDR4_1600
@@ -41,6 +42,7 @@ config ASPEED_BYPASS_SELFTEST
 	default n
 	help
 	  Say Y here to bypass DRAM self test to speed up the boot time
+endif
 
 config ASPEED_ECC
 	bool "aspeed SDRAM error correcting code"

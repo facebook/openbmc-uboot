@@ -436,7 +436,8 @@ typedef union {
 		uint32_t reserved_0	: 1;	/* bit[3] */
 		uint32_t phy_int_loopback : 1;	/* bit[4] */
 		uint32_t mac_int_loopback : 1;	/* bit[5] */
-		uint32_t reserved_1	: 2;	/* bit[7:6] */
+		uint32_t phy_rx_delay_en: 1;	/* bit[6] */
+		uint32_t phy_tx_delay_en: 1;	/* bit[7] */
 		uint32_t rmii_50m_out	: 1;	/* bit[8] */
 		uint32_t rmii_phy_in	: 1;	/* bit[9] */
 		uint32_t inv_rgmii_rxclk: 1;	/* bit[10] */

@@ -13,6 +13,10 @@
 #include <linux/ioport.h>
 
 #define TIMING_PHASE_OFFSET 0xf4
+#define SDHCI140_SLOT_0_MIRROR_OFFSET 0x10
+#define SDHCI240_SLOT_0_MIRROR_OFFSET 0x20
+#define SDHCI140_SLOT_0_CAP_REG_1_OFFSET 0x140
+#define SDHCI240_SLOT_0_CAP_REG_1_OFFSET 0x240
 
 struct aspeed_sdhci_general_reg {
 	u32 genreal_info;
@@ -39,6 +43,7 @@ static int aspeed_sdhci_irq_probe(struct udevice *dev)
 	struct resource regs;
 	void __iomem  *sdhci_ctrl_base;
 	u32 timing_phase;
+	u32 reg_val;
 
 	debug("%s(dev=%p) \n", __func__, dev);
 
@@ -56,6 +61,17 @@ static int aspeed_sdhci_irq_probe(struct udevice *dev)
 
 	timing_phase = dev_read_u32_default(dev, "timing-phase", 0);
 	writel(timing_phase, sdhci_ctrl_base + TIMING_PHASE_OFFSET);
+
+	if (dev_read_bool(dev, "sdhci_hs200")) {
+		reg_val = readl(sdhci_ctrl_base + SDHCI140_SLOT_0_CAP_REG_1_OFFSET);
+		/* support 1.8V */
+		reg_val |= BIT(26);
+		writel(reg_val, sdhci_ctrl_base + SDHCI140_SLOT_0_MIRROR_OFFSET);
+		reg_val = readl(sdhci_ctrl_base + SDHCI240_SLOT_0_CAP_REG_1_OFFSET);
+		/* support 1.8V */
+		reg_val |= BIT(26);
+		writel(reg_val, sdhci_ctrl_base + SDHCI240_SLOT_0_MIRROR_OFFSET);
+	}
 
 	return 0;
 }

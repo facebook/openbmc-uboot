@@ -952,6 +952,7 @@ static int aspeed_spi_flash_init(struct aspeed_spi_priv *priv,
 			CE_CTRL_CMD(flash->spi->read_opcode) |
 			CE_CTRL_DUMMY((flash->spi->read_dummy/8)) |
 			CE_CTRL_FREADMODE;
+		flash->ce_ctrl_user |= CE_G6_CTRL_CLOCK_FREQ(read_hclk);
 	} else {
 		flash->ce_ctrl_fread = CE_CTRL_CLOCK_FREQ(read_hclk) |
 			flash->read_iomode |

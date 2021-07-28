@@ -164,6 +164,20 @@ static int read_sr(struct spi_nor *nor)
 	return val;
 }
 
+static int read_winbond_sr2(struct spi_nor *nor)
+{
+	int ret;
+	u8 val;
+
+	ret = nor->read_reg(nor, SPINOR_OP_WINBOND_RDSR2, &val, 1);
+	if (ret < 0) {
+		pr_debug("error %d reading SR2\n", (int)ret);
+		return ret;
+	}
+
+	return val;
+}
+
 /*
  * Read the flag status register, returning its value in the location
  * Return the status register value.
@@ -212,6 +226,12 @@ static int write_sr(struct spi_nor *nor, u8 val)
 {
 	nor->cmd_buf[0] = val;
 	return nor->write_reg(nor, SPINOR_OP_WRSR, nor->cmd_buf, 1);
+}
+
+static int write_winbond_sr2(struct spi_nor *nor, u8 val)
+{
+	nor->cmd_buf[0] = val;
+	return nor->write_reg(nor, SPINOR_OP_WINBOND_WRSR2, nor->cmd_buf, 1);
 }
 
 /*
@@ -593,6 +613,78 @@ erase_err:
 	write_disable(nor);
 
 	return ret;
+}
+
+static int micron_read_nvcr(struct spi_nor *nor)
+{
+	int ret;
+	int val;
+
+	ret = nor->read_reg(nor, SPINOR_OP_MICRON_RDNVCR, (u8 *)&val, 2);
+	if (ret < 0) {
+		dev_err(nor->dev, "[Micron] error %d reading NVCR\n", ret);
+		return ret;
+	}
+
+	return val;
+}
+
+static int micron_write_nvcr(struct spi_nor *nor, int val)
+{
+	int ret;
+
+	write_enable(nor);
+
+	nor->cmd_buf[0] = val & 0xff;
+	nor->cmd_buf[1] = (val >> 8) & 0xff;
+
+	ret = nor->write_reg(nor, SPINOR_OP_MICRON_WRNVCR, nor->cmd_buf, 2);
+	if (ret < 0) {
+		dev_err(nor->dev,
+			"[Micron] error while writing configuration register\n");
+		return -EINVAL;
+	}
+
+	ret = spi_nor_wait_till_ready(nor);
+	if (ret) {
+		dev_err(nor->dev,
+			"[Micron] timeout while writing configuration register\n");
+		return ret;
+	}
+
+	return 0;
+}
+
+static int micron_read_cr_quad_enable(struct spi_nor *nor)
+{
+	int ret;
+
+	/* Check current Quad Enable bit value. */
+	ret = micron_read_nvcr(nor);
+	if (ret < 0) {
+		dev_err(dev, "[Micron] error while reading nonvolatile configuration register\n");
+		return -EINVAL;
+	}
+
+	if ((ret & MICRON_RST_HOLD_CTRL) == 0)
+		return 0;
+
+	ret &= ~MICRON_RST_HOLD_CTRL;
+
+	/* Keep the current value of the Status Register. */
+	ret = micron_write_nvcr(nor, ret);
+	if (ret < 0) {
+		dev_err(dev, "[Micron] error while writing nonvolatile configuration register\n");
+		return -EINVAL;
+	}
+
+	ret = micron_read_nvcr(nor);
+	if (ret > 0 && (ret & MICRON_RST_HOLD_CTRL)) {
+		dev_err(nor->dev, "[Micron] Quad bit not set\n");
+		return -EINVAL;
+	}
+
+	return 0;
 }
 
 #ifdef CONFIG_SPI_FLASH_SPANSION
@@ -1275,7 +1367,7 @@ static int spansion_read_cr_quad_enable(struct spi_nor *nor)
 	/* Check current Quad Enable bit value. */
 	ret = read_cr(nor);
 	if (ret < 0) {
-		dev_dbg(dev, "error while reading configuration register\n");
+		dev_dbg(nor->dev, "error while reading configuration register\n");
 		return -EINVAL;
 	}
 
@@ -1287,7 +1379,7 @@ static int spansion_read_cr_quad_enable(struct spi_nor *nor)
 	/* Keep the current value of the Status Register. */
 	ret = read_sr(nor);
 	if (ret < 0) {
-		dev_dbg(dev, "error while reading status register\n");
+		dev_dbg(nor->dev, "error while reading status register\n");
 		return -EINVAL;
 	}
 	sr_cr[0] = ret;
@@ -1300,6 +1392,56 @@ static int spansion_read_cr_quad_enable(struct spi_nor *nor)
 	ret = read_cr(nor);
 	if (!(ret > 0 && (ret & CR_QUAD_EN_SPAN))) {
 		dev_dbg(nor->dev, "Spansion Quad bit not set\n");
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+/**
+ * sr2_bit1_quad_enable() - set QE bit in Status Register 2.
+ * @nor:	pointer to a 'struct spi_nor'
+ *
+ * Set the Quad Enable (QE) bit in the Status Register 2.
+ *
+ * Return: 0 on success, -errno otherwise.
+ */
+static int winbond_sr2_bit1_quad_enable(struct spi_nor *nor)
+{
+	u8 sr2 = 0;
+	int ret;
+
+	/* Check current Quad Enable bit value. */
+	ret = read_winbond_sr2(nor);
+	if (ret < 0) {
+		dev_err(nor->dev, "error while reading status register 2\n");
+		return -EINVAL;
+	}
+
+	if (ret & SR2_QUAD_EN_BIT1)
+		return 0;
+
+	/* Update the Quad Enable bit. */
+	sr2 = (u8)(ret | SR2_QUAD_EN_BIT1);
+
+	write_enable(nor);
+
+	ret = write_winbond_sr2(nor, sr2);
+	if (ret < 0) {
+		dev_err(nor->dev, "error while writing status register 2\n");
+		return -EINVAL;
+	}
+
+	ret = spi_nor_wait_till_ready(nor);
+	if (ret < 0) {
+		dev_err(nor->dev, "timeout while writing status register 2\n");
+		return ret;
+	}
+
+	/* Read back and check it. */
+	ret = read_winbond_sr2(nor);
+	if (ret < 0 || !(ret & SR2_QUAD_EN_BIT1)) {
+		dev_err(nor->dev, "SR2 Quad bit not set\n");
 		return -EINVAL;
 	}
 
@@ -2165,6 +2307,13 @@ static int spi_nor_init_params(struct spi_nor *nor,
 			}
 #endif
 		}
+
+		/* need to disable hold/reset pin feature */
+		if (JEDEC_MFR(info) == SNOR_MFR_ST)
+			params->quad_enable = micron_read_cr_quad_enable;
+
+		if (JEDEC_MFR(info) == SNOR_MFR_GIGADEVICE)
+			params->quad_enable = winbond_sr2_bit1_quad_enable;
 	}
 
 	return 0;

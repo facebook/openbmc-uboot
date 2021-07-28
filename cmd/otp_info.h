@@ -3,7 +3,7 @@
  * Do not edit it.
  */
 
-#define OTP_INFO_VER		"1.0.2"
+#define OTP_INFO_VER		"1.0.3"
 #define OTP_REG_RESERVED	-1
 #define OTP_REG_VALUE		-2
 #define OTP_REG_VALID_BIT	-3
@@ -436,7 +436,6 @@ static const struct otpconf_info a0_conf_info[] = {
 	{ 4, 0, 8, OTP_REG_VALID_BIT, "Keys retire : %s" },
 	{ 5, 0, 32, OTP_REG_VALUE, "User define data, random number low : 0x%x" },
 	{ 6, 0, 32, OTP_REG_VALUE, "User define data, random number high : 0x%x" },
-	{ 10, 0, 64, OTP_REG_VALUE, "Manifest ID : 0x%x" },
 	{ 14, 0, 11, OTP_REG_VALUE, "Patch code location (DW): 0x%x" },
 	{ 14, 11, 6, OTP_REG_VALUE, "Patch code size (DW): 0x%x" }
 };
@@ -489,7 +488,6 @@ static const struct otpconf_info a1_conf_info[] = {
 	{ 4, 0, 8, OTP_REG_VALID_BIT, "Keys retire : %s" },
 	{ 5, 0, 32, OTP_REG_VALUE, "User define data, random number low : 0x%x" },
 	{ 6, 0, 32, OTP_REG_VALUE, "User define data, random number high : 0x%x" },
-	{ 10, 0, 64, OTP_REG_VALUE, "Manifest ID : 0x%x" },
 	{ 14, 0, 11, OTP_REG_VALUE, "Patch code location (DW): 0x%x" },
 	{ 14, 11, 6, OTP_REG_VALUE, "Patch code size (DW): 0x%x" }
 };
@@ -564,7 +562,6 @@ static const struct otpconf_info a2_conf_info[] = {
 	{ 4, 0, 8, OTP_REG_VALID_BIT, "Keys retire : %s" },
 	{ 5, 0, 32, OTP_REG_VALUE, "User define data, random number low : 0x%x" },
 	{ 6, 0, 32, OTP_REG_VALUE, "User define data, random number high : 0x%x" },
-	{ 10, 0, 64, OTP_REG_VALUE, "Manifest ID : 0x%x" },
 	{ 14, 0, 11, OTP_REG_VALUE, "Patch code location (DW): 0x%x" },
 	{ 14, 11, 6, OTP_REG_VALUE, "Patch code size (DW): 0x%x" }
 };

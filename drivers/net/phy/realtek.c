@@ -55,6 +55,7 @@
 
 #define MIIM_RTL8211F_PAGE_SELECT      0x1f
 #define MIIM_RTL8211F_TX_DELAY		0x100
+#define MIIM_RTL8211F_RX_DELAY		0x8
 #define MIIM_RTL8211F_LCR		0x10
 
 static int rtl8211f_phy_extread(struct phy_device *phydev, int addr,
@@ -165,6 +166,16 @@ static int rtl8211f_config(struct phy_device *phydev)
 		reg &= ~MIIM_RTL8211F_TX_DELAY;
 
 	phy_write(phydev, MDIO_DEVAD_NONE, 0x11, reg);
+
+	/* enable RX-delay for rgmii-id and rgmii-rxid, otherwise disable it */
+	reg = phy_read(phydev, MDIO_DEVAD_NONE, 0x15);
+	if (phydev->interface == PHY_INTERFACE_MODE_RGMII_ID ||
+	    phydev->interface == PHY_INTERFACE_MODE_RGMII_RXID)
+		reg |= MIIM_RTL8211F_RX_DELAY;
+	else
+		reg &= ~MIIM_RTL8211F_RX_DELAY;
+	phy_write(phydev, MDIO_DEVAD_NONE, 0x15, reg);
+
 	/* restore to default page 0 */
 	phy_write(phydev, MDIO_DEVAD_NONE,
 		  MIIM_RTL8211F_PAGE_SELECT, 0x0);
@@ -367,11 +378,25 @@ static struct phy_driver RTL8211F_driver = {
 	.writeext = &rtl8211f_phy_extwrite,
 };
 
+/* Support for RTL8211FD-VX PHY */
+static struct phy_driver RTL8211FD_VX_driver = {
+	.name = "RealTek RTL8211FD-VX",
+	.uid = 0x1cc859,
+	.mask = 0xffffff,
+	.features = PHY_GBIT_FEATURES,
+	.config = &rtl8211f_config,
+	.startup = &rtl8211f_startup,
+	.shutdown = &genphy_shutdown,
+	.readext = &rtl8211f_phy_extread,
+	.writeext = &rtl8211f_phy_extwrite,
+};
+
 int phy_realtek_init(void)
 {
 	phy_register(&RTL8211B_driver);
 	phy_register(&RTL8211E_driver);
 	phy_register(&RTL8211F_driver);
+	phy_register(&RTL8211FD_VX_driver);
 	phy_register(&RTL8211DN_driver);
 
 	return 0;

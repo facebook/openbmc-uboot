@@ -23,7 +23,6 @@ config TARGET_EVB_AST2600
 	  4 Serial ports, 4 USB ports, VGA port, PCIe, SD card slot,
 	  20 pin JTAG, pinouts for 14 I2Cs, 3 SPIs and eSPI, 8 PWMs.
 
-
 config TARGET_FPGA_AST2600
 	bool "FPGA-AST2600"
 	depends on ASPEED_AST2600
@@ -56,6 +55,13 @@ config TARGET_SLT_AST2600
 	help
 	  SLT-AST2600 is Aspeed SLT board for AST2600 chip.
 
+config TARGET_AST2600_INTEL
+	bool "AST2600-INTEL"
+	depends on ASPEED_AST2600
+	help
+	  AST2600-INTEL is an Intel Eagle Stream CRB with
+	  AST2600 as the BMC.
+
 config TARGET_FACEBOOK_GRANDCANYON
 	bool "FACEBOOK-GRANDCANYON"
 	depends on ASPEED_AST2600
@@ -77,6 +83,7 @@ endchoice
 source "board/aspeed/evb_ast2600/Kconfig"
 source "board/aspeed/fpga_ast2600/Kconfig"
 source "board/aspeed/slt_ast2600/Kconfig"
+source "board/aspeed/ast2600_intel/Kconfig"
 source "board/aspeed/facebook_cloudripper/Kconfig"
 source "board/aspeed/facebook_elbert/Kconfig"
 source "board/aspeed/facebook_fuji/Kconfig"

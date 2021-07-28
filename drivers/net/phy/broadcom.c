@@ -54,31 +54,38 @@ static void bcm_phy_write_misc(struct phy_device *phydev,
 /* Broadcom BCM5461S */
 static int bcm5461_config(struct phy_device *phydev)
 {
-	unsigned int mii_reg = 0;
-	genphy_config_aneg(phydev);
+	u32 reg18, reg1c;
 
 	phy_reset(phydev);
+	/*
+	 * RX interface delay: reg 0x18, shadow value b'0111: misc control
+	 * bit[8] RGMII RXD to RXC skew
+	 */
+	phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM54xx_AUXCNTL,
+		  MIIM_BCM54xx_AUXCNTL_ENCODE(0x7));
+	reg18 = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_BCM54xx_AUXCNTL);
+	reg18 &= ~(MIIM_BCM54xx_AUXCNTL_ENCODE(0x7) | BIT(8));
+	reg18 |= BIT(15) | MIIM_BCM54xx_AUXCNTL_ENCODE(0x7);
+	if (phydev->interface == PHY_INTERFACE_MODE_RGMII_ID ||
+	    phydev->interface == PHY_INTERFACE_MODE_RGMII_RXID)
+		reg18 |= BIT(8);
+	phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM54xx_AUXCNTL, reg18);
 
-	if(phydev->drv->uid == 0x03625d12) {
-		mii_reg = phy_read(phydev, MDIO_DEVAD_NONE, 0x0) & ~BIT(10);
-		phy_write(phydev, MDIO_DEVAD_NONE, 0x0, mii_reg);
+	/*
+	 * TX interface delay: reg 0x1c, shadow value b'0011: clock alignment control
+	 * bit[9] GTXCLK clock delay enable
+	 */
+	phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM54XX_SHD,
+		  MIIM_BCM54XX_SHD_VAL(0x3));
+	reg1c = phy_read(phydev, MDIO_DEVAD_NONE, MIIM_BCM54XX_SHD);
+	reg1c &= ~(MIIM_BCM54XX_SHD_VAL(0x1f) | BIT(9));
+	reg1c |= BIT(15) | MIIM_BCM54XX_SHD_VAL(0x3);
+	if (phydev->interface == PHY_INTERFACE_MODE_RGMII_ID ||
+	    phydev->interface == PHY_INTERFACE_MODE_RGMII_TXID)
+		reg1c |= BIT(9);
+	phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM54XX_SHD, reg1c);
 
-		//disable skew
-		phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM54xx_AUXCNTL, 0x7007);
-		mii_reg = (phy_read(phydev, MDIO_DEVAD_NONE, MIIM_BCM54xx_AUXCNTL) & 0x0af0) | 0xf007;
-		phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM54xx_AUXCNTL, mii_reg);
-
-		//disable delay
-		phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM54XX_SHD, 0xc00);
-		mii_reg = 0x8c00;
-		phy_write(phydev, MDIO_DEVAD_NONE, MIIM_BCM54XX_SHD, mii_reg);
-	} else if (phydev->drv->uid == 0x03625e6a) {
-		/* Disable RGMII RXD to RXC Skew */
-		phy_write(phydev, MDIO_DEVAD_NONE, 0x1c, 0x8c00);
-
-		/* First Switch shadow register selector */
-		phy_write(phydev, MDIO_DEVAD_NONE, 0x18, 0xf0e7);
-	}
+	genphy_config_aneg(phydev);
 
 	return 0;
 }

@@ -27,19 +27,19 @@ DECLARE_GLOBAL_DATA_PTR;
 #define TIMEOUT_DRAM	5000000
 
 #ifdef CONFIG_ASPEED_AST2600
-#define BLK_SIZE_MB				64
-#define N_BLK					32
+#define BLK_SIZE_MB			64
+#define N_BLK				32
 #define MCR74_BLK_OFFSET		26
 #define MCR74_LEN_OFFSET		4
 #define MCR74_BLK_LEN_MASK		GENMASK(30, 4)
 #else
-#define BLK_SIZE_MB				16
-#define N_BLK					64
+#define BLK_SIZE_MB			16
+#define N_BLK				64
 #define MCR74_BLK_OFFSET		24
 #define MCR74_LEN_OFFSET		4
 #define MCR74_BLK_LEN_MASK		GENMASK(29, 4)
 #endif
-#define BLK_SIZE				(BLK_SIZE_MB * 1024 * 1024)
+#define BLK_SIZE			(BLK_SIZE_MB * 1024 * 1024)
 #define N_16B_IN_BLK			(BLK_SIZE / 16)
 
 /* ------------------------------------------------------------------------- */
@@ -145,7 +145,7 @@ static void print_usage(void)
 	printf("        0x1: test the first 16 Bytes of the memory block\n");
 	printf("        0x2: test the first 2*16 Bytes of the memory block\n");
 	printf("        n  : test the first n*16 Bytes of the memory block\n");
-	printf("             where n = [0x00000001, 0x%08x]\n", N_16B_IN_BLK - 1);
+	printf("             where n = [0x00000001, 0x%08x]\n", N_16B_IN_BLK);
 	printf("\n\n");
 }
 
@@ -177,14 +177,17 @@ do_ast_dramtest(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 		break;
 	}
 
+	if (length == 0)
+		length = N_16B_IN_BLK;
+
 	printf("Test range: 0x%08lx - 0x%08lx\n", DRAM_BASE + (block << MCR74_BLK_OFFSET),
-	       DRAM_BASE + (block << MCR74_BLK_OFFSET) + (length << 4) + 15);
+	       DRAM_BASE | (block << MCR74_BLK_OFFSET) | ((length - 1) << MCR74_LEN_OFFSET) | 0xf);
 
 	ret = 1;
 	writel(0xFC600309, 0x1E6E0000);
 	while ((Testcounter > PassCnt) || (Testcounter == 0)) {
 		clrsetbits_le32(0x1E6E0074, MCR74_BLK_LEN_MASK,
-				(block << MCR74_BLK_OFFSET) | (length << MCR74_LEN_OFFSET));
+				(block << MCR74_BLK_OFFSET) | ((length - 1) << MCR74_LEN_OFFSET));
 
 		if (!MMCTest()) {
 			printf("FAIL %d/%ld (fail DQ 0x%08x)\n", PassCnt,

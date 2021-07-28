@@ -38,9 +38,9 @@ __weak int board_init(void)
 	return 0;
 }
 
-#ifndef CONFIG_RAM
 #define SDMC_CONFIG_VRAM_GET(x)		((x >> 2) & 0x3)
 #define SDMC_CONFIG_MEM_GET(x)		(x & 0x3)
+#define SDMC_CONFIG_ECC_STATUS_GET(x)	((x) & BIT(7))
 
 static const u32 ast2500_dram_table[] = {
 	0x08000000,	//128MB
@@ -74,7 +74,21 @@ ast_sdmc_get_vram_size(void)
 	u32 size_conf = SDMC_CONFIG_VRAM_GET(readl(0x1e6e0004));
 	return aspeed_vram_table[size_conf];
 }
-#endif
+
+static bool ast_sdmc_is_ecc_on(void)
+{
+	u32 ecc_status = SDMC_CONFIG_ECC_STATUS_GET(readl(0x1e6e0004));
+
+	return !!ecc_status;
+}
+
+static u32 ast_sdmc_get_ecc_size(void)
+{
+	if (ast_sdmc_is_ecc_on())
+		return readl(0x1e6e0054) + (1 << 20);
+	else
+		return 0;
+}
 
 __weak int dram_init(void)
 {
@@ -99,9 +113,41 @@ __weak int dram_init(void)
 #else
 	u32 vga = ast_sdmc_get_vram_size();
 	u32 dram = ast_sdmc_get_mem_size();
-	gd->ram_size = (dram - vga);
-#endif
+
+#ifdef CONFIG_ARCH_FIXUP_FDT_MEMORY
+	/*
+	 * U-boot will fixup the memory node in kernel's DT.  The ECC redundancy
+	 * is unable to handle now, just report the ECC size as the ram size.
+	 */
+	if (ast_sdmc_is_ecc_on())
+		gd->ram_size = ast_sdmc_get_ecc_size();
+	else
+		gd->ram_size = dram - vga;
+#else
+	/*
+	 * Report the memory size regardless the ECC redundancy, let kernel
+	 * handle the ram paritions
+	 */
+	gd->ram_size = dram - vga;
+#endif /* end of "#ifdef CONFIG_ARCH_FIXUP_FDT_MEMORY" */
+#endif /* end of "#ifdef CONFIG_RAM" */
 	return 0;
+}
+
+void board_add_ram_info(int use_default)
+{
+	u32 act_size = ast_sdmc_get_mem_size() >> 20;
+	u32 vga_rsvd = ast_sdmc_get_vram_size() >> 20;
+	u32 ecc_size = ast_sdmc_get_ecc_size() >> 20;
+	bool ecc_on = ast_sdmc_is_ecc_on();
+
+	printf(" (capacity:%d MiB, VGA:%d MiB, ECC:%s", act_size, vga_rsvd,
+	       ecc_on ? "on" : "off");
+
+	if (ecc_on)
+		printf(", ECC size:%d MiB", ecc_size);
+
+	printf(")");
 }
 
 int arch_early_init_r(void)

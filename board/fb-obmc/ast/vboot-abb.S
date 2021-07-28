@@ -54,7 +54,7 @@ abb_out:
 
 .section .text.vboot_abb
 ENTRY(save_boot_params)
-#if defined(CONFIG_SPL_BUILD)
+#if defined(CONFIG_SPL_BUILD) && !defined(CONFIG_QEMU_BUILD)
 	alter_boot_blocker
 #endif
 	save_start_addr_to_vbs

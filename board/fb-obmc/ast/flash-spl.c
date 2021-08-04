@@ -19,7 +19,14 @@
 
 #define AST_FMC_WRITE_ENABLE 0x800f0000
 
-#if defined(CONFIG_FBAL) || defined(CONFIG_FBEP) || defined(CONFIG_FBY3) || defined(CONFIG_FBCC)
+/* ===================== AST2600 FMC_CEn_CTRL Default ========================*/
+#if defined(CONFIG_ASPEED_AST2600)
+/*
+ *  set to power on default value
+ */
+#define AST_FMC_STATUS_RESET 0x00000400
+/* ===================== AST2500 FMC_CEn_CTRL Default ========================*/
+#elif defined(CONFIG_FBAL) || defined(CONFIG_FBEP) || defined(CONFIG_FBY3) || defined(CONFIG_FBCC)
 /* Workaround slow down SPI clk to 40 Mhz */
 #define AST_FMC_STATUS_RESET 0x000b0d41
 #elif defined(CONFIG_FBSP)
@@ -82,11 +89,15 @@ inline void fmc_reset(u32 ctrl) {
   WRITEREG(ASPEED_FMC_BASE + ctrl, AST_FMC_STATUS_RESET);
 }
 
+#if !defined(CONFIG_ASPEED_AST2600) /* 4B mode enable setup in early board_init*/
 inline void fmc_enable4b(uchar cs) {
   WRITEREG(ASPEED_SCU_BASE + 0x70, READREG(ASPEED_SCU_BASE + 0x70) | 0x10);
   WRITEREG(ASPEED_FMC_BASE + AST_FMC_CE_CONTROL,
     READREG(ASPEED_FMC_BASE + AST_FMC_CE_CONTROL) | (0x01 << cs));
 }
+#else
+#define fmc_enable4b(cs)
+#endif
 
 #if !defined(CONFIG_ASPEED_AST2600) /* AST2600 did not multi-func FMC-CS pins*/
 #define AST_SCU_FUN_PIN_CTRL3	0x88
@@ -279,14 +290,14 @@ int doheap(heaptimer_t timer, uchar cs, bool should_lock) {
     prot |= SPI_SRWD;
   }
 
-  /* Write enable for CSn */
+  /* Try write protect CSn */
   spi_write_enable(timer, base, ctrl);
   spi_status(timer, base, ctrl, true);
 
   spi_write_status(timer, base, ctrl, prot);
   status_set = spi_status(timer, base, ctrl, false);
 
-  /* Write enable for CSn */
+  /* Disable write protection for CSn */
   spi_write_enable(timer, base, ctrl);
   spi_status(timer, base, ctrl, true);
   spi_write_status(timer, base, ctrl, 0x0);
@@ -349,9 +360,11 @@ int ast_fmc_spi_check(bool should_lock) {
   heaptimer_t timer_fp;
   heapstatus_t spi_check;
 
+	u32 ce0_ctrl = readl(ASPEED_FMC_BASE + AST_FMC_CE0_CONTROL);
+	u32 ce1_ctrl = readl(ASPEED_FMC_BASE + AST_FMC_CE1_CONTROL);
+	debug("Before: CE0_CTRL=0x%08X, CE1_CTRL=0x%08X\n", ce0_ctrl, ce1_ctrl);
 #if defined(CONFIG_ASPEED_AST2600)
 	ret = ast2600_start_timer1();
-	return AST_FMC_WP_OFF;
 #else
   ret = dm_timer_init();
 #endif
@@ -384,5 +397,8 @@ int ast_fmc_spi_check(bool should_lock) {
 
 	debug("cs0_status = %d, cs1_status = %d\n", cs0_status, cs1_status);
   /* Return an ERROR indicating PROM status issues. */
+	ce0_ctrl = readl(ASPEED_FMC_BASE + AST_FMC_CE0_CONTROL);
+	ce1_ctrl = readl(ASPEED_FMC_BASE + AST_FMC_CE1_CONTROL);
+	debug("After: CE0_CTRL=0x%08X, CE1_CTRL=0x%08X\n", ce0_ctrl, ce1_ctrl);
   return (cs1_status == AST_FMC_ERROR) ? AST_FMC_ERROR : cs0_status;
 }

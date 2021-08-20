@@ -19,7 +19,7 @@
 
 	aliases {
 		spi0 = &fmc;
-		ethernet1 = &mac1;
+		ethernet1 = &mac3;
 	};
 
 	cpus {

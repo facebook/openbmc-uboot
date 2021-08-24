@@ -32,7 +32,7 @@ abb_clear:
 	ldr	r1, =0
 	str	r1, [r0, #0x0C]   @; stop WDT1
 	ldr	r1, =100000
-	str	r1, [r0, #0x04]   @; stage 1s counter
+	str	r1, [r0, #0x04]   @; stage 100ms counter
 	ldr	r1, =0x4755
 	str	r1, [r0, #0x08]   @; load counter
 	ldr	r1, =0x13

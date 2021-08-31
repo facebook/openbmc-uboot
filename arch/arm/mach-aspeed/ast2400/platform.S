@@ -17,7 +17,7 @@
  *
  * Gary Hsu, <gary_hsu@aspeedtech.com>
  *
- * Release date: 2018.08.02 test release for SDK0.65
+ * Release date: 2016.07.13 formal release for SDK0.62
  *
  * Modified list from v0.23
  * EC1. Modify DQIDLY and DQSI-MCLK2X calibration algorithm
@@ -49,18 +49,7 @@
  * EC1. Modify DDR2 init preliminary size to 1Gbit, and BL=4.
  *
  * Modified list from v0.61
- * EC1. Set for wide screen supporting, 0x1e6e2040[0] = 1
- *
- * Modified list from v0.62
- * EC1. Clear MCR04[10] = 0 before doing DRAM initial
- * EC2. Add USB2.0 port initial
- *
- * Modified list from v0.63
- * EC1. Modify DDR driving on MCR6C from 0x2312 to 0x2323
- * EC2. Reset RNG to fix RNG read 0 issue
- *
- * Modified list from v0.64
- * EC1. Default assign X-DMA engine to VGA memory domain, MCR08[16] = 1.
+ * EC1. Initialize USB2.0 port to Host mode, to fix FB firmware USB initial fail issue.
  *
  * Optional define variable
  * 1. DRAM Speed             //
@@ -180,6 +169,313 @@ PATTERN_TABLE:
     ldr r2, =0x00000800
     .endm
 
+#ifdef CONFIG_YOSEMITE
+/* Use GPIOE[0-3] to select debug console */
+.macro console_bmc
+ldr r0, =0x1e780024
+ldr r1, [r0]
+orr r1, r1, #0xF
+str r1, [r0]
+
+ldr r0, =0x1e780020
+ldr r1, [r0]
+and r1, r1, #0xFFFFFFF0
+orr r1, r1, #0xC
+str r1, [r0]
+.endm
+
+.macro console_slot1
+ldr r0, =0x1e780024
+ldr r1, [r0]
+orr r1, r1, #0xF
+str r1, [r0]
+
+ldr r0, =0x1e780020
+ldr r1, [r0]
+and r1, r1, #0xFFFFFFF0
+orr r1, r1, #0x1
+str r1, [r0]
+.endm
+
+.macro console_slot2
+ldr r0, =0x1e780024
+ldr r1, [r0]
+orr r1, r1, #0xF
+str r1, [r0]
+
+ldr r0, =0x1e780020
+ldr r1, [r0]
+and r1, r1, #0xFFFFFFF0
+orr r1, r1, #0x0
+str r1, [r0]
+.endm
+
+.macro console_slot3
+ldr r0, =0x1e780024
+ldr r1, [r0]
+orr r1, r1, #0xF
+str r1, [r0]
+
+ldr r0, =0x1e780020
+ldr r1, [r0]
+and r1, r1, #0xFFFFFFF0
+orr r1, r1, #0x3
+str r1, [r0]
+.endm
+
+.macro console_slot4
+ldr r0, =0x1e780024
+ldr r1, [r0]
+orr r1, r1, #0xF
+str r1, [r0]
+
+ldr r0, =0x1e780020
+ldr r1, [r0]
+and r1, r1, #0xFFFFFFF0
+orr r1, r1, #0x2
+str r1, [r0]
+.endm
+
+.macro console_sel
+
+  // Disable SoL UARTs[1-4]
+  ldr r0, =0x1e6e2080
+  ldr r1, [r0]
+  ldr r2, =0xBFBFFFFF
+  and r1, r1, r2
+  str r1, [r0]
+
+  ldr r0, =0x1e6e2084
+  ldr r1, [r0]
+  and r1, r1, r2
+  str r1, [r0]
+  // Enable GPIOE[0-3] Tolerant
+  ldr r0, =0x1e78003c
+  ldr r1, [r0]
+  orr r1, r1, #0xF
+  str r1, [r0]
+
+  // Read debug card present
+  ldr r2, =0x1e780080
+  ldr r0, [r2]
+  and r0, r0, #0x00000200
+  ldr r1, =0x0200
+  cmp r0, r1
+  bne dbg_card_pres\@
+  console_bmc
+  b case_end\@
+
+dbg_card_pres\@:
+  // Read key position
+  ldr r2, =0x1e780080
+  ldr r0, [r2]
+  bic r0, r0, #0xFFFFC3FF
+  //Test for position#1
+  ldr r1, =0x0000
+  cmp r0, r1
+  bne case_pos2\@
+  console_slot1
+  b case_end\@
+case_pos2\@:
+  //Test for position#2
+  ldr r1, =0x0400
+  cmp r0, r1
+  bne case_pos3\@
+  console_slot2
+  b case_end\@
+case_pos3\@:
+  //Test for position#3
+  ldr r1, =0x0800
+  cmp r0, r1
+  bne case_pos4\@
+  console_slot3
+  b case_end\@
+case_pos4\@:
+  //Test for position#4
+  ldr r1, =0x0c00
+  cmp r0, r1
+  bne case_pos5\@
+  console_slot4
+  b case_end\@
+case_pos5\@:
+  //Test for position#5
+  ldr r1, =0x1000
+  cmp r0, r1
+  bne case_pos6\@
+  console_bmc
+  b case_end\@
+case_pos6\@:
+  //Test for position#6
+  ldr r1, =0x1400
+  cmp r0, r1
+  bne case_pos7\@
+  console_slot1
+  b case_end\@
+case_pos7\@:
+  //Test for position#7
+  ldr r1, =0x1800
+  cmp r0, r1
+  bne case_pos8\@
+  console_slot2
+  b case_end\@
+case_pos8\@:
+  //Test for position#8
+  ldr r1, =0x1c00
+  cmp r0, r1
+  bne case_pos9\@
+  console_slot3
+  b case_end\@
+case_pos9\@:
+  //Test for position#9
+  ldr r1, =0x2000
+  cmp r0, r1
+  bne case_pos10\@
+  console_slot4
+  b case_end\@
+case_pos10\@:
+  //Test for position#10
+  ldr r1, =0x2400
+  cmp r0, r1
+  bne case_end\@
+  console_bmc
+  b case_end\@
+case_end\@:
+.endm
+
+.macro heartbeat_led_on
+  /* Select GPIOQ7 for Heartbeat LED instead of USB Host Port H */
+  ldr r0, =0x1e6e2090
+  ldr r1, [r0]
+  ldr r2, =0xEFFFFFFF
+  and r1, r1, r2
+  str r1, [r0]
+
+  ldr r0, =0x1e780084
+  ldr r1, [r0]
+  ldr r2, =0x80
+  orr r1, r1, r2
+  str r1, [r0]
+
+  ldr r0, =0x1e780080
+  ldr r1, [r0]
+  ldr r2, =0xffffff7f
+  and r1, r1, r2
+  str r1, [r0]
+.endm
+
+.macro pwr_leds_on
+  /* Enable GPIOM0..4 for PWRx_LED */
+  ldr r0, =0x1e6e2084
+  ldr r1, [r0]
+  ldr r2, =0x0F000000
+  orr r1, r1, r2
+  str r1, [r0]
+
+  ldr r0, =0x1e6e2090
+  ldr r1, [r0]
+  ldr r2, =0xffffffcf
+  and r1, r1, r2
+  str r1, [r0]
+
+  ldr r0, =0x1e78007c
+  ldr r1, [r0]
+  ldr r2, =0x0F
+  orr r1, r1, r2
+  str r1, [r0]
+
+  ldr r0, =0x1e780078
+  ldr r1, [r0]
+  ldr r2, =0xfffffff0
+  and r1, r1, r2
+  str r1, [r0]
+.endm
+#endif
+
+    .macro enable_other_uarts
+    /* SCU84: Multi-function Pin Control 1, for UART1 and UART2 */
+    ldr   r0, =0x1e6e2084
+    ldr   r1, [r0]
+#ifdef CONFIG_ASPEED_UART1_ENABLE
+    ldr   r2, =0x00c00000                        @ Enable UART1 TXD and RXD
+    orr   r1, r1, r2
+#endif
+#ifdef CONFIG_ASPEED_UART2_ENABLE
+    ldr   r2, =0xc0000000                        @ Enable UART2 TXD and RXD
+    orr   r1, r1, r2
+#endif
+    str   r1, [r0]
+
+    /* SCU80: Multi-function Pin Control 1, for UART3 and UART4 */
+    ldr   r0, =0x1e6e2080
+    ldr   r1, [r0]
+#ifdef CONFIG_ASPEED_UART3_ENABLE
+    ldr   r2, =0x00c00000
+    orr   r1, r1, r2                             @ Enable UART3 TXD and RXD
+#endif
+#ifdef CONFIG_ASPEED_UART4_ENABLE
+    ldr   r2, =0xc0000000
+    orr   r1, r1, r2                             @ Enable UART4 TXD and RXD
+#endif
+    str   r1, [r0]
+
+    /* HICR9, IO6 mapping and UART1-4 source */
+    ldr   r0, =0x1e789098                        @ HICR9
+    ldr   r1, [r0]
+#ifdef CONFIG_ASPEED_UART5_MAP_IO6
+    ldr   r2, =#0x400                             @ UART5 to IO6
+    orr   r1, r1, r2
+#endif
+#ifdef CONFIG_ASPEED_UART1_BMC
+    ldr   r2, =#0xffffffef                        @ UART1 reset from BMC
+    and   r1, r1, r2
+#endif
+#ifdef CONFIG_ASPEED_UART2_BMC
+    ldr   r2, =#0xffffffdf                        @ UART2 reset from BMC
+    and   r1, r1, r2
+#endif
+    str   r1, [r0]
+    .endm
+
+    .macro uart_console_setup
+    enable_other_uarts
+    /* setup UART console */
+    ldr   r0, =CONFIG_ASPEED_COM_LCR
+    mov   r1, #0x83
+    str   r1, [r0]
+
+    ldr   r0, =0x1e6e202c
+    ldr   r2, [r0]
+    mov   r2, r2, lsr #12
+    tst   r2, #0x01
+    ldr   r0, =CONFIG_ASPEED_COM
+#if CONFIG_BAUDRATE == 115200
+    moveq r1, #0x0D                              @ Baudrate 115200
+    movne r1, #0x01                              @ Baudrate 115200, div13
+#elif CONFIG_BAUDRATE == 57600
+    moveq r1, #0x1A                              @ Baudrate 57600
+    movne r1, #0x02                              @ Baudrate 57600, div13
+#elif CONFIG_BAUDRATE == 38400
+    moveq r1, #0x27                              @ Baudrate 38400
+    movne r1, #0x03                              @ Baudrate 38400 , div13
+#elif CONFIG_BAUDRATE == 9600
+    moveq r1, #0x9c                              @ Baudrate 9600
+    movne r1, #0x0C                              @ Baudrate 9600 , div13
+#endif
+    str   r1, [r0]
+
+    ldr   r0, =CONFIG_ASPEED_COM_IER
+    mov   r1, #0x00
+    str   r1, [r0]
+
+    ldr   r0, =CONFIG_ASPEED_COM_LCR
+    mov   r1, #0x03
+    str   r1, [r0]
+
+    ldr   r0, =CONFIG_ASPEED_COM_IIR
+    mov   r1, #0x07
+    str   r1, [r0]
+    .endm
+
 /******************************************************************************
  Calibration Macro End
  ******************************************************************************/
@@ -202,7 +498,18 @@ LPC_Patch_E:
 .globl lowlevel_init
 lowlevel_init:
 
+/*
+ * Set Clock source of WDT2 as 1MHz.
+ */
+    ldr r0, =0x1e78502c
+    ldr r1, [r0]
+    orr r1, r1, #0x10
+    str r1, [r0]
+
+
 init_dram:
+    /* save lr */
+    mov ip, lr
 /* Test - DRAM initial time */
     ldr r0, =0x1e782044
     ldr r1, =0xFFFFFFFF
@@ -227,15 +534,11 @@ init_dram:
     orr r1, r1, #0x80
     str r1, [r0]
 
-    /* Configure USB ports to the correct pin state */
-    ldr   r0, =0x1e6e200c                        @ enable portA clock
-    ldr   r2, =0x00004000
-    ldr   r1, [r0]
-    orr   r1, r1, r2
-    str   r1, [r0]
-    ldr   r0, =0x1e6e2090                        @ set USB2.0 port as host mode
-    ldr   r1, =0x2000A000
-    str   r1, [r0]
+    ldr r0, =0x1e6e2090                          @ set USB2.0 port as Host mode
+    ldr r2, =0x20000000
+    ldr r1, [r0]
+    orr r1, r1, r2
+    str r1, [r0]
 
     /* Fix LPC lock issue for AST2300 */
     ldr r0, =0x1e6e207c                          @ Check AST2300
@@ -358,37 +661,35 @@ set_MPLL:
     and r1, r2, r1
     str r1, [r0]
 
-/* Debug - UART console message */
-    ldr r0, =0x1e78400c
-    mov r1, #0x83
+/* Yosemite Platform specific Initialization */
+#ifdef CONFIG_YOSEMITE
+/*
+ * Disable WDT2 before the 2nd SPI flash is tried
+ * TODO: Need to detect booting from 2nd flash and recover
+ */
+    ldr r0, =0x1e78502c
+    ldr r1, [r0]
+    ldr r2, =0xFFFFFFFE
+    and r1, r1, r2
     str r1, [r0]
 
-    ldr r0, =0x1e6e202c
-    ldr r2, [r0]
-    mov r2, r2, lsr #12
-    tst r2, #0x01
-    ldr r0, =0x1e784000
-    moveq r1, #0x0D                              @ Baudrate 115200
-    movne r1, #0x01                              @ Baudrate 115200, div13
-#if defined(CONFIG_DRAM_UART_38400)
-    moveq r1, #0x27                              @ Baudrate 38400
-    movne r1, #0x03                              @ Baudrate 38400 , div13
+// Increase Fan speed to 70% PWM
+    ldr r0, =0x1e786008
+    ldr r1, =0x43004300                          @ Duty cycle for 70% PWM
+    str r1, [r0]
+
+    /* Heartbeat and PWR LED to indicate power ON during boot */
+    heartbeat_led_on
+    pwr_leds_on
+
+    console_sel
 #endif
-    str r1, [r0]
 
-    ldr r0, =0x1e784004
-    mov r1, #0x00
-    str r1, [r0]
+/* Debug - UART console message */
 
-    ldr r0, =0x1e78400c
-    mov r1, #0x03
-    str r1, [r0]
+    uart_console_setup
 
-    ldr r0, =0x1e784008
-    mov r1, #0x07
-    str r1, [r0]
-
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x0D                                @ '\r'
     str r1, [r0]
     mov r1, #0x0A                                @ '\n'
@@ -421,10 +722,6 @@ set_MPLL:
     str r1, [r0]
 /* Debug - UART console message */
 
-    ldr r0, =0x1e6e2074                          @ Reset Randon Number Generator
-    mov r1, #0x01
-    str r1, [r0]
-
     /* Delay about 100us */
     ldr r0, =0x1e782030                          @ Init Timer3 Control
     ldr r1, [r0]
@@ -439,10 +736,6 @@ delay_0:
     clear_delay_timer
     /* end delay 100us */
 
-    ldr r0, =0x1e6e2074                          @ Recover Randon Number Generator
-    mov r1, #0x0E
-    str r1, [r0]
-
 /******************************************************************************
  Init DRAM common registers
  ******************************************************************************/
@@ -452,8 +745,6 @@ delay_0:
 
     /* Reset MMC */
     ldr r1, =0x00000000
-    ldr r0, =0x1e6e0004
-    str r1, [r0]
     ldr r0, =0x1e6e0034
     str r1, [r0]
     ldr r0, =0x1e6e0018
@@ -486,7 +777,7 @@ delay_1:
     str r1, [r0]
 
     ldr r0, =0x1e6e0008
-    ldr r1, =0x0092040f                          /* VGA : remember to clear MCR04[10] = 0 */
+    ldr r1, =0x0090040f                          /* VGA */
     str r1, [r0]
 
     ldr r0, =0x1e6e0018
@@ -610,7 +901,7 @@ delay_2:
  ******************************************************************************/
 ddr3_init:
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x33                                @ '3'
     str r1, [r0]
     mov r1, #0x0D                                @ '\r'
@@ -657,9 +948,12 @@ ddr3_init:
     mov r2, r2, lsr #10
 
     ldr r0, =0x1e6e006c                          @ REG_IOZ
-    ldr r1, =0x00002323                          @ 408 MHz
+    ldr r1, =0x00002312                          @ 408 MHz
 #if defined(CONFIG_DRAM_336)
-    ldr r1, =0x00002323
+    ldr r1, =0x00002312
+#endif
+#if defined(CONFIG_YOSEMITE)
+    ldr r1, =0x00002310                          @ Crossing Voltage Criterion
 #endif
     tst r2, #0x01
     moveq r1, r1, lsr #8
@@ -799,7 +1093,7 @@ delay3_4:
  ******************************************************************************/
 ddr2_init:
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x32                                @ '2'
     str r1, [r0]
     mov r1, #0x0D                                @ '\r'
@@ -809,7 +1103,7 @@ ddr2_init:
 /* Debug - UART console message */
 
     ldr r0, =0x1e6e0004
-    ldr r1, =0x00000521                          @ Default set to 1Gbit
+    ldr r1, =0x00000510                          @ Default set to 512Mbit
     str r1, [r0]
 
     ldr r0, =0x1e6e0010                          @ REG_AC1
@@ -842,9 +1136,12 @@ ddr2_init:
     mov r2, r2, lsr #10
 
     ldr r0, =0x1e6e006c                          @ REG_IOZ
-    ldr r1, =0x00002323                          @ 408 MHz
+    ldr r1, =0x00002312                          @ 408 MHz
 #if defined(CONFIG_DRAM_336)
-    ldr r1, =0x00002323
+    ldr r1, =0x00002312
+#endif
+#if defined(CONFIG_YOSEMITE)
+    ldr r1, =0x00002310                          @ Crossing Voltage Criterion
 #endif
     tst r2, #0x01
     moveq r1, r1, lsr #8
@@ -1451,7 +1748,7 @@ init_sram_start3:
  *****************************************************************************/
 CBR0_START:
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x43                                @ 'C'
     str r1, [r0]
     mov r1, #0x42                                @ 'B'
@@ -1489,7 +1786,7 @@ cbr0_next_dqidly:
     bgt   CBR0_END
 
 /* Debug - UART console message */
-    ldr   r0, =0x1e784000
+    ldr   r0, =CONFIG_ASPEED_COM
     and   r1, r8, #0x07
     add   r1, r1, #0x30                          @ '0-7'
     str   r1, [r0]
@@ -1811,7 +2108,7 @@ delay_5:
  *****************************************************************************/
 CBR1_START:
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x0D                                @ '\r'
     str r1, [r0]
     mov r1, #0x0A                                @ '\n'
@@ -2092,7 +2389,7 @@ cbr1_set_result_end:
 
 CBR3_START:
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x33                                @ '3'
     str r1, [r0]
 /* Debug - UART console message */
@@ -2311,7 +2608,7 @@ CBR3_END:
  *****************************************************************************/
 CBR4_START:
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x34                                @ '4'
     str r1, [r0]
 /* Debug - UART console message */
@@ -2572,11 +2869,11 @@ check_dram_size_end:
  Version Number
  *****************************************************************************/
     ldr   r0, =0x1e7200a8
-    ldr   r1, =0x20180802                        @ released date
+    ldr   r1, =0x20160713                        @ released date
     str   r1, [r0]
 
     add   r0, r0, #4
-    ldr   r1, =0x00000065                        @ released SDK version
+    ldr   r1, =0x00000062                        @ released SDK version
     str   r1, [r0]
 
 /******************************************************************************
@@ -2587,11 +2884,11 @@ set_scratch:
     /*Set Scratch register Bit 6 after ddr initial finished */
     ldr r0, =0x1e6e2040
     ldr r1, [r0]
-    orr r1, r1, #0x41
+    orr r1, r1, #0x40
     str r1, [r0]
 
 /* Debug - UART console message */
-    ldr r0, =0x1e784000
+    ldr r0, =CONFIG_ASPEED_COM
     mov r1, #0x44                                @ 'D'
     str r1, [r0]
     mov r1, #0x6F                                @ 'o'
@@ -2709,14 +3006,75 @@ platform_exit2:
 .LTORG
 
 platform_exit:
+/*
+ * Fix for enabling BMC reset without hang using external reset pulse
+ * Need to disable WDT2 without which the reset will hang
+ */
+#ifdef CONFIG_YOSEMITE
+    ldr r0, =0x1e78502c
+    ldr r1, [r0]
+    ldr r2, =0xFFFFFFFE
+    and r1, r1, r2
+    str r1, [r0]
+
+// Increase Fan speed to 70% PWM
+    ldr r0, =0x1e786008
+    ldr r1, =0x43004300                          @ Duty cycle for 70% PWM
+    str r1, [r0]
+
+    /* Heartbeat and PWR LED to indicate power ON during boot */
+    heartbeat_led_on
+    pwr_leds_on
+
+    console_sel
+#endif
+
 #ifdef      CONFIG_DRAM_ECC
     ldr r0, =0x1e6e0004
     ldr r1, [r0]
     orr r1, r1, #0x80
     str r1, [r0]
 
-    ldr r0, =0x1e6e0054
-    ldr r1, =0x05000000                          /* ECC protected memory size, default set at 80M   */
+    /* get the DRAM size */
+    and   r1, r1, #0x3
+    cmp   r1, #0x3
+    moveq r2, #0x20000000                        @ 512GB DRAM
+    beq   get_dram_size_done
+    cmp   r1, #0x2
+    moveq r2, #0x10000000                        @ 256MB DRAM
+    beq   get_dram_size_done
+    cmp   r1, #0x1
+    moveq r2, #0x08000000                        @ 128MB DRAM
+    beq   get_dram_size_done
+    mov   r2, #0x04000000                        @  64MB DRAM
+get_dram_size_done:
+
+    /* get VGA size */
+    ldr   r0, =0x1e6e2070
+    ldr   r1, [r0]
+    and   r1, r1, #0xc
+    cmp   r1, #0xc
+    moveq r3, #0x04000000                        @ 64MB VGA
+    beq   get_vga_size_done
+    cmp   r1, #0x8
+    moveq r3, #0x02000000                        @ 32MB VGA
+    beq   get_vga_size_done
+    cmp   r1, #0x4
+    moveq r3, #0x01000000                        @ 16MB VGA
+    beq   get_vga_size_done
+    mov   r3, #0x00800000                        @  8MB VGA
+get_vga_size_done:
+
+    /*
+     * Calculate ECC memory size
+     * r2: total memory size
+     * r3: total vga size
+     * ECC memory size: r2 - r3 - (r2 - r3) / 8  (1/8) is required for ECC
+     */
+    ldr r0, =0x1e6e0054                        @ ECC protected memory size
+    sub r2, r2, r3
+    mov r3, r2, lsr #3
+    sub r1, r2, r3
     str r1, [r0]
 
     ldr r0, =0x1e6e007C
@@ -2758,13 +3116,13 @@ ECC_Init_Flag:
     and r1, r1, r2
     orr r1, r1, #0x08
     str r1, [r0]
-#if 0
+
     ldr r0, =0x1e6e2004
     ldr r1, [r0]
     ldr r2, =0xFFBFFFFF                          @ Enable JTAG Master, solve ARM stucked by JTAG issue
     and r1, r1, r2
     str r1, [r0]
-#endif
+
     ldr r0, =0x1e6e2048                          @ Set MAC interface delay timing
     ldr r1, =0x2255
     str r1, [r0]
@@ -3116,10 +3474,8 @@ spi_cbr_end:
     str r1, [r0]
 
 platform_exit4:
-
-    ldr   r0, =0x1e6e2090                        @ set USB2.0 port as Device mode
-    ldr   r1, =0x0000A000
-    str   r1, [r0]
+    /* restore lr */
+    mov lr, ip
 
     /* back to arch calling code */
     mov pc, lr

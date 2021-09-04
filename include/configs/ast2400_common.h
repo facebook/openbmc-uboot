@@ -15,13 +15,6 @@
  * High Level Configuration Options
  * (easy to change)
  */
-#define CONFIG_ARM926EJS
-#define	CONFIG_ASPEED
-#define CONFIG_AST2400
-
-#define CONFIG_ARCH_ASPEED
-#define CONFIG_ARCH_AST2400
-
 #define CONFIG_MISC_INIT_R
 
 /*
@@ -31,6 +24,9 @@
 #define CONFIG_SYS_DCACHE_OFF
 
 #include <asm/arch/platform.h>
+/* Temporary used by legacy platform.S */
+#define AST_UART0_BASE		0x1E784000 /* UART5 */
+
 /*
  * Flash type (mutex):
  *   CONFIG_SYS_FLASH_CFI
@@ -59,7 +55,6 @@
  *  CE1 = 0x24000000 - 0x25FFFFFF (32MB)
  *  CE2 = 0x26000000 - 0x27FFFFFF (32MB)
  *  CE3 = 0x28000000 - 0x29FFFFFF (32MB)
- ONFIG_SYS_TEXT_BASEㄥ
  */
 #define CONFIG_FLASH_AST2300
 
@@ -149,7 +144,6 @@
 /*
  * Additional flash configuration
  */
-#define CONFIG_SYS_TEXT_BASE		0x00000000
 #ifdef CONFIG_2SPIFLASH
 #define CONFIG_SYS_FLASH_BASE           PHYS_FLASH_1
 #define CONFIG_FLASH_BANKS_LIST         { PHYS_FLASH_1, PHYS_FLASH_2 }
@@ -167,9 +161,6 @@
 #define CONFIG_SYS_FLASH_WRITE_TOUT	(20*CONFIG_SYS_HZ) 	/* Timeout for Flash Write */
 #define CONFIG_SYS_MONITOR_BASE	CONFIG_SYS_TEXT_BASE
 
-#define __LITTLE_ENDIAN			1
-#define __BYTE_ORDER __LITTLE_ENDIAN
-#define __LITTLE_ENDIAN_BITFIELD
 
 /*
  * Miscellaneous configurable options
@@ -200,7 +191,9 @@
  */
 #define CONFIG_SYS_NS16550_SERIAL
 #define CONFIG_SYS_NS16550_MEM32
+/* use DM_SERIAL
 #define CONFIG_SYS_NS16550_REG_SIZE -4
+*/
 #define CONFIG_SYS_NS16550_CLK		24000000
 #define CONFIG_SYS_BAUDRATE_TABLE	{ 9600, 19200, 38400, 57600, 115200 }
 #define CONFIG_ASPEED_COM_IER (CONFIG_ASPEED_COM + 0x4)
@@ -240,7 +233,6 @@
 /*
  * NIC configuration
  */
-#define CONFIG_ASPEEDNIC
 #define CONFIG_NET_MULTI
 
 /*

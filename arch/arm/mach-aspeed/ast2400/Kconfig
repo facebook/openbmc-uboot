@@ -15,8 +15,13 @@ config TARGET_EVB_AST2400
 	  It has 512M of RAM, 32M of SPI flash, two Ethernet ports,
 	  4 Serial ports, 4 USB ports, VGA port, PCIe, SD card slot,
 	  20 pin JTAG, pinouts for 14 I2Cs, 3 SPIs and eSPI, 8 PWMs.
+
+config TARGET_FB_AST_GEN_4
+	bool "Facebook ast24xx(ast1250) based platform"
+
 endchoice
 
 source "board/aspeed/evb_ast2400/Kconfig"
+source "board/fb-obmc/Kconfig"
 
 endif

@@ -83,7 +83,7 @@ int pfr_checkpoint(uint cmd) {
 }
 
 /*======================= Dual Boot Watchdog setup ===========================*/
-#if defined(CONFIG_ASPEED_AST2500)
+#if defined(CONFIG_ASPEED_AST2500) || defined(CONFIG_ASPEED_AST2400)
 int dual_boot_watchdog_init(uint32_t timeout_sec)
 {
 	struct udevice *wdt;
@@ -109,7 +109,7 @@ int dual_boot_watchdog_init(uint32_t timeout_sec)
 	printf("Watchdog: %us\n", timeout_sec);
 	return 0;
 }
-#endif /* CONFIG_ASPEED_AST2500 */
+#endif /* CONFIG_ASPEED_AST2500 or CONFIG_ASPEED_AST2400 */
 
 
 #if defined(CONFIG_ASPEED_AST2600)

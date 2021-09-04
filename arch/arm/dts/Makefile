@@ -696,6 +696,9 @@ dtb-$(CONFIG_TARGET_FACEBOOK_ELBERT) += \
 dtb-$(CONFIG_TARGET_FACEBOOK_FUJI) += \
 	aspeed-bmc-facebook-fuji.dtb
 
+dtb-$(CONFIG_TARGET_FB_AST_GEN_4) += \
+	aspeed-bmc-facebook-yosemite.dtb
+
 dtb-$(CONFIG_TARGET_FB_AST_GEN_6) += \
 	aspeed-bmc-facebook-cloudripper.dtb \
 	aspeed-bmc-facebook-elbert.dtb \

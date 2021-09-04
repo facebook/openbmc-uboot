@@ -1,0 +1,45 @@
+/dts-v1/;
+
+#include "ast2400-u-boot.dtsi"
+
+/ {
+	model = "Facebook Yosemite V1";
+    compatible = "fbobmc,yosemite1", "aspeed,ast2400";
+
+	chosen {
+		stdout-path = &uart5;
+	};
+
+	aliases {
+		spi0 = &fmc;
+	};
+};
+
+&wdt1 {
+	u-boot,dm-pre-reloc;
+	status = "okay";
+};
+
+&uart5 {
+	u-boot,dm-pre-reloc;
+	status = "okay";
+};
+
+&fmc {
+	status = "okay";
+	flash@0 {
+		compatible = "spi-flash";
+		status = "okay";
+		spi-max-frequency = <50000000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+	};
+	flash@1 {
+		compatible = "spi-flash";
+		status = "okay";
+		spi-max-frequency = <50000000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+	};
+};
+

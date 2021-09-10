@@ -62,12 +62,6 @@ config TARGET_AST2600_INTEL
 	  AST2600-INTEL is an Intel Eagle Stream CRB with
 	  AST2600 as the BMC.
 
-config TARGET_FACEBOOK_GRANDCANYON
-	bool "FACEBOOK-GRANDCANYON"
-	depends on ASPEED_AST2600
-	help
-	  FACEBOOK-GRANDCANYON is BMC board with AST2620 chip.
-
 config TARGET_FACEBOOK_FBY35
         bool "FACEBOOK-FBY35"
         depends on ASPEED_AST2600
@@ -87,7 +81,6 @@ source "board/aspeed/ast2600_intel/Kconfig"
 source "board/aspeed/facebook_cloudripper/Kconfig"
 source "board/aspeed/facebook_elbert/Kconfig"
 source "board/aspeed/facebook_fuji/Kconfig"
-source "board/aspeed/facebook_grandcanyon/Kconfig"
 source "board/aspeed/facebook_fby35/Kconfig"
 source "board/fb-obmc/Kconfig"
 

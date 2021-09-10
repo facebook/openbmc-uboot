@@ -696,9 +696,6 @@ dtb-$(CONFIG_TARGET_FACEBOOK_ELBERT) += \
 dtb-$(CONFIG_TARGET_FACEBOOK_FUJI) += \
 	aspeed-bmc-facebook-fuji.dtb
 
-dtb-$(CONFIG_TARGET_FACEBOOK_GRANDCANYON) += \
-	aspeed-bmc-facebook-grandcanyon.dtb
-
 dtb-$(CONFIG_TARGET_FACEBOOK_FBY35) += \
 	aspeed-bmc-facebook-fby35.dtb
 

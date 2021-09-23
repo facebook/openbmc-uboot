@@ -394,6 +394,61 @@ void vboot_verify_uboot(void *fit, struct vbs *vbs, void *load, int config,
 	printf("\nU-Boot verified.\n");
 }
 
+static void set_and_lock_hwstrap(bool should_lock)
+{
+/* currently only apply to AST2600 verified boot platform */
+#if defined(CONFIG_ASPEED_AST2600)
+
+/* SCU500, SCU504 and SCU508 */
+#define AST2600_HWSTRAP_SET_REG1 0x1E6E2500
+#define AST2600_HWSTRAP_CLEAR_REG1 0x1E6E2504
+#define AST2600_HWSTRAP_LOCK_REG1 0x1E6E2508
+#define AST2600_HWSTRAP_REG1_BIT_BOOT_EMMC (1UL << 2)
+#define AST2600_HWSTRAP_REG1_BIT_BOOT_DBUG_SPI (1UL << 3)
+#define AST2600_HWSTRAP_REG1_BIT_DISABLE_DBG_PATH_SET1 (1UL << 19)
+
+/* SCU510, SCU514 and SCU518 */
+#define AST2600_HWSTRAP_SET_REG2 0x1E6E2510
+#define AST2600_HWSTRAP_CLEAR_REG2 0x1E6E2514
+#define AST2600_HWSTRAP_LOCK_REG2 0x1E6E2518
+#define AST2600_HWSTRAP_REG2_BIT_DISABLE_DBG_PATH_SET2 (1UL << 4)
+#define AST2600_HWSTRAP_REG2_BIT_BOOT_UART (1UL << 8)
+#define AST2600_HWSTRAP_REG2_BIT_ABR_MODE_SINGLE_FLASH (1UL << 12)
+
+	u32 hwstrap_lock_reg1;
+	u32 hwstrap_lock_reg2;
+	if (should_lock) {
+		printf("runtime clear hwstraps:\n");
+		printf(" boot from emmc,debug-spi,uart and middle of flash0\n");
+		setbits_le32(AST2600_HWSTRAP_CLEAR_REG1,
+			     (AST2600_HWSTRAP_REG1_BIT_BOOT_EMMC |
+			      AST2600_HWSTRAP_REG1_BIT_BOOT_DBUG_SPI));
+		setbits_le32(AST2600_HWSTRAP_CLEAR_REG2,
+			     (AST2600_HWSTRAP_REG2_BIT_BOOT_UART |
+			      AST2600_HWSTRAP_REG2_BIT_ABR_MODE_SINGLE_FLASH));
+		printf("runtime set hwstraps: disable debug path\n");
+		setbits_le32(AST2600_HWSTRAP_SET_REG1,
+			     AST2600_HWSTRAP_REG1_BIT_DISABLE_DBG_PATH_SET1);
+		setbits_le32(AST2600_HWSTRAP_SET_REG2,
+			     AST2600_HWSTRAP_REG2_BIT_DISABLE_DBG_PATH_SET2);
+		printf("runtime protect all these hwstraps from changing\n");
+		setbits_le32(AST2600_HWSTRAP_LOCK_REG1,
+			     (AST2600_HWSTRAP_REG1_BIT_BOOT_EMMC |
+			      AST2600_HWSTRAP_REG1_BIT_BOOT_DBUG_SPI |
+			      AST2600_HWSTRAP_REG1_BIT_DISABLE_DBG_PATH_SET1));
+		setbits_le32(AST2600_HWSTRAP_LOCK_REG2,
+			     (AST2600_HWSTRAP_REG2_BIT_DISABLE_DBG_PATH_SET2 |
+			      AST2600_HWSTRAP_REG2_BIT_BOOT_UART |
+			      AST2600_HWSTRAP_REG2_BIT_ABR_MODE_SINGLE_FLASH));
+	}
+	hwstrap_lock_reg1 = readl(AST2600_HWSTRAP_LOCK_REG1);
+	hwstrap_lock_reg2 = readl(AST2600_HWSTRAP_LOCK_REG2);
+	printf("hwstrap write protect SCU508=0x%08x, SCU518=0x%08x\n",
+	       hwstrap_lock_reg1, hwstrap_lock_reg2);
+
+#endif
+}
+
 void vboot_reset(struct vbs *vbs)
 {
 	volatile struct vbs *current = (volatile struct vbs *)AST_SRAM_VBS_BASE;
@@ -430,7 +485,8 @@ void vboot_reset(struct vbs *vbs)
 			should_lock = true;
 		}
 	}
-
+	/* check and lock hwstrap for AST2600 platform */
+	set_and_lock_hwstrap(should_lock);
 	/* Reset FMC SPI PROMs and check WP# for FMC SPI CS0. */
 	int spi_status = ast_fmc_spi_check(should_lock);
 	/* The presence of WP# on FMC SPI CS0 determines hardware enforcement. */
@@ -569,6 +625,10 @@ void board_init_f(ulong bootflag)
 {
 #if defined(CONFIG_ASPEED_AST2600)
 	u32 fmc_ce_ctrl;
+	/* stop the FMCWDT2 as common lowlevel init code leave FMCWDT2 handling
+	 * to application. verified boot don't use FMCWDT2
+	 */
+	writel(0, ASPEED_FMC_WDT2);
 	spl_early_init();
 	preloader_console_init();
 	timer_init();
@@ -606,10 +666,6 @@ void board_init_f(ulong bootflag)
 
 	gd->malloc_base = CONFIG_SYS_SPL_MALLOC_START;
 	gd->malloc_limit = CONFIG_SYS_SPL_MALLOC_SIZE;
-#endif
-#if CONFIG_ELBERTVBOOT
-	printf("STOP FMCWDT2\n");
-	writel(0, 0x1E620064);
 #endif
 	watchdog_init(CONFIG_ASPEED_WATCHDOG_SPL_TIMEOUT);
 

@@ -369,23 +369,6 @@ static int ast2600_start_timer1(void)
 
 	return 0;
 }
-
-#define ASPEED_HWSTRAP_LOCK_REG1 0x1E6E2508
-#define ASPEED_HWSTRAP_LOCK_REG2 0x1E6E2518
-static void ast2600_lock_hwstrap(bool should_lock)
-{
-	u32 hwstrap_lock_reg1;
-	u32 hwstrap_lock_reg2;
-	if (should_lock) {
-		writel(0xFFFFFFFF, ASPEED_HWSTRAP_LOCK_REG1);
-		writel(0xFFFFFFFF, ASPEED_HWSTRAP_LOCK_REG2);
-		printf("write protect all hwstrap bits\n");
-	}
-	hwstrap_lock_reg1 = readl(ASPEED_HWSTRAP_LOCK_REG1);
-	hwstrap_lock_reg2 = readl(ASPEED_HWSTRAP_LOCK_REG2);
-	printf("hwstrap write protect SCU508=0x%08x, SCU518=0x%08x\n",
-		hwstrap_lock_reg1, hwstrap_lock_reg2);
-}
 #endif
 
 int ast_fmc_spi_check(bool should_lock)
@@ -402,7 +385,6 @@ int ast_fmc_spi_check(bool should_lock)
 	u32 ce1_ctrl = readl(ASPEED_FMC_BASE + AST_FMC_CE1_CONTROL);
 	debug("Before: CE0_CTRL=0x%08X, CE1_CTRL=0x%08X\n", ce0_ctrl, ce1_ctrl);
 #if defined(CONFIG_ASPEED_AST2600)
-	ast2600_lock_hwstrap(should_lock);
 	ret = ast2600_start_timer1();
 #else
 	ret = dm_timer_init();

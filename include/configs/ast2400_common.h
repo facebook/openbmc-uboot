@@ -26,6 +26,11 @@
 #include <asm/arch/platform.h>
 /* Temporary used by legacy platform.S */
 #define AST_UART0_BASE		0x1E784000 /* UART5 */
+#define AST_UART1_BASE		0x1E783000 /* UART1 */
+#define AST_UART2_BASE		0x1E78D000 /* UART2 */
+#define AST_UART3_BASE		0x1E78E000 /* UART3 */
+#define AST_UART4_BASE		0x1E78F000 /* UART4 */
+
 
 /*
  * Flash type (mutex):

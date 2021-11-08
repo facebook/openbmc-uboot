@@ -697,6 +697,7 @@ dtb-$(CONFIG_TARGET_FACEBOOK_FUJI) += \
 	aspeed-bmc-facebook-fuji.dtb
 
 dtb-$(CONFIG_TARGET_FB_AST_GEN_4) += \
+	aspeed-bmc-facebook-wedge100.dtb \
 	aspeed-bmc-facebook-yosemite.dtb
 
 dtb-$(CONFIG_TARGET_FB_AST_GEN_6) += \

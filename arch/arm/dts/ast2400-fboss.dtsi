@@ -1,0 +1,40 @@
+/dts-v1/;
+
+#include "ast2400-u-boot.dtsi"
+
+/*
+Currently the DRAM are setup in platform.S
+during lowlevel_init so this dts did not setup DRAM.
+*/
+/ {
+	aliases {
+		spi0 = &fmc;
+	};
+};
+
+&fmc {
+	status = "okay";
+	flash@0 {
+		compatible = "spi-flash";
+		status = "okay";
+		spi-max-frequency = <50000000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+	};
+
+	flash@1 {
+        compatible = "spi-flash";
+        status = "okay";
+        spi-max-frequency = <50000000>;
+        spi-tx-bus-width = <1>;
+        spi-rx-bus-width = <1>;
+    };
+};
+
+
+&wdt2 {
+	status = "okay";
+	boot2nd = <1>;
+};
+
+

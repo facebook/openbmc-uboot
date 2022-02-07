@@ -137,6 +137,11 @@
 #define SDRAM_MIN_SIZE		(256 * SDRAM_SIZE_1MB)
 #define SDRAM_MAX_SIZE		(2048 * SDRAM_SIZE_1MB)
 
+#define DDR4_SPEED_1600     (1600)
+#define DDR4_SPEED_1333     (1333)
+#define DDR4_SPEED_800      (800)
+#define DDR4_SPEED_400      (400)
+
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -214,11 +219,35 @@ static void ast2600_sdramphy_init(u32 *p_tbl, struct dram_info *info)
 	u32 reg_base = (u32)info->phy_setting;
 	u32 addr = p_tbl[0];
 	u32 data;
+	u32 ddr4_phy_train_trfc = 0;
 	int i = 1;
+	int sdram_speed = 0;
 
 	writel(0, &info->regs->phy_ctrl[0]);
 	udelay(10);
 	//writel(SDRAM_PHYCTRL0_NRST, &regs->phy_ctrl[0]);
+
+	// Change DDR speed according to env variable.
+	sdram_speed = env_get_ulong("sdram_speed", 10, 0UL);
+	/* tRFC setting */
+	switch (sdram_speed) {
+		case DDR4_SPEED_1600:
+			ddr4_phy_train_trfc = 0xc30;
+			break;
+		case DDR4_SPEED_1333:
+			ddr4_phy_train_trfc = 0xa25;
+			break;
+		case DDR4_SPEED_800:
+			ddr4_phy_train_trfc = 0x618;
+			break;
+		case DDR4_SPEED_400:
+			ddr4_phy_train_trfc = 0x30c;
+			break;
+		default:
+			// use define setting
+			ddr4_phy_train_trfc = DDR4_PHY_TRAIN_TRFC;
+			break;
+	}
 
 	/* load PHY configuration table into PHY-setting registers */
 	while (1) {
@@ -239,7 +268,7 @@ static void ast2600_sdramphy_init(u32 *p_tbl, struct dram_info *info)
 	}
 
 	data = readl(info->phy_setting + 0x84) & ~GENMASK(16, 0);
-	data |= DDR4_PHY_TRAIN_TRFC;
+	data |= ddr4_phy_train_trfc;
 	writel(data, info->phy_setting + 0x84);
 #endif
 }
@@ -635,8 +664,35 @@ static void ast2600_sdrammc_calc_size(struct dram_info *info)
 	const int write_test_offset = 0x100000;
 	u32 test_pattern = 0xdeadbeef;
 	u32 cap_param = SDRAM_CONF_CAP_2048M;
-	u32 refresh_timing_param = DDR4_TRFC;
+	u32 refresh_timing_param = 0x0;
 	const u32 write_addr_base = CONFIG_SYS_SDRAM_BASE + write_test_offset;
+	int sdram_speed = 0;
+
+#if defined(CONFIG_FPGA_ASPEED) || defined(CONFIG_ASPEED_PALLADIUM)
+	refresh_timing_param = DDR4_TRFC;
+#else
+	// Change DDR speed according to env variable.
+	sdram_speed = env_get_ulong("sdram_speed", 10, 0UL);
+	/* real chip setting */
+	switch (sdram_speed) {
+		case DDR4_SPEED_1600:
+			refresh_timing_param = DDR4_TRFC_1600;
+			break;
+		case DDR4_SPEED_1333:
+			refresh_timing_param = DDR4_TRFC_1333;
+			break;
+		case DDR4_SPEED_800:
+			refresh_timing_param = DDR4_TRFC_800;
+			break;
+		case DDR4_SPEED_400:
+			refresh_timing_param = DDR4_TRFC_400;
+			break;
+		default:
+			// use define setting
+			refresh_timing_param = DDR4_TRFC;
+			break;
+	}
+#endif
 
 	for (ram_size = SDRAM_MAX_SIZE; ram_size > SDRAM_MIN_SIZE;
 	     ram_size >>= 1) {
@@ -883,7 +939,9 @@ static int ast2600_sdrammc_probe(struct udevice *dev)
 	struct ast2600_sdrammc_regs *regs = priv->regs;
 	struct udevice *clk_dev;
 	int ret;
+	int sdram_speed = 0;
 	volatile uint32_t reg;
+	uint32_t scu_handshake_reg = 0x0, scu_mpll_freq_cfg = 0x0, scu_mpll_ext_cfg = 0x0;
 
 	/* find SCU base address from clock device */
 	ret = uclass_get_device_by_driver(UCLASS_CLK, DM_GET_DRIVER(aspeed_scu),
@@ -899,6 +957,42 @@ static int ast2600_sdrammc_probe(struct udevice *dev)
 		return PTR_ERR(priv->scu);
 	}
 
+	// Change DDR speed according to env variable.
+	sdram_speed = env_get_ulong("sdram_speed", 10, 0UL);
+	/* MPLL configuration */
+	switch (sdram_speed) {
+		case DDR4_SPEED_1600:
+			scu_mpll_freq_cfg = SCU_MPLL_FREQ_400M;
+			scu_mpll_ext_cfg = SCU_MPLL_EXT_400M;
+			break;
+		case DDR4_SPEED_1333:
+			scu_mpll_freq_cfg = SCU_MPLL_FREQ_333M;
+			scu_mpll_ext_cfg = SCU_MPLL_EXT_333M;
+			break;
+		case DDR4_SPEED_800:
+			scu_mpll_freq_cfg = SCU_MPLL_FREQ_200M;
+			scu_mpll_ext_cfg = SCU_MPLL_EXT_200M;
+			break;
+		case DDR4_SPEED_400:
+			scu_mpll_freq_cfg = SCU_MPLL_FREQ_100M;
+			scu_mpll_ext_cfg = SCU_MPLL_EXT_100M;
+			break;
+		default:
+			// use define setting
+			scu_mpll_freq_cfg = SCU_MPLL_FREQ_CFG;
+			scu_mpll_ext_cfg = SCU_MPLL_EXT_CFG;
+			break;
+	}
+
+	// Check if frequency need to be update
+	reg = readl(priv->scu + AST_SCU_MPLL);
+	if ((reg & SCU_MPLL_FREQ_MASK) != scu_mpll_freq_cfg) {
+		// Clear SDRAM init ready bit
+		scu_handshake_reg = readl(priv->scu + AST_SCU_HANDSHAKE);
+		scu_handshake_reg &= ~(SCU_SDRAM_INIT_READY_MASK);
+		writel(scu_handshake_reg, priv->scu + AST_SCU_HANDSHAKE);
+	}
+
 	if (readl(priv->scu + AST_SCU_HANDSHAKE) & SCU_SDRAM_INIT_READY_MASK) {
 		printf("already initialized, ");
 		setbits_le32(priv->scu + AST_SCU_HANDSHAKE, SCU_HANDSHAKE_MASK);
@@ -909,9 +1003,9 @@ static int ast2600_sdrammc_probe(struct udevice *dev)
 #ifdef AST2600_SDRAMMC_MANUAL_CLK
 	reg = readl(priv->scu + AST_SCU_MPLL);
 	reg &= ~(BIT(24) | GENMASK(22, 0));
-	reg |= (BIT(25) | BIT(23) | SCU_MPLL_FREQ_CFG);
+	reg |= (BIT(25) | BIT(23) | scu_mpll_freq_cfg);
 	writel(reg, priv->scu + AST_SCU_MPLL);
-	writel(SCU_MPLL_EXT_CFG, priv->scu + AST_SCU_MPLL_EXT);
+	writel(scu_mpll_ext_cfg, priv->scu + AST_SCU_MPLL_EXT);
 	udelay(100);
 	reg &= ~(BIT(25) | BIT(23));
 	writel(reg, priv->scu + AST_SCU_MPLL);

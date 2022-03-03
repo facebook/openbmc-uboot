@@ -64,6 +64,7 @@ CONFIG_FMC_DUAL_BOOT=y
 # failures on AST2620-A2 boards, hence let's disable it explicitly.
 #
 CONFIG_SYS_DCACHE_OFF=y
+CONFIG_ASPEED_DDR4_1333=y
 
 #
 # Enable DRAM ECC

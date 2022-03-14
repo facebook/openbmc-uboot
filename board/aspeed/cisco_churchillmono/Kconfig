@@ -1,0 +1,13 @@
+if TARGET_CISCO_CHURCHILLMONO
+
+config SYS_BOARD
+	default "cisco_churchillmono"
+
+config SYS_VENDOR
+	default "aspeed"
+
+config SYS_CONFIG_NAME
+	string "board configuration name"
+	default "cisco_churchillmono"
+
+endif

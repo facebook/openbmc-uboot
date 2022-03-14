@@ -687,6 +687,9 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
 	ast2600-tacoma.dtb \
 	ast2600-intel.dtb
 
+dtb-$(CONFIG_TARGET_CISCO_CHURCHILLMONO) += \
+	aspeed-bmc-cisco-churchillmono.dtb
+
 dtb-$(CONFIG_TARGET_FACEBOOK_CLOUDRIPPER) += \
 	aspeed-bmc-facebook-cloudripper.dtb
 
@@ -701,6 +704,7 @@ dtb-$(CONFIG_TARGET_FB_AST_GEN_4) += \
 	aspeed-bmc-facebook-yosemite.dtb
 
 dtb-$(CONFIG_TARGET_FB_AST_GEN_6) += \
+	aspeed-bmc-cisco-churchillmono.dtb \
 	aspeed-bmc-facebook-cloudripper.dtb \
 	aspeed-bmc-facebook-elbert.dtb \
 	aspeed-bmc-facebook-elbertvboot.dtb \

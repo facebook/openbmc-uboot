@@ -48,7 +48,7 @@
 
 	phy-mode = "rgmii";
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_mac4link_default &pinctrl_mdio4_default>;
+	pinctrl-0 = <&pinctrl_rgmii4_default &pinctrl_mac4link_default>;
 
 	fixed-link {
 		speed = <1000>;

@@ -9,10 +9,9 @@
 #include <asm/arch/vbs.h>
 #include "tpm-spl.h"
 
-#define RB_NV_PROPERTY_CREATE \
+#define RB_NV_PROPERTY_CREATE                                                  \
 	(TPMA_NV_PPREAD | TPMA_NV_PPWRITE | TPMA_NV_PLATFORMCREATE)
-#define RB_NV_PROPERTY_PROVISIONED \
-	(RB_NV_PROPERTY_CREATE | TPMA_NV_WRITTEN)
+#define RB_NV_PROPERTY_PROVISIONED (RB_NV_PROPERTY_CREATE | TPMA_NV_WRITTEN)
 #define RB_NV_INDEX_HANDLE                                                     \
 	((TPM_HT_NV_INDEX << 24) | (VBS_TPM_ROLLBACK_INDEX & 0xFFFFF))
 
@@ -34,9 +33,9 @@ static inline void set_tpm_error(struct vbs *vbs, uint32_t r)
 	vbs->error_tpm2 = r & 0xFFFF;
 }
 
-static int check_pcr_is_reset(struct udevice* dev, struct vbs *vbs, int pcrid)
+static int check_pcr_is_reset(struct udevice *dev, struct vbs *vbs, int pcrid)
 {
-	uint32_t result, updates, i ;
+	uint32_t result, updates, i;
 	struct tpm_chip_priv *priv;
 	uint8_t pcrval[TPM2_DIGEST_LEN], byte0;
 
@@ -47,10 +46,11 @@ static int check_pcr_is_reset(struct udevice* dev, struct vbs *vbs, int pcrid)
 	priv = dev_get_uclass_priv(dev);
 	if (!priv) {
 		log_err("Cannot get tpm priv\n");
-		return VBS_ERROR_TPM_NOT_ENABLED ;
+		return VBS_ERROR_TPM_NOT_ENABLED;
 	}
 
-	result = tpm2_pcr_read(dev, pcrid, priv->pcr_select_min, pcrval, &updates);
+	result = tpm2_pcr_read(dev, pcrid, priv->pcr_select_min, pcrval,
+			       &updates);
 	if (result) {
 		log_err("Read %d failed (0x%08X)\n", pcrid, result);
 		set_tpm_error(vbs, result);
@@ -59,12 +59,12 @@ static int check_pcr_is_reset(struct udevice* dev, struct vbs *vbs, int pcrid)
 
 	log_debug_buffer(pcrval, sizeof(pcrval));
 	byte0 = pcrval[0];
-	if ( (byte0 != 0) && (byte0 != 0xFF)) {
+	if ((byte0 != 0) && (byte0 != 0xFF)) {
 		log_warning("PCR is not cleared\n");
 		return VBS_ERROR_TPM_RESET_NEEDED;
 	}
 
-	for (i = 1 ; i < sizeof(pcrval); ++i) {
+	for (i = 1; i < sizeof(pcrval); ++i) {
 		if (pcrval[i] != byte0) {
 			log_warning("PCR is not cleared\n");
 			return VBS_ERROR_TPM_RESET_NEEDED;
@@ -80,7 +80,8 @@ bool ast_tpm_pcr_is_open(struct vbs *vbs, uint32_t pcrid)
 	struct udevice *dev;
 
 	result = get_tpm(&dev);
-	if (result) return false;
+	if (result)
+		return false;
 	result = check_pcr_is_reset(dev, vbs, pcrid);
 	return (VBS_SUCCESS == result);
 }
@@ -214,7 +215,7 @@ static u32 ast_tpm_write(struct udevice *dev, const void *data, size_t length)
 }
 
 #pragma GCC push_options
-#pragma GCC optimize ("O0")
+#pragma GCC optimize("O0")
 int ast_tpm_nv_provision(struct vbs *vbs)
 {
 	struct udevice *dev;
@@ -342,7 +343,7 @@ int ast_tpm_try_version(struct vbs *vbs, uint8_t image, uint32_t version,
 
 	ast_tpm_update_vbs_times(&rb, vbs);
 	if (*rb_target == -1) {
-	/**
+		/**
 	* Content is still -1.
 	* Alternatively someone had booted a payload signed at time UINT_MAX.
 	* This is huge issue and will brick the system from future updates.
@@ -399,7 +400,7 @@ int ast_tpm_finish(void)
 	uint32_t result;
 	struct udevice *dev;
 	int err;
-	volatile struct vbs *vbs = (volatile struct vbs*)AST_SRAM_VBS_BASE;
+	volatile struct vbs *vbs = (volatile struct vbs *)AST_SRAM_VBS_BASE;
 
 	err = get_tpm(&dev);
 	if (err) {
@@ -434,13 +435,16 @@ int ast_tpm_get_state(void)
 		return AST_TPM_STATE_FAIL;
 	priv = dev_get_uclass_priv(dev);
 	if (!priv) {
-		return AST_TPM_STATE_FAIL ;
+		return AST_TPM_STATE_FAIL;
 	}
 
 	result = tpm2_pcr_read(dev, 0, priv->pcr_select_min, pcrval, &updates);
 	switch (result) {
-		case TPM2_RC_SUCCESS: return AST_TPM_STATE_GOOD;
-		case TPM2_RC_INITIALIZE: return AST_TPM_STATE_INIT;
-		default: return AST_TPM_STATE_FAIL;
+	case TPM2_RC_SUCCESS:
+		return AST_TPM_STATE_GOOD;
+	case TPM2_RC_INITIALIZE:
+		return AST_TPM_STATE_INIT;
+	default:
+		return AST_TPM_STATE_FAIL;
 	}
 }

@@ -199,6 +199,14 @@
   #define CONFIG_ASPEED_TPM_LOCK
  */
 
+/* SRAM */
+#define CONFIG_SYS_INIT_RAM_ADDR	(ASPEED_SRAM_BASE)
+#define CONFIG_SYS_INIT_RAM_SIZE	(ASPEED_SRAM_SIZE)
+#define SYS_INIT_RAM_END \
+  ( CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_RAM_SIZE)
+
+#define CONFIG_SYS_INIT_SP_ADDR SYS_INIT_RAM_END
+
 #ifdef CONFIG_SPL
 #ifdef CONFIG_SPL_BUILD
 /* This is an SPL build */
@@ -216,14 +224,6 @@
 /* During an SPL build the base is 0x0. */
 // 2019.04 or 07 version this will go to Kconfig
 #define CONFIG_SPL_TEXT_BASE     0x00000000
-
-/* Grow the stack down from 0x6000 to an expected max of 12kB. */
-#define CONFIG_SPL_STACK          (CONFIG_SYS_SRAM_BASE + 0x6000)
-#define CONFIG_SYS_INIT_SP_ADDR   CONFIG_SPL_STACK
-
-/* Establish an 'arena' for heap from 0x1000 - 0x4000, 12k */
-#define CONFIG_SYS_SPL_MALLOC_START (CONFIG_SYS_SRAM_BASE + 0x1000)
-#define CONFIG_SYS_SPL_MALLOC_SIZE  0x3000
 
 /* General SPL build feature includes. */
 #define CONFIG_SPL_LIBGENERIC_SUPPORT

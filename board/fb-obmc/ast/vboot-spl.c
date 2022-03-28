@@ -664,8 +664,10 @@ void board_init_f(ulong bootflag)
 	/* Must set up global data pointers for local device tree. */
 	spl_init();
 
-	gd->malloc_base = CONFIG_SYS_SPL_MALLOC_START;
-	gd->malloc_limit = CONFIG_SYS_SPL_MALLOC_SIZE;
+	void* sp; asm("mov %0, sp" : "=r"(sp) : );
+	debug("gd = %p, sp = %p\n", gd, sp);
+	debug("malloc_base = %lx, malloc_limit = %lx\n",
+		gd->malloc_base, gd->malloc_limit);
 #endif
 	watchdog_init(CONFIG_ASPEED_WATCHDOG_SPL_TIMEOUT);
 

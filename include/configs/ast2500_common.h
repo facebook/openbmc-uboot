@@ -87,10 +87,17 @@
 
 /* additions for new relocation code, must added to all boards */
 #define CONFIG_SYS_SDRAM_BASE     (AST_DRAM_BASE) /* used to be 0x40000000 */
-
+#ifndef CONFIG_SYS_INIT_RAM_ADDR
 #define CONFIG_SYS_INIT_RAM_ADDR    CONFIG_SYS_SDRAM_BASE /*(AST_SRAM_BASE)*/
+#endif
+
+#ifndef CONFIG_SYS_INIT_RAM_SIZE
 #define CONFIG_SYS_INIT_RAM_SIZE    (32*1024)
+#endif
+
+#ifndef CONFIG_SYS_INIT_RAM_END
 #define CONFIG_SYS_INIT_RAM_END     (CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_RAM_SIZE)
+#endif
 
 /*
  * SRAM configuration

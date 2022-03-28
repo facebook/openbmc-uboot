@@ -9,7 +9,7 @@ obj-$(CONFIG_TARGET_FB_AST_GEN_6) += ast-g6.o vboot.o
 endif
 
 ifeq ($(CONFIG_TPM_V2), y)
-obj-$(CONFIG_ASPEED_TPM) += tpm2-spl.o
+obj-$(CONFIG_ASPEED_TPM) += tpm2-spl.o tpm-event.o
 else
 obj-$(CONFIG_ASPEED_TPM) += tpm-spl.o
 endif

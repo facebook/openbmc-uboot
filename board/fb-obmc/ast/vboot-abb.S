@@ -14,7 +14,7 @@
 /* refer to vbs.h for vbs structure and location */
 .macro save_start_addr_to_vbs
 	ldr	r1, =_start
-	ldr	r0, =CONFIG_SYS_INIT_SP_ADDR @;vbs.uboot_exec_address
+	ldr	r0, =0x10015800 @;vbs.uboot_exec_address
 	str	r1, [r0]
 .endm
 

@@ -58,13 +58,16 @@
 #define SYS_INIT_RAM_END \
   ( CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_RAM_SIZE)
 
-/* The Top 2KB is reserved for VBS */
-#define VBOOT_RESERVE_SZ   0x800 // 2KB
+/* The Top 2KB is reserved for VBS and reboot flags */
+#define VBOOT_RESERVE_SZ   (0x800) // 2KB
+/* The next 2KB reserved for TPM event log */
+#define TPM_EVENT_LOG_SRAM_SIZE (0x800) // 2KB
 /*
  * common/board_init.c::board_init_f_alloc_reserve will allocate
  * (SPL)_SYS_MALLOC_F_LEN = 12K for malloc and GD from
- * CONFIG_SYS_INIT_SP_ADDR, and let stack growing down
- * from base of GD.
+ * CONFIG_SYS_INIT_SP_ADDR, and let c-runtime stack growing down
+ * from base of GD. sp only set to CONFIG_SYS_INIT_SP_ADDR
+ * before c-runtime (refer to crt0.S)
  * To reserve space for VBS,
  * CONFIG_SYS_INIT_SP_ADDR=SYS_INIT_RAM_END - VBOOT_RESERVE_SZ
  * CONFIG_SPL_SYS_MALLOC_F_LEN by default equal SYS_MALLOC_F_LEN
@@ -72,7 +75,7 @@
  * need define in config header file
  */
 #define CONFIG_SYS_INIT_SP_ADDR \
-	(SYS_INIT_RAM_END - VBOOT_RESERVE_SZ)
+	(SYS_INIT_RAM_END - VBOOT_RESERVE_SZ - TPM_EVENT_LOG_SRAM_SIZE)
 
 #define SRAM_HEAP_MINI_SIZE     0x3000 // 12KB
 #ifdef CONFIG_SPL_SYS_MALLOC_F_LEN
@@ -82,7 +85,7 @@
 #else
 # define CONFIG_SPL_SYS_MALLOC_F_LEN SRAM_HEAP_MINI_SIZE
 #endif
-# define CONFIG_MALLOC_F_ADDR (CONFIG_SYS_INIT_SP_ADDR - CONFIG_SPL_SYS_MALLOC_F_LEN)
+#define CONFIG_MALLOC_F_ADDR (CONFIG_SYS_INIT_SP_ADDR - CONFIG_SPL_SYS_MALLOC_F_LEN)
 
 /*============= UBoot Common setup ===============*/
 

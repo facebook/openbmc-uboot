@@ -8,6 +8,7 @@
 #include <tpm-v2.h>
 #include <asm/arch/vbs.h>
 #include "tpm-spl.h"
+#include "tpm-event.h"
 
 #define RB_NV_PROPERTY_CREATE                                                  \
 	(TPMA_NV_PPREAD | TPMA_NV_PPWRITE | TPMA_NV_PLATFORMCREATE)
@@ -119,6 +120,7 @@ int ast_tpm_provision(struct vbs *vbs)
 		return VBS_ERROR_TPM_SETUP;
 	}
 
+	reset_tpm_event_log();
 	/* run full selftest */
 	result = tpm2_self_test(dev, TPMI_YES);
 
@@ -270,22 +272,28 @@ int ast_tpm_extend(uint32_t index, unsigned char *data, uint32_t data_len)
 	struct udevice *dev;
 	u32 result;
 	int err;
+	union tpm_event_index eventidx;
 
 	err = get_tpm(&dev);
 	if (err) {
 		return err;
 	}
 
+	eventidx.index = index;
+
 	log_debug("sha256(%d) start\n", data_len);
 	sha256_csum_wd(data, data_len, value, CHUNKSZ_SHA256);
 	log_debug("sha256(%d) done\n", data_len);
 
-	result = tpm2_pcr_extend(dev, index, value);
+	result = tpm2_pcr_extend(dev, eventidx.m_pcrid, value);
 	if (TPM2_RC_SUCCESS != result) {
-		log_err("Extend PCR(%d) failed (0x%08x)\n", index, result);
+		log_err("Extend PCR(%d) failed (0x%08x)\n", eventidx.m_pcrid,
+			result);
 		return -1;
 	}
 
+	/* only log when extension success */
+	log_tpm_event(eventidx, TPM2_ALG_SHA256, value, TPM2_DIGEST_LEN);
 	return 0;
 }
 

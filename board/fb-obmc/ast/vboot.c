@@ -6,6 +6,7 @@
 #include <common.h>
 #include <asm/arch/vbs.h>
 #include "tpm-spl.h"
+#include "tpm-event.h"
 
 
 #ifdef CONFIG_ASPEED_TPM
@@ -41,31 +42,39 @@ static void vboot_uboot_do_measures(volatile struct vbs *vbs)
 {
 	uint8_t *value;
 	int value_len;
+	union tpm_event_index eventidx;
 
 	printf("\n");
 	printf("measure vbs...");
-	ast_tpm_extend(AST_TPM_PCR_VBS, (uint8_t *)vbs, sizeof(struct vbs));
+	SET_EVENT_IDX(eventidx, AST_TPM_PCR_VBS, 0, measure_vbs);
+	ast_tpm_extend(eventidx.index, (uint8_t *)vbs, sizeof(struct vbs));
 	printf("done\n");
 
 	printf("measure OS-Kernel...");
 	value = 0; value_len = 0;
 	vboot_get_image_hash_from_fit(images.fit_hdr_os, images.fit_noffset_os,
 		&value, &value_len);
-	ast_tpm_extend(AST_TPM_PCR_OS, value, value_len);
+	SET_EVENT_IDX(eventidx, AST_TPM_PCR_OS, 0,
+		(vbs->recovery_boot ? measure_recv_os_kernel : measure_os_kernel));
+	ast_tpm_extend(eventidx.index, value, value_len);
 	printf("done\n");
 
 	printf("measure Ramdisk...");
 	value = 0; value_len = 0;
 	vboot_get_image_hash_from_fit(images.fit_hdr_rd, images.fit_noffset_rd,
 		&value, &value_len);
-	ast_tpm_extend(AST_TPM_PCR_OS, value, value_len);
+	SET_EVENT_IDX(eventidx, AST_TPM_PCR_OS, 1,
+		(vbs->recovery_boot ? measure_recv_os_rootfs : measure_os_rootfs));
+	ast_tpm_extend(eventidx.index, value, value_len);
 	printf("done\n");
 
 	printf("measure Fdt...");
 	value = 0; value_len = 0;
 	vboot_get_image_hash_from_fit(images.fit_hdr_fdt, images.fit_noffset_fdt,
 		&value, &value_len);
-	ast_tpm_extend(AST_TPM_PCR_OS, value, value_len);
+	SET_EVENT_IDX(eventidx, AST_TPM_PCR_OS, 2,
+		(vbs->recovery_boot ? measure_recv_os_dtb : measure_os_dtb));
+	ast_tpm_extend(eventidx.index, value, value_len);
 	printf("done\n");
 }
 #endif

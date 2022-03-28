@@ -23,6 +23,7 @@
 #include "flash-spl.h"
 #include "tpm-spl.h"
 #include "util.h"
+#include "tpm-event.h"
 
 /* Size of RW environment parsable by ROM. */
 #define AST_ROM_ENV_MAX 0x200
@@ -149,33 +150,39 @@ static void vboot_status(struct vbs *vbs, u8 t, u8 c)
  */
 static void vboot_spl_do_measures(u8 *uboot, uint32_t uboot_size)
 {
+	union tpm_event_index eventidx;
 	printf("\n");
 
 	printf("measure SPL...");
-	ast_tpm_extend(AST_TPM_PCR_SPL, (unsigned char *)0x0,
+	SET_EVENT_IDX(eventidx, AST_TPM_PCR_SPL, 0, measure_spl);
+	ast_tpm_extend(eventidx.index, (unsigned char *)0x0,
 		       CONFIG_SPL_MAX_FOOTPRINT);
 	printf("done\n");
 
 	printf("measure key-store...");
-	ast_tpm_extend(AST_TPM_PCR_FIT,
+	SET_EVENT_IDX(eventidx, AST_TPM_PCR_FIT, 0, measure_keystore);
+	ast_tpm_extend(eventidx.index,
 		       (unsigned char *)CONFIG_SYS_SPL_FIT_BASE,
 		       AST_MAX_UBOOT_FIT);
 	printf("done\n");
 
 	if (uboot_size) {
 		printf("measure U-Boot...");
-		ast_tpm_extend(AST_TPM_PCR_UBOOT, uboot, uboot_size);
+		SET_EVENT_IDX(eventidx, AST_TPM_PCR_UBOOT, 0, measure_uboot);
+		ast_tpm_extend(eventidx.index, uboot, uboot_size);
 		printf("done\n");
 	} else {
 		printf("measure recovery U-Boot...");
-		ast_tpm_extend(AST_TPM_PCR_UBOOT,
+		SET_EVENT_IDX(eventidx, AST_TPM_PCR_UBOOT, 0, measure_recv_uboot);
+		ast_tpm_extend(eventidx.index,
 			       (unsigned char *)CONFIG_SYS_RECOVERY_BASE,
 			       CONFIG_RECOVERY_UBOOT_SIZE);
 		printf("done\n");
 	}
 
 	printf("measure U-Boot environment...");
-	ast_tpm_extend(AST_TPM_PCR_ENV, (unsigned char *)CONFIG_ENV_ADDR,
+	SET_EVENT_IDX(eventidx, AST_TPM_PCR_ENV, 0, measure_uboot_env);
+	ast_tpm_extend(eventidx.index, (unsigned char *)CONFIG_ENV_ADDR,
 		       CONFIG_ENV_SIZE);
 	printf("done\n");
 }
@@ -678,7 +685,6 @@ void board_init_f(ulong bootflag)
 			(image_entry_noargs_t)CONFIG_SYS_RECOVERY_BASE;
 		image_entry();
 	}
-
 	vboot_load_fit((volatile void *)CONFIG_SYS_SPL_FIT_BASE);
 	hang();
 }

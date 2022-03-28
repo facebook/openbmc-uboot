@@ -9,9 +9,7 @@
 int watchdog_init(u32 timeout_sec);
 int pfr_checkpoint(uint cmd);
 
-#if defined(CONFIG_ASPEED_AST2600)
 void vboot_check_enforce(void);
-#endif
 
 int dual_boot_watchdog_init(uint32_t timeout_sec);
 

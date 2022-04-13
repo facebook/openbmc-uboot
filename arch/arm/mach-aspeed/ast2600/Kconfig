@@ -49,6 +49,12 @@ config TARGET_FACEBOOK_ELBERT
 	help
 	  FACEBOOK-ELBERT is BMC board with AST2600 chip.
 
+config TARGET_FACEBOOK_FBDARWIN
+        bool "FACEBOOK-FBDARWIN"
+        depends on ASPEED_AST2600
+        help
+          FACEBOOK-FBDARWIN is BMC board with AST2600 chip.
+
 config TARGET_FACEBOOK_FUJI
 	bool "FACEBOOK-FUJI"
 	depends on ASPEED_AST2600
@@ -81,6 +87,7 @@ source "board/aspeed/ast2600_intel/Kconfig"
 source "board/aspeed/cisco_churchillmono/Kconfig"
 source "board/aspeed/facebook_cloudripper/Kconfig"
 source "board/aspeed/facebook_elbert/Kconfig"
+source "board/aspeed/facebook_fbdarwin/Kconfig"
 source "board/aspeed/facebook_fuji/Kconfig"
 source "board/fb-obmc/Kconfig"
 

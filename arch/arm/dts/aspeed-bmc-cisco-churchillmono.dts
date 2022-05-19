@@ -33,6 +33,16 @@
 	};
 };
 
+/*
+ * Setting mdio status to "okay" to bring the MDIO controller out of reset.
+ * This is need so that the Marvell GE switch registers can be accessed for monitoring purposes.
+ * For example, to retrieve the ports status (up or down) or the ports statistics.
+ * The Marvell switch registers are accessible through mdio0 (mdio@1e650000).
+ */
+&mdio {
+        status = "okay";
+};
+
 &uart1 {
 	u-boot,dm-pre-reloc;
 	status = "okay";

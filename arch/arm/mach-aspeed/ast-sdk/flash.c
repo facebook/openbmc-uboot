@@ -86,7 +86,7 @@ flash_info_t flash_info[CONFIG_SYS_MAX_FLASH_BANKS];		/* FLASH chips info */
 #define AT25DF161		0x02461F
 #define AT25DF321		0x01471F
 #define GD25Q256		0X1940c8
-
+#define MT25QL01GBBB	0x21ba20
 /* SPI Define */
 #define CS0_CTRL			0x10
 #define CS1_CTRL			0x14
@@ -1185,6 +1185,34 @@ static ulong flash_get_size (const char *id, ulong base, flash_info_t *info)
 			info->size = 0x2000000;
 			info->address32 = 1;
 			break;
+
+		case MT25QL01GBBB:
+			info->sector_count = 2048;
+			info->size = 0x8000000;
+			erase_region_size = 0x10000;
+			info->readcmd = 0x0b;
+			info->dualport = 0;
+			info->dummybyte = 1;
+			info->buffersize = 256;
+			info->address32 = 1;
+			WriteClk = 50;
+			EraseClk = 20;
+			ReadClk  = 50;
+#if	defined(CONFIG_FLASH_SPIx2_Dummy)
+			info->readcmd = 0xbb;
+			info->dualport = 1;
+			info->dummybyte = 1;
+			info->iomode = IOMODEx2_dummy;
+#elif defined(CONFIG_FLASH_SPIx4_Dummy)
+			info->readcmd = 0xeb;
+			info->dummybyte = 3;
+			info->dualport = 0;
+			info->iomode = IOMODEx4_dummy;
+			info->quadport = 1;
+			info->dummydata = 0xaa;
+#endif
+			break;
+
 		default:	/* use JEDEC ID */
 			printf("\t%s Unknown flash ID!\n", id);
 			erase_region_size  = 0x10000;

@@ -17,10 +17,13 @@
 	phy-mode = "rgmii";
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_mac2link_default &pinctrl_mdio2_default>;
-	phy-handle = <&ethphy1>;
+	phy-handle = <&ethphy1 &ethphy2>;
 	#address-cells = <1>;
 	#size-cells = <0>;
 	ethphy1: ethernet-phy@1 {
+		reg = <0>;
+	};
+	ethphy2: ethernet-phy@2 {
 		reg = <13>;
 	};
 };

@@ -1208,6 +1208,79 @@ static void init_CPLD_POWER_ON(void)
 
 #endif
 
+#if defined (CONFIG_FBWEDGE400)
+enum board_id {
+  wedge400_EVT3 = 0x0004,
+  wedge400_DVT1 = 0x0006,
+  wedge400_PVT2 = 0x0007,
+  wedge400_PVT4 = 0x000c,
+  wedge400_MP = 0x000d,
+  wedge400_MP_respin = 0x010e,
+
+  wedge400C_EVT1 = 0x0000,
+  wedge400C_EVT2 = 0x0001,
+  wedge400C_DVT1 = 0x0002,
+  wedge400C_DVT2 = 0x0003,
+  wedge400C_MP_respin = 0x0108,
+};
+
+/*
+ * Wedge400/Wedge400C Board ID GPIO MAP:
+ * low_byte[bit0~bit4] = GPIOG4~GPIOG7
+ * high_byte[bit0~bit1] = GPION6~GPION7
+ * board_id = high_byte+low_byte
+ */
+static uint16_t get_board_id(void)
+{
+  uint8_t board_type=0xff;
+  uint8_t board_version=0xff;
+  uint16_t board_id=0xffff;
+
+  board_version = (__raw_readb(AST_GPIO_BASE + 0x22)>>4);
+  board_type = (__raw_readb(AST_GPIO_BASE + 0x79)>>6);
+  board_id = ((board_type<<8)|board_version);
+
+  return(board_id);
+}
+
+int init_mac_TXRX_delay(void)
+{
+  uint16_t board_id=0xffff;
+  uint8_t mac2_TX_delay = 0;
+  uint8_t mac2_RX_delay = 0;
+
+  board_id = get_board_id();
+  switch(board_id) {
+    case wedge400_MP_respin:
+    case wedge400C_MP_respin:
+      mac2_TX_delay = 6;
+      mac2_RX_delay = 44;
+    break;
+    case wedge400_EVT3:
+    case wedge400_DVT1:
+    case wedge400_PVT2:
+    case wedge400_PVT4:
+    case wedge400_MP:
+    case wedge400C_EVT1:
+    case wedge400C_EVT2:
+    case wedge400C_DVT1:
+    case wedge400C_DVT2:
+      mac2_TX_delay = 8;
+      mac2_RX_delay = 2;
+    break;
+    default:
+      printf("Not supported board id: 0x%04x\n", board_id);
+    break;
+  }
+
+  /* Setup mac2 TX-delay and RX-delay */
+  __raw_writel((0x80000000|(mac2_RX_delay<<18)|(mac2_TX_delay<<6)), AST_SCU_BASE + 0x48);
+
+  return(0);
+}
+
+#endif
+
 int board_init(void)
 {
 #if CONFIG_IS_ENABLED(ASPEED_ENABLE_DUAL_BOOT_WATCHDOG)

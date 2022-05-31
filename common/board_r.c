@@ -57,6 +57,10 @@ DECLARE_GLOBAL_DATA_PTR;
 #define AST_FAN_BASE 0x1E786000
 #endif
 
+#if defined(CONFIG_FBWEDGE400)
+extern int init_mac_TXRX_delay(void);
+#endif
+
 ulong monitor_flash_len;
 
 __weak int board_flash_wp_on(void)
@@ -850,6 +854,11 @@ static init_fnc_t init_sequence_r[] = {
 #if defined(CONFIG_FBTTN)
     init_fan,
 #endif
+
+#if defined(CONFIG_FBWEDGE400)
+	init_mac_TXRX_delay,
+#endif
+
 	run_main_loop,
 
   // TODO: Sometimes after run_main_loop, The registers value may change.

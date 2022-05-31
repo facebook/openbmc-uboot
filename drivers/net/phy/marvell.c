@@ -326,6 +326,8 @@ void m88e1518_phy_writebits(struct phy_device *phydev,
 static int m88e1518_config(struct phy_device *phydev)
 {
 	u16 reg;
+	int pg;
+	int ret;
 
 	/*
 	 * As per Marvell Release Notes - Alaska 88E1510/88E1518/88E1512
@@ -392,13 +394,30 @@ static int m88e1518_config(struct phy_device *phydev)
 		phy_write(phydev, MDIO_DEVAD_NONE, MII_MARVELL_PHY_PAGE, 0);
 	}
 
-	/* soft reset */
-	phy_reset(phydev);
-
-	genphy_config_aneg(phydev);
-	genphy_restart_aneg(phydev);
-
-	return 0;
+	for (pg=MIIM_88E1111_COPPER; pg<=MIIM_88E1111_FIBER; pg++) {
+		printf("Detect the media interface mode: \n");
+		/* soft reset */
+		phy_reset(phydev);
+		phy_write(phydev, MDIO_DEVAD_NONE, MII_MARVELL_PHY_PAGE, pg);
+		genphy_config_aneg(phydev);
+		genphy_restart_aneg(phydev);
+		reg = phy_read(phydev, MDIO_DEVAD_NONE, MII_BMCR);
+		reg |= BMCR_RESET;
+		phy_write(phydev, MDIO_DEVAD_NONE, MII_BMCR, reg);
+		if (genphy_update_link(phydev)) {
+			ret = -1;
+			continue;
+		} else {
+			if (pg == MIIM_88E1111_COPPER){
+				printf("Setup PHY media interface at copper mode\n");
+			} else {
+				printf("Setup PHY media interface at fiber mode\n");
+			}
+			ret = 0;
+			break;
+		}
+	}
+	return ret;
 }
 
 /* Marvell 88E1510 */

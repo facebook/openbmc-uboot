@@ -2,7 +2,6 @@
 /*
  * Copyright (c) 2021 Facebook Inc.
  */
-
 #include <common.h>
 #include <asm/io.h>
 #include <asm/arch/timer.h>
@@ -13,108 +12,99 @@
 #include "ast-g6.h"
 
 DECLARE_GLOBAL_DATA_PTR;
-
-void el_port80_init(void){
-
-  uint32_t value = 0;
-
-  //GPION Settings
-  value  = readl(AST6_GPIO_BASE | 0x7C);
-  value |= 0x0000FF00;  //GPIO N Output
-  writel(value,  AST6_GPIO_BASE | 0x7C);
-
-  //GPIOM/N/O/P Command Source 0
-  value  = readl(AST6_GPIO_BASE | 0x0E0);
-  value |= 1<<8;    //Port GPION[7:0] Command Source 0 = 1 (LPC)
-  writel(value,  AST6_GPIO_BASE | 0x0E0);
-
-  //GPIOM/N/O/P Command Source 1
-  value  = readl(AST6_GPIO_BASE | 0x0E4);
-  value &= ~(1<<8); //Port GPION[7:0] Command Source 1 = 0 (LPC)
-  writel(value,  AST6_GPIO_BASE | 0x0E4);
-
-  //SNPWADR(0x90): LPC Snoop Address Register
-  value  = readl(AST6_LPC_BASE | LPC_SNPWADR);
-  value &= 0xFFFF0000;  //BIT[15:0] - clear;
-  value |= 0x00000080;  //BIT[15:0] - set;
-  writel(value,  AST6_LPC_BASE | LPC_SNPWADR);
-
-  //HICR5(0x80): Host Interface Control Register 5
-  value  = readl(AST6_LPC_BASE | LPC_HICR5);
-  value |= 1;       //Enable snooping address #0
-  value &= ~0xA;
-  writel(value,  AST6_LPC_BASE | LPC_HICR5);
-
-  //HICRB(0x100): Host Interface Control Register B
-  value  = readl(AST6_LPC_BASE | LPC_HICRB);
-  value |= 1<<14;//EnSNP0D: Enable ACCEPT response code for snoop #0 commands, defined in HICR5[0], in eSPI mode.
-  writel(value,  AST6_LPC_BASE | LPC_HICRB);
-
-  writel(0, LPC_PCCR0);
-}
-
-
+//ESPI SETTING
 void el_espi_init(void){
-  uint32_t value=0;
+	uint32_t value=0;
 
-  //SCU514: SCU514: Hardware Strap2 Clear Register (default)
-  value = readl(AST6_SCU_BASE | 0x514);
-  value |= 1<<6; //eSPI Mode
-  writel(value,  AST6_SCU_BASE | 0x514);
+	//SCU514: SCU514: Hardware Strap2 Clear Register (default)
+	//SCU510 [6]:0 eSPI mode
+	setbits_le32(SCU_HW_STRAP2_CLR_REG, BIT(6));
 
-  //SCU434: Multi-function Pin Control #9 (default)
-  value  = readl(AST6_SCU_BASE | 0x434);
-  value |= 0xFF<<16;
-  writel(value,  AST6_SCU_BASE | 0x434);
+	//SCU434: Multi-function Pin Control #9 (default)
+	setbits_le32(SCU_MUTI_FN_PIN_CTRL9, 0xFF<<16);
 
-  //SCU454: Multi-function Pin Control #15
-  value  = readl(AST6_SCU_BASE | 0x454);
-  value &= 0x00FFFFFF;  //Clear BIT[31:24]
-  value |= 0xAA000000;  //BIT[31:24] = LAD3ESPID3~0 Driving Strength
-  writel(value,  AST6_SCU_BASE | 0x454);
+	//SCU454: Multi-function Pin Control #15
+	value  = readl(SCU_MUTI_FN_PIN_CTRL15);
+	value &= 0x00FFFFFF;  //Clear BIT[31:24]
+	value |= 0xAA000000;  //BIT[31:24] = LAD3ESPID3~0 Driving Strength
+	writel(value, SCU_MUTI_FN_PIN_CTRL15);
 
-  //ESPI000: Engine Control
-  value  = readl(AST6_ESPI_BASE);
-  value |= 1<<4;   //OOB Channel Ready.
-  writel(value,  AST6_ESPI_BASE);
+	//ESPI000: Engine Control
+	setbits_le32(AST6_ESPI_BASE, 1<<4);
 }
 
+
+//Super IO Settings
 void el_superio_decoder(uint8_t addr) {
-  uint32_t value=0;
-  //Super IO Settings
-  //SCU514: Hardware Strap2 'Clear' Register
-  value  = 0;
-  value |= 1<<3;   //Enable LPC to decode SuperIO 0x2E/0x4E address
-  writel(value,  AST6_SCU_BASE | 0x514);
+	//Enable LPC to decode SuperIO 0x2E/0x4E address
+	setbits_le32(SCU_HW_STRAP2_CLR_REG, BIT(3));
 
-  //Super IO Settings
-  //SCU510: Hardware Strap2 Register
-  //SuperIO configuration address selection (0 = 0x2E(Default) / 1 = 0x4E)
-  if (addr == 0x4E ) {
-    value  = readl(AST6_SCU_BASE | 0x510);
-    value |= 1<<2; 
-    writel(value,  AST6_SCU_BASE | 0x510);
-  }
+	//SuperIO configuration address selection (0 = 0x2E(Default) / 1 = 0x4E)
+	if ( addr == 0x4E )
+		setbits_le32(SCU_HW_STRAP2_SET_REG, BIT(2));
 }
-
 
 void debugMsg_espi(void){
 
-  uint32_t value = 0;
+	uint32_t value = 0;
 
-  //Debug Message
-  printf("\n[S9S] eSPI Settings\n");
-  value  = readl(AST6_SCU_BASE | 0x510);
-  printf("SCU510 = 0x%.8X , eSPI Mode[6](0 = eSPI)\n" , value);
-  value  = readl(AST6_SCU_BASE | 0x434);
-  printf("SCU434 = 0x%.8X , eSPI Pins[23:16]\n" , value);
-  value  = readl(AST6_SCU_BASE | 0x454);
-  printf("SCU454 = 0x%.8X , eSPI Driving Strength[31:24]\n" , value);
-  value  = readl(AST6_ESPI_BASE);
-  printf("ESPI000 = 0x%.8X , OOB Channel Ready[4]\n" , value);
+	//Debug Message
+	printf("\n[S9S] eSPI Settings\n");
+	value  = readl(SCU_HW_STRAP2_SET_REG);
+	printf("SCU510 = 0x%.8X , eSPI Mode[6](0 = eSPI)\n" , value);
+	value  = readl(AST6_SCU_BASE | 0x434);
+	printf("SCU434 = 0x%.8X , eSPI Pins[23:16]\n" , value);
+	value  = readl(AST6_SCU_BASE | 0x454);
+	printf("SCU454 = 0x%.8X , eSPI Driving Strength[31:24]\n" , value);
+	value  = readl(AST6_ESPI_BASE);
+	printf("ESPI000 = 0x%.8X , OOB Channel Ready[4]\n" , value);
 
-  //end
-  printf("\n");
+	//end
+	printf("\n");
+}
+
+// SNOOP SET
+void el_port80_init(uint32_t reg_dir, uint32_t reg_val,
+		uint32_t cmd_source0, uint32_t cmd_source1 ){
+
+	uint32_t value = 0;
+
+	//GPIO Output Settings
+	setbits_le32(reg_dir, reg_val);
+
+	//Command Source0 = 1
+	//Command Source1 = 0
+	setbits_le32(cmd_source0, BIT(8));
+	clrbits_le32(cmd_source1, BIT(8));
+
+	//SNPWADR(0x90): LPC Snoop Address Register
+	value  = readl(LPC_SNPWADR);
+	value &= 0xFFFF0000;  //BIT[15:0] - clear;
+	value |= 0x00000080;  //BIT[15:0] - set;
+	writel(value, LPC_SNPWADR);
+	//HICR5(0x80): Host Interface Control Register 5
+	value  = readl(LPC_HICR5);
+	value |= 1;       //Enable snooping address #0
+	value &= ~0xA;
+	writel(value, LPC_HICR5);
+
+	//HICRB(0x100): Host Interface Control Register B
+        //EnSNP0D: Enable ACCEPT response code for snoop #0 commands, defined in HICR5[0], in eSPI mode.
+	setbits_le32(LPC_HICRB, BIT(14));
+
+	writel(0, LPC_PCCR0);
+}
+
+// SGPIO SETTING
+void enable_sgpiom1(uint16_t sgpio_clk_div, uint8_t sgpio_byte) {
+	uint32_t value = 0;
+
+	//Clk=2M 16byte
+	clrbits_le32(SGPIO1_CFG_REG, 0xFFFFFFFF);
+	value = SGPIO_CLK_DIV(sgpio_clk_div) | SGPIO_BYTES(sgpio_byte) | SGPIO_ENABLE;
+	setbits_le32(SGPIO1_CFG_REG, value);
+
+	setbits_le32(SCU_MUTI_FN_PIN_CTRL5, SCU_SGPM_ENABLE);
 }
 
 #ifdef CONFIG_FBGC
@@ -210,10 +200,13 @@ int board_init(void)
 #endif /* ELBERT specific */
 
 #ifdef CONFIG_FBGT
-        el_port80_init();
-        el_espi_init();
-        el_superio_decoder(0x4E);
-        debugMsg_espi();
+	clrbits_le32(SCU_HW_STRAP3_REG, ENABLE_GPIO_PASSTHROUGH);
+	el_port80_init(GPIO_MNOP_DIR_REG, GPIO_GROUP('N', 0xFF),
+	GPIO_MNOP_CMD_SOURCE0, GPIO_MNOP_CMD_SOURCE1);
+	el_espi_init();
+	el_superio_decoder(0x4E);
+	enable_sgpiom1(254, 16);
+//	debugMsg_espi();
 #endif /* FBGT specific */
 	return 0;
 }

@@ -58,6 +58,23 @@ config ASPEED_ENABLE_DUAL_BOOT_WATCHDOG
 			boot2nd = <1>;
 		};
 
+config GIU_HW_SUPPORT
+	bool "With SPI Flash WP# control LATCH circuit"
+	default n
+	help
+		To support secure upgrading the Golden Image of verified boot
+		some platforms introduce a D-State flipflop based latch circuit
+		to allow ONLY verified boot CRTM (SPL) control the flash WP#
+
+config GIU_HW_OPEN
+	bool "Keep the SPI Flash WP# control LATCH in open state"
+	default n
+	depends on GIU_HW_SUPPORT
+	help
+		Used for developing time keep the WP# control latch opened,
+		thus the user space code can decide whether latch the WP# to low
+		or keep it in high (inactivate), thus Golden Image can be upgraded
+
 if SPL
 
 config SYS_TEXT_BASE

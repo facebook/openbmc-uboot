@@ -65,6 +65,9 @@
 /* Lock top 64KB of CS1 */
 #define SPI_CS1_HW_PROTECTIONS (SPI_BP0)
 
+/* Lock top 256KB (SPL partition) of CS0 */
+#define SPI_CS0_LOCK_SPL (SPI_BP0 | SPI_BP1)
+
 /* Micron Tech */
 #define SPI_BP3_MT (0x1 << 6)
 #define SPI_TB_MT (0x1 << 5)
@@ -75,7 +78,7 @@
 #define READB(r) *(volatile uchar *)(r)
 
 typedef int (*heaptimer_t)(unsigned ulong);
-typedef int (*heapstatus_t)(heaptimer_t, uchar, bool);
+typedef int (*heapstatus_t)(heaptimer_t, uchar, bool, int);
 
 #pragma GCC push_options
 #pragma GCC optimize("O0")
@@ -229,6 +232,60 @@ inline void set_topbottom_mxic(heaptimer_t timer, u32 base, u32 ctrl)
 	(void)spi_status(timer, base, ctrl, false);
 }
 
+inline u32 giu_mode_2_cs0_bp_bits(int giu_mode, bool is_mt)
+{
+	/*
+	* GIU_CERT to execute golden image upgrade we only lock SPL 256KB of CS0
+	*/
+	if (giu_mode == GIU_CERT) {
+		return SPI_CS0_LOCK_SPL;
+	}
+	/*
+	* GIU_NONE, did not execute golden image upgrade, lock 32MB CS0
+	* GIU_OPEN, specially used during development/test keep WP# open
+	*           technically any prot value can used except 0, because
+	*	    WP# state detection is checking whether can successfully
+	*           write 0 to SR.
+	*           so set the same BP bits as GIU_NONE.
+	*/
+	if (is_mt) {
+		/* MT BP3 bit at different location */
+		return (SPI_BP3_MT | SPI_BP1);
+	}
+	return SPI_CS0_HW_PROTECTIONS;
+}
+
+#ifdef CONFIG_GIU_HW_SUPPORT
+/* although we have DM_GPIO driver support in SPL
+* as the latch control need execute with flash device SR write
+* and SPL code is execution in place of flash, so latch control
+* have to execute within small code relocated to SPL heap in SRAM
+* Thus the latch control code shall be very simple and small
+* DM driver code does not fit to our small SPL heap.
+*/
+static inline void bsm_latch_ctrl_activate(void)
+{
+#ifndef CONFIG_ASPEED_AST2600
+#error "giu latch lock heap code only support AST2600"
+#endif
+	/* refer to fbobmc-ast-vboot.dtsi
+	* latch_ctrl-gpios = <&gpio0 ASPEED_GPIO(Y, 2) GPIO_ACTIVE_LOW>;
+	* refer to aspeed_gpio.c::aspeed_gpio_banks, val_reg = gpio_base+0x01E0
+	*/
+	clrbits_le32(0x1E7801E0, BIT(2));
+}
+
+static inline void latch_flash_lock_pin(int giu_mode)
+{
+	/* GIU_OPEN is the same as EVT/DVT keep WP# as high, skip latching */
+	if (giu_mode == GIU_OPEN)
+		return;
+	bsm_latch_ctrl_activate();
+}
+#else /* not define CONFIG_GIU_HW_SUPPORT */
+static inline void latch_flash_lock_pin(int giu_mode) {}
+#endif
+
 #define ASPEED_TIMER1_STS_REG (ASPEED_TIMER_BASE)
 int heaptimer(unsigned long usec)
 {
@@ -262,7 +319,7 @@ int heaptimer_end(void)
 	return 0;
 }
 
-int doheap(heaptimer_t timer, uchar cs, bool should_lock)
+int doheap(heaptimer_t timer, uchar cs, bool should_lock, int giu_mode)
 {
 	uchar status_set, status_check;
 	uchar id[3] = { 0 };
@@ -273,7 +330,7 @@ int doheap(heaptimer_t timer, uchar cs, bool should_lock)
 	if (cs == 0) {
 		base = ASPEED_FMC_CS0_BASE;
 		ctrl = AST_FMC_CE0_CONTROL;
-		prot = SPI_CS0_HW_PROTECTIONS;
+		prot = giu_mode_2_cs0_bp_bits(giu_mode, false);
 	} else {
 		base = ASPEED_FMC_CS1_BASE;
 		ctrl = AST_FMC_CE1_CONTROL;
@@ -296,7 +353,7 @@ int doheap(heaptimer_t timer, uchar cs, bool should_lock)
 	} else if (id[0] == 0x20) {
 		/* MT */
 		if (cs == 0) {
-			prot = (SPI_BP3_MT | SPI_BP1);
+			prot = giu_mode_2_cs0_bp_bits(giu_mode, true);
 		}
 		prot |= SPI_TB_MT;
 	} else {
@@ -314,6 +371,9 @@ int doheap(heaptimer_t timer, uchar cs, bool should_lock)
 
 	spi_write_status(timer, base, ctrl, prot);
 	status_set = spi_status(timer, base, ctrl, false);
+
+	/* latch the flash lock based on golden image upgrade mode*/
+	latch_flash_lock_pin(giu_mode);
 
 	/* Disable write protection for CSn */
 	spi_write_enable(timer, base, ctrl);
@@ -371,7 +431,7 @@ static int ast2600_start_timer1(void)
 }
 #endif
 
-int ast_fmc_spi_check(bool should_lock)
+int ast_fmc_spi_check(bool should_lock, int giu_mode)
 {
 	u32 function_size;
 	uchar *buffer;
@@ -383,6 +443,7 @@ int ast_fmc_spi_check(bool should_lock)
 
 	u32 ce0_ctrl = readl(ASPEED_FMC_BASE + AST_FMC_CE0_CONTROL);
 	u32 ce1_ctrl = readl(ASPEED_FMC_BASE + AST_FMC_CE1_CONTROL);
+	debug("should_lock=%d, giu_mode=0x%X\n", should_lock, giu_mode);
 	debug("Before: CE0_CTRL=0x%08X, CE1_CTRL=0x%08X\n", ce0_ctrl, ce1_ctrl);
 #if defined(CONFIG_ASPEED_AST2600)
 	ret = ast2600_start_timer1();
@@ -411,10 +472,10 @@ int ast_fmc_spi_check(bool should_lock)
 	spi_check = (heapstatus_t)buffer;
 
 	/* Protect and unprotect CS1 (always check this first) */
-	cs1_status = spi_check(timer_fp, 1, should_lock);
+	cs1_status = spi_check(timer_fp, 1, should_lock, giu_mode);
 
 	/* Protect and detect the hardware protection for CS0 */
-	cs0_status = spi_check(timer_fp, 0, should_lock);
+	cs0_status = spi_check(timer_fp, 0, should_lock, giu_mode);
 
 	debug("cs0_status = %d, cs1_status = %d\n", cs0_status, cs1_status);
 	/* Return an ERROR indicating PROM status issues. */

@@ -22,3 +22,20 @@
 		spi0 = &fmc;
 	};
 };
+
+#ifdef CONFIG_GIU_HW_SUPPORT
+#include <dt-bindings/gpio/aspeed-gpio.h>
+/ {
+		bsm_wp_latch {
+			u-boot,dm-pre-reloc;
+			compatible = "bsm_wp_latch";
+			/* latch_ctrl is reverted logic so set GPIO_ACTIVE_LOW flag
+			*  u-boot GPIO DM driver is expecting logic active or deactive
+			*  and based on this flag to properly output physical high
+			*  or low signal to the pin. Refer to dm_gpio_set/get_value()
+			*/
+			latch_ctrl-gpios = <&gpio0 ASPEED_GPIO(Y, 2) GPIO_ACTIVE_LOW>;
+			latch_status-gpios = <&gpio0 ASPEED_GPIO(I, 5) GPIO_ACTIVE_HIGH>;
+			};
+};
+#endif

@@ -1,0 +1,13 @@
+if TARGET_FACEBOOK_NETLAKEMTP
+
+config SYS_BOARD
+	default "facebook_netlakemtp"
+
+config SYS_VENDOR
+	default "aspeed"
+
+config SYS_CONFIG_NAME
+	string "board configuration name"
+	default "facebook_netlakemtp"
+
+endif

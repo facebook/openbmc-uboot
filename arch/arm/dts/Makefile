@@ -693,9 +693,6 @@ dtb-$(CONFIG_TARGET_CISCO_CHURCHILLMONO) += \
 dtb-$(CONFIG_TARGET_FACEBOOK_CLOUDRIPPER) += \
 	aspeed-bmc-facebook-cloudripper.dtb
 
-dtb-$(CONFIG_TARGET_FACEBOOK_FBDARWIN) += \
-	aspeed-bmc-facebook-fbdarwin.dtb
-
 dtb-$(CONFIG_TARGET_FACEBOOK_ELBERT) += \
 	aspeed-bmc-facebook-elbert.dtb
 

@@ -4,8 +4,8 @@
  *
  */
 
-#ifndef __CONFIG_H
-#define __CONFIG_H
+#ifndef __FBOBMC_AST_G6_CONFIG_H
+#define __FBOBMC_AST_G6_CONFIG_H
 
 /*============= Copy from aspeed_common.h ==========================*/
 #include <asm/arch/platform.h>
@@ -16,7 +16,6 @@
 #define CONFIG_CMDLINE_TAG
 #define CONFIG_SETUP_MEMORY_TAGS
 #define CONFIG_INITRD_TAG
-
 
 
 #define CONFIG_SYS_BOOTMAPSZ		(256 * 1024 * 1024)
@@ -79,14 +78,13 @@
 
 #define SRAM_HEAP_MINI_SIZE     0x3000 // 12KB
 #ifdef CONFIG_SPL_SYS_MALLOC_F_LEN
-# if (CONFIG_SPL_SYS_MALLOC_F_LEN < SRAM_HEAP_MINI_SIZE )
-#   error "CONFIG_SPL_SYS_MALLOC_F_LEN is too small"
-# endif
+#	if (CONFIG_SPL_SYS_MALLOC_F_LEN < SRAM_HEAP_MINI_SIZE )
+#		error "CONFIG_SPL_SYS_MALLOC_F_LEN is too small"
+#	endif
 #else
-# define CONFIG_SPL_SYS_MALLOC_F_LEN SRAM_HEAP_MINI_SIZE
+#	define CONFIG_SPL_SYS_MALLOC_F_LEN SRAM_HEAP_MINI_SIZE
 #endif
 #define CONFIG_MALLOC_F_ADDR (CONFIG_SYS_INIT_SP_ADDR - CONFIG_SPL_SYS_MALLOC_F_LEN)
-
 /*============= UBoot Common setup ===============*/
 
 #define CONFIG_SYS_MEMTEST_START	(CONFIG_SYS_SDRAM_BASE + 0x300000)
@@ -101,16 +99,16 @@
 #define CONFIG_ASPEED_ENABLE_WATCHDOG
 
 #if defined(CONFIG_TEST_ASPEED_WATCHDOG_SPL)
-# define CONFIG_ASPEED_WATCHDOG_SPL_TIMEOUT	(50)    /* 50 seconds */
+#	define CONFIG_ASPEED_WATCHDOG_SPL_TIMEOUT	(50)    /* 50 seconds */
 #else
-# define CONFIG_ASPEED_WATCHDOG_SPL_TIMEOUT	(5*60)    /* 5 minutes */
+#	define CONFIG_ASPEED_WATCHDOG_SPL_TIMEOUT	(5*60)    /* 5 minutes */
 #endif
 
 #if defined(CONFIG_TEST_ASPEED_WATCHDOG_UBOOT) && \
     !defined(CONFIG_ASPEED_RECOVERY_BUILD)
-# define CONFIG_ASPEED_WATCHDOG_TIMEOUT	(50)    /* 50 seconds */
+#	define CONFIG_ASPEED_WATCHDOG_TIMEOUT	(50)    /* 50 seconds */
 #else
-# define CONFIG_ASPEED_WATCHDOG_TIMEOUT	(5*60) /* 5 minutes */
+#	define CONFIG_ASPEED_WATCHDOG_TIMEOUT	(5*60) /* 5 minutes */
 #endif
 
 /* u-boot reset command and reset() is implemented via sysreset
@@ -127,13 +125,9 @@
 
 /*====== Verified boot configuration ==========*/
 #ifdef CONFIG_SPL
-#define CONFIG_CMD_VBS
-#endif
-
-#define CONFIG_CS0_SPL_KERNEL_LOAD    "201A0000"
-#define CONFIG_CS1_SPL_KERNEL_LOAD    "281A0000"
-
-#ifdef CONFIG_SPL
+#	define CONFIG_CMD_VBS
+#	define CONFIG_CS0_SPL_KERNEL_LOAD    "201A0000"
+#	define CONFIG_CS1_SPL_KERNEL_LOAD    "281A0000"
 #	ifdef CONFIG_ASPEED_RECOVERY_BUILD
 #		define CONFIG_KERNEL_LOAD        CONFIG_CS0_SPL_KERNEL_LOAD
 #	else
@@ -142,56 +136,55 @@
 #	define CONFIG_SYS_REMAP_BASE     CONFIG_SYS_TEXT_BASE
 #	define CONFIG_SYS_UBOOT_START    CONFIG_SYS_TEXT_BASE
 #	define CONFIG_SYS_SPL_FIT_BASE   (CONFIG_SYS_TEXT_BASE - 0x4000)
-# define CONFIG_SYS_RECOVERY_BASE  (CONFIG_SYS_TEXT_BASE - 0x8104000 + 0x40000)
+#	define CONFIG_SYS_RECOVERY_BASE  (CONFIG_SYS_TEXT_BASE - 0x8104000 + 0x40000)
 #	define CONFIG_RECOVERY_UBOOT_SIZE 0xA0000
-  /* ENV setup */
+/* ENV setup */
 #	define CONFIG_SYS_ENV_BASE       0x28000000
-# define CONFIG_USE_ENV_SPI_BUS
+#	define CONFIG_USE_ENV_SPI_BUS
 #	define CONFIG_ENV_SPI_BUS 0
-# define CONFIG_USE_ENV_SPI_CS
+#	define CONFIG_USE_ENV_SPI_CS
 #	define CONFIG_ENV_SPI_CS 1
-  /* Prevent the Recovery build from using the RW environment. */
-# if defined(CONFIG_ASPEED_RECOVERY_BUILD) || defined(CONFIG_SPL_BUILD)
-#   ifndef CONFIG_ENV_IS_NOWHERE
-#     define CONFIG_ENV_IS_NOWHERE
-#   endif
-# else
-#   undef CONFIG_ENV_IS_NOWHERE
-#	  define CONFIG_ENV_IS_IN_SPI_FLASH
-# endif
-  /* define commands */
-# undef CONFIG_PREBOOT
-# define CONFIG_POSTBOOT "vbs 6 60; bootm " CONFIG_CS0_SPL_KERNEL_LOAD "; "
-#if CONFIG_IS_ENABLED(ASPEED_ENABLE_DUAL_BOOT_WATCHDOG) /* stop fmcwdt2 */
-# define CONFIG_PRECLICOMMAND "echo stop fmcwdt2; mw 1e620064 0; "
-#else /* stop wdt1 */
-# if defined(CONFIG_CMD_VBS)
-#   define CONFIG_PRECLICOMMAND "vbs interrupt; "
-# else
-#   define CONFIG_PRECLICOMMAND "echo stop wdt1; mw 1e78500c 0; "
-# endif
-#endif /* ASPEED_ENABLE_DUAL_BOOT_WATCHDOG */
+/* Prevent the Recovery build from using the RW environment. */
+#	if defined(CONFIG_ASPEED_RECOVERY_BUILD) || defined(CONFIG_SPL_BUILD)
+#		ifndef CONFIG_ENV_IS_NOWHERE
+#			define CONFIG_ENV_IS_NOWHERE
+#		endif
+#	else
+#		undef CONFIG_ENV_IS_NOWHERE
+#		define CONFIG_ENV_IS_IN_SPI_FLASH
+#	endif
+/* define commands */
+#	undef CONFIG_PREBOOT
+#	define CONFIG_POSTBOOT "vbs 6 60; bootm " CONFIG_CS0_SPL_KERNEL_LOAD "; "
+#	if CONFIG_IS_ENABLED(ASPEED_ENABLE_DUAL_BOOT_WATCHDOG) /* stop fmcwdt2 */
+#		define CONFIG_PRECLICOMMAND "echo stop fmcwdt2; mw 1e620064 0; "
+#	else /* stop wdt1 */
+#		if defined(CONFIG_CMD_VBS)
+#			define CONFIG_PRECLICOMMAND "vbs interrupt; "
+#		else
+#			define CONFIG_PRECLICOMMAND "echo stop wdt1; mw 1e78500c 0; "
+#		endif
+#	endif /* ASPEED_ENABLE_DUAL_BOOT_WATCHDOG */
 
 /*====== non-vboot configuration ========*/
 #else
 #	define CONFIG_SYS_REMAP_BASE     0x00000000
 #	define CONFIG_SYS_UBOOT_START    0x00000000
-#	define CONFIG_SYS_ENV_BASE       0x20000000
 #	define CONFIG_KERNEL_LOAD	    "20100000"
-# define CONFIG_ENV_IS_IN_FLASH
-# define CONFIG_POSTBOOT  ""
+/* ENV setup */
+#	undef CONFIG_ENV_IS_NOWHERE
+#	define CONFIG_ENV_IS_IN_SPI_FLASH
+#	define CONFIG_SYS_ENV_BASE       0x20000000
+#	define CONFIG_USE_ENV_SPI_BUS
+#	define CONFIG_ENV_SPI_BUS 0
+#	define CONFIG_USE_ENV_SPI_CS
+#	define CONFIG_ENV_SPI_CS 0
+#	define CONFIG_POSTBOOT  ""
 #endif
 
 /*======= vboot and non-vboot common configuration ========*/
-#ifdef CONFIG_QEMU_BUILD
-# define QEMU_FMC_WORKAROUND "sf probe 0:0; "
-#else
-# define QEMU_FMC_WORKAROUND ""
-#endif
-
 #define CONFIG_USE_BOOTCOMMAND
 #define CONFIG_BOOTCOMMAND                                \
-  QEMU_FMC_WORKAROUND                                     \
   "bootm " CONFIG_KERNEL_LOAD "; " /* Location of FIT */  \
   CONFIG_POSTBOOT
 

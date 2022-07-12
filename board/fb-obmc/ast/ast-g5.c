@@ -1253,7 +1253,7 @@ int init_mac_TXRX_delay(void)
   switch(board_id) {
     case wedge400_MP_respin:
     case wedge400C_MP_respin:
-      mac2_TX_delay = 6;
+      mac2_TX_delay = 3;
       mac2_RX_delay = 44;
     break;
     case wedge400_EVT3:

@@ -69,6 +69,15 @@
 	clock-frequency = <400000000>;
 };
 
+#ifdef CONFIG_ASPEED_TPM
+&spi_gpio {
+	gpio-sck = <&gpio0 ASPEED_GPIO(Z, 3) GPIO_ACTIVE_HIGH>;
+	gpio-mosi = <&gpio0 ASPEED_GPIO(Z, 4) GPIO_ACTIVE_HIGH>;
+	gpio-miso = <&gpio0 ASPEED_GPIO(Z, 5) GPIO_ACTIVE_HIGH>;
+	cs-gpios = <&gpio0 ASPEED_GPIO(Z, 0) GPIO_ACTIVE_LOW>;
+};
+#endif
+
 &emmc_slot0 {
 	status = "okay";
 	bus-width = <4>;

@@ -96,3 +96,12 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_emmc_default>;
 };
+
+&scu {
+        mac2-clk-delay = <0x08 0x04
+                          0x08 0x04
+                          0x08 0x04>;
+        mac3-clk-delay = <0x08 0x04
+                          0x08 0x04
+                          0x08 0x04>;
+};

@@ -11,6 +11,9 @@
 #include "util.h"
 #include "ast-g6.h"
 
+#define SIO_ADDR_4E    (0x4E)
+#define SIO_ADDR_2E    (0x2E)
+
 DECLARE_GLOBAL_DATA_PTR;
 //ESPI SETTING
 void el_espi_init(void){
@@ -37,7 +40,7 @@ void el_espi_init(void){
 //Super IO Settings
 void el_superio_decoder(uint8_t addr) {
 	//Enable LPC to decode SuperIO 0x2E/0x4E address
-	setbits_le32(SCU_HW_STRAP2_CLR_REG, BIT(3));
+	setbits_le32(SCU_HW_STRAP2_CLR_REG, BIT(2));
 
 	//SuperIO configuration address selection (0 = 0x2E(Default) / 1 = 0x4E)
 	if ( addr == 0x4E )
@@ -199,12 +202,16 @@ int board_init(void)
 	configureBcm53134();
 #endif /* ELBERT specific */
 
-#ifdef CONFIG_FBGT
+#if defined(CONFIG_FBGT) || defined(CONFIG_FBGTI)
 	clrbits_le32(SCU_HW_STRAP3_REG, ENABLE_GPIO_PASSTHROUGH);
 	el_port80_init(GPIO_MNOP_DIR_REG, GPIO_GROUP('N', 0xFF),
 	GPIO_MNOP_CMD_SOURCE0, GPIO_MNOP_CMD_SOURCE1);
 	el_espi_init();
-	el_superio_decoder(0x4E);
+#ifdef CONFIG_FBGT
+	el_superio_decoder(SIO_ADDR_4E);
+#else
+	el_superio_decoder(SIO_ADDR_2E);
+#endif
 	enable_sgpiom1(254, 16);
 //	debugMsg_espi();
 #endif /* FBGT specific */

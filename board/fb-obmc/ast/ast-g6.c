@@ -215,5 +215,10 @@ int board_init(void)
 	enable_sgpiom1(254, 16);
 //	debugMsg_espi();
 #endif /* FBGT specific */
+
+#ifdef CONFIG_FBWC
+	clrbits_le32(SCU_HW_STRAP3_REG, ENABLE_GPIO_PASSTHROUGH);
+#endif /* FBWC specific */
+
 	return 0;
 }

@@ -149,6 +149,40 @@ static void system_status_led_init(void)
 extern void configureBcm53134(void);
 #endif
 
+#ifdef CONFIG_FBY35
+static void pwm_init(void) {
+#define PWM_COUNT 4
+  u32 reg = 0, mask = 0;
+  int i = 0;
+  // De-assert the reset of PWM controller
+  writel(0x20, SCU_RESET_CLEAR2_REG);
+  // Set PWM multi-function pin
+  for (i = 0; i < PWM_COUNT; i++) {
+  	mask |= BIT(PIN_CTRL_PWM_ENALBE(i));
+  }  
+  reg = readl(AST6_SCU_BASE + SCU_MUTI_FN_PIN_CTRL7);
+  reg |= mask;
+  writel(reg, AST6_SCU_BASE + SCU_MUTI_FN_PIN_CTRL7);
+
+  // Enbale PWM and set to 100%
+  for (i = 0; i < PWM_COUNT; i++) {
+  	/* PTCR0X0: PWMX General Register
+	 * 16: enable PWM clock
+	 * 12: enable PWM pin
+	 * [11:0]: PWM division
+	 */
+  	writel(0x0001101E, PWM_ASPEED_CTRL(i));
+  	/* PTCR0X4: PWMX Duty Cycle Register
+	 * [31:24]: PWM period bit
+	 * [23:16]: PWM rising/falling point bit
+	 * [15:9] : PWM falling point bit
+	 * [8:0]  : PWM rising point bit
+	 */
+  	writel(0xFF000000, PWM_ASPEED_DUTY_CYCLE(i));
+  }
+}
+#endif /* CONFIG_FBY35 */
+
 int board_init(void)
 {
 	struct udevice *dev;
@@ -220,5 +254,8 @@ int board_init(void)
 	clrbits_le32(SCU_HW_STRAP3_REG, ENABLE_GPIO_PASSTHROUGH);
 #endif /* FBWC specific */
 
+#ifdef CONFIG_FBY35
+	pwm_init();
+#endif /* FBY35 specific */
 	return 0;
 }

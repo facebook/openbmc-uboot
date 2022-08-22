@@ -8,5 +8,6 @@
 
 #include <configs/fbobmc-ast-g6.h>
 #define CONFIG_CMD_MEMTEST2 1
+#define CONFIG_FBY35 1
 
 #endif	/* __FACEBOOK_FBY35_CONFIG_H */

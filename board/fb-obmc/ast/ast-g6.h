@@ -70,6 +70,7 @@
 #define PWR_ON_RST_SRST            (0x1)
 
 #define SCU_MUTI_FN_PIN_CTRL5      (AST6_SCU_BASE | 0x414)
+#define SCU_MUTI_FN_PIN_CTRL7      (AST6_SCU_BASE | 0x41C)
 #define SCU_MUTI_FN_PIN_CTRL9      (AST6_SCU_BASE | 0x434)
 #define SCU_MUTI_FN_PIN_CTRL15     (AST6_SCU_BASE | 0x454)
 #define SCU_PIN_CONTROL8_REG       (AST6_SCU_BASE | 0x430)
@@ -77,6 +78,7 @@
 #define SCU_HW_STRAP2_CLR_REG      (AST6_SCU_BASE | 0x514)
 #define SCU_HW_STRAP3_REG          (AST6_SCU_BASE | 0x51C)
 #define ENABLE_GPIO_PASSTHROUGH    (1 << 9)
+#define PIN_CTRL_PWM_ENALBE(x)     ((x)+16)
 
 //SCU SGPIO
 #define SGPIO_CLK_DIV(x)           ((x) << 16)
@@ -84,5 +86,10 @@
 #define SGPIO_ENABLE               (1)
 #define SGPIO1_CFG_REG             (AST6_GPIO_BASE | 0x554)
 #define SCU_SGPM_ENABLE            GENMASK(27, 24)
+
+/* PWM REG */
+#define AST6_PWM_BASE              (0x1e610000)
+#define PWM_ASPEED_CTRL(ch)        (AST6_PWM_BASE + (ch) * 0x10 + 0x00)
+#define PWM_ASPEED_DUTY_CYCLE(ch)  (AST6_PWM_BASE + (ch) * 0x10 + 0x04)
 
 #endif

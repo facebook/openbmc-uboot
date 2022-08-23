@@ -442,6 +442,10 @@ ast2600_pinctrl_restore_to_gpio(struct udevice *dev, int gpio_offset)
 		case 187: reg_off = 0x434; reg_bit = BIT(27); break; /* GPIOX3 */
 		case 188: reg_off = 0x434; reg_bit = BIT(28); break; /* GPIOX4 */
 		case 189: reg_off = 0x434; reg_bit = BIT(29); break; /* GPIOX5 */
+		case 200: reg_off = 0x438; reg_bit = BIT(8);  break; /* GPIOZ0 */
+		case 203: reg_off = 0x438; reg_bit = BIT(11); break; /* GPIOZ3 */
+		case 204: reg_off = 0x438; reg_bit = BIT(12); break; /* GPIOZ4 */
+		case 205: reg_off = 0x438; reg_bit = BIT(13); break; /* GPIOZ5 */
 		default:
 			dev_warn(dev, "TODO: restore pin-%u to GPIO%c%u\n",
 				gpio_offset, 'A' + (gpio_offset >> 3) % 26,

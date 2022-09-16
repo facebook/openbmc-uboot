@@ -941,7 +941,7 @@ static int ast2600_sdrammc_probe(struct udevice *dev)
 	int ret;
 	int sdram_speed = 0;
 	volatile uint32_t reg;
-	uint32_t scu_handshake_reg = 0x0, scu_mpll_freq_cfg = 0x0, scu_mpll_ext_cfg = 0x0;
+	uint32_t scu_mpll_freq_cfg = 0x0, scu_mpll_ext_cfg = 0x0;
 
 	/* find SCU base address from clock device */
 	ret = uclass_get_device_by_driver(UCLASS_CLK, DM_GET_DRIVER(aspeed_scu),
@@ -984,13 +984,11 @@ static int ast2600_sdrammc_probe(struct udevice *dev)
 			break;
 	}
 
-	// Check if frequency need to be update
+	// Check if frequency setting is changed
 	reg = readl(priv->scu + AST_SCU_MPLL);
 	if ((reg & SCU_MPLL_FREQ_MASK) != scu_mpll_freq_cfg) {
-		// Clear SDRAM init ready bit
-		scu_handshake_reg = readl(priv->scu + AST_SCU_HANDSHAKE);
-		scu_handshake_reg &= ~(SCU_SDRAM_INIT_READY_MASK);
-		writel(scu_handshake_reg, priv->scu + AST_SCU_HANDSHAKE);
+		// Change DRAM frequency without AC cycle will cause uboot hang when calculating DRAM size.
+		printf("Warning: DRAM frequency setting changed, will take effect after AC cycling the system\n");
 	}
 
 	if (readl(priv->scu + AST_SCU_HANDSHAKE) & SCU_SDRAM_INIT_READY_MASK) {

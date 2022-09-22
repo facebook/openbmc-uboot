@@ -98,6 +98,23 @@ void el_port80_init(uint32_t reg_dir, uint32_t reg_val,
 	writel(0, LPC_PCCR0);
 }
 
+void init_lpc_pcc(void) {
+	uint32_t value = 0;
+
+	//SNPWADR(0x90): LPC Snoop Address Register
+	//Assume PCC target port is X, set SNPWADR[31:16]=X+2, SNPWADR[15:0]=X
+	value = 0x00820080;
+	writel(value, LPC_SNPWADR);
+
+	//HICRB(0x100): Host Interface Control Register B
+	//Enable EnSNP1D and EnSNPD
+	setbits_le32(LPC_HICRB, BIT(14));
+	setbits_le32(LPC_HICRB, BIT(15));
+
+	//HICR6(0x84): Host Interface Control Register 6
+	setbits_le32(LPC_HICR6, BIT(19));
+}
+
 // SGPIO SETTING
 void enable_sgpiom1(uint16_t sgpio_clk_div, uint8_t sgpio_byte) {
 	uint32_t value = 0;
@@ -245,6 +262,7 @@ int board_init(void)
 	el_superio_decoder(SIO_ADDR_4E);
 #else
 	el_superio_decoder(SIO_ADDR_2E);
+	init_lpc_pcc();
 #endif
 	enable_sgpiom1(254, 16);
 //	debugMsg_espi();

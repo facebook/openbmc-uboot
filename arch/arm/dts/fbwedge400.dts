@@ -27,3 +27,16 @@
 		reg = <13>;
 	};
 };
+
+#include <dt-bindings/gpio/aspeed-gpio.h>
+/ {
+	board_id {
+		compatible = "board_id";
+		board-id-gpios = <&gpio ASPEED_GPIO(G, 4) GPIO_ACTIVE_HIGH>,
+		                 <&gpio ASPEED_GPIO(G, 5) GPIO_ACTIVE_HIGH>,
+		                 <&gpio ASPEED_GPIO(G, 6) GPIO_ACTIVE_HIGH>,
+		                 <&gpio ASPEED_GPIO(G, 7) GPIO_ACTIVE_HIGH>,
+				 <&gpio ASPEED_GPIO(N, 6) GPIO_ACTIVE_HIGH>,
+				 <&gpio ASPEED_GPIO(N, 7) GPIO_ACTIVE_HIGH>;
+	};
+};

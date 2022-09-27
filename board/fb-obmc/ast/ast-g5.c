@@ -1232,15 +1232,24 @@ enum board_id {
  */
 static uint16_t get_board_id(void)
 {
-  uint8_t board_type=0xff;
-  uint8_t board_version=0xff;
-  uint16_t board_id=0xffff;
+	int ret, node, board_id;
+	struct gpio_desc desc[6];
 
-  board_version = (__raw_readb(AST_GPIO_BASE + 0x22)>>4);
-  board_type = (__raw_readb(AST_GPIO_BASE + 0x79)>>6);
-  board_id = ((board_type<<8)|board_version);
+	node = fdt_node_offset_by_compatible(gd->fdt_blob, 0, "board_id");
+	if (node < 0) {
+		return -1;
+	}
+	ret = gpio_request_list_by_name_nodev(offset_to_ofnode(node),
+					      "board-id-gpios", desc,
+					      ARRAY_SIZE(desc), GPIOD_IS_IN);
+	if (ret < 0) {
+		return ret;
+	}
+	ret = dm_gpio_get_values_as_int(desc, ret);
+	board_id = ((ret & 0x30) << 4 ) | (ret & 0xF);
+	printf("board_id = %x\n", board_id);
 
-  return(board_id);
+	return board_id;
 }
 
 int init_mac_TXRX_delay(void)

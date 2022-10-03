@@ -85,3 +85,21 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_emmc_default>;
 };
+
+#include <dt-bindings/gpio/aspeed-gpio.h>
+/ {
+	smb_fpga_boot {
+		u-boot,dm-pre-reloc;
+		compatible = "smb_fpga_boot";
+		/* AST2600:
+		 * GPIO controller 0 is at 0x1e780000.
+		 * GPIO bank P starts from 120 (0x078).
+		 *
+		 * From u-boot shell:
+		 * GPIO P2 is 120 + 2 = 122 -> gpio status gpio@1e780000122
+		 * GPIO P3 is 120 + 3 = 123 -> gpio status gpio@1e780000123
+		 */
+		smb_cpld_sel-gpios = <&gpio0 ASPEED_GPIO(P, 2) GPIO_ACTIVE_HIGH>;
+		smb_spif_sel-gpios = <&gpio0 ASPEED_GPIO(P, 3) GPIO_ACTIVE_HIGH>;
+	};
+};

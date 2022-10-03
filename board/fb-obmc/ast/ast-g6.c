@@ -5,6 +5,8 @@
 #include <common.h>
 #include <asm/io.h>
 #include <asm/arch/timer.h>
+#include <asm/gpio.h>
+#include <dm.h>
 #include <linux/bitops.h>
 #include <linux/err.h>
 #include <dm/uclass.h>
@@ -200,6 +202,49 @@ static void pwm_init(void) {
 }
 #endif /* CONFIG_FBY35 */
 
+#ifdef CONFIG_FBSANDIA
+/* BMC drives the GPIO state for the BMC_GPIO_SMB_CPLD_SEL_L and
+ * BMC_GPIO_SMB_SPI_FLASH_SEL_L, but both are not asserted until after OBMC
+ * Linux is up. In SCM P1 board, by this time, the SMB FPGA already cannot boot
+ * up even after the OBMC Linux drives both pins. To fix this issue, U-BOOT
+ * drives these pins by pulling up GPIO85 (P2) and GPIO45 (P3). Pulling GPIO85
+ * and GPIO45 does not affect SCM P2 and later boards.
+ */
+static void boot_smb_fpga(void)
+{
+	int ret, node;
+	struct gpio_desc smb_cpld_sel; // BMC_GPIO_SMB_CPLD_SEL_L
+	struct gpio_desc smb_spif_sel; // BMC_GPIO_SMB_SPI_FLASH_SEL_L
+
+	node = fdt_node_offset_by_compatible(gd->fdt_blob, 0, "smb_fpga_boot");
+	if (node < 0) {
+		printf("Cannot get smb_fpga_boot fdt node (%d)\n", node);
+	}
+
+	ret = gpio_request_by_name_nodev(offset_to_ofnode(node),
+					"smb_cpld_sel-gpios", 0, &smb_cpld_sel,
+					GPIOD_IS_OUT);
+	if (ret < 0) {
+		printf("Request smb_cpld_sel-gpios failed (%d)\n", ret);
+	}
+	ret = gpio_request_by_name_nodev(offset_to_ofnode(node),
+					"smb_spif_sel-gpios", 0, &smb_spif_sel,
+					GPIOD_IS_OUT);
+	if (ret < 0) {
+		printf("Request smb_spif_sel-gpios failed (%d)\n", ret);
+	}
+
+	ret = dm_gpio_set_value(&smb_cpld_sel, 1);
+	if (ret < 0) {
+		printf("Pull BMC_GPIO_SMB_CPLD_SEL_L failed (%d)\n", ret);
+	}
+	ret = dm_gpio_set_value(&smb_spif_sel, 1);
+	if (ret < 0) {
+		printf("Pull BMC_GPIO_SMB_SPI_FLASH_SEL_L failed (%d)\n", ret);
+	}
+}
+#endif /* CONFIG_FBSANDIA */
+
 int board_init(void)
 {
 	struct udevice *dev;
@@ -207,6 +252,10 @@ int board_init(void)
 	int ret;
 	u64 rev_id;
 	u32 tmp_val;
+
+#ifdef CONFIG_FBSANDIA
+        boot_smb_fpga();
+#endif /* SANDIA specific */
 
 	/* disable address remapping for A1 to prevent secure boot reboot failure */
 	rev_id = readl(ASPEED_REVISION_ID0);

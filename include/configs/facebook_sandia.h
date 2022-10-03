@@ -8,4 +8,6 @@
 
 #include <configs/fbobmc-ast-g6.h>
 
+#define CONFIG_FBSANDIA
+
 #endif	/* __CONFIG_H */

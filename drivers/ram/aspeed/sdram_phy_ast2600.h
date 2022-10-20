@@ -1,6 +1,138 @@
 #define DDR_PHY_TBL_CHG_ADDR            0xaeeddeea
 #define DDR_PHY_TBL_END                 0xaeededed
 
+/**
+ * phyr030[18:16] - Ron PU (PHY side)
+ * phyr030[14:12] - Ron PD (PHY side)
+ *   b'000 : disable
+ *   b'001 : 240 ohm
+ *   b'010 : 120 ohm
+ *   b'011 : 80 ohm
+ *   b'100 : 60 ohm
+ *   b'101 : 48 ohm
+ *   b'110 : 40 ohm
+ *   b'111 : 34 ohm (default)
+ *
+ */
+#define PHY_RON				((0x7 << 16) | (0x7 << 12))
+
+/**
+ * phyr030[10:8] - ODT configuration (PHY side)
+ *   b'000 : ODT disabled
+ *   b'001 : 240 ohm
+ *   b'010 : 120 ohm
+ *   b'011 : 80 ohm (default)
+ *   b'100 : 60 ohm
+ *   b'101 : 48 ohm
+ *   b'110 : 40 ohm
+ *   b'111 : 34 ohm
+ */
+#if defined(CONFIG_ASPEED_DDR4_PHY_ODT40)
+#define PHY_ODT			(0x6 << 8)
+#elif defined(CONFIG_ASPEED_DDR4_PHY_ODT48)
+#define PHY_ODT			(0x5 << 8)
+#elif defined(CONFIG_ASPEED_DDR4_PHY_ODT60)
+#define PHY_ODT			(0x4 << 8)
+#else
+#define PHY_ODT			(0x3 << 8)
+#endif
+
+/**
+ * MR1[2:1] output driver impedance
+ *   b'00 : 34 ohm (default)
+ *   b'01 : 48 ohm
+ */
+#ifdef CONFIG_ASPEED_DDR4_DRAM_RON_48
+#define DRAM_RON			(0x1 << 1)
+#else
+#define DRAM_RON			(0x0 << 1)
+#endif
+
+/**
+ * DRAM ODT - synchronous ODT mode
+ *   RTT_WR: disable
+ *   RTT_NOM = RTT_PARK
+ *
+ * MR1[10:8] RTT_NOM
+ *   b'000 : RTT_NOM disable
+ *   b'001 : 60 ohm
+ *   b'010 : 120 ohm
+ *   b'011 : 40 ohm
+ *   b'100 : 240 ohm
+ *   b'101 : 48 ohm  (default)
+ *   b'110 : 80 ohm
+ *   b'111 : 34 ohm
+ *
+ * MR5[8:6] RTT_PARK
+ *   b'000 : RTT_PARK disable
+ *   b'001 : 60 ohm
+ *   b'010 : 120 ohm
+ *   b'011 : 40 ohm
+ *   b'100 : 240 ohm
+ *   b'101 : 48 ohm  (default)
+ *   b'110 : 80 ohm
+ *   b'111 : 34 ohm
+ *
+ * MR2[11:9] RTT_WR
+ *   b'000 : Dynamic ODT off  (default)
+ *   b'001 : 120 ohm
+ *   b'010 : 240 ohm
+ *   b'011 : Hi-Z
+ *   b'100 : 80 ohm
+ */
+#define RTT_WR				(0x0 << 9)
+
+#if defined(CONFIG_ASPEED_DDR4_DRAM_ODT60)
+#define RTT_NOM				(0x1 << 8)
+#define RTT_PARK			(0x1 << 6)
+#elif defined(CONFIG_ASPEED_DDR4_DRAM_ODT48)
+#define RTT_NOM				(0x5 << 8)
+#define RTT_PARK			(0x5 << 6)
+#else
+#define RTT_NOM				(0x3 << 8)
+#define RTT_PARK			(0x3 << 6)
+#endif
+
+/**
+ * MR6[6] VrefDQ training range
+ *   b'0 : range 1
+ *   b'1 : range 2 (default)
+ */
+#define VREFDQ_RANGE_2			BIT(6)
+
+/**
+ * Latency setting:
+ * Force AL = PL = 0
+ * -> WL = AL + CWL + PL = CWL
+ * -> RL = AL + CL + PL = CL
+ */
+#define CONFIG_WL			9
+#define CONFIG_RL			12
+#define T_RDDATA_EN			((CONFIG_RL - 2) << 8)
+#define T_PHY_WRLAT			(CONFIG_WL - 2)
+
+/* MR0 */
+#define MR0_CL_12			(BIT(4) | BIT(2))	/*  new */
+#define MR0_WR12_RTP6			BIT(9)
+#define MR0_DLL_RESET			BIT(8)
+#define MR0_VAL				(MR0_CL_12 | MR0_WR12_RTP6 | MR0_DLL_RESET)
+
+/* MR1 */
+#define MR1_VAL				(0x0001 | RTT_NOM | DRAM_RON)
+
+/* MR2 */
+#define MR2_CWL_9			0
+#define MR2_VAL				(0x0000 | RTT_WR | MR2_CWL_9)
+
+/* MR3 ~ MR6 */
+#define MR3_VAL				0x0000
+#define MR4_VAL				0x0000
+#define MR5_VAL				(0x0400 | RTT_PARK)
+#define MR6_VAL				0x0400
+
+#define WR_DATA_EYE_OFFSET                                                     \
+	(CONFIG_ASPEED_DDR4_WR_DATA_EYE_TRAINING_RESULT_OFFSET << 8)
+
 #if defined(CONFIG_ASPEED_DDR4_800)
 u32 ast2600_sdramphy_config[165] = {
 	0x1e6e0100,	// start address
@@ -16,7 +148,7 @@ u32 ast2600_sdramphy_config[165] = {
 	0x20000000,	// phyr024
 	0x00000008,	// phyr028
 	0x00000000,	// phyr02c
-	0x00077600,	// phyr030
+	(PHY_RON | PHY_ODT),	/* phyr030 */
 	0x00000000,	// phyr034
 	0x00000000,	// phyr038
 	0x20000000,	// phyr03c
@@ -25,18 +157,18 @@ u32 ast2600_sdramphy_config[165] = {
 	0x00002f07,	// phyr048
 	0x00003080,	// phyr04c
 	0x04000000,	// phyr050
-	0x00000200,	// phyr054
-	0x03140201,	// phyr058
-	0x04800000,	// phyr05c
-	0x0800044e,	// phyr060
+	((MR3_VAL << 16) | MR2_VAL),	/* phyr054 */
+	((MR0_VAL << 16) | MR1_VAL),	/* phyr058 */
+	((MR5_VAL << 16) | MR4_VAL),	/* phyr05c */
+	((0x0800 << 16) | MR6_VAL | VREFDQ_RANGE_2 | 0xe), /* phyr060 */
 	0x00000000,	// phyr064
 	0x00180008,	// phyr068
 	0x00e00400,	// phyr06c
 	0x00140206,	// phyr070
 	0x1d4c0000,	// phyr074
-	0x493e0107,	// phyr078
+	(0x493e0100 | T_PHY_WRLAT),	/* phyr078 */
 	0x08060404,	// phyr07c
-	0x90000a00,	// phyr080
+	(0x90000000 | T_RDDATA_EN),	/* phyr080 */
 	0x06420618,	// phyr084
 	0x00001002,	// phyr088
 	0x05701016,	// phyr08c
@@ -75,7 +207,7 @@ u32 ast2600_sdramphy_config[165] = {
 	0x20202020,	// phyr09c
 	0x20202020,	// phyr0a0
 	0x00002020,	// phyr0a4
-	0x80000000,	// phyr0a8
+	0x00000000,	/* phyr0a8 */
 	0x00000001,	// phyr0ac
 	0xaeeddeea,	// change address
 	0x1e6e0318,	// new address
@@ -135,7 +267,7 @@ u32 ast2600_sdramphy_config[165] = {
 	0x20202020,	// phyr170
 	0xaeeddeea,	// change address
 	0x1e6e0298,	// new address
-	0x20200800,	// phyr198
+	0x20200000,	/* phyr198 */
 	0x20202020,	// phyr19c
 	0x20202020,	// phyr1a0
 	0x20202020,	// phyr1a4
@@ -158,7 +290,7 @@ u32 ast2600_sdramphy_config[165] = {
 	0x00002020,	// phyr1e8
 	0xaeeddeea,	// change address
 	0x1e6e0304,	// new address
-	0x00000800,	// phyr204
+	(0x00000001 | WR_DATA_EYE_OFFSET), /* phyr204 */
 	0xaeeddeea,	// change address
 	0x1e6e027c,	// new address
 	0x4e400000,	// phyr17c
@@ -184,7 +316,7 @@ u32 ast2600_sdramphy_config[165] = {
 	0x20000000,	// phyr024
 	0x00000008,	// phyr028
 	0x00000000,	// phyr02c
-	0x00077600,	// phyr030
+	(PHY_RON | PHY_ODT),	/* phyr030 */
 	0x00000000,	// phyr034
 	0x00000000,	// phyr038
 	0x20000000,	// phyr03c
@@ -193,18 +325,18 @@ u32 ast2600_sdramphy_config[165] = {
 	0x00002f07,	// phyr048
 	0x00003080,	// phyr04c
 	0x04000000,	// phyr050
-	0x00000200,	// phyr054
-	0x03140501,	// phyr058-rtt:40
-	0x04800000,	// phyr05c
-	0x0800044e,	// phyr060
+	((MR3_VAL << 16) | MR2_VAL),	/* phyr054 */
+	((MR0_VAL << 16) | MR1_VAL),	/* phyr058 */
+	((MR5_VAL << 16) | MR4_VAL),	/* phyr05c */
+	((0x0800 << 16) | MR6_VAL | VREFDQ_RANGE_2 | 0xe), /* phyr060 */
 	0x00000000,	// phyr064
 	0x00180008,	// phyr068
 	0x00e00400,	// phyr06c
 	0x00140206,	// phyr070
 	0x1d4c0000,	// phyr074
-	0x493e0107,	// phyr078
+	(0x493e0100 | T_PHY_WRLAT),	// phyr078
 	0x08060404,	// phyr07c
-	0x90000a00,	// phyr080
+	(0x90000000 | T_RDDATA_EN),	// phyr080
 	0x06420c30,	// phyr084
 	0x00001002,	// phyr088
 	0x05701016,	// phyr08c
@@ -243,7 +375,7 @@ u32 ast2600_sdramphy_config[165] = {
 	0x20202020,	// phyr09c
 	0x20202020,	// phyr0a0
 	0x00002020,	// phyr0a4
-	0x80000000,	// phyr0a8
+	0x00000000,	/* phyr0a8 */
 	0x00000001,	// phyr0ac
 	0xaeeddeea,	// change address
 	0x1e6e0318,	// new address
@@ -303,7 +435,7 @@ u32 ast2600_sdramphy_config[165] = {
 	0x20202020,	// phyr170
 	0xaeeddeea,	// change address
 	0x1e6e0298,	// new address
-	0x20200800,	// phyr198
+	0x20200000,	/* phyr198 */
 	0x20202020,	// phyr19c
 	0x20202020,	// phyr1a0
 	0x20202020,	// phyr1a4
@@ -326,7 +458,7 @@ u32 ast2600_sdramphy_config[165] = {
 	0x00002020,	// phyr1e8
 	0xaeeddeea,	// change address
 	0x1e6e0304,	// new address
-	0x00000800,	// phyr204
+	(0x00000001 | WR_DATA_EYE_OFFSET), /* phyr204 */
 	0xaeeddeea,	// change address
 	0x1e6e027c,	// new address
 	0x4e400000,	// phyr17c

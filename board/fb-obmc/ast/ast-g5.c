@@ -1288,6 +1288,36 @@ int init_mac_TXRX_delay(void)
   return(0);
 }
 
+int init_SDIO_divider_clk(void){
+  /*
+   * SCU08  Clock Selection Register
+   * bit 15     SCDCLK clock running enable
+   *              0 stop clock
+   *              1 Enable clock
+   * bit 14:12  SDCCLK divider
+   *            000 SDCLK = H-PLL/4
+   *            001 SDCLK = H-PLL/8
+   *                  ...
+   *            110 SDCLK = H-PLL/28
+   *            111 SDCLK = H-PLL/32
+   */
+  #define AST2500_SCDCLK_MASK    (0xf << 12)
+  #define AST2500_SCDCLK_ENABLE  (0x1 << 15)
+  #define AST2500_SCDCLK_HPLL_4  (0x0 << 12)
+  #define AST2500_SCDCLK_HPLL_8  (0x1 << 12)
+  #define AST2500_SCDCLK_HPLL_12  (0x2 << 12)
+  #define AST2500_SCDCLK_HPLL_16  (0x3 << 12)
+  #define AST2500_SCDCLK_HPLL_20  (0x4 << 12)
+  #define AST2500_SCDCLK_HPLL_24  (0x5 << 12)
+  #define AST2500_SCDCLK_HPLL_28  (0x6 << 12)
+  #define AST2500_SCDCLK_HPLL_32  (0x7 << 12)
+  u32 reg = __raw_readl(AST_SCU_BASE + 0x08);
+  reg &= ~ AST2500_SCDCLK_MASK;
+  reg |= AST2500_SCDCLK_ENABLE | AST2500_SCDCLK_HPLL_8;
+  __raw_writel(reg, AST_SCU_BASE + 0x08);
+  return(0);
+}
+
 #endif
 
 int board_init(void)

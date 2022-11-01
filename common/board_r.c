@@ -59,6 +59,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #if defined(CONFIG_FBWEDGE400)
 extern int init_mac_TXRX_delay(void);
+extern int init_SDIO_divider_clk(void);
 #endif
 
 ulong monitor_flash_len;
@@ -856,6 +857,7 @@ static init_fnc_t init_sequence_r[] = {
 #endif
 
 #if defined(CONFIG_FBWEDGE400)
+	init_SDIO_divider_clk,
 	init_mac_TXRX_delay,
 #endif
 

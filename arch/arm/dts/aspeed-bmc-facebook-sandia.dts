@@ -86,6 +86,20 @@
 	pinctrl-0 = <&pinctrl_emmc_default>;
 };
 
+&scu {
+        /* In runBMC of same design, Lassen, it sees some yield loss where
+         * certain cards fail to ping in u-boot but can ping in Linux. Apply
+         * same TX delay on RGMII in u-boot to match Linux setting. Sandia has
+         * not seen the issue yet. This is a prevention.
+         */
+        mac2-clk-delay = <0x08 0x04
+                          0x08 0x04
+                          0x08 0x04>;
+        mac3-clk-delay = <0x08 0x04
+                          0x08 0x04
+                          0x08 0x04>;
+};
+
 #include <dt-bindings/gpio/aspeed-gpio.h>
 / {
 	smb_fpga_boot {

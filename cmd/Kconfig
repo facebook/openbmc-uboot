@@ -616,7 +616,10 @@ menu "Device access commands"
 
 config CMD_OTP
 	depends on ASPEED_AST2600
+	depends on SHA256 && SHA384 && SHA512
         bool "ASPEED otp program"
+	select HASH
+	select RSA
         default y
 
 config CMD_RNG

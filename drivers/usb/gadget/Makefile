@@ -21,6 +21,7 @@ obj-$(CONFIG_USB_GADGET_DWC2_OTG) += dwc2_udc_otg.o
 obj-$(CONFIG_USB_GADGET_DWC2_OTG_PHY) += dwc2_udc_otg_phy.o
 obj-$(CONFIG_USB_GADGET_FOTG210) += fotg210.o
 obj-$(CONFIG_CI_UDC)	+= ci_udc.o
+obj-$(CONFIG_ASPEED_UDC_GENERIC) += aspeed_udc.o
 ifndef CONFIG_SPL_BUILD
 obj-$(CONFIG_USB_GADGET_DOWNLOAD) += g_dnl.o
 obj-$(CONFIG_USB_FUNCTION_THOR) += f_thor.o
@@ -43,5 +44,6 @@ obj-y += core.o
 obj-y += ep0.o
 obj-$(CONFIG_DW_UDC) += designware_udc.o
 obj-$(CONFIG_CPU_PXA27X) += pxa27x_udc.o
+obj-$(CONFIG_ASPEED_UDC_USBTTY) += aspeed_usbtty.o
 endif
 endif

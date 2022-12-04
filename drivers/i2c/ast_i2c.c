@@ -4,6 +4,7 @@
  * Copyright 2016 IBM Corporation
  * Copyright 2017 Google, Inc.
  */
+
 #include <common.h>
 #include <clk.h>
 #include <dm.h>
@@ -72,7 +73,7 @@ static void ast_i2c_init_bus(struct udevice *dev)
 	/* Enable Master Mode. Assuming single-master */
 	writel(I2CD_MASTER_EN
 	       | I2CD_M_SDA_LOCK_EN
-	       | I2CD_MULTI_MASTER_DIS | I2CD_M_SCL_DRIVE_EN,
+	       | I2CD_MULTI_MASTER_DIS,
 	       &priv->regs->fcr);
 	/* Enable Interrupts */
 	writel(I2CD_INTR_TX_ACK
@@ -104,20 +105,18 @@ static int ast_i2c_ofdata_to_platdata(struct udevice *dev)
 
 static int ast_i2c_probe(struct udevice *dev)
 {
-	int ret;
+//	struct ast2500_scu *scu;
 
 	debug("Enabling I2C%u\n", dev->seq);
 
 	/*
-	 * Enable the i2c dev when no pinctrl support
-	 * i.e. in SPL
+	 * Get all I2C devices out of Reset.
+	 * Only needs to be done once, but doing it for every
+	 * device does not hurt.
 	 */
-	ret = ast_scu_enable_i2c_dev(dev);
-	if (ret) {
-		return ret;
-	}
-	//TODO scu reset and get clk
 
+	//TODO scu reset and get clk
+	
 	ast_i2c_init_bus(dev);
 
 	return 0;
@@ -339,7 +338,7 @@ static const struct dm_i2c_ops ast_i2c_ops = {
 static const struct udevice_id ast_i2c_ids[] = {
 	{ .compatible = "aspeed,ast2400-i2c-bus" },
 	{ .compatible = "aspeed,ast2500-i2c-bus" },
-	{ .compatible = "aspeed,ast2600-i2c-bus" },
+	{ .compatible = "aspeed,ast2600-i2c-bus" },	
 	{ },
 };
 

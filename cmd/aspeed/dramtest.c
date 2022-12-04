@@ -42,70 +42,67 @@ DECLARE_GLOBAL_DATA_PTR;
 #define BLK_SIZE			(BLK_SIZE_MB * 1024 * 1024)
 #define N_16B_IN_BLK			(BLK_SIZE / 16)
 
-/* ------------------------------------------------------------------------- */
-int MMCTestBurst(unsigned int datagen)
+static int MMCTestBurst(u32 datagen)
 {
-	unsigned int data;
-	unsigned int timeout = 0;
+	u32 data;
+	int timeout = 0;
 
-	writel(0x00000000, 0x1E6E0070);
-	writel((0x000000C1 | (datagen << 3)), 0x1E6E0070);
-  
+	writel(0x00000000, 0x1e6e0070);
+	writel((0x000000c1 | (datagen << 3)), 0x1e6e0070);
+
 	do {
-		data = readl(0x1E6E0070) & 0x3000;
+		data = readl(0x1e6e0070) & 0x3000;
 
-		if( data & 0x2000 )
-			return(0);
+		if (data & 0x2000)
+			return 0;
 
-		if( ++timeout > TIMEOUT_DRAM ) {
+		if (++timeout > TIMEOUT_DRAM) {
 			printf("Timeout!!\n");
-			writel(0x00000000, 0x1E6E0070);
-			return(0);
-		} 
+			writel(0x00000000, 0x1e6e0070);
+			return 0;
+		}
 	} while (!data);
 
-	writel(0x00000000, 0x1E6E0070);
+	writel(0x00000000, 0x1e6e0070);
 
-	return(1);
+	return 1;
 }
 
-/* ------------------------------------------------------------------------- */
-int MMCTestSingle(unsigned int datagen)
+static int MMCTestSingle(u32 datagen)
 {
-	unsigned int data;
-	unsigned int timeout = 0;
+	u32 data;
+	int timeout = 0;
 
-	writel(0x00000000, 0x1E6E0070);
-	writel((0x00000085 | (datagen << 3)), 0x1E6E0070);
+	writel(0x00000000, 0x1e6e0070);
+	writel((0x00000085 | (datagen << 3)), 0x1e6e0070);
 
 	do {
-		data = readl(0x1E6E0070) & 0x3000;
+		data = readl(0x1e6e0070) & 0x3000;
 
-		if( data & 0x2000 )
-			return(0);
+		if (data & 0x2000)
+			return 0;
 
-		if( ++timeout > TIMEOUT_DRAM ){
+		if (++timeout > TIMEOUT_DRAM) {
 			printf("Timeout!!\n");
-			writel(0x00000000, 0x1E6E0070);
+			writel(0x00000000, 0x1e6e0070);
 
-			return(0);
+			return 0;
 		}
-	} while ( !data );
-	
-	writel(0x00000000, 0x1E6E0070);
+	} while (!data);
 
-	return(1);
+	writel(0x00000000, 0x1e6e0070);
+
+	return 1;
 }
 
-/* ------------------------------------------------------------------------- */
-int MMCTest(void)
+static int MMCTest(void)
 {
 	unsigned int pattern;
 
 	pattern = rand();
-	writel(pattern, 0x1E6E007C);
-	printf("Pattern = %08X : ",pattern);
-  
+	writel(pattern, 0x1e6e007c);
+	printf("Pattern = %08X : ", pattern);
+
 	if(!MMCTestBurst(0))    return(0);
 	if(!MMCTestBurst(1))    return(0);
 	if(!MMCTestBurst(2))    return(0);
@@ -123,10 +120,9 @@ int MMCTest(void)
 	if(!MMCTestSingle(6))   return(0);
 	if(!MMCTestSingle(7))   return(0);
 
-	return(1);
+	return 1;
 }
 
-/* ------------------------------------------------------------------------- */
 static void print_usage(void)
 {
 	printf("\nASPEED DRAM BIST\n\n");
@@ -149,8 +145,8 @@ static void print_usage(void)
 	printf("\n\n");
 }
 
-static int 
-do_ast_dramtest(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[]) 
+static int do_ast_dramtest(cmd_tbl_t *cmdtp, int flag, int argc,
+			   char *const argv[])
 {
 	u32 PassCnt = 0;
 	unsigned long Testcounter = 0;
@@ -184,27 +180,30 @@ do_ast_dramtest(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	       DRAM_BASE | (block << MCR74_BLK_OFFSET) | ((length - 1) << MCR74_LEN_OFFSET) | 0xf);
 
 	ret = 1;
-	writel(0xFC600309, 0x1E6E0000);
+	writel(0xfc600309, 0x1e6e0000);
 	while ((Testcounter > PassCnt) || (Testcounter == 0)) {
-		clrsetbits_le32(0x1E6E0074, MCR74_BLK_LEN_MASK,
+		clrsetbits_le32(0x1e6e0074, MCR74_BLK_LEN_MASK,
 				(block << MCR74_BLK_OFFSET) | ((length - 1) << MCR74_LEN_OFFSET));
 
 		if (!MMCTest()) {
-			printf("FAIL %d/%ld (fail DQ 0x%08x)\n", PassCnt,
-			       Testcounter, readl(0x1E6E0078));
+			printf("FAIL %d/%ld (fail DQ 0x%08x)\n", PassCnt, Testcounter,
+			       readl(0x1e6e0078));
 			ret = 0;
 			break;
 		} else {
 			PassCnt++;
 			printf("Pass %d/%ld\n", PassCnt, Testcounter);
 		}
+
+		if (ctrlc())
+			break;
 	}
 
-	return (ret);
+	return ret;
 
 cmd_err:	
 	print_usage();
-	return (ret);
+	return ret;
 }
 
 U_BOOT_CMD(

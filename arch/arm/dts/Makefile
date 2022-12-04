@@ -677,15 +677,21 @@ dtb-$(CONFIG_ARCH_BCM6858) += \
 dtb-$(CONFIG_ARCH_ASPEED) += \
 	ast2400-evb.dtb \
 	ast2500-evb.dtb \
-	ast2600-evb.dtb \
-	ast2600-ncsi.dtb \
 	ast2600a0-evb.dtb \
 	ast2600a1-evb.dtb \
+	ast2600-bletchley.dtb \
+	ast2600-evb.dtb \
+	ast2600-dcscm.dtb \
 	ast2600-fpga.dtb \
+	ast2600-intel.dtb \
+	ast2600-ncsi.dtb \
+	ast2600-pfr.dtb \
 	ast2600-rainier.dtb \
+	ast2600-s6q.dtb \
 	ast2600-slt.dtb \
 	ast2600-tacoma.dtb \
-	ast2600-intel.dtb
+	ast2600-intel.dtb \
+	ast2600-tacoma.dtb
 
 dtb-$(CONFIG_TARGET_CISCO_CHURCHILLMONO) += \
 	aspeed-bmc-cisco-churchillmono.dtb

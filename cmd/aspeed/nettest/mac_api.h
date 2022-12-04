@@ -1,3 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
+/*
+ * Copyright (C) ASPEED Technology Inc.
+ */
 uint32_t mac_reg_read(MAC_ENGINE *p_eng, uint32_t addr);
 void mac_reg_write(MAC_ENGINE *p_eng, uint32_t addr, uint32_t data);
 void mac_set_delay(MAC_ENGINE *p_eng, int32_t rx_d, int32_t tx_d);

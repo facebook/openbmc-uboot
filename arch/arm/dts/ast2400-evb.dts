@@ -60,7 +60,6 @@
 &fmc {
 	status = "okay";
 	flash@0 {
-		compatible = "spi-flash", "sst,w25q256";
 		status = "okay";
 		spi-max-frequency = <50000000>;
 		spi-tx-bus-width = <2>;
@@ -68,7 +67,6 @@
 	};
 
 	flash@1 {
-                compatible = "spi-flash", "sst,w25q256";
                 status = "okay";
                 spi-max-frequency = <50000000>;
                 spi-tx-bus-width = <2>;
@@ -81,7 +79,6 @@
 	flash@0 {
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_spi1_default>;
-		compatible = "spi-flash", "sst,w25q256";
 		status = "okay";
 		spi-max-frequency = <50000000>;
 		spi-tx-bus-width = <2>;
@@ -90,7 +87,6 @@
 	flash@1 {
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_spi1_default &pinctrl_spi1cs1_default>;
-		compatible = "spi-flash", "sst,w25q256";
 		status = "okay";
 		spi-max-frequency = <50000000>;
 		spi-tx-bus-width = <2>;

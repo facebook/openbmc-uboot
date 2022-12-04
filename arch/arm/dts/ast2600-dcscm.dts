@@ -1,0 +1,146 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+/dts-v1/;
+
+#include "ast2600-evb.dts"
+
+/ {
+	model = "AST2600 DC-SCM";
+};
+
+&fmc {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_fmcquad_default>;
+	timing-calibration-disabled;
+	num-cs = <1>;
+
+	flash@0 {
+		status = "okay";
+		spi-max-frequency = <12500000>;
+		spi-tx-bus-width = <4>;
+		spi-rx-bus-width = <4>;
+	};
+
+	flash@1 {
+		status = "disabled";
+	};
+
+	flash@2 {
+		status = "disabled";
+	};
+};
+
+&spi1 {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_spi1_default &pinctrl_spi1abr_default
+			&pinctrl_spi1cs1_default &pinctrl_spi1wp_default
+			&pinctrl_spi1wp_default &pinctrl_spi1quad_default>;
+	timing-calibration-disabled;
+
+	flash@0 {
+		status = "okay";
+		spi-max-frequency = <12500000>;
+		spi-tx-bus-width = <4>;
+		spi-rx-bus-width = <4>;
+	};
+
+	flash@1 {
+		status = "okay";
+		spi-max-frequency = <12500000>;
+		spi-tx-bus-width = <4>;
+		spi-rx-bus-width = <4>;
+	};
+};
+
+&spi2 {
+	status = "disabled";
+};
+
+&emmc {
+	u-boot,dm-pre-reloc;
+	timing-phase = <0x000f0097>;
+};
+
+&emmc_slot0 {
+	u-boot,dm-pre-reloc;
+	status = "okay";
+	bus-width = <4>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_emmc_default>;
+	sdhci-drive-type = <1>;
+};
+
+&sdhci {
+	status = "disabled";
+};
+
+&sdhci_slot0 {
+	status = "disabled";
+};
+
+&sdhci_slot1 {
+	status = "disabled";
+};
+
+&i2c4 {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c5_default>;
+};
+
+&i2c5 {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c6_default>;
+};
+
+&i2c6 {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c7_default>;
+};
+
+&i2c7 {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c8_default>;
+};
+
+&i2c8 {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c9_default>;
+};
+
+&pcie_phy1 {
+	status = "disabled";
+};
+
+&pcie_bridge {
+	status = "disabled";
+};
+
+&ehci1 {
+	status = "disabled";
+};
+
+&mac0 {
+	status = "disabled";
+};
+
+&mac2 {
+	status = "disabled";
+};
+
+&mac3 {
+	status = "disabled";
+};
+

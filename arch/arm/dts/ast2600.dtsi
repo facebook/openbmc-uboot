@@ -115,8 +115,8 @@
 		};
 
 		fmc: flash-controller@1e620000 {
-			reg = < 0x1e620000 0xc4
-				0x20000000 0x10000000 >;
+			reg = <0x1e620000 0xc4
+			       0x20000000 0x10000000>;
 			#address-cells = <1>;
 			#size-cells = <0>;
 			compatible = "aspeed,ast2600-fmc";
@@ -142,8 +142,8 @@
 		};
 
 		spi1: flash-controller@1e630000 {
-			reg = < 0x1e630000 0xc4
-				0x30000000 0x08000000 >;
+			reg = <0x1e630000 0xc4
+			       0x30000000 0x10000000>;
 			#address-cells = <1>;
 			#size-cells = <0>;
 			compatible = "aspeed,ast2600-spi";
@@ -163,8 +163,8 @@
 		};
 
 		spi2: flash-controller@1e631000 {
-			reg = < 0x1e631000 0xc4
-				0x50000000 0x08000000 >;
+			reg = <0x1e631000 0xc4
+			       0x50000000 0x10000000>;
 			#address-cells = <1>;
 			#size-cells = <0>;
 			compatible = "aspeed,ast2600-spi";
@@ -236,6 +236,17 @@
 			#size-cells = <0>;
 			interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&scu ASPEED_CLK_GATE_MAC4CLK>;
+			status = "disabled";
+		};
+
+		vhub: usb-vhub@1e6a0000 {
+			compatible = "aspeed,ast2600-usb-vhub";
+			reg = <0x1e6a0000 0x350>;
+			interrupts = <GIC_SPI 5 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&syscon ASPEED_CLK_GATE_USBPORT1CLK>;
+			resets = <&rst ASPEED_RESET_EHCI_P1>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_usb2ad_default>;
 			status = "disabled";
 		};
 
@@ -313,9 +324,10 @@
 				status = "disabled";
 			};
 
-			arcy: arcy@1e6fa000 {
-				compatible = "aspeed,ast2600-arcy";
-				reg = <0x1e6fa000 0x1000>;
+			acry: acry@1e6fa000 {
+				compatible = "aspeed,ast2600-acry";
+				reg = <0x1e6fa000 0x1000>,
+				      <0x1e710000 0x20000>;
 				interrupts = <GIC_SPI 160 IRQ_TYPE_LEVEL_HIGH>;
 				clocks = <&scu ASPEED_CLK_GATE_RSAECCCLK>;
 				clock-names = "rsaeccclk";
@@ -331,40 +343,6 @@
 				compatible = "aspeed,ast2500-gfx", "syscon";
 				reg = <0x1e6e6000 0x1000>;
 				reg-io-width = <4>;
-			};
-
-			pcie_bridge0: pcie@1e6ed000 {
-				compatible = "aspeed,ast2600-pcie";
-				#address-cells = <3>;
-				#size-cells = <2>;
-				reg = <0x1e6ed000 0x100>;
-				ranges = <0x81000000 0x0 0x0 0x0 0x0 0x10000   /* downstream I/O */
-						0x82000000 0x0 0x60000000 0x60000000 0x0 0x10000000>; /* non-prefetchable memory */
-				device_type = "pci";
-				bus-range = <0x00 0xff>;
-				resets = <&rst ASPEED_RESET_PCIE_DEV_O>;
-				cfg-handle = <&pcie_cfg0>;
-				pinctrl-names = "default";
-                                pinctrl-0 = <&pinctrl_pcie0rc_default>;
-
-				status = "disabled";
-			};
-
-			pcie_bridge1: pcie@1e6ed200 {
-				compatible = "aspeed,ast2600-pcie";
-				#address-cells = <3>;
-				#size-cells = <2>;
-				reg = <0x1e6ed200 0x100>;
-				ranges = <0x81000000 0x0 0x0 0x10000 0x00 0x10000   /* downstream I/O */
-						0x82000000 0x0 0x70000000 0x70000000 0x0 0x10000000>; /* non-prefetchable memory */
-				device_type = "pci";
-				bus-range = <0x00 0xff>;
-				resets = <&rst ASPEED_RESET_PCIE_RC_O>;
-				cfg-handle = <&pcie_cfg1>;
-				pinctrl-names = "default";
-				pinctrl-0 = <&pinctrl_pcie1rc_default>;
-
-				status = "disabled";
 			};
 
 			sdhci: sdhci@1e740000 {
@@ -422,26 +400,37 @@
 				};
 			};
 
-			h2x: h2x@1e770000 {
-				compatible = "aspeed,ast2600-h2x";
-				reg = <0x1e770000 0x100>;
-				interrupts = <GIC_SPI 29 IRQ_TYPE_LEVEL_HIGH>;
-				resets = <&rst ASPEED_RESET_H2X>;
-				#address-cells = <1>;
-				#size-cells = <1>;
-				ranges = <0x0 0x1e770000 0x100>;
-
+			pcie_phy0: phy@1e6ed000 {
+				compatible = "aspeed,ast2600-pcie_phy";
+				reg = <0x1e6ed000 0x100>;
+				resets = <&rst ASPEED_RESET_PCIE_DEV_O>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&pinctrl_pcie0rc_default>;
 				status = "disabled";
+			};
 
-				pcie_cfg0: cfg0@80 {
-					reg = <0x80 0x80>;
-					compatible = "aspeed,ast2600-pcie-cfg";
-				};
+			pcie_phy1: phy@1e6ed200 {
+				compatible = "aspeed,ast2600-pcie_phy";
+				reg = <0x1e6ed200 0x100>;
+				resets = <&rst ASPEED_RESET_PCIE_RC_O>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&pinctrl_pcie1rc_default>;
+				status = "disabled";
+			};
 
-				pcie_cfg1: cfg1@C0 {
-					compatible = "aspeed,ast2600-pcie-cfg";
-					reg = <0xC0 0x80>;
-				};
+			pcie_bridge: pcie@1e770000 {
+				compatible = "aspeed,ast2600-pcie";
+				#address-cells = <3>;
+				#size-cells = <2>;
+				reg = <0x1e770000 0x100>;
+				ranges = <0x81000000 0x0 0x0 0x0 0x0 0x10000   /* downstream I/O */
+						0x82000000 0x0 0x60000000 0x60000000 0x0 0x20000000>; /* non-prefetchable memory */
+				device_type = "pci";
+				bus-range = <0x00 0xff>;
+				resets = <&rst ASPEED_RESET_H2X>, <&rst ASPEED_RESET_PCIE_DEV_O>, <&rst ASPEED_RESET_PCIE_RC_O>;
+				slot0-handle = <&pcie_phy0>;
+				slot1-handle = <&pcie_phy1>;
+				status = "disabled";
 			};
 
 			gpio0: gpio@1e780000 {
@@ -769,7 +758,7 @@
 				compatible = "aspeed,ast2600-displayport";
 				reg = <0x1e6eb000 0x200>;
 				interrupts = <GIC_SPI 30 IRQ_TYPE_LEVEL_HIGH>;
-				resets = <&rst ASPEED_RESET_DP> ,<&rst ASPEED_RESET_DP_MCU>;
+				resets = <&rst ASPEED_RESET_DP>, <&rst ASPEED_RESET_DP_MCU>;
 				status = "disabled";
 			};
 
@@ -784,9 +773,6 @@
 		compatible = "aspeed,ast2600-i2c-global";
 		reg = <0x0 0x40>;
 		resets = <&rst ASPEED_RESET_I2C>;
-#if 0
-		new-mode;
-#endif
 	};
 
 	i2c0: i2c@80 {
@@ -799,6 +785,8 @@
 		bus-frequency = <100000>;
 		interrupts = <GIC_SPI 110 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&scu ASPEED_CLK_APB2>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_i2c1_default>;
 		status = "disabled";
 	};
 
@@ -812,6 +800,8 @@
 		bus-frequency = <100000>;
 		interrupts = <GIC_SPI 111 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&scu ASPEED_CLK_APB2>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_i2c2_default>;
 		status = "disabled";
 	};
 
@@ -825,6 +815,8 @@
 		bus-frequency = <100000>;
 		interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&scu ASPEED_CLK_APB2>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_i2c3_default>;
 	};
 
 	i2c3: i2c@200 {
@@ -837,6 +829,8 @@
 		bus-frequency = <100000>;
 		interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&scu ASPEED_CLK_APB2>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_i2c4_default>;
 	};
 
 	i2c4: i2c@280 {
@@ -849,6 +843,8 @@
 		bus-frequency = <100000>;
 		interrupts = <GIC_SPI 114 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&scu ASPEED_CLK_APB2>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_i2c5_default>;
 	};
 
 	i2c5: i2c@300 {
@@ -861,6 +857,8 @@
 		bus-frequency = <100000>;
 		interrupts = <GIC_SPI 115 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&scu ASPEED_CLK_APB2>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_i2c6_default>;
 	};
 
 	i2c6: i2c@380 {
@@ -873,6 +871,8 @@
 		bus-frequency = <100000>;
 		interrupts = <GIC_SPI 116 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&scu ASPEED_CLK_APB2>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_i2c7_default>;
 	};
 
 	i2c7: i2c@400 {
@@ -885,6 +885,8 @@
 		bus-frequency = <100000>;
 		interrupts = <GIC_SPI 117 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&scu ASPEED_CLK_APB2>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_i2c8_default>;
 	};
 
 	i2c8: i2c@480 {
@@ -897,6 +899,8 @@
 		bus-frequency = <100000>;
 		interrupts = <GIC_SPI 118 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&scu ASPEED_CLK_APB2>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_i2c9_default>;
 	};
 
 	i2c9: i2c@500 {
@@ -909,6 +913,8 @@
 		bus-frequency = <100000>;
 		interrupts = <GIC_SPI 119 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&scu ASPEED_CLK_APB2>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_i2c10_default>;
 		status = "disabled";
 	};
 
@@ -922,6 +928,8 @@
 		bus-frequency = <100000>;
 		interrupts = <GIC_SPI 120 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&scu ASPEED_CLK_APB2>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_i2c11_default>;
 		status = "disabled";
 	};
 
@@ -935,6 +943,8 @@
 		bus-frequency = <100000>;
 		interrupts = <GIC_SPI 121 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&scu ASPEED_CLK_APB2>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_i2c12_default>;
 		status = "disabled";
 	};
 
@@ -948,6 +958,8 @@
 		bus-frequency = <100000>;
 		interrupts = <GIC_SPI 122 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&scu ASPEED_CLK_APB2>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_i2c13_default>;
 		status = "disabled";
 	};
 
@@ -961,6 +973,8 @@
 		bus-frequency = <100000>;
 		interrupts = <GIC_SPI 123 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&scu ASPEED_CLK_APB2>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_i2c14_default>;
 		status = "disabled";
 	};
 
@@ -974,6 +988,8 @@
 		bus-frequency = <100000>;
 		interrupts = <GIC_SPI 124 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&scu ASPEED_CLK_APB2>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_i2c15_default>;
 		status = "disabled";
 	};
 
@@ -987,6 +1003,8 @@
 		bus-frequency = <100000>;
 		interrupts = <GIC_SPI 125 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&scu ASPEED_CLK_APB2>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_i2c16_default>;
 		status = "disabled";
 	};
 
@@ -1212,6 +1230,7 @@
 		function = "I2C1";
 		groups = "I2C1";
 	};
+
 	pinctrl_i2c2_default: i2c2_default {
 		function = "I2C2";
 		groups = "I2C2";
@@ -1285,6 +1304,56 @@
 	pinctrl_i2c16_default: i2c16_default {
 		function = "I2C16";
 		groups = "I2C16";
+	};
+
+	pinctrl_si2c1_default: si2c1_default {
+		function = "SI2C1";
+		groups = "SI2C1";
+	};
+
+	pinctrl_si2c2_default: si2c2_default {
+		function = "SI2C2";
+		groups = "SI2C2";
+	};
+
+	pinctrl_si2c3_default: si2c3_default {
+		function = "SI2C3";
+		groups = "SI2C3";
+	};
+
+	pinctrl_si2c4_default: si2c4_default {
+		function = "SI2C4";
+		groups = "SI2C4";
+	};
+
+	pinctrl_si2c5_default: si2c5_default {
+		function = "SI2C5";
+		groups = "SI2C5";
+	};
+
+	pinctrl_si2c6_default: si2c6_default {
+		function = "SI2C6";
+		groups = "SI2C6";
+	};
+
+	pinctrl_si2c7_default: si2c7_default {
+		function = "SI2C7";
+		groups = "SI2C7";
+	};
+
+	pinctrl_si2c8_default: si2c8_default {
+		function = "SI2C8";
+		groups = "SI2C8";
+	};
+
+	pinctrl_si2c9_default: si2c9_default {
+		function = "SI2C9";
+		groups = "SI2C9";
+	};
+
+	pinctrl_si2c10_default: si2c10_default {
+		function = "SI2C10";
+		groups = "SI2C10";
 	};
 
 	pinctrl_lad0_default: lad0_default {
@@ -1920,6 +1989,11 @@
 	pinctrl_usbcki_default: usbcki_default {
 		function = "USBCKI";
 		groups = "USBCKI";
+	};
+
+	pinctrl_usb2ad_default: usb2ad_default {
+		function = "USB2AD";
+		groups = "USB2AD";
 	};
 
 	pinctrl_usb2ah_default: usb2ah_default {

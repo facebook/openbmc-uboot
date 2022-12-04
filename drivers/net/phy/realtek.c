@@ -391,12 +391,26 @@ static struct phy_driver RTL8211FD_VX_driver = {
 	.writeext = &rtl8211f_phy_extwrite,
 };
 
+/* Support for RTL8211F-VD PHY */
+static struct phy_driver RTL8211F_VD_driver = {
+	.name = "RealTek RTL8211F-VD",
+	.uid = 0x1cc870,
+	.mask = 0xfffff0,
+	.features = PHY_GBIT_FEATURES,
+	.config = &rtl8211f_config,
+	.startup = &rtl8211f_startup,
+	.shutdown = &genphy_shutdown,
+	.readext = &rtl8211f_phy_extread,
+	.writeext = &rtl8211f_phy_extwrite,
+};
+
 int phy_realtek_init(void)
 {
 	phy_register(&RTL8211B_driver);
 	phy_register(&RTL8211E_driver);
 	phy_register(&RTL8211F_driver);
 	phy_register(&RTL8211FD_VX_driver);
+	phy_register(&RTL8211F_VD_driver);
 	phy_register(&RTL8211DN_driver);
 
 	return 0;

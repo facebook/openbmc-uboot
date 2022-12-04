@@ -1,3 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
+/*
+ * Copyright (C) ASPEED Technology Inc.
+ */
 void recov_phy_marvell(MAC_ENGINE *eng);
 void phy_marvell(MAC_ENGINE *eng);
 void recov_phy_marvell0(MAC_ENGINE *eng);
@@ -41,7 +45,7 @@ struct phy_desc {
 	PHY_ENGINE cfg;
 };
 
-#define PHY_LOOKUP_N 34
+#define PHY_LOOKUP_N 35
 static const struct phy_desc phy_lookup_tbl[PHY_LOOKUP_N] = {
 	{ .id1 = 0x001c,
 	  .id2 = 0xc916,
@@ -53,6 +57,12 @@ static const struct phy_desc phy_lookup_tbl[PHY_LOOKUP_N] = {
 	  .id2 = 0xc859,
 	  .id2_mask = 0xffff,
 	  .name = "RTL8211FD-VX",
+	  .cfg.fp_set = phy_realtek5,
+	  .cfg.fp_clr = recov_phy_realtek5 },
+	{ .id1 = 0x001c,
+	  .id2 = 0xc870,
+	  .id2_mask = 0xfff0,
+	  .name = "RTL8211F-VD",
 	  .cfg.fp_set = phy_realtek5,
 	  .cfg.fp_clr = recov_phy_realtek5 },
 	{ .id1 = 0x001c,

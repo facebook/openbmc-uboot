@@ -182,6 +182,12 @@ void aspeed_mmc_init(void)
 	if ((readl(0x1e6e2500) & 0x4) == 0)
 		return;
 
+	/*
+	 * disable fmc wdt since it will be triggered
+	 * when flash memory is touched
+	 */
+	writel(readl(0x1e620064) & 0xfffffffe, 0x1e620064);
+
 	/* disable eMMC boot controller engine */
 	*(volatile int *)0x1e6f500C &= ~0x90000000;
 	/* set pinctrl for eMMC */
@@ -226,4 +232,3 @@ void aspeed_mmc_init(void)
 	return;
 
 }
-

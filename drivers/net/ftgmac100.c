@@ -117,7 +117,7 @@ static int ftgmac100_mdio_read(struct mii_dev *bus, int phy_addr, int dev_addr,
 				 FTGMAC100_MDIO_TIMEOUT_USEC);
 	if (ret) {
 		pr_err("%s: mdio read failed (phy:%d reg:%x)\n",
-		       priv->phydev->dev->name, phy_addr, reg_addr);
+		       bus->name, phy_addr, reg_addr);
 		return ret;
 	}
 
@@ -149,7 +149,7 @@ static int ftgmac100_mdio_write(struct mii_dev *bus, int phy_addr, int dev_addr,
 				 FTGMAC100_MDIO_TIMEOUT_USEC);
 	if (ret) {
 		pr_err("%s: mdio write failed (phy:%d reg:%x)\n",
-		       priv->phydev->dev->name, phy_addr, reg_addr);
+		       bus->name, phy_addr, reg_addr);
 	}
 
 	return ret;
@@ -597,6 +597,12 @@ static int ftgmac100_probe(struct udevice *dev)
 		goto out;
 
 	if (priv->ncsi_mode) {
+		if (!IS_ENABLED(CONFIG_PHY_NCSI)) {
+			dev_err(dev,
+				"ftgmac100: NCSI in dts but CONFIG_PHY_NCSI missing. Please fix config\n");
+			return -EINVAL;
+		}
+
 		printf("%s - NCSI detected\n", __func__);
 	} else {
 		ret = ftgmac100_mdio_init(dev);

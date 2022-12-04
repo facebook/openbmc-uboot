@@ -20,6 +20,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 u32 aspeed_bootmode(void);
 void aspeed_mmc_init(void);
+static void spl_boot_from_uart_wdt_disable(void);
 
 void board_init_f(ulong dummy)
 {
@@ -29,6 +30,7 @@ void board_init_f(ulong dummy)
 	preloader_console_init();
 	dram_init();
 	aspeed_mmc_init();
+	spl_boot_from_uart_wdt_disable();
 #endif
 }
 
@@ -37,37 +39,17 @@ void spl_board_init(void)
 {
 	struct udevice *dev;
 
-	if (uclass_get_device_by_driver(UCLASS_MISC,
+	if (IS_ENABLED(CONFIG_ASPEED_HACE) &&
+	    uclass_get_device_by_driver(UCLASS_MISC,
 					DM_GET_DRIVER(aspeed_hace),
 					&dev)) {
 		debug("Warning: HACE initialization failure\n");
-	}
-
-	if (uclass_get_device_by_driver(UCLASS_MISC,
-					DM_GET_DRIVER(aspeed_arcy),
-					&dev)) {
-		debug("Warning: ARCY initialization failure\n");
 	}
 }
 #endif
 
 u32 spl_boot_device(void)
 {
-#ifdef CONFIG_ASPEED_LOADERS
-	switch (aspeed_bootmode()) {
-	case AST_BOOTMODE_EMMC:
-		return (IS_ENABLED(CONFIG_ASPEED_SECURE_BOOT))?
-			ASPEED_SECBOOT_DEVICE_MMC : ASPEED_BOOT_DEVICE_MMC;
-	case AST_BOOTMODE_SPI:
-		return (IS_ENABLED(CONFIG_ASPEED_SECURE_BOOT))?
-			ASPEED_SECBOOT_DEVICE_RAM : ASPEED_BOOT_DEVICE_RAM;
-	case AST_BOOTMODE_UART:
-		return (IS_ENABLED(CONFIG_ASPEED_SECURE_BOOT))?
-			ASPEED_SECBOOT_DEVICE_UART : ASPEED_BOOT_DEVICE_UART;
-	default:
-		break;
-	}
-#else
 	switch (aspeed_bootmode()) {
 	case AST_BOOTMODE_EMMC:
 		return BOOT_DEVICE_MMC1;
@@ -78,7 +60,6 @@ u32 spl_boot_device(void)
 	default:
 		break;
 	}
-#endif
 
 	return BOOT_DEVICE_NONE;
 }
@@ -101,4 +82,15 @@ int board_fit_config_name_match(const char *name)
 struct image_header *spl_get_load_buffer(ssize_t offset, size_t size)
 {
 	return (struct image_header *)(CONFIG_SYS_LOAD_ADDR);
+}
+
+static void spl_boot_from_uart_wdt_disable(void)
+{
+	int boot_mode = aspeed_bootmode();
+
+	/* Disable ABR WDT for SPI flash and eMMC ABR. */
+	if (boot_mode == AST_BOOTMODE_UART) {
+		writel(0, 0x1e620064);
+		writel(0, 0x1e6f20a0);
+	}
 }

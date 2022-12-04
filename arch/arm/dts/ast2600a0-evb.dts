@@ -115,7 +115,6 @@
 	pinctrl-0 = <&pinctrl_fmcquad_default>;
 
 	flash@0 {
-		compatible = "spi-flash", "sst,w25q256";
 		status = "okay";
 		spi-max-frequency = <50000000>;
 		spi-tx-bus-width = <4>;
@@ -123,7 +122,6 @@
 	};
 
 	flash@1 {
-		compatible = "spi-flash", "sst,w25q256";
 		status = "okay";
 		spi-max-frequency = <50000000>;
 		spi-tx-bus-width = <4>;
@@ -131,8 +129,7 @@
 	};
 
 	flash@2 {
-		compatible = "spi-flash", "sst,w25q256";
-		status = "okay";
+		status = "disabled";
 		spi-max-frequency = <50000000>;
 		spi-tx-bus-width = <4>;
 		spi-rx-bus-width = <4>;
@@ -148,7 +145,6 @@
 			&pinctrl_spi1wp_default &pinctrl_spi1quad_default>;
 
 	flash@0 {
-		compatible = "spi-flash", "sst,w25q256";
 		status = "okay";
 		spi-max-frequency = <50000000>;
 		spi-tx-bus-width = <4>;
@@ -156,8 +152,7 @@
 	};
 
 	flash@1 {
-		compatible = "spi-flash", "sst,w25q256";
-		status = "okay";
+		status = "disabled";
 		spi-max-frequency = <50000000>;
 		spi-tx-bus-width = <4>;
 		spi-rx-bus-width = <4>;
@@ -172,7 +167,6 @@
 			&pinctrl_spi2cs2_default &pinctrl_spi2quad_default>;
 
 	flash@0 {
-		compatible = "spi-flash", "sst,w25q256";
 		status = "okay";
 		spi-max-frequency = <50000000>;
 		spi-tx-bus-width = <4>;
@@ -180,16 +174,14 @@
 	};
 
 	flash@1 {
-		compatible = "spi-flash", "sst,w25q256";
-		status = "okay";
+		status = "disabled";
 		spi-max-frequency = <50000000>;
 		spi-tx-bus-width = <4>;
 		spi-rx-bus-width = <4>;
 	};
 
 	flash@2 {
-		compatible = "spi-flash", "sst,w25q256";
-		status = "okay";
+		status = "disabled";
 		spi-max-frequency = <50000000>;
 		spi-tx-bus-width = <4>;
 		spi-rx-bus-width = <4>;
@@ -263,19 +255,6 @@
 	pinctrl-0 = <&pinctrl_i2c9_default>;
 };
 
-#if 0
-&pcie_bridge0 {
-	status = "okay";
-};
-#endif
-
-&pcie_bridge1 {
-	status = "okay";
-};
-
-&h2x {
-	status = "okay";
-};
 
 #if 0
 &fsim0 {

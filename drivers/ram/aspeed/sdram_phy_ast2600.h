@@ -82,7 +82,10 @@
  */
 #define RTT_WR				(0x0 << 9)
 
-#if defined(CONFIG_ASPEED_DDR4_DRAM_ODT60)
+#if defined(CONFIG_ASPEED_DDR4_DRAM_ODT80)
+#define RTT_NOM				(0x6 << 8)
+#define RTT_PARK			(0x6 << 6)
+#elif defined(CONFIG_ASPEED_DDR4_DRAM_ODT60)
 #define RTT_NOM				(0x1 << 8)
 #define RTT_PARK			(0x1 << 6)
 #elif defined(CONFIG_ASPEED_DDR4_DRAM_ODT48)

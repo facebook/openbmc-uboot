@@ -13,7 +13,7 @@ config ASPEED_HACE
 	 Enabling this allows the use of SHA operations in hardware without requiring the
 	 SHA software implementations, saving code size.
 
-config ASPEED_ARCY
+config ASPEED_ACRY
 	bool "ASPEED ECC/RSA Engine"
 	depends on ASPEED_AST2600
 	help

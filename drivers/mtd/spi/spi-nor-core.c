@@ -34,6 +34,29 @@
 
 #define DEFAULT_READY_WAIT_JIFFIES		(40UL * HZ)
 
+/**
+ * spi_nor_setup_op() - Set up common properties of a spi-mem op.
+ * @nor:		pointer to a 'struct spi_nor'
+ * @op:			pointer to the 'struct spi_mem_op' whose properties
+ *			need to be initialized.
+ * @proto:		the protocol from which the properties need to be set.
+ */
+void spi_nor_setup_op(const struct spi_nor *nor,
+		      struct spi_mem_op *op,
+		      const enum spi_nor_protocol proto)
+{
+	op->cmd.buswidth = spi_nor_get_protocol_inst_nbits(proto);
+
+	if (op->addr.nbytes)
+		op->addr.buswidth = spi_nor_get_protocol_addr_nbits(proto);
+
+	if (op->dummy.nbytes)
+		op->dummy.buswidth = spi_nor_get_protocol_addr_nbits(proto);
+
+	if (op->data.nbytes)
+		op->data.buswidth = spi_nor_get_protocol_data_nbits(proto);
+}
+
 static int spi_nor_read_write_reg(struct spi_nor *nor, struct spi_mem_op
 		*op, void *buf)
 {
@@ -69,6 +92,40 @@ static int spi_nor_write_reg(struct spi_nor *nor, u8 opcode, u8 *buf, int len)
 
 	return spi_nor_read_write_reg(nor, &op, buf);
 }
+
+#ifdef CONFIG_SPI_FLASH_SPANSION
+static int spansion_read_any_reg(struct spi_nor *nor, u32 addr, u8 dummy,
+				 u8 *val)
+{
+	int ret;
+	u8 dummy_ori;
+	struct spi_mem_op op =
+			SPI_MEM_OP(SPI_MEM_OP_CMD(SPINOR_OP_RDAR, 1),
+				   SPI_MEM_OP_ADDR(nor->addr_width, addr, 1),
+				   SPI_MEM_OP_DUMMY(dummy / 8, 1),
+				   SPI_MEM_OP_DATA_IN(1, NULL, 1));
+
+	dummy_ori = nor->read_dummy;
+	nor->read_dummy = dummy;
+
+	ret = spi_nor_read_write_reg(nor, &op, val);
+
+	nor->read_dummy = dummy_ori;
+
+	return ret;
+}
+
+static int spansion_write_any_reg(struct spi_nor *nor, u32 addr, u8 val)
+{
+	struct spi_mem_op op =
+			SPI_MEM_OP(SPI_MEM_OP_CMD(SPINOR_OP_WRAR, 1),
+				   SPI_MEM_OP_ADDR(nor->addr_width, addr, 1),
+				   SPI_MEM_OP_NO_DUMMY,
+				   SPI_MEM_OP_DATA_OUT(1, NULL, 1));
+
+	return spi_nor_read_write_reg(nor, &op, &val);
+}
+#endif
 
 static ssize_t spi_nor_read_data(struct spi_nor *nor, loff_t from, size_t len,
 				 u_char *buf)
@@ -550,6 +607,7 @@ static int spi_nor_erase_sector(struct spi_nor *nor, u32 addr)
 {
 	u8 buf[SPI_NOR_MAX_ADDR_WIDTH];
 	int i;
+	int ret = 0;
 
 	if (nor->erase)
 		return nor->erase(nor, addr);
@@ -563,7 +621,11 @@ static int spi_nor_erase_sector(struct spi_nor *nor, u32 addr)
 		addr >>= 8;
 	}
 
-	return nor->write_reg(nor, nor->erase_opcode, buf, nor->addr_width);
+	ret = nor->write_reg(nor, nor->erase_opcode, buf, nor->addr_width);
+	if (ret)
+		return ret;
+
+	return nor->mtd.erasesize;
 }
 
 /*
@@ -595,11 +657,11 @@ static int spi_nor_erase(struct mtd_info *mtd, struct erase_info *instr)
 		write_enable(nor);
 
 		ret = spi_nor_erase_sector(nor, addr);
-		if (ret)
+		if (ret < 0)
 			goto erase_err;
 
-		addr += mtd->erasesize;
-		len -= mtd->erasesize;
+		addr += ret;
+		len -= ret;
 
 		ret = spi_nor_wait_till_ready(nor);
 		if (ret)
@@ -614,6 +676,114 @@ erase_err:
 
 	return ret;
 }
+
+#ifdef CONFIG_SPI_FLASH_SPANSION
+/**
+ * spansion_erase_non_uniform() - erase non-uniform sectors for Spansion/Cypress
+ *                                chips
+ * @nor:	pointer to a 'struct spi_nor'
+ * @addr:	address of the sector to erase
+ * @opcode_4k:	opcode for 4K sector erase
+ * @ovlsz_top:	size of overlaid portion at the top address
+ * @ovlsz_btm:	size of overlaid portion at the bottom address
+ *
+ * Erase an address range on the nor chip that can contain 4KB sectors overlaid
+ * on top and/or bottom. The appropriate erase opcode and size are chosen by
+ * address to erase and size of overlaid portion.
+ *
+ * Return: number of bytes erased on success, -errno otherwise.
+ */
+static int spansion_erase_non_uniform(struct spi_nor *nor, u32 addr,
+				      u8 opcode_4k, u32 ovlsz_top,
+				      u32 ovlsz_btm)
+{
+	struct spi_mem_op op =
+		SPI_MEM_OP(SPI_MEM_OP_CMD(nor->erase_opcode, 0),
+			   SPI_MEM_OP_ADDR(nor->addr_width, addr, 0),
+			   SPI_MEM_OP_NO_DUMMY,
+			   SPI_MEM_OP_NO_DATA);
+	struct mtd_info *mtd = &nor->mtd;
+	u32 erasesize;
+	int ret;
+
+	/* 4KB sectors */
+	if (op.addr.val < ovlsz_btm ||
+	    op.addr.val >= mtd->size - ovlsz_top) {
+		op.cmd.opcode = opcode_4k;
+		erasesize = SZ_4K;
+
+	/* Non-overlaid portion in the normal sector at the bottom */
+	} else if (op.addr.val == ovlsz_btm) {
+		op.cmd.opcode = nor->erase_opcode;
+		erasesize = mtd->erasesize - ovlsz_btm;
+
+	/* Non-overlaid portion in the normal sector at the top */
+	} else if (op.addr.val == mtd->size - mtd->erasesize) {
+		op.cmd.opcode = nor->erase_opcode;
+		erasesize = mtd->erasesize - ovlsz_top;
+
+	/* Normal sectors */
+	} else {
+		op.cmd.opcode = nor->erase_opcode;
+		erasesize = mtd->erasesize;
+	}
+
+	spi_nor_setup_op(nor, &op, nor->write_proto);
+
+	ret = spi_mem_exec_op(nor->spi, &op);
+	if (ret)
+		return ret;
+
+	return erasesize;
+}
+
+static int s25hx_t_erase_non_uniform(struct spi_nor *nor, loff_t addr)
+{
+	/* Support 32 x 4KB sectors at bottom */
+	return spansion_erase_non_uniform(nor, addr, SPINOR_OP_BE_4K_4B, 0,
+					  SZ_128K);
+}
+
+static int s25hx_t_setup(struct spi_nor *nor, const struct flash_info *info)
+{
+	int ret;
+	u8 cfr3v;
+
+#ifdef CONFIG_SPI_FLASH_BAR
+	return -ENOTSUPP; /* Bank Address Register is not supported */
+#endif
+	/*
+	 * Read CFR3V to check if uniform sector is selected. If not, assign an
+	 * erase hook that supports non-uniform erase.
+	 */
+	ret = spansion_read_any_reg(nor, SPINOR_REG_ADDR_CFR3V, 0, &cfr3v);
+	if (ret)
+		return ret;
+
+	if (!(cfr3v & CFR3V_UNHYSA))
+		nor->erase = s25hx_t_erase_non_uniform;
+
+	return 0;
+}
+
+static bool cypress_s25hx_t(const struct flash_info *info)
+{
+	if (JEDEC_MFR(info) == SNOR_MFR_CYPRESS) {
+		switch (info->id[1]) {
+		case 0x2a: /* S25HL (QSPI, 3.3V) */
+		case 0x2b: /* S25HS (QSPI, 1.8V) */
+			return true;
+			break;
+
+		default:
+			break;
+		}
+	}
+
+	return false;
+}
+
+#endif
 
 static int micron_read_nvcr(struct spi_nor *nor)
 {
@@ -686,71 +856,6 @@ static int micron_read_cr_quad_enable(struct spi_nor *nor)
 
 	return 0;
 }
-
-#ifdef CONFIG_SPI_FLASH_SPANSION
-/*
- * Erase for Spansion/Cypress Flash devices that has overlaid 4KB sectors at
- * the top and/or bottom.
- */
-static int spansion_overlaid_erase(struct mtd_info *mtd,
-				   struct erase_info *instr)
-{
-	struct spi_nor *nor = mtd_to_spi_nor(mtd);
-	struct erase_info instr_4k;
-	u8 opcode;
-	u32 erasesize;
-	int ret;
-
-	/* Perform default erase operation (non-overlaid portion is erased) */
-	ret = spi_nor_erase(mtd, instr);
-	if (ret)
-		return ret;
-
-	/* Backup default erase opcode and size */
-	opcode = nor->erase_opcode;
-	erasesize = mtd->erasesize;
-
-	/*
-	 * Erase 4KB sectors. Use the possible max length of 4KB sector region.
-	 * The Flash just ignores the command if the address is not configured
-	 * as 4KB sector and reports ready status immediately.
-	 */
-	instr_4k.len = SZ_128K;
-	nor->erase_opcode = SPINOR_OP_BE_4K_4B;
-	mtd->erasesize = SZ_4K;
-	if (instr->addr == 0) {
-		instr_4k.addr = 0;
-		ret = spi_nor_erase(mtd, &instr_4k);
-	}
-	if (!ret && instr->addr + instr->len == mtd->size) {
-		instr_4k.addr = mtd->size - instr_4k.len;
-		ret = spi_nor_erase(mtd, &instr_4k);
-	}
-
-	/* Restore erase opcode and size */
-	nor->erase_opcode = opcode;
-	mtd->erasesize = erasesize;
-
-	return ret;
-}
-
-static bool cypress_s25hx_t(const struct flash_info *info)
-{
-	if (JEDEC_MFR(info) == SNOR_MFR_CYPRESS) {
-		switch (info->id[1]) {
-		case 0x2a: /* S25HL (QSPI, 3.3V) */
-		case 0x2b: /* S25HS (QSPI, 1.8V) */
-			return true;
-			break;
-
-		default:
-			break;
-		}
-	}
-
-	return false;
-}
-#endif
 
 #if defined(CONFIG_SPI_FLASH_STMICRO) || defined(CONFIG_SPI_FLASH_SST)
 /* Write status register and ensure bits in mask match written values */
@@ -1560,31 +1665,27 @@ struct spi_nor_flash_parameter {
  */
 static int spansion_quad_enable_volatile(struct spi_nor *nor)
 {
-	struct spi_mem_op op =
-			SPI_MEM_OP(SPI_MEM_OP_CMD(SPINOR_OP_WRAR, 1),
-				   SPI_MEM_OP_ADDR(nor->addr_width,
-						   SPINOR_REG_ADDR_CFR1V, 1),
-				   SPI_MEM_OP_NO_DUMMY,
-				   SPI_MEM_OP_DATA_OUT(1, NULL, 1));
+	u32 addr = SPINOR_REG_ADDR_CFR1V;
+
 	u8 cr;
 	int ret;
 
 	/* Check current Quad Enable bit value. */
-	ret = read_cr(nor);
+	ret = spansion_read_any_reg(nor, addr, 0, &cr);
 	if (ret < 0) {
 		dev_dbg(nor->dev,
 			"error while reading configuration register\n");
 		return -EINVAL;
 	}
 
-	if (ret & CR_QUAD_EN_SPAN)
+	if (cr & CR_QUAD_EN_SPAN)
 		return 0;
 
-	cr = ret | CR_QUAD_EN_SPAN;
+	cr |= CR_QUAD_EN_SPAN;
 
 	write_enable(nor);
 
-	ret = spi_nor_read_write_reg(nor, &op, &cr);
+	ret = spansion_write_any_reg(nor, addr, cr);
 
 	if (ret < 0) {
 		dev_dbg(nor->dev,
@@ -1593,8 +1694,8 @@ static int spansion_quad_enable_volatile(struct spi_nor *nor)
 	}
 
 	/* Read back and check it. */
-	ret = read_cr(nor);
-	if (!(ret > 0 && (ret & CR_QUAD_EN_SPAN))) {
+	ret = spansion_read_any_reg(nor, addr, 0, &cr);
+	if (ret || !(cr & CR_QUAD_EN_SPAN)) {
 		dev_dbg(nor->dev, "Spansion Quad bit not set\n");
 		return -EINVAL;
 	}
@@ -1790,6 +1891,7 @@ struct sfdp_header {
 #define BFPT_DWORD15_QER_SR2_BIT7		(0x3UL << 20)
 #define BFPT_DWORD15_QER_SR2_BIT1_NO_RD		(0x4UL << 20)
 #define BFPT_DWORD15_QER_SR2_BIT1		(0x5UL << 20) /* Spansion */
+#define BFPT_DWORD15_QER_NONE_111		(0x7UL << 20) /* Gigadevice */
 
 struct sfdp_bfpt {
 	u32	dwords[BFPT_DWORD_MAX];
@@ -2055,6 +2157,7 @@ static int spi_nor_parse_bfpt(struct spi_nor *nor,
 	/* Quad Enable Requirements. */
 	switch (bfpt.dwords[BFPT_DWORD(15)] & BFPT_DWORD15_QER_MASK) {
 	case BFPT_DWORD15_QER_NONE:
+	case BFPT_DWORD15_QER_NONE_111:
 		params->quad_enable = NULL;
 		break;
 #if defined(CONFIG_SPI_FLASH_SPANSION) || defined(CONFIG_SPI_FLASH_WINBOND)
@@ -2200,6 +2303,9 @@ static int spi_nor_init_params(struct spi_nor *nor,
 			       const struct flash_info *info,
 			       struct spi_nor_flash_parameter *params)
 {
+#ifdef CONFIG_SPI_FLASH_SPANSION
+	int ret;
+#endif
 	/* Set legacy flash parameters as default. */
 	memset(params, 0, sizeof(*params));
 
@@ -2294,11 +2400,20 @@ static int spi_nor_init_params(struct spi_nor *nor,
 			memcpy(params, &sfdp_params, sizeof(*params));
 #ifdef CONFIG_SPI_FLASH_SPANSION
 			if (cypress_s25hx_t(info)) {
+				/* BFPT fixup */
+				nor->erase_opcode = SPINOR_OP_SE_4B;
+				nor->mtd.erasesize = info->sector_size;
+				ret = set_4byte(nor, info, 1);
+				if (ret)
+					return ret;
+
+				nor->addr_width = 4;
+
+				/* SFDP fixup */
 				/* Default page size is 256-byte, but BFPT reports 512-byte */
 				params->page_size = 256;
-				/* Reset erase size in case it is set to 4K from BFPT */
-				nor->mtd.erasesize = info->sector_size ;
 				/* READ_FAST_4B (0Ch) requires mode cycles*/
+				params->reads[SNOR_CMD_READ_FAST].opcode = SPINOR_OP_READ_FAST_4B;
 				params->reads[SNOR_CMD_READ_FAST].num_mode_clocks = 8;
 				/* PP_1_1_4 is not supported */
 				params->hwcaps.mask &= ~SNOR_HWCAPS_PP_1_1_4;
@@ -2658,10 +2773,11 @@ int spi_nor_scan(struct spi_nor *nor)
 		 */
 		nor->mtd.writesize = params.page_size;
 		nor->mtd.flags &= ~MTD_BIT_WRITEABLE;
-
-		/* Emulate uniform sector architecure by this erase hook*/
-		nor->mtd._erase = spansion_overlaid_erase;
-		set_4byte(nor, info, true);
+		ret = s25hx_t_setup(nor, info);
+		if (ret) {
+			dev_err(nor->dev, "fail to setup s25hx_t flash\n");
+			return ret;
+		}
 	}
 #endif
 

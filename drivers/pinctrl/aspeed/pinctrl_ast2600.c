@@ -119,7 +119,45 @@ static struct aspeed_sig_desc i2c16_link[] = {
 	{ 0x4B4, GENMASK(31, 30), 0 },
 };
 
+static struct aspeed_sig_desc si2c1_link[] = {
+	{ 0x698, GENMASK(9, 8), 0 },
+};
 
+static struct aspeed_sig_desc si2c2_link[] = {
+	{ 0x698, GENMASK(11, 10), 0 },
+};
+
+static struct aspeed_sig_desc si2c3_link[] = {
+	{ 0x698, GENMASK(13, 12), 0 },
+};
+
+static struct aspeed_sig_desc si2c4_link[] = {
+	{ 0x698, GENMASK(15, 14), 0 },
+};
+
+static struct aspeed_sig_desc si2c5_link[] = {
+	{ 0x4B8, GENMASK(17, 16), 0 },
+};
+
+static struct aspeed_sig_desc si2c6_link[] = {
+	{ 0x4B8, GENMASK(19, 18), 0 },
+};
+
+static struct aspeed_sig_desc si2c7_link[] = {
+	{ 0x4B8, GENMASK(21, 20), 0 },
+};
+
+static struct aspeed_sig_desc si2c8_link[] = {
+	{ 0x4B8, GENMASK(23, 22), 0 },
+};
+
+static struct aspeed_sig_desc si2c9_link[] = {
+	{ 0x4B8, GENMASK(25, 24), 0 },
+};
+
+static struct aspeed_sig_desc si2c10_link[] = {
+	{ 0x4B8, GENMASK(27, 26), 1 },
+};
 static struct aspeed_sig_desc mac1_link[] = {
 	{ 0x410, BIT(4), 0 },
 #ifndef CONFIG_FPGA_ASPEED
@@ -307,6 +345,11 @@ static struct aspeed_sig_desc fsi2[] = {
 	{ 0xd48, GENMASK(23, 22), 0 },
 };
 
+static struct aspeed_sig_desc usb2ad_link[] = {
+	{ 0x440, BIT(24), 0 },
+	{ 0x440, BIT(25), 1 },
+};
+
 static struct aspeed_sig_desc usb2ah_link[] = {
 	{ 0x440, BIT(24), 1 },
 	{ 0x440, BIT(25), 0 },
@@ -318,7 +361,8 @@ static struct aspeed_sig_desc usb2bh_link[] = {
 };
 
 static struct aspeed_sig_desc pcie0rc_link[] = {
-	{ 0x40, BIT(21), 0 },	
+	{ 0x40, BIT(21), 0 },
+	{ 0xC8, BIT(6), 1 },	//enable ep for as Root Complex
 };
 
 static struct aspeed_sig_desc pcie1rc_link[] = {
@@ -378,8 +422,19 @@ static const struct aspeed_group_config ast2600_groups[] = {
 	{ "I2C14", ARRAY_SIZE(i2c14_link), i2c14_link },
 	{ "I2C15", ARRAY_SIZE(i2c15_link), i2c15_link },
 	{ "I2C16", ARRAY_SIZE(i2c16_link), i2c16_link },
+	{ "SI2C1", ARRAY_SIZE(si2c1_link), si2c1_link },
+	{ "SI2C2", ARRAY_SIZE(si2c2_link), si2c2_link },
+	{ "SI2C3", ARRAY_SIZE(si2c3_link), si2c3_link },
+	{ "SI2C4", ARRAY_SIZE(si2c4_link), si2c4_link },
+	{ "SI2C5", ARRAY_SIZE(si2c5_link), si2c5_link },
+	{ "SI2C6", ARRAY_SIZE(si2c6_link), si2c6_link },
+	{ "SI2C7", ARRAY_SIZE(si2c7_link), si2c7_link },
+	{ "SI2C8", ARRAY_SIZE(si2c8_link), si2c8_link },
+	{ "SI2C9", ARRAY_SIZE(si2c9_link), si2c9_link },
+	{ "SI2C10", ARRAY_SIZE(si2c10_link), si2c10_link },
 	{ "FSI1", ARRAY_SIZE(fsi1), fsi1 },
 	{ "FSI2", ARRAY_SIZE(fsi2), fsi2 },
+	{ "USB2AD", ARRAY_SIZE(usb2ad_link), usb2ad_link },
 	{ "USB2AH", ARRAY_SIZE(usb2ah_link), usb2ah_link },
 	{ "USB2BH", ARRAY_SIZE(usb2bh_link), usb2bh_link },
 	{ "PCIE0RC", ARRAY_SIZE(pcie0rc_link), pcie0rc_link },

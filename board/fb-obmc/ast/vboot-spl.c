@@ -716,8 +716,8 @@ void board_init_f(ulong bootflag)
 	 */
 	writel(0, ASPEED_FMC_WDT2);
 	spl_early_init();
-	preloader_console_init();
 	timer_init();
+	preloader_console_init();
 	debug("SYS_INIT_RAM_END=%x \n", SYS_INIT_RAM_END);
 	debug("CONFIG_SYS_INIT_SP_ADDR=%x\n", CONFIG_SYS_INIT_SP_ADDR);
 	debug("CONFIG_MALLOC_F_ADDR=%x\n", CONFIG_MALLOC_F_ADDR);

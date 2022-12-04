@@ -97,6 +97,12 @@ choice
 	prompt "DDR4 DRAM side ODT"
 	default ASPEED_DDR4_DRAM_ODT48
 
+config ASPEED_DDR4_DRAM_ODT80
+	bool "DDR4 DRAM side ODT 80 ohm"
+	depends on DM && OF_CONTROL && ARCH_ASPEED
+	help
+	  select DDR4 DRAM side ODT 80 ohm
+
 config ASPEED_DDR4_DRAM_ODT60
 	bool "DDR4 DRAM side ODT 60 ohm"
 	depends on DM && OF_CONTROL && ARCH_ASPEED

@@ -1,12 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (C) ASPEED Technology Inc.
  */
 //#define MAC_DEBUG_REGRW_MAC
 //#define MAC_DEBUG_REGRW_PHY
@@ -657,7 +651,7 @@ void mac_set_delay(MAC_ENGINE *p_eng, int32_t rx_d, int32_t tx_d)
 {
 	uint32_t rgmii = (uint32_t)p_eng->run.is_rgmii;
 	uint32_t mac_idx = p_eng->run.mac_idx;
-	uint32_t speed_idx = p_eng->run.speed_idx;	
+	u32 speed_idx = p_eng->run.speed_idx;
 
 	set_delay_func_tbl[rgmii][mac_idx][speed_idx] (p_eng, rx_d, tx_d);
 }
@@ -682,9 +676,9 @@ uint32_t mac_get_driving_strength(MAC_ENGINE *p_eng)
 	reg.w = readl(p_eng->io.mac12_drv_reg.addr);
 	
 	if (p_eng->run.mac_idx == 0) {
-		return (reg.b.mac1_tx_drv);
+		return reg.b.mac1_rgmii_tx_drv;
 	} else if (p_eng->run.mac_idx == 1) {
-		return (reg.b.mac2_tx_drv);
+		return reg.b.mac2_rgmii_tx_drv;
 	} else {
 		return 0;
 	}
@@ -1032,7 +1026,7 @@ void FPri_End (MAC_ENGINE *eng, uint8_t option)
 			       eng->io.mac34_drv_reg.value.w & 0xf);
 		}
 #else
-		if (eng->io.mac12_drv_reg.value.w) {
+		if (eng->io.mac12_drv_reg.value.w & GENMASK(11, 8)) {
 			PRINTF(option,
 			       "\n[Warning] [%08X] 0x%08x is not the recommended value "
 			       "0.\n",

@@ -36,6 +36,21 @@ menuconfig USB_GADGET
 
 if USB_GADGET
 
+config ASPEED_UDC_USBTTY
+	bool "Aspeed USBTTY Device support"
+	help
+	  Support Aspeed USB device on port A. You can emulate USB device as
+	  CDC-ACM (usbtty) for example.
+
+config ASPEED_UDC_GENERIC
+	bool "Aspeed USB Device support on gadget"
+	depends on !ASPEED_UDC_USBTTY
+	select USB_GADGET_DUALSPEED
+	help
+	  Support Aspeed USB device gadget. It's a different architecture with
+	  usbtty.
+
+
 config USB_GADGET_MANUFACTURER
 	string "Vendor name of the USB device"
 	default "Allwinner Technology" if ARCH_SUNXI

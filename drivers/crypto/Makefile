@@ -7,5 +7,4 @@ obj-$(CONFIG_EXYNOS_ACE_SHA)	+= ace_sha.o
 obj-y += rsa_mod_exp/
 obj-y += fsl/
 obj-$(CONFIG_ASPEED_HACE) += aspeed_hace.o
-obj-$(CONFIG_ASPEED_ARCY) += aspeed_arcy.o
-obj-$(CONFIG_RSA_ASPEED_EXP) += aspeed_rsa.o
+obj-$(CONFIG_ASPEED_ACRY) += aspeed_acry.o

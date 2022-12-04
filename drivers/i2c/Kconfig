@@ -120,9 +120,21 @@ config SYS_I2C_DW_ENABLE_STATUS_UNSUPPORTED
 	  enable status register. This config option can be enabled in such
 	  cases.
 
+config I2C_ASPEED_GLOBAL
+    bool
+
+config SYS_I2C_AST2600
+    bool "AST2600 I2C Controller"
+    depends on DM_I2C && ARCH_ASPEED
+    select I2C_ASPEED_GLOBAL
+    help
+      Say yes here to select AST2600 I2C Host Controller. The driver
+      support AST2600 I2C new mode register.
+
 config SYS_I2C_ASPEED
 	bool "Aspeed I2C Controller"
-	depends on DM_I2C && ARCH_ASPEED_GOOGLE
+	depends on DM_I2C && ARCH_ASPEED
+    select I2C_ASPEED_GLOBAL
 	help
 	  Say yes here to select Aspeed I2C Host Controller. The driver
 	  supports AST2500 and AST2400 controllers, but is very limited.

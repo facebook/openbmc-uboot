@@ -10,7 +10,9 @@ obj-$(CONFIG_$(SPL_)I2C_CROS_EC_LDO) += cros_ec_ldo.o
 
 obj-$(CONFIG_I2C_MV) += mv_i2c.o
 obj-$(CONFIG_SYS_I2C) += i2c_core.o
-obj-$(CONFIG_SYS_I2C_ASPEED) += aspeed_i2c_ic.o ast_i2c.o
+obj-$(CONFIG_I2C_ASPEED_GLOBAL) += aspeed_i2c_global.o
+obj-$(CONFIG_SYS_I2C_ASPEED) += ast_i2c.o
+obj-$(CONFIG_SYS_I2C_AST2600) += ast2600_i2c.o
 obj-$(CONFIG_SYS_I2C_AT91) += at91_i2c.o
 obj-$(CONFIG_SYS_I2C_CADENCE) += i2c-cdns.o
 obj-$(CONFIG_SYS_I2C_DAVINCI) += davinci_i2c.o

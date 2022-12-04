@@ -76,7 +76,6 @@
 &fmc {
 	status = "okay";
 	flash@0 {
-		compatible = "spi-flash", "sst,w25q256";
 		status = "okay";
 		spi-max-frequency = <50000000>;
 		spi-tx-bus-width = <2>;
@@ -84,7 +83,6 @@
 	};
 
 	flash@1 {
-                compatible = "spi-flash", "sst,w25q256";
                 status = "okay";
                 spi-max-frequency = <50000000>;
                 spi-tx-bus-width = <2>;

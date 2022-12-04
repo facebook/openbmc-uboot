@@ -1,6 +1,6 @@
 config RSA
 	bool "Use RSA Library"
-	select RSA_ASPEED_EXP if ARCH_ASPEED && ASPEED_ARCY
+	select RSA_ASPEED_EXP if ARCH_ASPEED && ASPEED_ACRY
 	select RSA_FREESCALE_EXP if FSL_CAAM && !ARCH_MX7 && !ARCH_MX6 && !ARCH_MX5
 	select RSA_SOFTWARE_EXP if !RSA_FREESCALE_EXP && !RSA_ASPEED_EXP
 	help
@@ -37,7 +37,7 @@ config RSA_FREESCALE_EXP
 
 config RSA_ASPEED_EXP
 	bool "Enable RSA Modular Exponentiation with ASPEED crypto accelerator"
-	depends on DM && ARCH_ASPEED && ASPEED_ARCY
+	depends on DM && ARCH_ASPEED && ASPEED_ACRY
 	help
 	Enables driver for RSA modular exponentiation using ASPEED RSA/ECC
 	accelerator - ARCY

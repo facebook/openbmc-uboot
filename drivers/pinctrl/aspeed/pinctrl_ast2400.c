@@ -125,6 +125,22 @@ static struct aspeed_sig_desc spi1_link[] = {
 	{ 0x70, BIT(12), 0},
 };
 
+static struct aspeed_sig_desc txd3_link[] = {
+	{ 0x80, BIT(22), 0},
+};
+
+static struct aspeed_sig_desc rxd3_link[] = {
+	{ 0x80, BIT(23), 0},
+};
+
+static struct aspeed_sig_desc rgmii1_link[] = {
+	{ 0xa0, GENMASK(17, 12) | GENMASK(5, 0), 1 },
+};
+
+static struct aspeed_sig_desc rgmii2_link[] = {
+	{ 0xa0, GENMASK(23, 18) | GENMASK(11, 6), 1 },
+};
+
 static const struct aspeed_group_config ast2400_groups[] = {
 	{ "MAC1LINK", 1, mac1_link },
 	{ "MAC2LINK", 1, mac2_link },
@@ -146,6 +162,10 @@ static const struct aspeed_group_config ast2400_groups[] = {
 	{ "SD1", 1, sdio1_link },
 	{ "SPI1", 1, spi1_link},
 	{ "SPI1CS1", 1, spi1cs1_link},
+	{ "TXD3", 1, txd3_link },
+	{ "RXD3", 1, rxd3_link },
+	{ "RGMII1", 1, rgmii1_link },
+	{ "RGMII2", 1, rgmii2_link },
 };
 
 static int ast2400_pinctrl_get_groups_count(struct udevice *dev)

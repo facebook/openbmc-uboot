@@ -2,18 +2,22 @@ menu "ASPEED Test commands"
 depends on ARCH_ASPEED
 
 config CMD_NETTEST
-        bool "ASPEED Ethernet loopback test"
-        default n
+	bool "ASPEED Ethernet loopback test"
+	default n
 
 config CMD_DRAMTEST
-        bool "ASPEED DRAM controller stress test"
-        default y
+	bool "ASPEED DRAM controller stress test"
+	default y
 
 config CMD_PECITEST
-        bool "ASPEED PECI controller test"
-        default y
+	bool "ASPEED PECI controller test"
+	default y
 
 config CMD_PLLTEST
 	bool "ASPEED PLL test"
+	default n
+
+config CMD_DPTEST
+	bool "ASPEED DP controller CTS"
 	default n
 endmenu

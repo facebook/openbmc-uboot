@@ -66,117 +66,12 @@ config ASPEED_SSP_RERV_MEM
 	help
 	  The size in bytes of reserve memory for ASPEED SoC SSP run.
 
-config ASPEED_SECURE_BOOT
-	bool "Support Aspeed secure boot feature"
-	depends on SPL && ASPEED_AST2600
-	select ENABLE_ARM_SOC_BOOT0_HOOK
-	select CMD_BOOTS
+config ASPEED_DEFAULT_SPI_FREQUENCY
+	bool "Using default SPI clock frequency"
+	default n
 	help
-	  This option enables the support for secure boot.
-
-config ASPEED_SECURE_BOOT_DEBUG
-	bool "Enable debug support with secure boot"
-	default y
-	depends on ASPEED_SECURE_BOOT
-	help
-	  This option allows the bootm command use
-
-config ASPEED_LOADERS
-	bool "Aspeed custom loaders"
-	depends on SPL
-	default y
-	help
-	  Enable the custom payload loading methods used by ASPEED. This is requited to
-	  use ASPEED's proprietary secure boot feature.
-
-if ASPEED_LOADERS
-
-config ASPEED_UBOOT_MMC_PART
-	int "U-Boot eMMC partition"
-	default 0
-	help
-	  The partition number of the U-Boot
-	  image in the eMMC device. This is not
-	  the user data partition number.
-
-config ASPEED_UBOOT_SPI_BASE
-	hex "U-Boot SPI base address"
-	default 0x0
-	help
-	  The base address of the U-Boot image in
-	  the memory mapped SPI space
-
-config ASPEED_UBOOT_SPI_SIZE
-	hex "U-Boot SPI size in bytes"
-	default 0x0
-	help
-	  The size in bytes of the U-Boot image in
-	  the memory mapped SPI space
-
-config ASPEED_UBOOT_MMC_BASE
-	hex "U-Boot eMMC base block"
-	default 0x0
-	help
-	  The base block number of the U-Boot
-	  image in the eMMC device
-
-config ASPEED_UBOOT_MMC_SIZE
-	hex "U-Boot eMMC size in blocks"
-	default 0x0
-	help
-	  The size in block count of the U-Boot
-	  image in the eMMC device
-
-config ASPEED_UBOOT_UART_SIZE
-	hex "U-Boot UART size in bytes"
-	default 0x0
-	help
-	  The size of U-Boot image to be recevied
-	  from UART device
-
-config ASPEED_UBOOT_DRAM_BASE
-	hex "U-Boot DRAM base address"
-	default 0x0
-	help
-	  The DRAM address where the U-Boot image
-	  will be loaded if XIP is not supported
-
-config ASPEED_KERNEL_FIT_SPI_BASE
-	hex "Kernel FIT SPI base address"
-	default 0x0
-	help
-	  The base address of the kernel FIT image in
-	  the memory mapped SPI space
-
-config ASPEED_KERNEL_FIT_SPI_SIZE
-	hex "Kernel FIT SPI size in bytes"
-	default 0x0
-	help
-	  The size in bytes of the kernel FIT image in
-	  the memory mapped SPI space
-
-config ASPEED_KERNEL_FIT_MMC_BASE
-	hex "Kernel FIT eMMC base block #"
-	default 0x0
-	help
-	  The base block number of the kernel FIT
-	  image in the eMMC device
-
-config ASPEED_KERNEL_FIT_MMC_SIZE
-	hex "Kernel FIT eMMC size in blocks"
-	default 0x0
-	help
-	  The size in block count of the kernel FIT
-	  image in the eMMC device
-
-config ASPEED_KERNEL_FIT_DRAM_BASE
-	hex "Kernel FIT DRAM base address"
-	default 0x0
-	help
-	  The DRAM address where the Kernel FIT image
-	  will be loaded if XIP is not supported
-
-endif
+	  Using default SPI clock frequency during
+	  early booting up progress.
 
 source "arch/arm/mach-aspeed/ast2400/Kconfig"
 source "arch/arm/mach-aspeed/ast2500/Kconfig"

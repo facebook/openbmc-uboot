@@ -140,13 +140,14 @@ inline uchar spi_status(heaptimer_t timer, u32 base, u32 ctrl, bool wel)
 	WRITEREG(ASPEED_FMC_BASE + ctrl, 0x03);
 	timer(200);
 	WRITEB(base, SPI_CMD_RS);
-	timer(10);
-	timeout = 8000;
+	timeout = 1600;
 	do {
-		if (--timeout == 0) {
+		if (timeout == 0) {
 			r1 = 0xFF;
 			break;
 		}
+		--timeout;
+		timer(10);
 		r1 = READB(base);
 	} while ((wel && !(r1 & SPI_WEL)) || (!wel && (r1 & SPI_WIP)));
 	WRITEREG(ASPEED_FMC_BASE + ctrl, 0x07);
@@ -304,11 +305,7 @@ int heaptimer(unsigned long usec)
 	last = READREG(ASPEED_TIMER1_STS_REG);
 	while (clks > elapsed) {
 		now = READREG(ASPEED_TIMER1_STS_REG);
-		if (now <= last) {
-			elapsed += last - now;
-		} else {
-			elapsed += 0xffffffff - (now - last);
-		}
+		elapsed += last - now;
 		last = now;
 	}
 	return 1;

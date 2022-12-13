@@ -75,6 +75,15 @@ config GIU_HW_OPEN
 		thus the user space code can decide whether latch the WP# to low
 		or keep it in high (inactivate), thus Golden Image can be upgraded
 
+config FBVBOOT_GOLDEN_IMAGE_SIZE_MB
+	int "FB verified boot golden image size, support value (32 or 64) MB"
+	default 32
+	help
+		Define the size in SPI0 CE0 flash reserved to contain the
+		manufacturing default image (a.k.a golden image).
+		FB verified boot will write protect SPI0 CE0 (spi0.0) range
+		[0, FBVBOOT_GOLDEN_IMAGE_SIZE_MB) to make golden image immutable
+
 if SPL
 
 config SYS_TEXT_BASE

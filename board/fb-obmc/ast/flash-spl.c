@@ -60,17 +60,26 @@
 /* Status register Top/Bottom bit select */
 #define SPI_TB (0x1 << 6)
 
+/* Micron Tech */
+#define SPI_BP3_MT (0x1 << 6)
+#define SPI_TB_MT (0x1 << 5)
+
+#if CONFIG_FBVBOOT_GOLDEN_IMAGE_SIZE_MB == 64
+/* Lock top 64MB of CS0 */
+#  define SPI_CS0_HW_PROTECTIONS (SPI_BP3 | SPI_BP1 | SPI_BP0)
+#  define SPI_CS0_HW_PROTECTIONS_MT (SPI_BP3_MT | SPI_BP1 | SPI_BP0)
+#elif CONFIG_FBVBOOT_GOLDEN_IMAGE_SIZE_MB == 32
 /* Lock top 32MB of CS0 */
-#define SPI_CS0_HW_PROTECTIONS (SPI_BP1 | SPI_BP3)
+#  define SPI_CS0_HW_PROTECTIONS (SPI_BP3 | SPI_BP1)
+#  define SPI_CS0_HW_PROTECTIONS_MT (SPI_BP3_MT | SPI_BP1)
+#else
+#  error "Invalid CONFIG_FBVBOOT_GOLDEN_IMAGE_SIZE_MB, only support 32 or 64"
+#endif
 /* Lock top 64KB of CS1 */
 #define SPI_CS1_HW_PROTECTIONS (SPI_BP0)
 
 /* Lock top 256KB (SPL partition) of CS0 */
 #define SPI_CS0_LOCK_SPL (SPI_BP0 | SPI_BP1)
-
-/* Micron Tech */
-#define SPI_BP3_MT (0x1 << 6)
-#define SPI_TB_MT (0x1 << 5)
 
 #define WRITEREG(r, v) *(volatile u32 *)(r) = v
 #define WRITEB(r, b) *(volatile uchar *)(r) = (uchar)b
@@ -251,7 +260,7 @@ inline u32 giu_mode_2_cs0_bp_bits(int giu_mode, bool is_mt)
 	*/
 	if (is_mt) {
 		/* MT BP3 bit at different location */
-		return (SPI_BP3_MT | SPI_BP1);
+		return SPI_CS0_HW_PROTECTIONS_MT;
 	}
 	return SPI_CS0_HW_PROTECTIONS;
 }
@@ -305,6 +314,9 @@ int heaptimer(unsigned long usec)
 	last = READREG(ASPEED_TIMER1_STS_REG);
 	while (clks > elapsed) {
 		now = READREG(ASPEED_TIMER1_STS_REG);
+		/* counting down timer, reload value set to 0xFFFFFFFF
+		 * so simply: last modulo_minus now
+		 */
 		elapsed += last - now;
 		last = now;
 	}

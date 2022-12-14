@@ -212,15 +212,15 @@ aspeed_gpio_direction_output(struct udevice *dev, unsigned offset, int value)
 	u32 dir = readl(bank_reg(priv, bank, reg_dir));
 	u32 output = readl(bank_reg(priv, bank, reg_rdata));
 
-	dir |= GPIO_BIT(offset);
-	writel(dir, bank_reg(priv, bank, reg_dir));
-
 	if(value)
 		output |= GPIO_BIT(offset);
 	else
 		output &= ~GPIO_BIT(offset);
 
 	writel(output, bank_reg(priv, bank, reg_val));
+
+	dir |= GPIO_BIT(offset);
+	writel(dir, bank_reg(priv, bank, reg_dir));
 
 	return 0;
 }

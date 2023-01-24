@@ -302,7 +302,7 @@ int board_init(void)
 	configureBcm53134();
 #endif /* ELBERT specific */
 
-#if defined(CONFIG_FBGT) || defined(CONFIG_FBGTI)
+#if defined(CONFIG_FBGT) || defined(CONFIG_FBGTI) || defined(CONFIG_FBGTARTEMIS)
 	clrbits_le32(SCU_HW_STRAP3_REG, ENABLE_GPIO_PASSTHROUGH);
 	el_port80_init(GPIO_MNOP_DIR_REG, GPIO_GROUP('N', 0xFF),
 	GPIO_MNOP_CMD_SOURCE0, GPIO_MNOP_CMD_SOURCE1);

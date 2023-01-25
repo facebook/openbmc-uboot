@@ -250,51 +250,12 @@ inline u32 giu_mode_2_cs0_bp_bits(int giu_mode, bool is_mt)
 	if (giu_mode == GIU_CERT) {
 		return SPI_CS0_LOCK_SPL;
 	}
-	/*
-	* GIU_NONE, did not execute golden image upgrade, lock 32MB CS0
-	* GIU_OPEN, specially used during development/test keep WP# open
-	*           technically any prot value can used except 0, because
-	*	    WP# state detection is checking whether can successfully
-	*           write 0 to SR.
-	*           so set the same BP bits as GIU_NONE.
-	*/
 	if (is_mt) {
 		/* MT BP3 bit at different location */
 		return SPI_CS0_HW_PROTECTIONS_MT;
 	}
 	return SPI_CS0_HW_PROTECTIONS;
 }
-
-#ifdef CONFIG_GIU_HW_SUPPORT
-/* although we have DM_GPIO driver support in SPL
-* as the latch control need execute with flash device SR write
-* and SPL code is execution in place of flash, so latch control
-* have to execute within small code relocated to SPL heap in SRAM
-* Thus the latch control code shall be very simple and small
-* DM driver code does not fit to our small SPL heap.
-*/
-static inline void bsm_latch_ctrl_activate(void)
-{
-#ifndef CONFIG_ASPEED_AST2600
-#error "giu latch lock heap code only support AST2600"
-#endif
-	/* refer to fbobmc-ast-vboot.dtsi
-	* latch_ctrl-gpios = <&gpio0 ASPEED_GPIO(Y, 2) GPIO_ACTIVE_LOW>;
-	* refer to aspeed_gpio.c::aspeed_gpio_banks, val_reg = gpio_base+0x01E0
-	*/
-	clrbits_le32(0x1E7801E0, BIT(2));
-}
-
-static inline void latch_flash_lock_pin(int giu_mode)
-{
-	/* GIU_OPEN is the same as EVT/DVT keep WP# as high, skip latching */
-	if (giu_mode == GIU_OPEN)
-		return;
-	bsm_latch_ctrl_activate();
-}
-#else /* not define CONFIG_GIU_HW_SUPPORT */
-static inline void latch_flash_lock_pin(int giu_mode) {}
-#endif
 
 #define ASPEED_TIMER1_STS_REG (ASPEED_TIMER_BASE)
 int heaptimer(unsigned long usec)
@@ -369,8 +330,11 @@ int doheap(heaptimer_t timer, uchar cs, bool should_lock, int giu_mode)
 		return AST_FMC_ERROR;
 	}
 
-	/* Set the status register write disable. Only effective if WP# is low. */
-	if (should_lock) {
+	/* Set the status register write disable.
+	 * Only effective if WP# is low.
+	 * GIU_OPEN speical mode will override the hwlock
+	 */
+	if (should_lock && (giu_mode != GIU_OPEN)) {
 		prot |= SPI_SRWD;
 	}
 
@@ -380,9 +344,6 @@ int doheap(heaptimer_t timer, uchar cs, bool should_lock, int giu_mode)
 
 	spi_write_status(timer, base, ctrl, prot);
 	status_set = spi_status(timer, base, ctrl, false);
-
-	/* latch the flash lock based on golden image upgrade mode*/
-	latch_flash_lock_pin(giu_mode);
 
 	/* Disable write protection for CSn */
 	spi_write_enable(timer, base, ctrl);
@@ -440,7 +401,8 @@ static int ast2600_start_timer1(void)
 }
 #endif
 
-int ast_fmc_spi_check(bool should_lock, int giu_mode)
+int ast_fmc_spi_check(bool should_lock, int giu_mode,
+			void **pp_timer, void ** pp_spi_check)
 {
 	u32 function_size;
 	uchar *buffer;
@@ -454,32 +416,52 @@ int ast_fmc_spi_check(bool should_lock, int giu_mode)
 	u32 ce1_ctrl = readl(ASPEED_FMC_BASE + AST_FMC_CE1_CONTROL);
 	debug("should_lock=%d, giu_mode=0x%X\n", should_lock, giu_mode);
 	debug("Before: CE0_CTRL=0x%08X, CE1_CTRL=0x%08X\n", ce0_ctrl, ce1_ctrl);
+	if (*pp_timer || *pp_spi_check) {
+		printf("Not first time execute spi_check, skip timer init.\n");
+		ret = 0;
+	} else {
 #if defined(CONFIG_ASPEED_AST2600)
 	ret = ast2600_start_timer1();
 #else
 	ret = dm_timer_init();
 #endif
+	}
 	if (ret) {
 		debug("timer init failed (%d)\n", ret);
 	}
 	fmc_enable_write();
 
 	/* Place a timer function into SRAM */
-	function_size = (u32)((uchar *)heaptimer_end - (uchar *)heaptimer);
-	buffer = (uchar *)malloc(function_size);
-	if (!buffer) {
-		debug("malloc buffer failed\n");
-		return AST_FMC_ERROR;
+	if (*pp_timer) {
+		printf("timer_fp already in SRAM 0x%p\n", *pp_timer);
+		timer_fp = (heaptimer_t)(*pp_timer);
+	} else {
+
+		function_size = (u32)((uchar *)heaptimer_end - (uchar *)heaptimer);
+		buffer = (uchar *)malloc(function_size);
+		if (!buffer) {
+			debug("malloc buffer for timer_fp failed\n");
+			return AST_FMC_ERROR;
+		}
+		memcpy(buffer, (uchar *)heaptimer, function_size);
+		timer_fp = (heaptimer_t)buffer;
+		*pp_timer = timer_fp;
 	}
-	memcpy(buffer, (uchar *)heaptimer, function_size);
-	timer_fp = (heaptimer_t)buffer;
-
 	/* Place our SPI inspections into SRAM */
-	function_size = (u32)((uchar *)doheap_end - (uchar *)doheap);
-	buffer = (uchar *)malloc(function_size);
-	memcpy(buffer, (uchar *)doheap, function_size);
-	spi_check = (heapstatus_t)buffer;
-
+	if (*pp_spi_check){
+		printf("spi_check already in SRAM 0x%p\n", *pp_spi_check);
+		spi_check = (heapstatus_t)(*pp_spi_check);
+	} else {
+		function_size = (u32)((uchar *)doheap_end - (uchar *)doheap);
+		buffer = (uchar *)malloc(function_size);
+		if (!buffer) {
+			debug("malloc buffer for spi_check failed\n");
+			return AST_FMC_ERROR;
+		}
+		memcpy(buffer, (uchar *)doheap, function_size);
+		spi_check = (heapstatus_t)buffer;
+		*pp_spi_check = spi_check;
+	}
 	/* Protect and unprotect CS1 (always check this first) */
 	cs1_status = spi_check(timer_fp, 1, should_lock, giu_mode);
 

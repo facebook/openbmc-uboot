@@ -80,6 +80,7 @@
 #define VBS_HANDOFF_TPM_RST         (VBS_HANDOFF - 1)
 #define VBS_HANDOFF_TPM_SETUP       (VBS_HANDOFF - 2)
 #define VBS_HANDOFF_SWAP            (VBS_HANDOFF - 3)
+#define VBS_HANDOFF_OPEN_LATCH      (VBS_HANDOFF - 4)
 
 #define VBS_KEYS_PATH   "/keys"
 

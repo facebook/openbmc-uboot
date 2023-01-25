@@ -39,4 +39,5 @@ enum GIU_MODE {
  *   AST_FMC_BASE     - the MMIO base of the FMC register group.
  *
  */
-int ast_fmc_spi_check(bool should_lock, int giu_mode);
+int ast_fmc_spi_check(bool should_lock, int giu_mode,
+	void **pp_timer, void **pp_spi_check);

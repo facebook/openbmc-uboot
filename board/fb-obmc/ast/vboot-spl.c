@@ -458,7 +458,8 @@ static void set_and_lock_hwstrap(bool should_lock)
 #endif
 }
 
-static int setup_bsm_wp_latch_pins(void)
+static int vboot_setup_wp_latch(struct vbs *vbs,
+				void **pp_timer, void ** pp_spi_check)
 {
 #ifdef CONFIG_GIU_HW_SUPPORT
 	int ret, node;
@@ -489,24 +490,64 @@ static int setup_bsm_wp_latch_pins(void)
 		printf("Read BSM lock status failed (%d)\n", ret);
 		return AST_FMC_ERROR;
 	}
-	printf("BSM %s after BMC reboot\n", ret ? "locked" : "unlocked");
-	return (ret ? AST_FMC_WP_ON : AST_FMC_WP_OFF);
+
+	if (ret && (vbs->rom_handoff == 0)) {
+		printf("reboot to open latch\n");
+		/* deactive latch, notice dm_gpio_set_value will set
+		* physical gpio value based on GPIOD_ACTIVE_LOW or HIGH
+		* of the latch_ctrl gpio configuration
+		*/
+		dm_gpio_set_value(&latch_ctrl, false);
+		vbs->rom_handoff = VBS_HANDOFF_OPEN_LATCH;
+		vboot_jump(0, vbs);
+		hang();
+	}
+	if (vbs->rom_handoff == VBS_HANDOFF_OPEN_LATCH) {
+		printf("clean up VBS_HANDOFF_OPEN_LATCH rom_handoff\n");
+		vbs->rom_handoff = 0;
+	}
+	if (ret) {
+		printf("WARNING! bsm latch cannot open\n");
+		return AST_FMC_ERROR;
+	}
+	/* reuse fmc_spi_check to clear SPI SR to 0 when latch open */
+	printf("clear flash device SR to 0 and confirm latch open\n");
+	ret = ast_fmc_spi_check(true, GIU_NONE, pp_timer, pp_spi_check);
+	if (ret != AST_FMC_WP_OFF) {
+		printf("WARNING! flash SR clear failed. spi_check=%s\n",
+			(ret == AST_FMC_WP_ON) ? "ON" : "ERROR");
+		return AST_FMC_ERROR;
+	}
+
+	if (IS_ENABLED(CONFIG_GIU_HW_OPEN)) {
+		printf("leave latch open\n");
+		return AST_FMC_WP_OFF;
+	}
+
+	printf("close latch before setup flash SR based on giu_mode\n");
+	dm_gpio_set_value(&latch_ctrl, true);
+	/* spin loop could took around 1ms */
+	int latch_active_puls_delay = 1000;
+	while (latch_active_puls_delay--)
+		;
+	printf("then keep latch ctrl lift\n");
+	dm_gpio_set_value(&latch_ctrl, false);
+
+	return AST_FMC_WP_ON;
 #else
 	printf("Not support Golden Image Upgrade.\n");
 	return AST_FMC_ERROR;
 #endif
 }
 
-static int get_golden_image_upgrade_mode(int bsm_latched)
+static int vboot_get_giu_mode(int bsm_latched)
 {
 #ifdef CONFIG_GIU_HW_SUPPORT
 	switch (bsm_latched) {
-	case AST_FMC_WP_ON:
-		printf("BSM locked, booting with GIU_NONE mode\n");
-		return GIU_NONE;
 	case AST_FMC_ERROR:
 		printf("BSM latch circuit error, booting with GIU_NONE mode\n");
 		return GIU_NONE;
+	case AST_FMC_WP_ON:
 	case AST_FMC_WP_OFF:
 		/* continue golden image upgrading mode select logic */
 		break;
@@ -516,15 +557,7 @@ static int get_golden_image_upgrade_mode(int bsm_latched)
 		return GIU_NONE;
 	}
 
-	if (IS_ENABLED(CONFIG_GIU_HW_OPEN)) {
-		/* the same as EVT/DVT keep WP# as high
-		* so SPL will skip latching during ast_fmc_spi_check
-		*/
-		printf("GIU_HW_OPEN configured, booting with GIU_OPEN mode\n");
-		return GIU_OPEN;
-	}
-
-	// TODO: find and validate certificate, if so return GIU_CERT
+	// TODO: find and validate certificate,if so return GIU_CERT or GIU_OPEN
 	return GIU_NONE;
 #else
 	return GIU_NONE;
@@ -533,6 +566,8 @@ static int get_golden_image_upgrade_mode(int bsm_latched)
 
 void vboot_reset(struct vbs *vbs)
 {
+	void *fp_timer = 0;
+	void *fp_spi_check = 0;
 	volatile struct vbs *current = (volatile struct vbs *)AST_SRAM_VBS_BASE;
 
 	memset((void *)vbs, 0, sizeof(struct vbs));
@@ -546,7 +581,6 @@ void vboot_reset(struct vbs *vbs)
 
 	if (vbs->rom_handoff == VBS_HANDOFF) {
 		printf("U-Boot failed to execute.\n");
-		ast_fmc_spi_check(false, GIU_NONE);
 		vboot_recovery(vbs, VBS_ERROR_TYPE_SPI,
 			       VBS_ERROR_EXECUTE_FAILURE);
 	}
@@ -567,14 +601,15 @@ void vboot_reset(struct vbs *vbs)
 			should_lock = true;
 		}
 	}
-	/* setup golden image upgrading latch GPIO pins */
-	int bsm_latched = setup_bsm_wp_latch_pins();
+	/* setup golden image WP# latch */
+	int bsm_latched = vboot_setup_wp_latch(vbs, &fp_timer, &fp_spi_check);
 	/* get golden image upgrading mode */
-	int giu_mode = get_golden_image_upgrade_mode(bsm_latched);
+	int giu_mode = vboot_get_giu_mode(bsm_latched);
 	/* check and lock hwstrap for AST2600 platform */
 	set_and_lock_hwstrap(should_lock);
 	/* Reset FMC SPI PROMs and check WP# for FMC SPI CS0. */
-	int spi_status = ast_fmc_spi_check(should_lock, giu_mode);
+	int spi_status = ast_fmc_spi_check(should_lock, giu_mode,
+				&fp_timer, &fp_spi_check);
 	/* The presence of WP# on FMC SPI CS0 determines hardware enforcement. */
 	vbs->hardware_enforce = (spi_status == AST_FMC_WP_ON) ? 1 : 0;
 	if (spi_status == AST_FMC_ERROR) {

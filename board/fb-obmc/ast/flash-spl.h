@@ -9,11 +9,6 @@
 #define AST_FMC_WP_OFF   2
 #define AST_FMC_ERROR    1
 
-enum GIU_MODE {
-	GIU_NONE = 0,
-	GIU_CERT = 1,
-	GIU_OPEN = 0xEA,
-};
 /**
  * ast_fmc_spi_check() - Reset AST2500 FMC SPI chip select 1 status.
  *

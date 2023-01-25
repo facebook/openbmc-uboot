@@ -27,7 +27,7 @@ static void put_vbs(volatile struct vbs *vbs)
   vbs->rom_handoff = 0;
   vbs->uboot_exec_address = 0;
   vbs->crc = 0;
-  vbs->crc = crc16_ccitt(0, (uchar*)vbs, sizeof(struct vbs));
+  vbs->crc = crc16_ccitt(0, (uchar*)vbs, offsetof(struct vbs, vbs_ver));
   vbs->uboot_exec_address = uboot_exec_address;
   vbs->rom_handoff = rom_handoff;
 }
@@ -110,7 +110,7 @@ static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
   /* Check CRC value */
   vbs->crc = 0;
   vbs->rom_handoff = 0x0;
-  if (crc == crc16_ccitt(0, (uchar*)vbs, sizeof(struct vbs))) {
+  if (crc == crc16_ccitt(0, (uchar*)vbs, offsetof(struct vbs, vbs_ver))) {
     crc_valid = true;
   }
   vbs->crc = crc;

@@ -26,6 +26,7 @@
 #include "tpm-spl.h"
 #include "util.h"
 #include "tpm-event.h"
+#include "vboot-op-cert.h"
 
 /* Size of RW environment parsable by ROM. */
 #define AST_ROM_ENV_MAX 0x200
@@ -105,7 +106,8 @@ void vboot_store(struct vbs *vbs)
 	rom_handoff = vbs->rom_handoff;
 	vbs->crc = 0;
 	vbs->rom_handoff = 0x0;
-	vbs->crc = crc16_ccitt(0, (uchar *)vbs, sizeof(struct vbs));
+	/* backward compatible with vboot-util, keep crc covering unchanged */
+	vbs->crc = crc16_ccitt(0, (uchar *)vbs, offsetof(struct vbs, vbs_ver));
 	vbs->rom_handoff = rom_handoff;
 	memcpy((void *)AST_SRAM_VBS_BASE, vbs, sizeof(struct vbs));
 }
@@ -163,8 +165,7 @@ static void vboot_spl_do_measures(u8 *uboot, uint32_t uboot_size)
 
 	printf("measure key-store...");
 	SET_EVENT_IDX(eventidx, AST_TPM_PCR_FIT, 0, measure_keystore);
-	ast_tpm_extend(eventidx.index,
-		       (unsigned char *)CONFIG_SYS_SPL_FIT_BASE,
+	ast_tpm_extend(eventidx.index, (unsigned char *)CONFIG_SYS_SPL_FIT_BASE,
 		       AST_MAX_UBOOT_FIT);
 	printf("done\n");
 
@@ -175,7 +176,8 @@ static void vboot_spl_do_measures(u8 *uboot, uint32_t uboot_size)
 		printf("done\n");
 	} else {
 		printf("measure recovery U-Boot...");
-		SET_EVENT_IDX(eventidx, AST_TPM_PCR_UBOOT, 0, measure_recv_uboot);
+		SET_EVENT_IDX(eventidx, AST_TPM_PCR_UBOOT, 0,
+			      measure_recv_uboot);
 		ast_tpm_extend(eventidx.index,
 			       (unsigned char *)CONFIG_SYS_RECOVERY_BASE,
 			       CONFIG_RECOVERY_UBOOT_SIZE);
@@ -283,9 +285,9 @@ void vboot_check_fit(void *fit, struct vbs *vbs, int *uboot, int *config,
 	*uboot_size = fdt_getprop_u32(fit, *uboot, "data-size");
 
 	/*
-   * Check the sanity of U-Boot position and size.
-   * If there is a problem force recovery.
-   */
+   	 * Check the sanity of U-Boot position and size.
+   	 * If there is a problem force recovery.
+   	 */
 	if (*uboot_size == 0 || *uboot_position == 0 || *uboot_size > 0xE0000 ||
 	    *uboot_position > 0xE0000) {
 		printf("Cannot find U-Boot firmware.\n");
@@ -458,8 +460,8 @@ static void set_and_lock_hwstrap(bool should_lock)
 #endif
 }
 
-static int vboot_setup_wp_latch(struct vbs *vbs,
-				void **pp_timer, void ** pp_spi_check)
+static int vboot_setup_wp_latch(struct vbs *vbs, void **pp_timer,
+				void **pp_spi_check)
 {
 #ifdef CONFIG_GIU_HW_SUPPORT
 	int ret, node;
@@ -472,15 +474,15 @@ static int vboot_setup_wp_latch(struct vbs *vbs,
 		return AST_FMC_ERROR;
 	}
 	ret = gpio_request_by_name_nodev(offset_to_ofnode(node),
-					"latch_ctrl-gpios", 0, &latch_ctrl,
-					GPIOD_IS_OUT);
+					 "latch_ctrl-gpios", 0, &latch_ctrl,
+					 GPIOD_IS_OUT);
 	if (ret < 0) {
 		printf("Request latch_ctrl-gpios failed (%d)\n", ret);
 		return AST_FMC_ERROR;
 	}
 	ret = gpio_request_by_name_nodev(offset_to_ofnode(node),
-					"latch_status-gpios", 0, &latch_status,
-					GPIOD_IS_IN);
+					 "latch_status-gpios", 0, &latch_status,
+					 GPIOD_IS_IN);
 	if (ret < 0) {
 		printf("Request latch_status-gpios failed (%d)\n", ret);
 		return AST_FMC_ERROR;
@@ -515,7 +517,7 @@ static int vboot_setup_wp_latch(struct vbs *vbs,
 	ret = ast_fmc_spi_check(true, GIU_NONE, pp_timer, pp_spi_check);
 	if (ret != AST_FMC_WP_OFF) {
 		printf("WARNING! flash SR clear failed. spi_check=%s\n",
-			(ret == AST_FMC_WP_ON) ? "ON" : "ERROR");
+		       (ret == AST_FMC_WP_ON) ? "ON" : "ERROR");
 		return AST_FMC_ERROR;
 	}
 
@@ -540,7 +542,58 @@ static int vboot_setup_wp_latch(struct vbs *vbs,
 #endif
 }
 
-static int vboot_get_giu_mode(int bsm_latched)
+#ifdef CONFIG_GIU_HW_SUPPORT
+static int vboot_get_giu_mode_from_cert(struct vbs *vbs)
+{
+	return GIU_NONE;
+}
+
+static void vboot_verify_op_cert(struct vbs *vbs)
+{
+	/* default init output */
+	void *cert_fit = (void*) VBOOT_OP_CERT_ADDR;
+	vbs->op_cert = 0;
+	vbs->op_cert_size = 0;
+	/* check vboot operation certficate is wellformed fit */
+	if (fdt_magic(cert_fit) != FDT_MAGIC) {
+		printf("No vboot operation certificate file deployed\n");
+		return;
+	}
+	size_t cert_fit_size = fdt_totalsize(cert_fit);
+	cert_fit_size = (cert_fit_size + 3) & ~3;
+	if (cert_fit_size > VBOOT_OP_CERT_MAX_SIZE) {
+		printf("vboot operation certificate file %d is too big\n",
+		       cert_fit_size);
+		return;
+	}
+	/* Node path to certificate */
+	int cert_path = fdt_path_offset(cert_fit, "/images/fdt@1");
+	if (cert_path < 0) {
+		printf("vboot operation certificate is malformed\n");
+		return;
+	}
+	/* get the cert and cert_size to call image verify directly. */
+	int cert_size = 0;
+	const char *cert =
+		fdt_getprop(cert_fit, cert_path, "data", &cert_size);
+	if (cert == 0 || cert_size <= 0) {
+		return;
+	}
+	/* verify the signature of the certificate */
+	int not_required = 0;
+	if (fit_image_verify_required_sigs(cert_fit, cert_path, cert, cert_size,
+					   (const char *)vbs->rom_keys,
+					   &not_required) ||
+	    not_required) {
+		printf("verify vboot operation certificate fail\n");
+		return;
+	}
+	vbs->op_cert = (u32)cert;
+	vbs->op_cert_size = (u32)cert_size;
+}
+#endif
+
+static int vboot_get_giu_mode(struct vbs *vbs, int bsm_latched)
 {
 #ifdef CONFIG_GIU_HW_SUPPORT
 	switch (bsm_latched) {
@@ -553,12 +606,17 @@ static int vboot_get_giu_mode(int bsm_latched)
 		break;
 	default:
 		printf("Unknown bsm_latched state %d, booting with GIU_NONE\n",
-			bsm_latched);
+		       bsm_latched);
 		return GIU_NONE;
 	}
 
-	// TODO: find and validate certificate,if so return GIU_CERT or GIU_OPEN
-	return GIU_NONE;
+	/* verify vboot operation certificate if exists */
+	vboot_verify_op_cert(vbs);
+	if (vbs->op_cert == 0 || vbs->op_cert_size == 0)
+		return GIU_NONE;
+
+	/* get giu_mode from verified operation certificate */
+	return vboot_get_giu_mode_from_cert(vbs);
 #else
 	return GIU_NONE;
 #endif
@@ -604,12 +662,12 @@ void vboot_reset(struct vbs *vbs)
 	/* setup golden image WP# latch */
 	int bsm_latched = vboot_setup_wp_latch(vbs, &fp_timer, &fp_spi_check);
 	/* get golden image upgrading mode */
-	int giu_mode = vboot_get_giu_mode(bsm_latched);
+	int giu_mode = vboot_get_giu_mode(vbs, bsm_latched);
 	/* check and lock hwstrap for AST2600 platform */
 	set_and_lock_hwstrap(should_lock);
 	/* Reset FMC SPI PROMs and check WP# for FMC SPI CS0. */
-	int spi_status = ast_fmc_spi_check(should_lock, giu_mode,
-				&fp_timer, &fp_spi_check);
+	int spi_status = ast_fmc_spi_check(should_lock, giu_mode, &fp_timer,
+					   &fp_spi_check);
 	/* The presence of WP# on FMC SPI CS0 determines hardware enforcement. */
 	vbs->hardware_enforce = (spi_status == AST_FMC_WP_ON) ? 1 : 0;
 	if (spi_status == AST_FMC_ERROR) {
@@ -785,10 +843,11 @@ void board_init_f(ulong bootflag)
 	/* Must set up global data pointers for local device tree. */
 	spl_init();
 
-	void* sp; asm("mov %0, sp" : "=r"(sp) : );
+	void *sp;
+	asm("mov %0, sp" : "=r"(sp) :);
 	debug("gd = %p, sp = %p\n", gd, sp);
-	debug("malloc_base = %lx, malloc_limit = %lx\n",
-		gd->malloc_base, gd->malloc_limit);
+	debug("malloc_base = %lx, malloc_limit = %lx\n", gd->malloc_base,
+	      gd->malloc_limit);
 #endif
 	watchdog_init(CONFIG_ASPEED_WATCHDOG_SPL_TIMEOUT);
 

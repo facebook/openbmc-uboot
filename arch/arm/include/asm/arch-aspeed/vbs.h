@@ -106,6 +106,10 @@ struct vbs {
   /* 2C */ u32 subordinate_current;/* Status reporting only: the current booted subordinate. */
   /* 30 */ u32 uboot_current;      /* Status reporting only: the current booted U-Boot. */
   /* 34 */ u32 kernel_current;     /* Status reporting only: the current booted kernel. */
+  /* 38 */ u8 vbs_ver;             /* add vbs version for backward compatible */
+  /* 39 */ u8 giu_mode;            /* golden image upgrade mode */
+  /* 3A */ u16 op_cert_size;       /* vboot operation certificate data size */
+  /* 3C */ u32 op_cert;            /* Location of vboot operation certificate data */
 };
 
 /* TPM NVram index used for rollback protection data. */

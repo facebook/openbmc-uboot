@@ -12,6 +12,7 @@
 #include <asm/io.h>
 
 #include <asm/arch/platform.h>
+#include "vboot-op-cert.h"
 #include "flash-spl.h"
 
 /* defines migrate to upsteam/new-sdk */
@@ -63,7 +64,7 @@
 /* Micron Tech */
 #define SPI_BP3_MT (0x1 << 6)
 #define SPI_TB_MT (0x1 << 5)
-
+// clang-format off
 #if CONFIG_FBVBOOT_GOLDEN_IMAGE_SIZE_MB == 64
 /* Lock top 64MB of CS0 */
 #  define SPI_CS0_HW_PROTECTIONS (SPI_BP3 | SPI_BP1 | SPI_BP0)
@@ -75,6 +76,7 @@
 #else
 #  error "Invalid CONFIG_FBVBOOT_GOLDEN_IMAGE_SIZE_MB, only support 32 or 64"
 #endif
+// clang-format on
 /* Lock top 64KB of CS1 */
 #define SPI_CS1_HW_PROTECTIONS (SPI_BP0)
 
@@ -401,8 +403,8 @@ static int ast2600_start_timer1(void)
 }
 #endif
 
-int ast_fmc_spi_check(bool should_lock, int giu_mode,
-			void **pp_timer, void ** pp_spi_check)
+int ast_fmc_spi_check(bool should_lock, int giu_mode, void **pp_timer,
+		      void **pp_spi_check)
 {
 	u32 function_size;
 	uchar *buffer;
@@ -421,9 +423,9 @@ int ast_fmc_spi_check(bool should_lock, int giu_mode,
 		ret = 0;
 	} else {
 #if defined(CONFIG_ASPEED_AST2600)
-	ret = ast2600_start_timer1();
+		ret = ast2600_start_timer1();
 #else
-	ret = dm_timer_init();
+		ret = dm_timer_init();
 #endif
 	}
 	if (ret) {
@@ -436,8 +438,8 @@ int ast_fmc_spi_check(bool should_lock, int giu_mode,
 		printf("timer_fp already in SRAM 0x%p\n", *pp_timer);
 		timer_fp = (heaptimer_t)(*pp_timer);
 	} else {
-
-		function_size = (u32)((uchar *)heaptimer_end - (uchar *)heaptimer);
+		function_size =
+			(u32)((uchar *)heaptimer_end - (uchar *)heaptimer);
 		buffer = (uchar *)malloc(function_size);
 		if (!buffer) {
 			debug("malloc buffer for timer_fp failed\n");
@@ -448,7 +450,7 @@ int ast_fmc_spi_check(bool should_lock, int giu_mode,
 		*pp_timer = timer_fp;
 	}
 	/* Place our SPI inspections into SRAM */
-	if (*pp_spi_check){
+	if (*pp_spi_check) {
 		printf("spi_check already in SRAM 0x%p\n", *pp_spi_check);
 		spi_check = (heapstatus_t)(*pp_spi_check);
 	} else {

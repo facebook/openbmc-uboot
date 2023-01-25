@@ -51,31 +51,64 @@
 #define CONFIG_SPL_TEXT_BASE     	0x00000000 // FMC MMIO mapped
 #define CONFIG_SPL_MAX_FOOTPRINT  0x40000   // 256KB
 
-/* SRAM */
+/* SRAM memmap
++===================================+ 0x1001_6400
+|             NOT USED              |
++===================================+ 0x1001_6000
+|              rsv                  | reboot flag @0x1001_5C00, 0x1001_5C04, 0x1001_5C08
+............Reboot Flag ............. 0x1001_5C00
+|               vbs (max 1KB)       |
++-----------------------------------+ 0x1001_5800
+|          TPM event log (2KB)      |
++-----------------------------------+ 0x1001_5000
+|    vboot3.0 operation Certificate |
+|            (4KB)                  |
++-----------------------------------+ 0x1001_4000
+|      SPL Heap (malloc_f) (12KB)   |
+.                                   .
++-----------------------------------+ 0x1001_1000
+|                GD                 |
++-----------------------------------+ 0x1001_0F10
+|               stack               |
+.                                   .
+.                                   .
+|                                   |
++===================================+ 0x1000_0000
+*/
 #define CONFIG_SYS_INIT_RAM_ADDR	(ASPEED_SRAM_BASE)
 #define CONFIG_SYS_INIT_RAM_SIZE	(ASPEED_SRAM_SIZE)
 #define SYS_INIT_RAM_END \
   ( CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_RAM_SIZE)
 
 /* The Top 2KB is reserved for VBS and reboot flags */
-#define VBOOT_RESERVE_SZ   (0x800) // 2KB
+#define VBOOT_RESERVE_SZ   (0x800)
 /* The next 2KB reserved for TPM event log */
-#define TPM_EVENT_LOG_SRAM_SIZE (0x800) // 2KB
+#define TPM_EVENT_LOG_SRAM_SIZE (0x800)
+/* The next 4KB reserved for Golden Image upgrade certificate */
+#define VBOOT_OP_CERT_MAX_SIZE (0x1000)
 /*
  * common/board_init.c::board_init_f_alloc_reserve will allocate
  * (SPL)_SYS_MALLOC_F_LEN = 12K for malloc and GD from
  * CONFIG_SYS_INIT_SP_ADDR, and let c-runtime stack growing down
  * from base of GD. sp only set to CONFIG_SYS_INIT_SP_ADDR
  * before c-runtime (refer to crt0.S)
- * To reserve space for VBS,
- * CONFIG_SYS_INIT_SP_ADDR=SYS_INIT_RAM_END - VBOOT_RESERVE_SZ
+ * 
+ * To reserve space for VBS, TPM_EVENT_LOG and GIU_CERT
+ * push CONFIG_SYS_INIT_SP_ADDR downward from SYS_INIT_RAM_END
+ *  - VBOOT_RESERVE_SZ
+ *  - TPM_EVENT_LOG_SRAM_SIZE
+ *  - VBOOT_OP_CERT_MAX_SIZE
+ */
+#define CONFIG_SYS_INIT_SP_ADDR (SYS_INIT_RAM_END \
+	- VBOOT_RESERVE_SZ \
+	- TPM_EVENT_LOG_SRAM_SIZE \
+	- VBOOT_OP_CERT_MAX_SIZE)
+
+/*
  * CONFIG_SPL_SYS_MALLOC_F_LEN by default equal SYS_MALLOC_F_LEN
  * which must define in kconfig, while CONFIG_MALLOC_F_ADDR still
  * need define in config header file
  */
-#define CONFIG_SYS_INIT_SP_ADDR \
-	(SYS_INIT_RAM_END - VBOOT_RESERVE_SZ - TPM_EVENT_LOG_SRAM_SIZE)
-
 #define SRAM_HEAP_MINI_SIZE     0x3000 // 12KB
 #ifdef CONFIG_SPL_SYS_MALLOC_F_LEN
 #	if (CONFIG_SPL_SYS_MALLOC_F_LEN < SRAM_HEAP_MINI_SIZE )

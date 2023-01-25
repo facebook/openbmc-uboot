@@ -85,7 +85,7 @@
 /* The next 2KB reserved for TPM event log */
 #define TPM_EVENT_LOG_SRAM_SIZE (0x800)
 /* The next 4KB reserved for Golden Image upgrade certificate */
-#define VBOOT_OP_CERT_MAX_SIZE (0x1000)
+#define VBOOT_OP_CERT_SRAM_SIZE (0x1000)
 /*
  * common/board_init.c::board_init_f_alloc_reserve will allocate
  * (SPL)_SYS_MALLOC_F_LEN = 12K for malloc and GD from
@@ -102,7 +102,7 @@
 #define CONFIG_SYS_INIT_SP_ADDR (SYS_INIT_RAM_END \
 	- VBOOT_RESERVE_SZ \
 	- TPM_EVENT_LOG_SRAM_SIZE \
-	- VBOOT_OP_CERT_MAX_SIZE)
+	- VBOOT_OP_CERT_SRAM_SIZE)
 
 /*
  * CONFIG_SPL_SYS_MALLOC_F_LEN by default equal SYS_MALLOC_F_LEN

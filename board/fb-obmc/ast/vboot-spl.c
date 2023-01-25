@@ -191,11 +191,17 @@ static void vboot_spl_do_measures(u8 *uboot, uint32_t uboot_size)
 	printf("done\n");
 }
 #endif
+
 /**
  * vboot_recovery() - Boot the Recovery U-Boot.
  */
 static void real_vboot_recovery(struct vbs *vbs, u8 t, u8 c)
 {
+	if (vbs->giu_mode != GIU_NONE) {
+		printf("Cannot boot into giu_mode=%d with recovery uboot\n",
+		       vbs->giu_mode);
+		vboot_abort_giu_reset(vbs, 0, 0);
+	}
 #ifdef CONFIG_ASPEED_TPM
 	int tpm_state = ast_tpm_get_state();
 	/* make sure TPM is provisioned */
@@ -460,10 +466,10 @@ static void set_and_lock_hwstrap(bool should_lock)
 #endif
 }
 
+#ifdef CONFIG_GIU_HW_SUPPORT
 static int vboot_setup_wp_latch(struct vbs *vbs, void **pp_timer,
 				void **pp_spi_check)
 {
-#ifdef CONFIG_GIU_HW_SUPPORT
 	int ret, node;
 	struct gpio_desc latch_ctrl;
 	struct gpio_desc latch_status;
@@ -536,14 +542,9 @@ static int vboot_setup_wp_latch(struct vbs *vbs, void **pp_timer,
 	dm_gpio_set_value(&latch_ctrl, false);
 
 	return AST_FMC_WP_ON;
-#else
-	printf("Not support Golden Image Upgrade.\n");
-	return AST_FMC_ERROR;
-#endif
 }
 
-#ifdef CONFIG_GIU_HW_SUPPORT
-static int vboot_get_giu_mode_from_cert(struct vbs *vbs)
+static u8 vboot_get_giu_mode_from_cert(struct vbs *vbs)
 {
 	void *fdt = (void *)vbs->op_cert;
 	int cert_node = fdt_path_offset(fdt, "/");
@@ -620,11 +621,65 @@ static void vboot_verify_op_cert(struct vbs *vbs)
 	vbs->op_cert = (u32)cert;
 	vbs->op_cert_size = (u32)cert_size;
 }
-#endif
 
-static int vboot_get_giu_mode(struct vbs *vbs, int bsm_latched)
+static const u8 *vboot_get_cert_bound_hash(struct vbs *vbs, u32 *hash_len)
 {
-#ifdef CONFIG_GIU_HW_SUPPORT
+	void *fdt = (void *)vbs->op_cert;
+	int cert_node = fdt_path_offset(fdt, "/");
+	if (cert_node < 0) {
+		printf("empty cert\n");
+		return 0;
+	}
+	*hash_len = fdtdec_get_uint(fdt, cert_node, PROP_UBOOT_HASH_LEN, 0);
+	if (!(*hash_len)) {
+		printf("no bound hash defined\n");
+		return 0;
+	}
+	return fdtdec_locate_byte_array(fdt, cert_node, PROP_UBOOT_HASH,
+					*hash_len);
+}
+
+void __noreturn vboot_abort_giu_reset(struct vbs *vbs, const u8 *bound_hash,
+				      u32 bound_hash_len)
+{
+	debug("giu_mode=%d, bound_hash=0x%p, bound_hash_len=(%d)\n",
+	      vbs->giu_mode, bound_hash, bound_hash_len);
+	if (bound_hash) {
+		debug("bound_hash:[");
+		for (u32 i = 0; i < bound_hash_len; ++i)
+			debug("%2x", bound_hash[i]);
+		debug("]\n");
+	}
+	printf("giu abort!\n");
+	u32 *cert = (u32 *)VBOOT_OP_CERT_ADDR;
+	printf("poison vboot giu cert at 0x%p, size=0x%x\n", cert,
+	       VBOOT_OP_CERT_MAX_SIZE);
+	memset(cert, 0, VBOOT_OP_CERT_MAX_SIZE);
+	*cert = VBOOT_OP_CERT_POISON;
+	printf("clean up SRAM vbs\n");
+	memset(vbs, 0, sizeof(struct vbs));
+	vboot_jump(0, vbs);
+	hang();
+}
+
+static void vboot_verify_giu_uboot_bound(struct vbs *vbs, const u8 *uboot_hash)
+{
+	if (vbs->giu_mode != GIU_NONE) {
+		u32 bound_hash_len = 0;
+		const u8 *bound_hash =
+			vboot_get_cert_bound_hash(vbs, &bound_hash_len);
+
+		if (!bound_hash || !bound_hash_len ||
+		    bound_hash_len > FIT_MAX_HASH_LEN ||
+		    memcmp(bound_hash, uboot_hash, bound_hash_len)) {
+			vboot_abort_giu_reset(vbs, bound_hash, bound_hash_len);
+		}
+	}
+	printf("Boot into giu_mode=%d\n", vbs->giu_mode);
+}
+
+static u8 vboot_get_giu_mode(struct vbs *vbs, int bsm_latched)
+{
 	switch (bsm_latched) {
 	case AST_FMC_ERROR:
 		printf("BSM latch circuit error, booting with GIU_NONE mode\n");
@@ -646,10 +701,9 @@ static int vboot_get_giu_mode(struct vbs *vbs, int bsm_latched)
 
 	/* get giu_mode from verified operation certificate */
 	return vboot_get_giu_mode_from_cert(vbs);
-#else
-	return GIU_NONE;
-#endif
 }
+
+#endif
 
 void vboot_reset(struct vbs *vbs)
 {
@@ -691,12 +745,12 @@ void vboot_reset(struct vbs *vbs)
 	/* setup golden image WP# latch */
 	int bsm_latched = vboot_setup_wp_latch(vbs, &fp_timer, &fp_spi_check);
 	/* get golden image upgrading mode */
-	int giu_mode = vboot_get_giu_mode(vbs, bsm_latched);
+	vbs->giu_mode = vboot_get_giu_mode(vbs, bsm_latched);
 	/* check and lock hwstrap for AST2600 platform */
 	set_and_lock_hwstrap(should_lock);
 	/* Reset FMC SPI PROMs and check WP# for FMC SPI CS0. */
-	int spi_status = ast_fmc_spi_check(should_lock, giu_mode, &fp_timer,
-					   &fp_spi_check);
+	int spi_status = ast_fmc_spi_check(should_lock, vbs->giu_mode,
+					   &fp_timer, &fp_spi_check);
 	/* The presence of WP# on FMC SPI CS0 determines hardware enforcement. */
 	vbs->hardware_enforce = (spi_status == AST_FMC_WP_ON) ? 1 : 0;
 	if (spi_status == AST_FMC_ERROR) {
@@ -825,7 +879,8 @@ void vboot_load_fit(volatile void *from)
 		vboot_spl_do_measures(uboot_hash, FIT_MAX_HASH_LEN);
 	}
 #endif
-
+	/* verify U-Boot is bound to certificate */
+	vboot_verify_giu_uboot_bound(vbs, uboot_hash);
 	vboot_jump((volatile void *)load, vbs);
 }
 

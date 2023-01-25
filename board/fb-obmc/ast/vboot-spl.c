@@ -545,13 +545,37 @@ static int vboot_setup_wp_latch(struct vbs *vbs, void **pp_timer,
 #ifdef CONFIG_GIU_HW_SUPPORT
 static int vboot_get_giu_mode_from_cert(struct vbs *vbs)
 {
-	return GIU_NONE;
+	void *fdt = (void *)vbs->op_cert;
+	int cert_node = fdt_path_offset(fdt, "/");
+	if (cert_node < 0) {
+		printf("empty cert\n");
+		return GIU_NONE;
+	}
+	int cert_ver = fdtdec_get_int(fdt, cert_node, PROP_CERT_VER,
+				      VBOOT_OP_CERT_UNSUPPORT_VER);
+	if (cert_ver > VBOOT_OP_CERT_VER) {
+		printf("cert version=%d, support version=%d\n", cert_ver,
+		       VBOOT_OP_CERT_VER);
+		return GIU_NONE;
+	}
+	/* Get giu_mode property in cert */
+	int giu_mode = fdtdec_get_int(fdt, cert_node, PROP_GIU_MODE, GIU_NONE);
+	switch (giu_mode) {
+	case GIU_NONE:
+	case GIU_CERT:
+	case GIU_OPEN:
+		return giu_mode;
+	default:
+		printf("cert request unknown giu_mode=%d, default to GIU_NONE\n",
+		       giu_mode);
+		return GIU_NONE;
+	}
 }
 
 static void vboot_verify_op_cert(struct vbs *vbs)
 {
 	/* default init output */
-	void *cert_fit = (void*) VBOOT_OP_CERT_ADDR;
+	void *cert_fit = (void *)VBOOT_OP_CERT_ADDR;
 	vbs->op_cert = 0;
 	vbs->op_cert_size = 0;
 	/* check vboot operation certficate is wellformed fit */
@@ -567,16 +591,16 @@ static void vboot_verify_op_cert(struct vbs *vbs)
 		return;
 	}
 	/* Node path to certificate */
-	int cert_path = fdt_path_offset(cert_fit, "/images/fdt@1");
+	int cert_path = fdt_path_offset(cert_fit, CERT_IAMGE_PATH);
 	if (cert_path < 0) {
-		printf("vboot operation certificate is malformed\n");
+		printf("no operation certificate found in cert fit\n");
 		return;
 	}
 	/* get the cert and cert_size to call image verify directly. */
 	int cert_size = 0;
-	const char *cert =
-		fdt_getprop(cert_fit, cert_path, "data", &cert_size);
+	const char *cert = fdt_getprop(cert_fit, cert_path, "data", &cert_size);
 	if (cert == 0 || cert_size <= 0) {
+		printf("vboot opertion certifcate data is invalid\n");
 		return;
 	}
 	/* verify the signature of the certificate */
@@ -586,6 +610,11 @@ static void vboot_verify_op_cert(struct vbs *vbs)
 					   &not_required) ||
 	    not_required) {
 		printf("verify vboot operation certificate fail\n");
+		return;
+	}
+	/* check vboot operation certficate is wellformed dtb */
+	if (fdt_magic(cert) != FDT_MAGIC) {
+		printf("vboot opertion certifcate data is malformed\n");
 		return;
 	}
 	vbs->op_cert = (u32)cert;

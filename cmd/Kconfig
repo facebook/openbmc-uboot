@@ -1966,6 +1966,14 @@ config CMD_UBIFS
 	help
 	  UBIFS is a file system for flash devices which works on top of UBI.
 
+config CMD_GIU
+	bool "Golden Image Upgrading command"
+	depends on GIU_HW_SUPPORT
+	default y if GIU_HW_SUPPORT
+	select CMD_SF
+	help
+	  META's OpenBMC adopts dual image in dual SPI NOR flash architecture. One image is the main image, one image is the manufacturing default image (golden image). The golden image is deployed during manufacturing time and not upgradable with normal BMC image upgrading process. This command is designed to upgrade the golden image during golden image upgrading process after manufacturing in the field according to the golden image upgrading certificate.  
+
 source "cmd/aspeed/Kconfig"
 
 endmenu

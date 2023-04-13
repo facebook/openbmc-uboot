@@ -156,6 +156,7 @@ obj-$(CONFIG_CMD_UNZIP) += unzip.o
 obj-$(CONFIG_CMD_VIRTIO) += virtio.o
 obj-$(CONFIG_CMD_LZMADEC) += lzmadec.o
 obj-$(CONFIG_CMD_VBS) += vbs.o
+obj-$(CONFIG_CMD_GIU) += giu.o
 
 obj-$(CONFIG_CMD_USB) += usb.o disk.o
 obj-$(CONFIG_CMD_FASTBOOT) += fastboot.o

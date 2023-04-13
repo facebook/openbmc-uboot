@@ -66,22 +66,22 @@
 #define SPI_TB_MT (0x1 << 5)
 // clang-format off
 #if CONFIG_FBVBOOT_GOLDEN_IMAGE_SIZE_MB == 64
-/* Lock top 64MB of CS0 */
-#  define SPI_CS0_HW_PROTECTIONS (SPI_BP3 | SPI_BP1 | SPI_BP0)
-#  define SPI_CS0_HW_PROTECTIONS_MT (SPI_BP3_MT | SPI_BP1 | SPI_BP0)
+/* Lock top 64MB */
+#  define SPI_PROTECT_WHOLE_IMAGE (SPI_BP3 | SPI_BP1 | SPI_BP0)
+#  define SPI_PROTECT_WHOLE_IMAGE_MT (SPI_BP3_MT | SPI_BP1 | SPI_BP0)
 #elif CONFIG_FBVBOOT_GOLDEN_IMAGE_SIZE_MB == 32
-/* Lock top 32MB of CS0 */
-#  define SPI_CS0_HW_PROTECTIONS (SPI_BP3 | SPI_BP1)
-#  define SPI_CS0_HW_PROTECTIONS_MT (SPI_BP3_MT | SPI_BP1)
+/* Lock top 32MB */
+#  define SPI_PROTECT_WHOLE_IMAGE (SPI_BP3 | SPI_BP1)
+#  define SPI_PROTECT_WHOLE_IMAGE_MT (SPI_BP3_MT | SPI_BP1)
 #else
 #  error "Invalid CONFIG_FBVBOOT_GOLDEN_IMAGE_SIZE_MB, only support 32 or 64"
 #endif
 // clang-format on
-/* Lock top 64KB of CS1 */
-#define SPI_CS1_HW_PROTECTIONS (SPI_BP0)
 
-/* Lock top 256KB (SPL partition) of CS0 */
-#define SPI_CS0_LOCK_SPL (SPI_BP0 | SPI_BP1)
+/* Lock top 64KB */
+#define SPI_PROTECT_ABA (SPI_BP0)
+/* Lock top 256KB (SPL partition) */
+#define SPI_PROTECT_SPL (SPI_BP0 | SPI_BP1)
 
 #define WRITEREG(r, v) *(volatile u32 *)(r) = v
 #define WRITEB(r, b) *(volatile uchar *)(r) = (uchar)b
@@ -244,19 +244,54 @@ inline void set_topbottom_mxic(heaptimer_t timer, u32 base, u32 ctrl)
 	(void)spi_status(timer, base, ctrl, false);
 }
 
-inline u32 giu_mode_2_cs0_bp_bits(int giu_mode, bool is_mt)
+inline u32 giu_mode_2_bp_bits(int cs, int giu_mode)
 {
-	/*
-	* GIU_CERT to execute golden image upgrade we only lock SPL 256KB of CS0
-	*/
-	if (giu_mode == GIU_CERT) {
-		return SPI_CS0_LOCK_SPL;
+	/* GIU_VROM flash0 and flash1 no protect */
+	if (giu_mode == GIU_VROM) {
+		return 0;
 	}
-	if (is_mt) {
-		/* MT BP3 bit at different location */
-		return SPI_CS0_HW_PROTECTIONS_MT;
+	/* GIU_RECV flash0 protect SPL (256KB), flash1 protect whole image */
+	if (giu_mode == GIU_RECV) {
+		if (cs == 0) {
+			return SPI_PROTECT_SPL;
+		} else {
+			return SPI_PROTECT_WHOLE_IMAGE;
+		}
 	}
-	return SPI_CS0_HW_PROTECTIONS;
+	/* GIU_NONE flash0 protect whole image, flash1 protect ABA
+	 * GIU_OPEN take the same setting, as SWRD will not set
+	 * the bp bits will get cleared
+	 */
+	if (cs == 0) {
+		return SPI_PROTECT_WHOLE_IMAGE;
+	} else {
+		return SPI_PROTECT_ABA;
+	}
+}
+
+inline u32 giu_mode_2_bp_bits_mt(int cs, int giu_mode)
+{
+	/* GIU_VROM flash0 and flash1 no protect */
+	if (giu_mode == GIU_VROM) {
+		return 0;
+	}
+	/* GIU_RECV flash0 protect SPL (256KB), flash1 protect whole image */
+	if (giu_mode == GIU_RECV) {
+		if (cs == 0) {
+			return SPI_PROTECT_SPL;
+		} else {
+			return SPI_PROTECT_WHOLE_IMAGE_MT;
+		}
+	}
+	/* GIU_NONE flash0 protect whole image, flash1 protect ABA
+	 * GIU_OPEN take the same setting, as SWRD will not set
+	 * the bp bits will get cleared
+	 */
+	if (cs == 0) {
+		return SPI_PROTECT_WHOLE_IMAGE_MT;
+	} else {
+		return SPI_PROTECT_ABA;
+	}
 }
 
 #define ASPEED_TIMER1_STS_REG (ASPEED_TIMER_BASE)
@@ -302,16 +337,15 @@ int doheap(heaptimer_t timer, uchar cs, bool should_lock, int giu_mode)
 	if (cs == 0) {
 		base = ASPEED_FMC_CS0_BASE;
 		ctrl = AST_FMC_CE0_CONTROL;
-		prot = giu_mode_2_cs0_bp_bits(giu_mode, false);
 	} else {
 		base = ASPEED_FMC_CS1_BASE;
 		ctrl = AST_FMC_CE1_CONTROL;
-		prot = SPI_CS1_HW_PROTECTIONS;
 	}
 
 	fmc_romcs(cs);
 
-	/* Set the T/B bit based on the chip vendor. */
+	/* Set the Prot and T/B bit based on the chip vendor. */
+	prot = giu_mode_2_bp_bits(cs, giu_mode);
 	spi_id(timer, base, ctrl, id);
 
 	if (id[0] == 0xC2) {
@@ -324,9 +358,7 @@ int doheap(heaptimer_t timer, uchar cs, bool should_lock, int giu_mode)
 		prot |= SPI_TB;
 	} else if (id[0] == 0x20) {
 		/* MT */
-		if (cs == 0) {
-			prot = giu_mode_2_cs0_bp_bits(giu_mode, true);
-		}
+		prot = giu_mode_2_bp_bits_mt(cs, giu_mode);
 		prot |= SPI_TB_MT;
 	} else {
 		return AST_FMC_ERROR;

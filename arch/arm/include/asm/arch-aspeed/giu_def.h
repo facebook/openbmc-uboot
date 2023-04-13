@@ -13,6 +13,8 @@
 #else
 #  define VBOOT_OP_CERT_MAX_SIZE 0
 #endif
+
+#define VBOOT_GIU_LIGHT_MARK (0x00554947) /* "GIU" */
 #define VBOOT_OP_CERT_POISON (0xDEADBEEF)
 #define CERT_IAMGE_PATH ("/images/fdt@1")
 
@@ -25,14 +27,15 @@
 
 /* op-cert version */
 #define PROP_CERT_VER VBOOT_OP_CERT_PROP(CERT_VER)
-#define VBOOT_OP_CERT_VER 1
+#define VBOOT_OP_CERT_VER 2
 #define VBOOT_OP_CERT_UNSUPPORT_VER (VBOOT_OP_CERT_VER + 1)
 
 /* golden image upgrade mode */
 #define PROP_GIU_MODE VBOOT_OP_CERT_PROP(GIU_MODE)
-#define GIU_NONE 0
-#define GIU_CERT 1
-#define GIU_OPEN 0xEA
+#define GIU_NONE 0  /* not execute golden image upgrade */
+#define GIU_VROM 1  /* upgrade the rom of golden image with op-cert*/
+#define GIU_RECV 2 /* upgrade recovery image of golden image w/o op-cert */
+#define GIU_OPEN 0xEA /* leave the flash HWP de-assert, for development */
 
 /* bounding to u-boot's hash256 */
 #define PROP_UBOOT_HASH VBOOT_OP_CERT_PROP(UBOOT_HASH)

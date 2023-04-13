@@ -22,7 +22,8 @@
  *     should_lock     giu_mode      wp_flash_area
  *         0              x            none
  *         1            GIU_NONE     flash0(32MB)   flash1(64KB)
- *         1            GIU_CERT(1)  flash0(256KB)  flash1(64KB)
+ *         1            GIU_VROM(1)    none , ONLY during u-boot
+ *         1            GIU_RECV(2)  flash0(256KB)  flash1(64KB)
  *         1            GIU_OPEN(0xEA)  none
  *
  * This will return 0 on success (CS1 was reset and CS0 is protected).

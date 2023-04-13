@@ -563,11 +563,12 @@ static u8 vboot_get_giu_mode_from_cert(struct vbs *vbs)
 	int giu_mode = fdtdec_get_int(fdt, cert_node, PROP_GIU_MODE, GIU_NONE);
 	switch (giu_mode) {
 	case GIU_NONE:
-	case GIU_CERT:
+	case GIU_VROM:
+	case GIU_RECV:
 	case GIU_OPEN:
 		return giu_mode;
 	default:
-		printf("cert request unknown giu_mode=%d, default to GIU_NONE\n",
+		printf("cert request unknown giu_mode=%d, default GIU_NONE\n",
 		       giu_mode);
 		return GIU_NONE;
 	}
@@ -664,18 +665,29 @@ void __noreturn vboot_abort_giu_reset(struct vbs *vbs, const u8 *bound_hash,
 
 static void vboot_verify_giu_uboot_bound(struct vbs *vbs, const u8 *uboot_hash)
 {
-	if (vbs->giu_mode != GIU_NONE) {
-		u32 bound_hash_len = 0;
-		const u8 *bound_hash =
-			vboot_get_cert_bound_hash(vbs, &bound_hash_len);
+	if (vbs->giu_mode == GIU_NONE || vbs->giu_mode == GIU_RECV) {
+		printf("skip bound uboot checking for %s\n",
+		       vbs->giu_mode == GIU_NONE ? "GIU_NONE" : "GIU_RECV");
+		return;
+	}
+	/* verify u-boot is the same specified in certificate */
+	u32 bound_hash_len = 0;
+	const u8 *bound_hash = vboot_get_cert_bound_hash(vbs, &bound_hash_len);
 
-		if (!bound_hash || !bound_hash_len ||
-		    bound_hash_len > FIT_MAX_HASH_LEN ||
-		    memcmp(bound_hash, uboot_hash, bound_hash_len)) {
-			vboot_abort_giu_reset(vbs, bound_hash, bound_hash_len);
-		}
+	if (!bound_hash || !bound_hash_len ||
+	    bound_hash_len > FIT_MAX_HASH_LEN ||
+	    memcmp(bound_hash, uboot_hash, bound_hash_len)) {
+		vboot_abort_giu_reset(vbs, bound_hash, bound_hash_len);
 	}
 	printf("Boot into giu_mode=%d\n", vbs->giu_mode);
+}
+
+static bool vboot_is_giu_upgrade_recv(struct vbs *vbs)
+{
+	volatile uint32_t *giu_mark = (volatile uint32_t *)VBOOT_OP_CERT_ADDR;
+
+	printf("GIU flag = 0x%08X\n", *giu_mark);
+	return (VBOOT_GIU_LIGHT_MARK == *giu_mark);
 }
 
 static u8 vboot_get_giu_mode(struct vbs *vbs, int bsm_latched)
@@ -692,6 +704,11 @@ static u8 vboot_get_giu_mode(struct vbs *vbs, int bsm_latched)
 		printf("Unknown bsm_latched state %d, booting with GIU_NONE\n",
 		       bsm_latched);
 		return GIU_NONE;
+	}
+
+	/* check GIU_LIGHT flag */
+	if (vboot_is_giu_upgrade_recv(vbs)) {
+		return GIU_RECV;
 	}
 
 	/* verify vboot operation certificate if exists */

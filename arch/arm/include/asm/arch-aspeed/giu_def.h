@@ -15,6 +15,8 @@
 #endif
 
 #define VBOOT_GIU_LIGHT_MARK (0x00554947) /* "GIU" */
+#define VBOOT_GIU_B2RCV_MARK (0x564352B2) /* "B2_RCV" */
+#define VBOOT_GIU_ACK_MARK (0x004B4341) /* "ACK" */
 #define VBOOT_OP_CERT_POISON (0xDEADBEEF)
 #define CERT_IAMGE_PATH ("/images/fdt@1")
 

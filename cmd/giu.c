@@ -17,11 +17,9 @@ static int vboot_upgrade_vrom(void *fdt)
 
 static int ack_giu_upgrade_recvimg(void)
 {
-	volatile char *giu_flag = (volatile char *)VBOOT_OP_CERT_ADDR;
-	if (giu_flag[0] == 'G' && giu_flag[1] == 'I' && giu_flag[2] == 'U' &&
-	    giu_flag[3] == '\0') {
-		giu_flag[0] = 'A', giu_flag[1] = 'C', giu_flag[2] = 'K',
-		giu_flag[3] = '\0';
+	volatile int *giu_flag = (volatile int *)VBOOT_OP_CERT_ADDR;
+	if (VBOOT_GIU_LIGHT_MARK == *giu_flag) {
+		*giu_flag = VBOOT_GIU_ACK_MARK;
 		printf("Success\n");
 		return CMD_RET_SUCCESS;
 	} else {

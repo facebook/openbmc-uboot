@@ -19,6 +19,7 @@
 #   define vboot_verify_giu_uboot_bound(vbs, uboot_hash)
 #   define vboot_get_giu_mode(vbs, bsm_latched) \
 	({bsm_latched = bsm_latched; GIU_NONE;})
+#   define vboot_giu_onetime_b2recv(vbs)
 #endif /* CONFIG_GIU_HW_SUPPORT */
 
 #endif

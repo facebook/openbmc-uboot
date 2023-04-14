@@ -720,6 +720,17 @@ static u8 vboot_get_giu_mode(struct vbs *vbs, int bsm_latched)
 	return vboot_get_giu_mode_from_cert(vbs);
 }
 
+static void vboot_giu_onetime_b2recv(struct vbs *vbs)
+{
+	volatile int *giu_flag = (volatile int *)VBOOT_OP_CERT_ADDR;
+	if (VBOOT_GIU_B2RCV_MARK == *giu_flag) {
+		*giu_flag = VBOOT_GIU_ACK_MARK;
+		vbs->force_recovery = 1;
+		vboot_recovery(vbs, VBS_ERROR_TYPE_FORCE,
+			       VBS_ERROR_FORCE_RECOVERY);
+	}
+}
+
 #endif
 
 void vboot_reset(struct vbs *vbs)
@@ -873,6 +884,8 @@ void vboot_load_fit(volatile void *from)
 		vboot_recovery(vbs, VBS_ERROR_TYPE_FORCE,
 			       VBS_ERROR_FORCE_RECOVERY);
 	}
+	/* Check giu one time boot to recovery image */
+	vboot_giu_onetime_b2recv(vbs);
 
 	if (fdt_subnode_offset((const void *)vbs->rom_keys, 0,
 			       FIT_SIG_NODENAME) >= 0) {

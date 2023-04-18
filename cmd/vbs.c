@@ -16,6 +16,7 @@
 
 #include <asm/io.h>
 #include <asm/arch/vbs.h>
+#include <asm/arch/giu_def.h>
 
 extern int get_tpm(struct udevice **devp);
 
@@ -30,6 +31,23 @@ static void put_vbs(volatile struct vbs *vbs)
 	vbs->crc = crc16_ccitt(0, (uchar *)vbs, offsetof(struct vbs, vbs_ver));
 	vbs->uboot_exec_address = uboot_exec_address;
 	vbs->rom_handoff = rom_handoff;
+	/* no changes in crc2 protected area now, so no need update crc2 */
+}
+
+const char *giu_mode_name(uint8_t giu_mode)
+{
+	switch (giu_mode) {
+	case GIU_NONE:
+		return "NONE";
+	case GIU_VROM:
+		return "VROM";
+	case GIU_RECV:
+		return "RECV";
+	case GIU_OPEN:
+		return "OPEN";
+	default:
+		return "NA";
+	}
 }
 
 static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
@@ -112,6 +130,8 @@ static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	uint16_t crc = vbs->crc;
 	uint32_t handoff = vbs->rom_handoff;
 	bool crc_valid = false;
+	uint16_t crc2 = vbs->crc2;
+	bool crc2_valid = false;
 
 	/* Check CRC value */
 	vbs->crc = 0;
@@ -122,6 +142,14 @@ static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	}
 	vbs->crc = crc;
 	vbs->rom_handoff = handoff;
+	/* Check CRC2 value */
+	vbs->crc2 = 0;
+	if (crc2 ==
+	    crc16_ccitt(0, (uchar *)&vbs->vbs_ver,
+			sizeof(struct vbs) - offsetof(struct vbs, vbs_ver))) {
+		crc2_valid = true;
+	}
+	vbs->crc2 = crc2;
 
 	printf("ROM executed from:       0x%08x\n", vbs->rom_exec_address);
 	printf("ROM KEK certificates:    0x%08x\n", vbs->rom_keys);
@@ -153,6 +181,16 @@ static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	printf("CRC valid:   %d (%hu)\n", (crc_valid) ? 1 : 0, crc);
 	printf("Status: type (%d) code (%d)\n", vbs->error_type,
 	       vbs->error_code);
+
+	if (!crc2_valid || !vbs->vbs_ver) {
+		printf("vbs_ver: Legacy\n");
+		return 0;
+	}
+	printf("VBS version:              %d\n", vbs->vbs_ver);
+	printf("GIU Mode:                 %4s(0x%02x)\n",
+	       giu_mode_name(vbs->giu_mode), vbs->giu_mode);
+	printf("GIU certificate:          %p\n", (void *)vbs->op_cert);
+	printf("GIU certificate size:     %u\n", vbs->op_cert);
 
 	return 0;
 }

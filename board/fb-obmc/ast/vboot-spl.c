@@ -109,6 +109,10 @@ void vboot_store(struct vbs *vbs)
 	/* backward compatible with vboot-util, keep crc covering unchanged */
 	vbs->crc = crc16_ccitt(0, (uchar *)vbs, offsetof(struct vbs, vbs_ver));
 	vbs->rom_handoff = rom_handoff;
+	vbs->crc2 = 0;
+	vbs->crc2 =
+		crc16_ccitt(0, (uchar *)&vbs->vbs_ver,
+			    sizeof(struct vbs) - offsetof(struct vbs, vbs_ver));
 	memcpy((void *)AST_SRAM_VBS_BASE, vbs, sizeof(struct vbs));
 }
 
@@ -740,6 +744,7 @@ void vboot_reset(struct vbs *vbs)
 	volatile struct vbs *current = (volatile struct vbs *)AST_SRAM_VBS_BASE;
 
 	memset((void *)vbs, 0, sizeof(struct vbs));
+	vbs->vbs_ver = VBS_VERSION;
 	vbs->rom_exec_address = current->uboot_exec_address;
 	vbs->recovery_retries = current->recovery_retries;
 	vbs->rom_handoff = current->rom_handoff;

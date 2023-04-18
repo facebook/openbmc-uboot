@@ -16,6 +16,8 @@
 #error "VBoot not supported target"
 #endif
 
+#define VBS_VER_LEGACY (0) /* vbs legacy strcture does not include vbs_ver */
+#define VBS_VERSION    (1) /* vbs strcture version */
 #define VBS_SUCCESS            0
 #define VBS_ERROR_TYPE_HW      1
 #define VBS_ERROR_TYPE_SPI     2
@@ -98,7 +100,7 @@ struct vbs {
   /* 19 */ u8 error_type;          /* Type of error, or 0 for success */
   /* 1A */ u8 error_code;          /* Unique error code, or 0 for success */
   /* 1B */ u8 error_tpm;           /* The last-most-recent error from the TPM. */
-  /* 1C */ u16 crc;                /* A CRC of the vbs structure */
+  /* 1C */ u16 crc;                /* A CRC covers legacy vbs structure */
   /* 1E */ u16 error_tpm2;         /* tpm2 error code */
   /* 20 */ u32 subordinate_last;   /* Status reporting only: the last booted subordinate. */
   /* 24 */ u32 uboot_last;         /* Status reporting only: the last booted U-Boot. */
@@ -106,10 +108,12 @@ struct vbs {
   /* 2C */ u32 subordinate_current;/* Status reporting only: the current booted subordinate. */
   /* 30 */ u32 uboot_current;      /* Status reporting only: the current booted U-Boot. */
   /* 34 */ u32 kernel_current;     /* Status reporting only: the current booted kernel. */
+  /* ------------ end of legacy vbs ------------------------------------------*/
   /* 38 */ u8 vbs_ver;             /* add vbs version for backward compatible */
   /* 39 */ u8 giu_mode;            /* golden image upgrade mode */
   /* 3A */ u16 op_cert_size;       /* vboot operation certificate data size */
   /* 3C */ u32 op_cert;            /* Location of vboot operation certificate data */
+  /* 40 */ u16 crc2;               /* crc2 covers new fields from include vbs_ver */
 };
 
 /* TPM NVram index used for rollback protection data. */

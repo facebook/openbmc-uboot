@@ -127,22 +127,27 @@ static int do_vbs(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 		return 0;
 	}
 
+	/* Check CRC value */
 	uint16_t crc = vbs->crc;
 	uint32_t handoff = vbs->rom_handoff;
+	uint32_t uboot_exec_address = vbs->uboot_exec_address;
 	bool crc_valid = false;
-	uint16_t crc2 = vbs->crc2;
-	bool crc2_valid = false;
 
-	/* Check CRC value */
 	vbs->crc = 0;
 	vbs->rom_handoff = 0x0;
+	vbs->uboot_exec_address = 0x0;
+
 	if (crc ==
 	    crc16_ccitt(0, (uchar *)vbs, offsetof(struct vbs, vbs_ver))) {
 		crc_valid = true;
 	}
 	vbs->crc = crc;
 	vbs->rom_handoff = handoff;
+	vbs->uboot_exec_address = uboot_exec_address;
+
 	/* Check CRC2 value */
+	uint16_t crc2 = vbs->crc2;
+	bool crc2_valid = false;
 	vbs->crc2 = 0;
 	if (crc2 ==
 	    crc16_ccitt(0, (uchar *)&vbs->vbs_ver,

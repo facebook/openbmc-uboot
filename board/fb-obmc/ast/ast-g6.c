@@ -122,7 +122,6 @@ void enable_sgpiom1(uint16_t sgpio_clk_div, uint8_t sgpio_byte) {
 	uint32_t value = 0;
 
 	//Clk=2M 16byte
-	clrbits_le32(SGPIO1_CFG_REG, 0xFFFFFFFF);
 	value = SGPIO_CLK_DIV(sgpio_clk_div) | SGPIO_BYTES(sgpio_byte) | SGPIO_ENABLE;
 	setbits_le32(SGPIO1_CFG_REG, value);
 

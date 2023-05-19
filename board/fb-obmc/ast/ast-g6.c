@@ -312,7 +312,7 @@ int board_init(void)
 	el_superio_decoder(SIO_ADDR_2E);
 	init_lpc_pcc();
 #endif
-	enable_sgpiom1(254, 16);
+	enable_sgpiom1(24, 16);
 //	debugMsg_espi();
 #endif /* FBGT specific */
 

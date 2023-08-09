@@ -1,0 +1,34 @@
+/dts-v1/;
+
+#include "ast2400-fboss.dtsi"
+
+/ {
+	model = "Facebook Backpack";
+    compatible = "fbobmc,backpack", "aspeed,ast2400";
+
+	chosen {
+		stdout-path = &uart5;
+	};
+
+	aliases {
+		eth0 = &mac1;
+	};
+};
+
+&uart5 {
+	u-boot,dm-pre-reloc;
+	status = "okay";
+};
+
+&mac1 {
+	status = "okay";
+	phy-mode = "rgmii";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_mac2link_default &pinctrl_mdio2_default>;
+	phy-handle = <&ethphy1>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+	ethphy1: ethernet-phy@1 {
+		reg = <24>;
+	};
+};

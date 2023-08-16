@@ -58,6 +58,13 @@ config ASPEED_ENABLE_DUAL_BOOT_WATCHDOG
 			boot2nd = <1>;
 		};
 
+config ASPEED_ENABLE_PRIMARY_WATCHDOG
+	bool "enable the primary watchdog"
+	default n
+	help
+		Enabling this will start the primary watchdog (wdt1).
+		Depends on ASPEED_ENABLE_DUAL_BOOT_WATCHDOG.
+
 config GIU_HW_SUPPORT
 	bool "With SPI Flash WP# control LATCH circuit"
 	default n

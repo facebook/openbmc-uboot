@@ -273,6 +273,11 @@ int board_init(void)
 
 #if CONFIG_IS_ENABLED(ASPEED_ENABLE_DUAL_BOOT_WATCHDOG)
 	dual_boot_watchdog_init(CONFIG_ASPEED_WATCHDOG_TIMEOUT);
+#if CONFIG_IS_ENABLED(ASPEED_ENABLE_PRIMARY_WATCHDOG)
+	// NOTE: wdt1 timeout must be > fmc_wdt2 to allow fmc_wdt2 to timeout first
+	// wdt1 timeout is reset later in the kernel
+	watchdog_init(CONFIG_ASPEED_WATCHDOG_TIMEOUT*2);
+#endif
 #else
 	watchdog_init(CONFIG_ASPEED_WATCHDOG_TIMEOUT);
 #endif

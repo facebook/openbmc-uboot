@@ -127,6 +127,11 @@ const struct flash_info spi_nor_ids[] = {
 			SPI_NOR_HAS_TB)
 	},
 	{
+		INFO("gd55b01gf", 0xc8401b, 0, 64 * 1024, 2048,
+			SECT_4K | SPI_NOR_QUAD_READ | SPI_NOR_HAS_LOCK |
+			SPI_NOR_HAS_TB)
+	},
+	{
 		INFO("gd55b02ge", 0xc8471c, 0, 64 * 1024, 4096,
 			SECT_4K | SPI_NOR_QUAD_READ | SPI_NOR_HAS_LOCK |
 			SPI_NOR_HAS_TB)

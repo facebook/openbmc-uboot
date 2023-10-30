@@ -722,6 +722,7 @@ dtb-$(CONFIG_TARGET_FB_AST_GEN_6) += \
 	aspeed-bmc-facebook-grandcanyon.dtb \
 	aspeed-bmc-facebook-fby35.dtb \
 	aspeed-bmc-facebook-grandteton.dtb \
+	aspeed-bmc-facebook-meru.dtb \
 	aspeed-bmc-facebook-netlakemtp.dtb \
 	aspeed-bmc-facebook-sandia.dtb \
 	aspeed-bmc-facebook-waimeacanyon.dtb

@@ -55,6 +55,12 @@ config TARGET_FACEBOOK_FUJI
 	help
 	  FACEBOOK-FUJI is BMC board with AST2600 chip.
 
+config TARGET_FACEBOOK_MERU
+   bool "FACEBOOK-MERU"
+   depends on ASPEED_AST2600
+   help
+     FACEBOOK-MERU is BMC board with AST2600 chip.
+
 config TARGET_SLT_AST2600
 	bool "SLT-AST2600"
 	depends on ASPEED_AST2600

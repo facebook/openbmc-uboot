@@ -58,4 +58,11 @@
 #include "facebook_common.h"
 #include "ast2500_common.h"
 
+/*
+ * Extend dual_boot watchdog (WDT2)'s timeout to 10 minutes to allow time
+ * to format a 64MB data0 partition
+ */
+#undef CONFIG_ASPEED_WATCHDOG_TIMEOUT
+#define CONFIG_ASPEED_WATCHDOG_TIMEOUT (10 * 60)
+
 #endif  /* __FBWEDGE400_CONFIG_H */

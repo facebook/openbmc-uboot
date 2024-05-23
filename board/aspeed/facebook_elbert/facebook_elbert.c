@@ -32,7 +32,10 @@
 #define WDT_ENABLE                  0x01                /* Enable WDT2 */
 #define WDT_CLEAR_EVNET_COUNTER     0xEA000000          /* Clear WDT2 event counter */
 #define WDT_RESTART_TIMER_REG       0xFFFF4755          /* Restart WDT2 timer register */
-#define WDT_TIMEOUT                 0xBB8              	/* 5 Minutes (3000 * 0.1sec) */
+#define WDT_TIMEOUT                 (10 * 60 * 10)      /* 10 minutes (units of 0.1 sec) */
+#if WDT_TIMEOUT >= 8192
+#error "WDT_TIMEOUT must be < 8192 (register is 13 bits wide)"
+#endif
 
 /* SCU[50] */
 #define SCU_RESET_MII_CONTROLLER    (1 << 3)            /* Reset the MII controller */
@@ -68,7 +71,7 @@ void Enable_ABR_BOOT(void)
     /* Disable WDT */
     *((volatile unsigned long *)(WDT_CONTROL_STATUS_REG)) = (WDT_DISABLE);
 
-	/* Set the Timeout value to max possible 5 Minutes */
+	/* Set the Timeout value */
     *((volatile unsigned long *)(WDT_TIMER_RELOAD_REG)) = (WDT_TIMEOUT);
 
 	/* Restart watchdog timer register */

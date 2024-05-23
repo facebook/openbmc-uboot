@@ -8,4 +8,10 @@
 
 #include <configs/fbobmc-ast-g6.h>
 
+/*
+ * Override watchdog timeout from <configs/fbobmc-ast-g6.h>
+ */
+#undef CONFIG_ASPEED_WATCHDOG_TIMEOUT
+#define CONFIG_ASPEED_WATCHDOG_TIMEOUT	(10*60) /* 10 minutes */
+
 #endif	/* __CONFIG_H */

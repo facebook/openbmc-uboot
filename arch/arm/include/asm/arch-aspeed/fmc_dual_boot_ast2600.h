@@ -25,7 +25,11 @@
 #define WDT_ENABLE                  0x01                /* Enable WDT2 */
 #define WDT_CLEAR_EVNET_COUNTER     0xEA000000          /* Clear WDT2 event counter */
 #define WDT_RESTART_MAGIC           0x4755              /* Restart WDT2 timer register */
-#define WDT_TIMEOUT                 0xBB8               /* 5 Minutes (0xBBB = 3000 * 0.1sec) */
+#define WDT_TIMEOUT                 (10 * 60 * 10)      /* 10 minutes (units of 0.1 sec) */
+#if WDT_TIMEOUT >= 8192
+#error "WDT_TIMEOUT must be < 8192 (register is 13 bits wide)"
+#endif
+
 
 /* SCU[510] */
 #define SCU_ENABLE_ABR              (1 << 11)           /* Enable ABR boot */

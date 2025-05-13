@@ -1,1 +1,0 @@
-../../tools/buildman/buildman.rst

@@ -1,6 +1,0 @@
-BCMNS BOARD
-M:	Linus Walleij <linus.walleij@linaro.org>
-S:	Maintained
-F:	board/broadcom/bcmns/
-F:	configs/bcmns_defconfig
-F:	include/configs/bcmns.h

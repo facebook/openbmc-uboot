@@ -1,7 +1,0 @@
-// SPDX-License-Identifier: GPL-2.0+
-
-#include "rk3128-u-boot.dtsi"
-
-&emmc {
-	bootph-all;
-};

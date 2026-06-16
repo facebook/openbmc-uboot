@@ -1297,7 +1297,6 @@ static int otp_print_strap_info(int view)
 	u32 bit_offset;
 	u32 length;
 	u32 otp_value;
-	u32 otp_protect;
 
 	otp_strap_status(strap_status);
 
@@ -1314,7 +1313,6 @@ static int otp_print_strap_info(int view)
 		length = strap_info[i].length;
 		for (j = 0; j < length; j++) {
 			otp_value |= strap_status[bit_offset + j].value << j;
-			otp_protect |= strap_status[bit_offset + j].protected << j;
 		}
 		if (otp_value != strap_info[i].value &&
 		    strap_info[i].value != OTP_REG_RESERVED)

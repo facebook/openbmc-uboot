@@ -409,6 +409,7 @@ static int set_4byte(struct spi_nor *nor, const struct flash_info *info,
 	case SNOR_MFR_GIGADEVICE:
 	case SNOR_MFR_ISSI:
 	case SNOR_MFR_CYPRESS:
+	case SNOR_MFR_PUYA:
 		if (need_wren)
 			write_enable(nor);
 
@@ -2428,6 +2429,9 @@ static int spi_nor_init_params(struct spi_nor *nor,
 			params->quad_enable = micron_read_cr_quad_enable;
 
 		if (JEDEC_MFR(info) == SNOR_MFR_GIGADEVICE)
+			params->quad_enable = winbond_sr2_bit1_quad_enable;
+
+		if (JEDEC_MFR(info) == SNOR_MFR_PUYA)
 			params->quad_enable = winbond_sr2_bit1_quad_enable;
 	}
 

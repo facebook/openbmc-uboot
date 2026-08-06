@@ -270,6 +270,13 @@ const struct flash_info spi_nor_ids[] = {
 	{ INFO("m25px16",    0x207115,  0, 64 * 1024, 32, SECT_4K | SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ) },
 	{ INFO("m25px64",    0x207117,  0, 64 * 1024, 128, 0) },
 #endif
+
+#ifdef CONFIG_SPI_FLASH_PUYA		/* PUYA */
+	{ INFO("py25q01ghb", 0x85201b, 0, 64 * 1024, 2048,
+		SECT_4K | SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ |
+		SPI_NOR_4B_OPCODES) },
+#endif
+
 #ifdef CONFIG_SPI_FLASH_WINBOND		/* WINBOND */
 	/* Winbond -- w25x "blocks" are 64K, "sectors" are 4KiB */
 	{ INFO("w25p80", 0xef2014, 0x0,	64 * 1024,    16, 0) },

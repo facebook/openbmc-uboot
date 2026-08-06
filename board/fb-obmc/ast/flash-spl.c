@@ -356,6 +356,12 @@ int doheap(heaptimer_t timer, uchar cs, bool should_lock, int giu_mode)
 	} else if (id[0] == 0xEF || id[0] == 0xC8) {
 		/* WB or GD */
 		prot |= SPI_TB;
+	} else if (id[0] == 0x85) {
+		/*
+		 * Puya PY25Q01GHB uses SR1 bit 6 as BP4 rather than TB.
+		 * Keep BP4 clear so the protection bits select the upper
+		 * portion of the flash.
+		 */
 	} else if (id[0] == 0x20) {
 		/* MT */
 		prot = giu_mode_2_bp_bits_mt(cs, giu_mode);

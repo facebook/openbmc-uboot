@@ -120,6 +120,11 @@ config SPI_FLASH_MACRONIX
 	help
 	  Add support for various Macronix SPI flash chips (MX25Lxxx)
 
+config SPI_FLASH_PUYA
+	bool "Puya SPI flash support"
+	help
+	  Add support for various Puya SPI flash chips (PY25xxx)
+
 config SPI_FLASH_SPANSION
 	bool "Spansion SPI flash support"
 	help

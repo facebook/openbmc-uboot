@@ -14,6 +14,7 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <openssl/evp.h>
+#define OPENSSL_ENGINE_STUBS
 #include <openssl/engine.h>
 
 #if OPENSSL_VERSION_NUMBER >= 0x10000000L
